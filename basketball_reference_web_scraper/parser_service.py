@@ -12,7 +12,7 @@ from basketball_reference_web_scraper.parsers import PositionAbbreviationParser,
 class ParserService:
     PLAY_BY_PLAY_TIMESTAMP_FORMAT = "%M:%S.%f"
     PLAY_BY_PLAY_SCORES_REGEX = "(?P<away_team_score>[0-9]+)-(?P<home_team_score>[0-9]+)"
-    SEARCH_RESULT_RESOURCE_LOCATION_REGEX = '(https?:\/\/www\.basketball-reference\.com\/)?(?P<resource_type>.+?(?=\/)).*\/(?P<resource_identifier>.+).html'
+    SEARCH_RESULT_RESOURCE_LOCATION_REGEX = r'(https?://www\.basketball-reference\.com/)?(?P<resource_type>.+?(?=/)).*/(?P<resource_identifier>.+).html'
 
     def __init__(self):
         self.team_abbreviation_parser = TeamAbbreviationParser(abbreviations_to_teams=TEAM_ABBREVIATIONS_TO_TEAM)
