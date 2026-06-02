@@ -17,8 +17,9 @@ DEFAULT_TIMEOUT_SECONDS = 30
 DEFAULT_DELAY_SECONDS = 8
 DEFAULT_MAX_REQUESTS = 3
 USER_AGENT = (
-    "basketball-reference-web-scraper-fixture-refresh/0.1 "
-    "(+https://github.com/jaebradley/basketball_reference_web_scraper)"
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+    "AppleWebKit/537.36 (KHTML, like Gecko) "
+    "Chrome/124.0.0.0 Safari/537.36"
 )
 
 
@@ -32,6 +33,7 @@ class Fixture:
     url: str
     path: Path
     checks: tuple
+    allowed_statuses: tuple = (200,)
 
 
 @dataclass(frozen=True)
@@ -95,9 +97,10 @@ def validate_response(response, fixture):
             )
         )
 
-    if response.status_code != 200:
+    if response.status_code not in fixture.allowed_statuses:
         raise FixtureRefreshError(
-            "Expected HTTP 200 for {url}, got {status_code}".format(
+            "Expected HTTP status one of {expected} for {url}, got {status_code}".format(
+                expected=", ".join(str(status) for status in fixture.allowed_statuses),
                 url=fixture.url,
                 status_code=response.status_code,
             )
@@ -152,11 +155,38 @@ def verify_table_exists(*table_ids):
         for table_id in table_ids:
             if document.xpath('//table[@id="{table_id}"]'.format(table_id=table_id)):
                 return
+        html_text = html_bytes.decode("utf-8", errors="ignore")
+        for table_id in table_ids:
+            if 'id="{table_id}"'.format(table_id=table_id) in html_text:
+                return
+            if "id='{table_id}'".format(table_id=table_id) in html_text:
+                return
         raise FixtureRefreshError(
             "Expected table with id one of {ids} was not found".format(ids=", ".join(table_ids))
         )
 
     return verify
+
+
+def verify_xpath_exists(xpath, description):
+    def verify(html_bytes):
+        document = html.fromstring(html_bytes)
+        if document.xpath(xpath):
+            return
+        raise FixtureRefreshError("Expected {description} was not found".format(description=description))
+
+    return verify
+
+
+def verify_search_fixture(html_bytes):
+    document = html.fromstring(html_bytes)
+    if document.xpath('//div[contains(@class, "search-item")]'):
+        return
+    if document.xpath('//h1[contains(., "Search Results") or contains(., "Search")]'):
+        return
+    if document.xpath('//form[contains(@action, "search.fcgi")]'):
+        return
+    raise FixtureRefreshError("Search fixture must contain search results or the search form")
 
 
 def sha256(content):
@@ -170,6 +200,16 @@ def _checks_for_fixture_key(key):
         return (verify_html_fixture, verify_table_exists("advanced"))
     if key.startswith("players_season_totals_"):
         return (verify_html_fixture, verify_table_exists("totals", "totals_stats"))
+    if key.startswith("play_by_play_"):
+        return (verify_html_fixture, verify_table_exists("pbp"))
+    if key.startswith("player_box_scores_daily_"):
+        return (verify_html_fixture, verify_table_exists("stats"))
+    if key.startswith("player_box_scores_gamelog_"):
+        return (verify_html_fixture, verify_table_exists("player_game_log_reg", "pgl_basic"))
+    if key.startswith("season_schedule_") and key not in {"season_schedule_not_found", "season_schedule_upcoming"}:
+        return (verify_html_fixture, verify_table_exists("schedule"))
+    if key.startswith("search_"):
+        return (verify_html_fixture, verify_search_fixture)
     return (verify_html_fixture,)
 
 
@@ -192,6 +232,115 @@ _RAW_FIXTURES = {
         path=Path("tests/integration/files/players_season_totals/2018.html"),
         checks=(),
     ),
+    "play_by_play_201901010SAC": Fixture(
+        key="play_by_play_201901010SAC",
+        url="https://www.basketball-reference.com/boxscores/pbp/201901010SAC.html",
+        path=Path("tests/integration/files/play_by_play/201901010SAC.html"),
+        checks=(),
+    ),
+    "player_box_scores_daily_2018_1_1": Fixture(
+        key="player_box_scores_daily_2018_1_1",
+        url="https://www.basketball-reference.com/friv/dailyleaders.cgi?month=1&day=1&year=2018",
+        path=Path("tests/integration/files/player_box_scores/2018/1/1.html"),
+        checks=(),
+    ),
+    "player_box_scores_gamelog_2019_westbru01": Fixture(
+        key="player_box_scores_gamelog_2019_westbru01",
+        url="https://www.basketball-reference.com/players/w/westbru01/gamelog/2019",
+        path=Path("tests/integration/files/player_box_scores/2019/westbru01.html"),
+        checks=(),
+    ),
+    "player_box_scores_empty_2020_foobar": Fixture(
+        key="player_box_scores_empty_2020_foobar",
+        url="https://www.basketball-reference.com/players/",
+        path=Path("tests/integration/files/player_box_scores/2020/foobar.html"),
+        checks=(),
+    ),
+    "season_schedule_2018": Fixture(
+        key="season_schedule_2018",
+        url="https://www.basketball-reference.com/leagues/NBA_2018_games.html",
+        path=Path("tests/integration/files/schedule/2018/2018.html"),
+        checks=(),
+    ),
+    "season_schedule_2018_october": Fixture(
+        key="season_schedule_2018_october",
+        url="https://www.basketball-reference.com/leagues/NBA_2018_games-october.html",
+        path=Path("tests/integration/files/schedule/2018/october.html"),
+        checks=(),
+    ),
+    "season_schedule_not_found": Fixture(
+        key="season_schedule_not_found",
+        url="https://www.basketball-reference.com/leagues/NBA_2018_games-blabla.html",
+        path=Path("tests/integration/files/schedule/not-found.html"),
+        checks=(),
+        allowed_statuses=(404,),
+    ),
+    "season_schedule_upcoming": Fixture(
+        key="season_schedule_upcoming",
+        url="https://www.basketball-reference.com/boxscores/",
+        path=Path("tests/integration/files/schedule/upcoming-games.html"),
+        checks=(),
+    ),
+    "search_kobe": Fixture(
+        key="search_kobe",
+        url="https://www.basketball-reference.com/search/search.fcgi?search=kobe",
+        path=Path("tests/integration/files/search/kobe.html"),
+        checks=(),
+    ),
+    "search_ja_offset_0": Fixture(
+        key="search_ja_offset_0",
+        url="https://www.basketball-reference.com/search/search.fcgi?search=ja&i=players&offset=0",
+        path=Path("tests/integration/files/search/ja/0.html"),
+        checks=(),
+    ),
+    "search_ja_offset_1": Fixture(
+        key="search_ja_offset_1",
+        url="https://www.basketball-reference.com/search/search.fcgi?search=ja&i=players&offset=100",
+        path=Path("tests/integration/files/search/ja/1.html"),
+        checks=(),
+    ),
+    "search_ja_offset_2": Fixture(
+        key="search_ja_offset_2",
+        url="https://www.basketball-reference.com/search/search.fcgi?search=ja&i=players&offset=200",
+        path=Path("tests/integration/files/search/ja/2.html"),
+        checks=(),
+    ),
+    "search_ja_offset_3": Fixture(
+        key="search_ja_offset_3",
+        url="https://www.basketball-reference.com/search/search.fcgi?search=ja&i=players&offset=300",
+        path=Path("tests/integration/files/search/ja/3.html"),
+        checks=(),
+    ),
+    "search_ja_offset_4": Fixture(
+        key="search_ja_offset_4",
+        url="https://www.basketball-reference.com/search/search.fcgi?search=ja&i=players&offset=400",
+        path=Path("tests/integration/files/search/ja/4.html"),
+        checks=(),
+    ),
+    "search_ja_offset_5": Fixture(
+        key="search_ja_offset_5",
+        url="https://www.basketball-reference.com/search/search.fcgi?search=ja&i=players&offset=500",
+        path=Path("tests/integration/files/search/ja/5.html"),
+        checks=(),
+    ),
+    "search_ja_offset_6": Fixture(
+        key="search_ja_offset_6",
+        url="https://www.basketball-reference.com/search/search.fcgi?search=ja&i=players&offset=600",
+        path=Path("tests/integration/files/search/ja/6.html"),
+        checks=(),
+    ),
+    "search_ja_offset_7": Fixture(
+        key="search_ja_offset_7",
+        url="https://www.basketball-reference.com/search/search.fcgi?search=ja&i=players&offset=700",
+        path=Path("tests/integration/files/search/ja/7.html"),
+        checks=(),
+    ),
+    "search_ja_offset_8": Fixture(
+        key="search_ja_offset_8",
+        url="https://www.basketball-reference.com/search/search.fcgi?search=ja&i=players&offset=800",
+        path=Path("tests/integration/files/search/ja/8.html"),
+        checks=(),
+    ),
 }
 
 
@@ -201,6 +350,7 @@ FIXTURES = {
         url=fixture.url,
         path=fixture.path,
         checks=_checks_for_fixture_key(key),
+        allowed_statuses=fixture.allowed_statuses,
     )
     for key, fixture in _RAW_FIXTURES.items()
 }
@@ -208,7 +358,8 @@ FIXTURES = {
 
 def parse_args(argv=None):
     parser = argparse.ArgumentParser(description="Safely stage refreshed Basketball-Reference HTML fixtures.")
-    parser.add_argument("keys", nargs="*", choices=sorted(FIXTURES), help="Fixture keys to refresh")
+    parser.add_argument("keys", nargs="*", help="Fixture keys to refresh")
+    parser.add_argument("--keys", dest="keys_csv", help="Comma-separated fixture keys to refresh")
     parser.add_argument("--output-root", default=str(DEFAULT_OUTPUT_ROOT), help="Staging root for refreshed fixtures")
     parser.add_argument("--max-requests", type=int, default=DEFAULT_MAX_REQUESTS, help="Maximum live requests per run")
     parser.add_argument("--delay", type=float, default=DEFAULT_DELAY_SECONDS, help="Base delay between requests")
@@ -223,10 +374,14 @@ def main(argv=None):
             print("{key}: {url} -> {path}".format(key=key, url=fixture.url, path=fixture.path))
         return 0
 
-    if not args.keys:
+    keys = list(args.keys)
+    if args.keys_csv:
+        keys.extend(key.strip() for key in args.keys_csv.split(",") if key.strip())
+    if not keys:
         raise FixtureRefreshError("Specify at least one fixture key, or use --list to inspect available keys")
-
-    keys = args.keys
+    unknown_keys = sorted(key for key in keys if key not in FIXTURES)
+    if unknown_keys:
+        raise FixtureRefreshError("Unknown fixture keys: {keys}".format(keys=", ".join(unknown_keys)))
     if len(keys) > args.max_requests:
         raise FixtureRefreshError("Requested {count} fixtures but max requests is {max_requests}".format(
             count=len(keys),
