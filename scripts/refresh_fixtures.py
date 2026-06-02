@@ -840,6 +840,72 @@ _RAW_FIXTURES = {
         path=Path("tests/integration/files/search/kobe bryant.html"),
         checks=(),
     ),
+    # --- Phase 3: WNBA season totals ---
+    "wnba_players_season_totals_2024": Fixture(
+        key="wnba_players_season_totals_2024",
+        url="https://www.basketball-reference.com/wnba/years/2024_totals.html",
+        path=Path("tests/integration/files/wnba/players_season_totals/2024.html"),
+        checks=(),
+    ),
+    "wnba_players_season_totals_2023": Fixture(
+        key="wnba_players_season_totals_2023",
+        url="https://www.basketball-reference.com/wnba/years/2023_totals.html",
+        path=Path("tests/integration/files/wnba/players_season_totals/2023.html"),
+        checks=(),
+    ),
+    "wnba_players_season_totals_2019": Fixture(
+        key="wnba_players_season_totals_2019",
+        url="https://www.basketball-reference.com/wnba/years/2019_totals.html",
+        path=Path("tests/integration/files/wnba/players_season_totals/2019.html"),
+        checks=(),
+    ),
+    # --- Phase 3: WNBA schedule ---
+    "wnba_season_schedule_2024": Fixture(
+        key="wnba_season_schedule_2024",
+        url="https://www.basketball-reference.com/wnba/years/2024_games.html",
+        path=Path("tests/integration/files/wnba/schedule/2024.html"),
+        checks=(),
+    ),
+    "wnba_season_schedule_2023": Fixture(
+        key="wnba_season_schedule_2023",
+        url="https://www.basketball-reference.com/wnba/years/2023_games.html",
+        path=Path("tests/integration/files/wnba/schedule/2023.html"),
+        checks=(),
+    ),
+    # --- Phase 3: WNBA player gamelog ---
+    "wnba_player_gamelog_2024_wilsoa01w": Fixture(
+        key="wnba_player_gamelog_2024_wilsoa01w",
+        url="https://www.basketball-reference.com/wnba/players/w/wilsoa01w/gamelog/2024",
+        path=Path("tests/integration/files/wnba/player_box_scores/2024/wilsoa01w.html"),
+        checks=(),
+    ),
+    # --- Phase 3: WNBA boxscore (2024 Finals Game 1 - NYL home) ---
+    "wnba_boxscore_202410130NYL": Fixture(
+        key="wnba_boxscore_202410130NYL",
+        url="https://www.basketball-reference.com/wnba/boxscores/202410130NYL.html",
+        path=Path("tests/integration/files/wnba/boxscores/202410130NYL.html"),
+        checks=(),
+    ),
+    # --- Phase 3: NBA draft pages ---
+    "nba_draft_2024": Fixture(
+        key="nba_draft_2024",
+        url="https://www.basketball-reference.com/draft/NBA_2024.html",
+        path=Path("tests/integration/files/draft/NBA_2024.html"),
+        checks=(),
+    ),
+    "nba_draft_2001": Fixture(
+        key="nba_draft_2001",
+        url="https://www.basketball-reference.com/draft/NBA_2001.html",
+        path=Path("tests/integration/files/draft/NBA_2001.html"),
+        checks=(),
+    ),
+    # --- Phase 3: ABA historical season totals ---
+    "aba_players_season_totals_1972": Fixture(
+        key="aba_players_season_totals_1972",
+        url="https://www.basketball-reference.com/leagues/ABA_1972_totals.html",
+        path=Path("tests/integration/files/aba/players_season_totals/1972.html"),
+        checks=(),
+    ),
 }
 
 
