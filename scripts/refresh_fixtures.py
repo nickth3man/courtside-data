@@ -194,6 +194,8 @@ def sha256(content):
 
 
 def _checks_for_fixture_key(key):
+    if key.startswith("boxscore_index_"):
+        return (verify_html_fixture,)
     if key.startswith("boxscore_"):
         return (verify_html_fixture, verify_box_score_fixture)
     if key.startswith("player_advanced_season_totals_"):
@@ -339,6 +341,503 @@ _RAW_FIXTURES = {
         key="search_ja_offset_8",
         url="https://www.basketball-reference.com/search/search.fcgi?search=ja&i=players&offset=800",
         path=Path("tests/integration/files/search/ja/8.html"),
+        checks=(),
+    ),
+    # --- Phase 2: multi-era play-by-play ---
+    "play_by_play_199911160ATL": Fixture(
+        key="play_by_play_199911160ATL",
+        url="https://www.basketball-reference.com/boxscores/pbp/199911160ATL.html",
+        path=Path("tests/integration/files/play_by_play/199911160ATL.html"),
+        checks=(),
+    ),
+    "play_by_play_200310290TOR": Fixture(
+        key="play_by_play_200310290TOR",
+        url="https://www.basketball-reference.com/boxscores/pbp/200310290TOR.html",
+        path=Path("tests/integration/files/play_by_play/200310290TOR.html"),
+        checks=(),
+    ),
+    "play_by_play_201810160GSW": Fixture(
+        key="play_by_play_201810160GSW",
+        url="https://www.basketball-reference.com/boxscores/pbp/201810160GSW.html",
+        path=Path("tests/integration/files/play_by_play/201810160GSW.html"),
+        checks=(),
+    ),
+    "play_by_play_201810270MIL": Fixture(
+        key="play_by_play_201810270MIL",
+        url="https://www.basketball-reference.com/boxscores/pbp/201810270MIL.html",
+        path=Path("tests/integration/files/play_by_play/201810270MIL.html"),
+        checks=(),
+    ),
+    "play_by_play_201810290MIL": Fixture(
+        key="play_by_play_201810290MIL",
+        url="https://www.basketball-reference.com/boxscores/pbp/201810290MIL.html",
+        path=Path("tests/integration/files/play_by_play/201810290MIL.html"),
+        checks=(),
+    ),
+    "play_by_play_201901010DEN": Fixture(
+        key="play_by_play_201901010DEN",
+        url="https://www.basketball-reference.com/boxscores/pbp/201901010DEN.html",
+        path=Path("tests/integration/files/play_by_play/201901010DEN.html"),
+        checks=(),
+    ),
+    # --- Phase 2: player advanced season totals ---
+    "player_advanced_season_totals_2001": Fixture(
+        key="player_advanced_season_totals_2001",
+        url="https://www.basketball-reference.com/leagues/NBA_2001_advanced.html",
+        path=Path("tests/integration/files/player_advanced_season_totals/2001.html"),
+        checks=(),
+    ),
+    "player_advanced_season_totals_2016": Fixture(
+        key="player_advanced_season_totals_2016",
+        url="https://www.basketball-reference.com/leagues/NBA_2016_advanced.html",
+        path=Path("tests/integration/files/player_advanced_season_totals/2016.html"),
+        checks=(),
+    ),
+    "player_advanced_season_totals_2017": Fixture(
+        key="player_advanced_season_totals_2017",
+        url="https://www.basketball-reference.com/leagues/NBA_2017_advanced.html",
+        path=Path("tests/integration/files/player_advanced_season_totals/2017.html"),
+        checks=(),
+    ),
+    "player_advanced_season_totals_2018": Fixture(
+        key="player_advanced_season_totals_2018",
+        url="https://www.basketball-reference.com/leagues/NBA_2018_advanced.html",
+        path=Path("tests/integration/files/player_advanced_season_totals/2018.html"),
+        checks=(),
+    ),
+    # --- Phase 2: daily player box scores ---
+    "player_box_scores_daily_2001_1_1": Fixture(
+        key="player_box_scores_daily_2001_1_1",
+        url="https://www.basketball-reference.com/friv/dailyleaders.cgi?month=1&day=1&year=2001",
+        path=Path("tests/integration/files/player_box_scores/2001/1/1.html"),
+        checks=(),
+    ),
+    "player_box_scores_daily_2003_11_3": Fixture(
+        key="player_box_scores_daily_2003_11_3",
+        url="https://www.basketball-reference.com/friv/dailyleaders.cgi?month=11&day=3&year=2003",
+        path=Path("tests/integration/files/player_box_scores/2003/11/3.html"),
+        checks=(),
+    ),
+    "player_box_scores_daily_2006_11_1": Fixture(
+        key="player_box_scores_daily_2006_11_1",
+        url="https://www.basketball-reference.com/friv/dailyleaders.cgi?month=11&day=1&year=2006",
+        path=Path("tests/integration/files/player_box_scores/2006/11/1.html"),
+        checks=(),
+    ),
+    "player_box_scores_daily_2015_12_18": Fixture(
+        key="player_box_scores_daily_2015_12_18",
+        url="https://www.basketball-reference.com/friv/dailyleaders.cgi?month=12&day=18&year=2015",
+        path=Path("tests/integration/files/player_box_scores/2015/12/18.html"),
+        checks=(),
+    ),
+    "player_box_scores_daily_2017_1_29": Fixture(
+        key="player_box_scores_daily_2017_1_29",
+        url="https://www.basketball-reference.com/friv/dailyleaders.cgi?month=1&day=29&year=2017",
+        path=Path("tests/integration/files/player_box_scores/2017/1/29.html"),
+        checks=(),
+    ),
+    "player_box_scores_daily_2017_12_12": Fixture(
+        key="player_box_scores_daily_2017_12_12",
+        url="https://www.basketball-reference.com/friv/dailyleaders.cgi?month=12&day=12&year=2017",
+        path=Path("tests/integration/files/player_box_scores/2017/12/12.html"),
+        checks=(),
+    ),
+    # --- Phase 2: player gamelog (multi-era) ---
+    "player_box_scores_gamelog_2015_brownja01": Fixture(
+        key="player_box_scores_gamelog_2015_brownja01",
+        url="https://www.basketball-reference.com/players/b/brownja01/gamelog/2015",
+        path=Path("tests/integration/files/player_box_scores/2015/brownja01.html"),
+        checks=(),
+    ),
+    "player_box_scores_gamelog_2019_bradlav01": Fixture(
+        key="player_box_scores_gamelog_2019_bradlav01",
+        url="https://www.basketball-reference.com/players/b/bradlav01/gamelog/2019",
+        path=Path("tests/integration/files/player_box_scores/2019/bradlav01.html"),
+        checks=(),
+    ),
+    "player_box_scores_gamelog_2020_antetgi01": Fixture(
+        key="player_box_scores_gamelog_2020_antetgi01",
+        url="https://www.basketball-reference.com/players/a/antetgi01/gamelog/2020",
+        path=Path("tests/integration/files/player_box_scores/2020/antetgi01.html"),
+        checks=(),
+    ),
+    "player_box_scores_gamelog_2020_westbru01": Fixture(
+        key="player_box_scores_gamelog_2020_westbru01",
+        url="https://www.basketball-reference.com/players/w/westbru01/gamelog/2020",
+        path=Path("tests/integration/files/player_box_scores/2020/westbru01.html"),
+        checks=(),
+    ),
+    # --- Phase 2: players season totals (2001-2024, minus 2018 already registered) ---
+    "players_season_totals_2001": Fixture(
+        key="players_season_totals_2001",
+        url="https://www.basketball-reference.com/leagues/NBA_2001_totals.html",
+        path=Path("tests/integration/files/players_season_totals/2001.html"),
+        checks=(),
+    ),
+    "players_season_totals_2002": Fixture(
+        key="players_season_totals_2002",
+        url="https://www.basketball-reference.com/leagues/NBA_2002_totals.html",
+        path=Path("tests/integration/files/players_season_totals/2002.html"),
+        checks=(),
+    ),
+    "players_season_totals_2003": Fixture(
+        key="players_season_totals_2003",
+        url="https://www.basketball-reference.com/leagues/NBA_2003_totals.html",
+        path=Path("tests/integration/files/players_season_totals/2003.html"),
+        checks=(),
+    ),
+    "players_season_totals_2004": Fixture(
+        key="players_season_totals_2004",
+        url="https://www.basketball-reference.com/leagues/NBA_2004_totals.html",
+        path=Path("tests/integration/files/players_season_totals/2004.html"),
+        checks=(),
+    ),
+    "players_season_totals_2005": Fixture(
+        key="players_season_totals_2005",
+        url="https://www.basketball-reference.com/leagues/NBA_2005_totals.html",
+        path=Path("tests/integration/files/players_season_totals/2005.html"),
+        checks=(),
+    ),
+    "players_season_totals_2006": Fixture(
+        key="players_season_totals_2006",
+        url="https://www.basketball-reference.com/leagues/NBA_2006_totals.html",
+        path=Path("tests/integration/files/players_season_totals/2006.html"),
+        checks=(),
+    ),
+    "players_season_totals_2007": Fixture(
+        key="players_season_totals_2007",
+        url="https://www.basketball-reference.com/leagues/NBA_2007_totals.html",
+        path=Path("tests/integration/files/players_season_totals/2007.html"),
+        checks=(),
+    ),
+    "players_season_totals_2008": Fixture(
+        key="players_season_totals_2008",
+        url="https://www.basketball-reference.com/leagues/NBA_2008_totals.html",
+        path=Path("tests/integration/files/players_season_totals/2008.html"),
+        checks=(),
+    ),
+    "players_season_totals_2009": Fixture(
+        key="players_season_totals_2009",
+        url="https://www.basketball-reference.com/leagues/NBA_2009_totals.html",
+        path=Path("tests/integration/files/players_season_totals/2009.html"),
+        checks=(),
+    ),
+    "players_season_totals_2010": Fixture(
+        key="players_season_totals_2010",
+        url="https://www.basketball-reference.com/leagues/NBA_2010_totals.html",
+        path=Path("tests/integration/files/players_season_totals/2010.html"),
+        checks=(),
+    ),
+    "players_season_totals_2011": Fixture(
+        key="players_season_totals_2011",
+        url="https://www.basketball-reference.com/leagues/NBA_2011_totals.html",
+        path=Path("tests/integration/files/players_season_totals/2011.html"),
+        checks=(),
+    ),
+    "players_season_totals_2012": Fixture(
+        key="players_season_totals_2012",
+        url="https://www.basketball-reference.com/leagues/NBA_2012_totals.html",
+        path=Path("tests/integration/files/players_season_totals/2012.html"),
+        checks=(),
+    ),
+    "players_season_totals_2013": Fixture(
+        key="players_season_totals_2013",
+        url="https://www.basketball-reference.com/leagues/NBA_2013_totals.html",
+        path=Path("tests/integration/files/players_season_totals/2013.html"),
+        checks=(),
+    ),
+    "players_season_totals_2014": Fixture(
+        key="players_season_totals_2014",
+        url="https://www.basketball-reference.com/leagues/NBA_2014_totals.html",
+        path=Path("tests/integration/files/players_season_totals/2014.html"),
+        checks=(),
+    ),
+    "players_season_totals_2015": Fixture(
+        key="players_season_totals_2015",
+        url="https://www.basketball-reference.com/leagues/NBA_2015_totals.html",
+        path=Path("tests/integration/files/players_season_totals/2015.html"),
+        checks=(),
+    ),
+    "players_season_totals_2016": Fixture(
+        key="players_season_totals_2016",
+        url="https://www.basketball-reference.com/leagues/NBA_2016_totals.html",
+        path=Path("tests/integration/files/players_season_totals/2016.html"),
+        checks=(),
+    ),
+    "players_season_totals_2017": Fixture(
+        key="players_season_totals_2017",
+        url="https://www.basketball-reference.com/leagues/NBA_2017_totals.html",
+        path=Path("tests/integration/files/players_season_totals/2017.html"),
+        checks=(),
+    ),
+    "players_season_totals_2019": Fixture(
+        key="players_season_totals_2019",
+        url="https://www.basketball-reference.com/leagues/NBA_2019_totals.html",
+        path=Path("tests/integration/files/players_season_totals/2019.html"),
+        checks=(),
+    ),
+    "players_season_totals_2020": Fixture(
+        key="players_season_totals_2020",
+        url="https://www.basketball-reference.com/leagues/NBA_2020_totals.html",
+        path=Path("tests/integration/files/players_season_totals/2020.html"),
+        checks=(),
+    ),
+    "players_season_totals_2021": Fixture(
+        key="players_season_totals_2021",
+        url="https://www.basketball-reference.com/leagues/NBA_2021_totals.html",
+        path=Path("tests/integration/files/players_season_totals/2021.html"),
+        checks=(),
+    ),
+    "players_season_totals_2022": Fixture(
+        key="players_season_totals_2022",
+        url="https://www.basketball-reference.com/leagues/NBA_2022_totals.html",
+        path=Path("tests/integration/files/players_season_totals/2022.html"),
+        checks=(),
+    ),
+    "players_season_totals_2023": Fixture(
+        key="players_season_totals_2023",
+        url="https://www.basketball-reference.com/leagues/NBA_2023_totals.html",
+        path=Path("tests/integration/files/players_season_totals/2023.html"),
+        checks=(),
+    ),
+    "players_season_totals_2024": Fixture(
+        key="players_season_totals_2024",
+        url="https://www.basketball-reference.com/leagues/NBA_2024_totals.html",
+        path=Path("tests/integration/files/players_season_totals/2024.html"),
+        checks=(),
+    ),
+    # --- Phase 2: season schedule (multi-era annual) ---
+    "season_schedule_2000": Fixture(
+        key="season_schedule_2000",
+        url="https://www.basketball-reference.com/leagues/NBA_2000_games.html",
+        path=Path("tests/integration/files/schedule/2000/2000.html"),
+        checks=(),
+    ),
+    "season_schedule_2001": Fixture(
+        key="season_schedule_2001",
+        url="https://www.basketball-reference.com/leagues/NBA_2001_games.html",
+        path=Path("tests/integration/files/schedule/2001/2001.html"),
+        checks=(),
+    ),
+    "season_schedule_2002": Fixture(
+        key="season_schedule_2002",
+        url="https://www.basketball-reference.com/leagues/NBA_2002_games.html",
+        path=Path("tests/integration/files/schedule/2002/2002.html"),
+        checks=(),
+    ),
+    "season_schedule_2005": Fixture(
+        key="season_schedule_2005",
+        url="https://www.basketball-reference.com/leagues/NBA_2005_games.html",
+        path=Path("tests/integration/files/schedule/2005/2005.html"),
+        checks=(),
+    ),
+    "season_schedule_2019": Fixture(
+        key="season_schedule_2019",
+        url="https://www.basketball-reference.com/leagues/NBA_2019_games.html",
+        path=Path("tests/integration/files/schedule/2019/2019.html"),
+        checks=(),
+    ),
+    "season_schedule_2020": Fixture(
+        key="season_schedule_2020",
+        url="https://www.basketball-reference.com/leagues/NBA_2020_games.html",
+        path=Path("tests/integration/files/schedule/2020/2020.html"),
+        checks=(),
+    ),
+    # --- Phase 2: season schedule 2001 monthly ---
+    "season_schedule_2001_october": Fixture(
+        key="season_schedule_2001_october",
+        url="https://www.basketball-reference.com/leagues/NBA_2001_games-october.html",
+        path=Path("tests/integration/files/schedule/2001/october.html"),
+        checks=(),
+    ),
+    "season_schedule_2001_november": Fixture(
+        key="season_schedule_2001_november",
+        url="https://www.basketball-reference.com/leagues/NBA_2001_games-november.html",
+        path=Path("tests/integration/files/schedule/2001/november.html"),
+        checks=(),
+    ),
+    "season_schedule_2001_december": Fixture(
+        key="season_schedule_2001_december",
+        url="https://www.basketball-reference.com/leagues/NBA_2001_games-december.html",
+        path=Path("tests/integration/files/schedule/2001/december.html"),
+        checks=(),
+    ),
+    "season_schedule_2001_january": Fixture(
+        key="season_schedule_2001_january",
+        url="https://www.basketball-reference.com/leagues/NBA_2001_games-january.html",
+        path=Path("tests/integration/files/schedule/2001/january.html"),
+        checks=(),
+    ),
+    "season_schedule_2001_february": Fixture(
+        key="season_schedule_2001_february",
+        url="https://www.basketball-reference.com/leagues/NBA_2001_games-february.html",
+        path=Path("tests/integration/files/schedule/2001/february.html"),
+        checks=(),
+    ),
+    "season_schedule_2001_march": Fixture(
+        key="season_schedule_2001_march",
+        url="https://www.basketball-reference.com/leagues/NBA_2001_games-march.html",
+        path=Path("tests/integration/files/schedule/2001/march.html"),
+        checks=(),
+    ),
+    "season_schedule_2001_april": Fixture(
+        key="season_schedule_2001_april",
+        url="https://www.basketball-reference.com/leagues/NBA_2001_games-april.html",
+        path=Path("tests/integration/files/schedule/2001/april.html"),
+        checks=(),
+    ),
+    "season_schedule_2001_may": Fixture(
+        key="season_schedule_2001_may",
+        url="https://www.basketball-reference.com/leagues/NBA_2001_games-may.html",
+        path=Path("tests/integration/files/schedule/2001/may.html"),
+        checks=(),
+    ),
+    "season_schedule_2001_june": Fixture(
+        key="season_schedule_2001_june",
+        url="https://www.basketball-reference.com/leagues/NBA_2001_games-june.html",
+        path=Path("tests/integration/files/schedule/2001/june.html"),
+        checks=(),
+    ),
+    # --- Phase 2: season schedule 2018 remaining monthly ---
+    "season_schedule_2018_november": Fixture(
+        key="season_schedule_2018_november",
+        url="https://www.basketball-reference.com/leagues/NBA_2018_games-november.html",
+        path=Path("tests/integration/files/schedule/2018/november.html"),
+        checks=(),
+    ),
+    "season_schedule_2018_december": Fixture(
+        key="season_schedule_2018_december",
+        url="https://www.basketball-reference.com/leagues/NBA_2018_games-december.html",
+        path=Path("tests/integration/files/schedule/2018/december.html"),
+        checks=(),
+    ),
+    "season_schedule_2018_january": Fixture(
+        key="season_schedule_2018_january",
+        url="https://www.basketball-reference.com/leagues/NBA_2018_games-january.html",
+        path=Path("tests/integration/files/schedule/2018/january.html"),
+        checks=(),
+    ),
+    "season_schedule_2018_february": Fixture(
+        key="season_schedule_2018_february",
+        url="https://www.basketball-reference.com/leagues/NBA_2018_games-february.html",
+        path=Path("tests/integration/files/schedule/2018/february.html"),
+        checks=(),
+    ),
+    "season_schedule_2018_march": Fixture(
+        key="season_schedule_2018_march",
+        url="https://www.basketball-reference.com/leagues/NBA_2018_games-march.html",
+        path=Path("tests/integration/files/schedule/2018/march.html"),
+        checks=(),
+    ),
+    "season_schedule_2018_april": Fixture(
+        key="season_schedule_2018_april",
+        url="https://www.basketball-reference.com/leagues/NBA_2018_games-april.html",
+        path=Path("tests/integration/files/schedule/2018/april.html"),
+        checks=(),
+    ),
+    "season_schedule_2018_may": Fixture(
+        key="season_schedule_2018_may",
+        url="https://www.basketball-reference.com/leagues/NBA_2018_games-may.html",
+        path=Path("tests/integration/files/schedule/2018/may.html"),
+        checks=(),
+    ),
+    "season_schedule_2018_june": Fixture(
+        key="season_schedule_2018_june",
+        url="https://www.basketball-reference.com/leagues/NBA_2018_games-june.html",
+        path=Path("tests/integration/files/schedule/2018/june.html"),
+        checks=(),
+    ),
+    # --- Phase 2: team box score index pages (day listings) ---
+    "boxscore_index_20010101": Fixture(
+        key="boxscore_index_20010101",
+        url="https://www.basketball-reference.com/boxscores/?day=1&month=1&year=2001",
+        path=Path("tests/integration/files/boxscores/2001/1/1/index.html"),
+        checks=(),
+    ),
+    "boxscore_index_20170101": Fixture(
+        key="boxscore_index_20170101",
+        url="https://www.basketball-reference.com/boxscores/?day=1&month=1&year=2017",
+        path=Path("tests/integration/files/boxscores/2017/1/1.html"),
+        checks=(),
+    ),
+    "boxscore_index_20180101": Fixture(
+        key="boxscore_index_20180101",
+        url="https://www.basketball-reference.com/boxscores/?day=1&month=1&year=2018",
+        path=Path("tests/integration/files/boxscores/2018/1/1/index.html"),
+        checks=(),
+    ),
+    # --- Phase 2: team box score individual game pages ---
+    "boxscore_200101010MIN": Fixture(
+        key="boxscore_200101010MIN",
+        url="https://www.basketball-reference.com/boxscores/200101010MIN.html",
+        path=Path("tests/integration/files/boxscores/2001/1/1/200101010MIN.html"),
+        checks=(),
+    ),
+    "boxscore_200101010POR": Fixture(
+        key="boxscore_200101010POR",
+        url="https://www.basketball-reference.com/boxscores/200101010POR.html",
+        path=Path("tests/integration/files/boxscores/2001/1/1/200101010POR.html"),
+        checks=(),
+    ),
+    "boxscore_201801010BRK": Fixture(
+        key="boxscore_201801010BRK",
+        url="https://www.basketball-reference.com/boxscores/201801010BRK.html",
+        path=Path("tests/integration/files/boxscores/2018/1/1/201801010BRK.html"),
+        checks=(),
+    ),
+    "boxscore_201801010CHI": Fixture(
+        key="boxscore_201801010CHI",
+        url="https://www.basketball-reference.com/boxscores/201801010CHI.html",
+        path=Path("tests/integration/files/boxscores/2018/1/1/201801010CHI.html"),
+        checks=(),
+    ),
+    "boxscore_201801010MIN": Fixture(
+        key="boxscore_201801010MIN",
+        url="https://www.basketball-reference.com/boxscores/201801010MIN.html",
+        path=Path("tests/integration/files/boxscores/2018/1/1/201801010MIN.html"),
+        checks=(),
+    ),
+    "boxscore_201801010TOR": Fixture(
+        key="boxscore_201801010TOR",
+        url="https://www.basketball-reference.com/boxscores/201801010TOR.html",
+        path=Path("tests/integration/files/boxscores/2018/1/1/201801010TOR.html"),
+        checks=(),
+    ),
+    # --- Phase 2: search fixtures (non-ja) ---
+    "search_alonz": Fixture(
+        key="search_alonz",
+        url="https://www.basketball-reference.com/search/search.fcgi?search=Alonz",
+        path=Path("tests/integration/files/search/Alonz.html"),
+        checks=(),
+    ),
+    "search_alonzo_mourning": Fixture(
+        key="search_alonzo_mourning",
+        url="https://www.basketball-reference.com/search/search.fcgi?search=Alonzo+Mourning",
+        path=Path("tests/integration/files/search/Alonzo Mourning.html"),
+        checks=(),
+    ),
+    "search_dominique_wilkins": Fixture(
+        key="search_dominique_wilkins",
+        url="https://www.basketball-reference.com/search/search.fcgi?search=Dominique+Wilkins",
+        path=Path("tests/integration/files/search/Dominique Wilkins.html"),
+        checks=(),
+    ),
+    "search_rick_barry": Fixture(
+        key="search_rick_barry",
+        url="https://www.basketball-reference.com/search/search.fcgi?search=Rick+Barry",
+        path=Path("tests/integration/files/search/Rick Barry.html"),
+        checks=(),
+    ),
+    "search_jaebaebae": Fixture(
+        key="search_jaebaebae",
+        url="https://www.basketball-reference.com/search/search.fcgi?search=jaebaebae",
+        path=Path("tests/integration/files/search/jaebaebae.html"),
+        checks=(),
+    ),
+    "search_kobe_bryant": Fixture(
+        key="search_kobe_bryant",
+        url="https://www.basketball-reference.com/search/search.fcgi?search=kobe+bryant",
+        path=Path("tests/integration/files/search/kobe bryant.html"),
         checks=(),
     ),
 }
