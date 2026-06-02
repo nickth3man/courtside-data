@@ -22,6 +22,10 @@ tests/end to end/output/generated/**.csv
 .coverage
 coverage.xml
 
+# Ignore generated endpoint test artifacts
+scripts/test_endpoints/*.json
+scripts/test_endpoints/*.log
+
 dependencies/*
 
 # virtualenv's

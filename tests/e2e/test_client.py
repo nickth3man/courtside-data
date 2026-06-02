@@ -1,7 +1,6 @@
 import datetime
 import filecmp
 import os
-import time
 from unittest import TestCase
 
 from basketball_reference_web_scraper.client import player_box_scores, season_schedule, players_advanced_season_totals, \
@@ -11,14 +10,7 @@ from basketball_reference_web_scraper.data import OutputWriteOption, OutputType,
 
 
 class BaseEndToEndTest(TestCase):
-
-    def setUp(self):
-        # To avoid getting rate-limited
-        time.sleep(20)
-
-    def tearDown(self):
-        # To avoid getting rate-limited
-        time.sleep(20)
+    pass
 
 
 class TestPlayerBoxScores(BaseEndToEndTest):

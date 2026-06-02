@@ -15,7 +15,7 @@ class Test20180101(TestCase):
         with open(os.path.join(
                 os.path.dirname(__file__),
                 "../files/player_box_scores/2018/1/1.html"
-        ), 'r') as file_input: self._html = file_input.read()
+        ), 'r', encoding="utf8") as file_input: self._html = file_input.read()
 
     @requests_mock.Mocker()
     def test_player_box_scores_length(self, m):
@@ -31,7 +31,7 @@ class Test20010101(TestCase):
         with open(os.path.join(
                 os.path.dirname(__file__),
                 "../files/player_box_scores/2001/1/1.html"
-        ), 'r') as file_input: self._html = file_input.read()
+        ), 'r', encoding="utf8") as file_input: self._html = file_input.read()
 
     @requests_mock.Mocker()
     def test_2001_01_01_player_box_scores_length(self, m):

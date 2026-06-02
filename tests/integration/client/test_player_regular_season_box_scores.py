@@ -15,7 +15,7 @@ class TestWestbrook2020(TestCase):
         with open(os.path.join(
                 os.path.dirname(__file__),
                 "../files/player_box_scores/2020/westbru01.html"
-        ), 'r') as file_input: self._html = file_input.read()
+        ), 'r', encoding="utf8") as file_input: self._html = file_input.read()
 
     @requests_mock.Mocker()
     def test_length(self, m):
@@ -59,7 +59,7 @@ class TestWestbrook2019(TestCase):
         with open(os.path.join(
                 os.path.dirname(__file__),
                 "../files/player_box_scores/2019/westbru01.html"
-        ), 'r') as file_input: self._html = file_input.read()
+        ), 'r', encoding="utf8") as file_input: self._html = file_input.read()
 
     @requests_mock.Mocker()
     def test_length(self, m):
@@ -75,7 +75,7 @@ class TestNonExistentPlayerPlayoffBoxScores(TestCase):
         with open(os.path.join(
                 os.path.dirname(__file__),
                 "../files/player_box_scores/2020/foobar.html"
-        ), 'r') as file_input: self._html = file_input.read()
+        ), 'r', encoding="utf8") as file_input: self._html = file_input.read()
 
     @requests_mock.Mocker()
     def test_non_existent_player_raises(self, m):
@@ -100,7 +100,7 @@ class TestJabariBrown2015(TestCase):
         with open(os.path.join(
                 os.path.dirname(__file__),
                 "../files/player_box_scores/2015/brownja01.html"
-        ), 'r') as file_input: self._html = file_input.read()
+        ), 'r', encoding="utf8") as file_input: self._html = file_input.read()
 
     @requests_mock.Mocker()
     def test_default_does_not_include_inactive_games(self, m):
@@ -176,7 +176,7 @@ class TestAveryBradley2019(TestCase):
         with open(os.path.join(
                 os.path.dirname(__file__),
                 "../files/player_box_scores/2019/bradlav01.html"
-        ), 'r') as file_input: self._html = file_input.read()
+        ), 'r', encoding="utf8") as file_input: self._html = file_input.read()
         self.expected_excluding_inactive_games_output_json_file_path = os.path.join(
             os.path.dirname(__file__),
             "./output/expected/player_box_scores/2019/bradlav01/exclude_inactive.json",

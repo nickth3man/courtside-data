@@ -16,7 +16,7 @@ class Test2019(TestCase):
         with open(os.path.join(
                 os.path.dirname(__file__),
                 "../files/player_advanced_season_totals/2019.html",
-        ), 'r') as file_input: self._html = file_input.read();
+        ), 'r', encoding="utf8") as file_input: self._html = file_input.read();
 
     @requests_mock.Mocker()
     def test_length(self, m):
@@ -38,7 +38,7 @@ class BaseTestPlayerAdvancedSeasonTotalsCSVOutput(TestCase):
         with open(os.path.join(
                 os.path.dirname(__file__),
                 f"../files/player_advanced_season_totals/{self.year}.html",
-        ), 'r') as file_input: self._html = file_input.read()
+        ), 'r', encoding="utf8") as file_input: self._html = file_input.read()
 
         self.output_file_path = os.path.join(
             os.path.dirname(__file__),
@@ -84,7 +84,7 @@ class BaseTestPlayerAdvancedSeasonTotalsJSONOutput(TestCase):
         with open(os.path.join(
                 os.path.dirname(__file__),
                 f"../files/player_advanced_season_totals/{self.year}.html",
-        ), 'r') as file_input: self._html = file_input.read()
+        ), 'r', encoding="utf8") as file_input: self._html = file_input.read()
 
         self.output_file_path = os.path.join(
             os.path.dirname(__file__),
@@ -255,7 +255,7 @@ class TestPlayerAdvancedSeasonTotalsInMemoryOutput(TestCase):
         with open(os.path.join(
                 os.path.dirname(__file__),
                 f"../files/player_advanced_season_totals/2018.html",
-        ), 'r') as file_input: self._html = file_input.read()
+        ), 'r', encoding="utf8") as file_input: self._html = file_input.read()
 
     def test_future_season_raises_invalid_season(self, m):
         m.get(f"https://www.basketball-reference.com/leagues/NBA_{sys.maxsize}_advanced.html",

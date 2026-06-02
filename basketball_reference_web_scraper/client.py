@@ -1,6 +1,6 @@
 import requests
 
-from basketball_reference_web_scraper.errors import InvalidSeason, InvalidDate, InvalidPlayerAndSeason
+from basketball_reference_web_scraper.errors import InvalidSeason, InvalidDate, InvalidPlayerAndSeason, InvalidSearch
 from basketball_reference_web_scraper.http_service import HTTPService
 from basketball_reference_web_scraper.output.columns import BOX_SCORE_COLUMN_NAMES, SCHEDULE_COLUMN_NAMES, \
     PLAYER_SEASON_TOTALS_COLUMN_NAMES, \
@@ -237,8 +237,14 @@ def play_by_play(home_team, day, month, year, output_type=None, output_file_path
 
 
 def search(term, output_type=None, output_file_path=None, output_write_option=None, json_options=None):
-    http_service = HTTPService(parser=ParserService())
-    values = http_service.search(term=term)
+    try:
+        http_service = HTTPService(parser=ParserService())
+        values = http_service.search(term=term)
+    except requests.exceptions.HTTPError as http_error:
+        if http_error.response.status_code == requests.codes.not_found:
+            raise InvalidSearch(term=term)
+        else:
+            raise http_error
     options = OutputOptions.of(
         file_options=FileOptions.of(path=output_file_path, mode=output_write_option),
         output_type=output_type,

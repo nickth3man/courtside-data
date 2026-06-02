@@ -38,7 +38,7 @@ class StandingsMocker:
                     raise ValueError(
                         f"Unexpected prefix for {filename}. Expected all files in {html_files_directory} to end with .html.")
 
-                with open(os.path.join(html_files_directory, filename), 'r') as file_input:
+                with open(os.path.join(html_files_directory, filename), 'r', encoding="utf8") as file_input:
                     if filename.startswith(str(self._season_end_year)):
                         key = f"https://www.basketball-reference.com/leagues/NBA_{self._season_end_year}_games.html"
                         with requests_mock.Mocker() as m:

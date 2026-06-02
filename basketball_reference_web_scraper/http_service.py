@@ -14,13 +14,16 @@ class HTTPService:
     def __init__(self, parser):
         self.parser = parser
 
+    def _get(self, url, **kwargs):
+        return requests.get(url=url, **kwargs)
+
     def standings(self, season_end_year):
         url = '{BASE_URL}/leagues/NBA_{season_end_year}.html'.format(
             BASE_URL=HTTPService.BASE_URL,
             season_end_year=season_end_year,
         )
 
-        response = requests.get(url=url, allow_redirects=False)
+        response = self._get(url=url, allow_redirects=False)
 
         response.raise_for_status()
 
@@ -36,12 +39,14 @@ class HTTPService:
             year=year
         )
 
-        response = requests.get(url=url, allow_redirects=False)
+        response = self._get(url=url, allow_redirects=False)
 
         response.raise_for_status()
 
         if response.status_code == requests.codes.ok:
             page = DailyLeadersPage(html=html.fromstring(response.content))
+            if not page.daily_leaders:
+                raise InvalidDate(day=day, month=month, year=year)
             return self.parser.parse_player_box_scores(box_scores=page.daily_leaders)
 
         raise InvalidDate(day=day, month=month, year=year)
@@ -58,7 +63,7 @@ class HTTPService:
             season_end_year=season_end_year,
         )
 
-        response = requests.get(url=url, allow_redirects=False)
+        response = self._get(url=url, allow_redirects=False)
         response.raise_for_status()
 
         page = PlayerSeasonBoxScoresPage(html=html.fromstring(response.content))
@@ -79,7 +84,7 @@ class HTTPService:
             season_end_year=season_end_year,
         )
 
-        response = requests.get(url=url, allow_redirects=False)
+        response = self._get(url=url, allow_redirects=False)
         response.raise_for_status()
 
         page = PlayerSeasonBoxScoresPage(html=html.fromstring(response.content))
@@ -96,7 +101,7 @@ class HTTPService:
             BASE_URL=HTTPService.BASE_URL, year=year, month=add_0_if_needed(str(month)), day=add_0_if_needed(str(day)),
             team_abbr=TEAM_TO_TEAM_ABBREVIATION[home_team]
         )
-        response = requests.get(url=url)
+        response = self._get(url=url)
         response.raise_for_status()
 
         page = PlayByPlayPage(html=html.fromstring(response.content))
@@ -113,7 +118,7 @@ class HTTPService:
             season_end_year=season_end_year,
         )
 
-        response = requests.get(url=url)
+        response = self._get(url=url)
 
         response.raise_for_status()
 
@@ -126,7 +131,7 @@ class HTTPService:
             season_end_year=season_end_year,
         )
 
-        response = requests.get(url=url)
+        response = self._get(url=url)
 
         response.raise_for_status()
 
@@ -134,7 +139,7 @@ class HTTPService:
         return self.parser.parse_player_season_totals(totals=table.rows)
 
     def schedule_for_month(self, url):
-        response = requests.get(url=url)
+        response = self._get(url=url)
 
         response.raise_for_status()
 
@@ -147,7 +152,7 @@ class HTTPService:
             season_end_year=season_end_year
         )
 
-        response = requests.get(url=url)
+        response = self._get(url=url)
 
         response.raise_for_status()
 
@@ -164,7 +169,7 @@ class HTTPService:
     def team_box_score(self, game_url_path):
         url = "{BASE_URL}/{game_url_path}".format(BASE_URL=HTTPService.BASE_URL, game_url_path=game_url_path)
 
-        response = requests.get(url=url)
+        response = self._get(url=url)
 
         response.raise_for_status()
 
@@ -182,11 +187,14 @@ class HTTPService:
     def team_box_scores(self, day, month, year):
         url = "{BASE_URL}/boxscores/".format(BASE_URL=HTTPService.BASE_URL)
 
-        response = requests.get(url=url, params={"day": day, "month": month, "year": year})
+        response = self._get(url=url, params={"day": day, "month": month, "year": year})
 
         response.raise_for_status()
 
         page = DailyBoxScoresPage(html=html.fromstring(response.content))
+
+        if not page.game_url_paths:
+            raise InvalidDate(day=day, month=month, year=year)
 
         return [
             box_score
@@ -195,7 +203,7 @@ class HTTPService:
         ]
 
     def search(self, term):
-        response = requests.get(
+        response = self._get(
             url="{BASE_URL}/search/search.fcgi".format(BASE_URL=HTTPService.BASE_URL),
             params={"search": term}
         )
@@ -210,7 +218,7 @@ class HTTPService:
             player_results += parsed_results["players"]
 
             while page.nba_aba_baa_players_pagination_url is not None:
-                response = requests.get(
+                response = self._get(
                     url="{BASE_URL}/search/{pagination_url}".format(
                         BASE_URL=HTTPService.BASE_URL,
                         pagination_url=page.nba_aba_baa_players_pagination_url
@@ -226,16 +234,23 @@ class HTTPService:
 
         elif response.url.startswith("{BASE_URL}/players".format(BASE_URL=HTTPService.BASE_URL)):
             page = PlayerPage(html=html.fromstring(response.content))
-            data = PlayerData(
-                name=page.name,
-                resource_location=response.url,
-                league_abbreviations=set([
-                    row.league_abbreviation
-                    for row in page.totals_table.rows
-                    if row.league_abbreviation is not None
-                ])
-            )
-            player_results += [self.parser.parse_player_data(player=data)]
+            if page.totals_table is None:
+                player_results += [self.parser.parse_player_data(player=PlayerData(
+                    name=page.name,
+                    resource_location=response.url,
+                    league_abbreviations=set(),
+                ))]
+            else:
+                data = PlayerData(
+                    name=page.name,
+                    resource_location=response.url,
+                    league_abbreviations=set([
+                        row.league_abbreviation
+                        for row in page.totals_table.rows
+                        if row.league_abbreviation is not None
+                    ])
+                )
+                player_results += [self.parser.parse_player_data(player=data)]
 
         return {
             "players": player_results
