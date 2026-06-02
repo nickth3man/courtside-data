@@ -3,6 +3,10 @@ import argparse
 import hashlib
 import json
 import random
+import re
+import shutil
+import subprocess
+import sys
 import time
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -921,6 +925,137 @@ FIXTURES = {
 }
 
 
+# ---------------------------------------------------------------------------
+# Drift detection – maps fixture keys → pytest node IDs.
+# Only keys with known snapshot (filecmp-based) tests are included.
+# Phase 3 keys (wnba_*, aba_*, nba_draft_*) have no matching tests → skipped.
+# ---------------------------------------------------------------------------
+FIXTURE_KEY_TO_TEST = {
+    # players_season_totals: 2001 … 2018 (1976-through-2000 have no snapshot tests)
+    **{
+        "players_season_totals_{year}".format(year=year): (
+            "tests/integration/client/test_players_season_totals.py"
+            "::Test{year}PlayerSeasonJSONTotals::test_{year}_json_output"
+        ).format(year=year)
+        for year in range(2001, 2019)
+    },
+    # season_schedule: only 2001 and 2018 have snapshot tests
+    "season_schedule_2001": (
+        "tests/integration/client/test_season_schedule.py"
+        "::Test2001SeasonScheduleCsvOutput::test_output"
+    ),
+    "season_schedule_2018": (
+        "tests/integration/client/test_season_schedule.py"
+        "::Test2018SeasonScheduleCsvOutput::test_output"
+    ),
+    # player_advanced_season_totals
+    "player_advanced_season_totals_2001": (
+        "tests/integration/client/test_players_advanced_season_totals.py"
+        "::Test2001PlayerAdvancedSeasonTotalsJSONOutput"
+        "::test_players_advanced_season_totals_json"
+    ),
+    "player_advanced_season_totals_2016": (
+        "tests/integration/client/test_players_advanced_season_totals.py"
+        "::Test2016PlayerAdvancedSeasonTotalsJSONOutput"
+        "::test_players_advanced_season_totals_json"
+    ),
+    "player_advanced_season_totals_2017": (
+        "tests/integration/client/test_players_advanced_season_totals.py"
+        "::Test2017PlayerAdvancedSeasonTotalsJSONOutput"
+        "::test_players_advanced_season_totals_json"
+    ),
+    "player_advanced_season_totals_2018": (
+        "tests/integration/client/test_players_advanced_season_totals.py"
+        "::Test2018PlayerAdvancedSeasonTotalsJSONOutput"
+        "::test_players_advanced_season_totals_json"
+    ),
+    "player_advanced_season_totals_2019": (
+        "tests/integration/client/test_players_advanced_season_totals.py"
+        "::Test2019PlayerAdvancedSeasonTotalsJSONOutput"
+        "::test_players_advanced_season_totals_json"
+    ),
+    # player_box_scores_daily
+    "player_box_scores_daily_2001_1_1": (
+        "tests/integration/client/test_player_box_scores.py"
+        "::Test20010101::test_json_output"
+    ),
+}
+
+
+def _expected_output_path_for_fixture_key(key):
+    """Return the *expected* output path (relative to repo root) for a fixture key, or None."""
+    m = re.match(r"^players_season_totals_(\d{4})$", key)
+    if m:
+        return Path("tests/integration/client/output/expected/players_season_totals/{year}.json".format(year=m.group(1)))
+
+    m = re.match(r"^season_schedule_(\d{4})$", key)
+    if m:
+        return Path("tests/integration/client/output/expected/season_schedule/{year}.csv".format(year=m.group(1)))
+
+    m = re.match(r"^player_advanced_season_totals_(\d{4})$", key)
+    if m:
+        return Path("tests/integration/client/output/expected/player_advanced_season_totals/{year}.json".format(year=m.group(1)))
+
+    m = re.match(r"^player_box_scores_daily_(\d{4})_(\d+)_(\d+)$", key)
+    if m:
+        return Path(
+            "tests/integration/client/output/expected/player_box_scores/{year}/{month}/{day}.json".format(
+                year=m.group(1), month=m.group(2), day=m.group(3)
+            )
+        )
+
+    return None
+
+
+def promote_to_final_destination(output_root, fixture, copyfile=shutil.copyfile):
+    """Copy a staged fixture to its final destination in tests/integration/files/.
+
+    Returns True on success, False if the staged file doesn't exist.
+    """
+    staged_path = output_root / fixture.path
+    if not staged_path.exists():
+        print(
+            "WARNING: staged fixture {path} does not exist, skipping promotion".format(path=staged_path),
+            file=sys.stderr,
+        )
+        return False
+    fixture.path.parent.mkdir(parents=True, exist_ok=True)
+    copyfile(str(staged_path), str(fixture.path))
+    return True
+
+
+def check_expected_drift(fixture, output_root, run_pytest=subprocess.run):
+    """Detect drift between generated and expected output for *fixture*.
+
+    Returns a warning string if drift is detected, *None* otherwise.
+    """
+    node_id = FIXTURE_KEY_TO_TEST.get(fixture.key)
+    if node_id is None:
+        return None
+
+    expected_path = _expected_output_path_for_fixture_key(fixture.key)
+    if expected_path is None or not expected_path.exists():
+        return None  # nothing to compare against yet
+
+    try:
+        result = run_pytest(
+            [sys.executable, "-m", "pytest", "-q", "--no-header", "--tb=line", node_id],
+            capture_output=True,
+            text=True,
+            timeout=60,
+        )
+    except subprocess.TimeoutExpired:
+        return "[drift] {key}: pytest timed out after 60s".format(key=fixture.key)
+
+    if result.returncode != 0:
+        return "[drift] {key}: {node_id} failed (run scripts/regenerate_expected.py)".format(
+            key=fixture.key,
+            node_id=node_id,
+        )
+
+    return None
+
+
 def parse_args(argv=None):
     parser = argparse.ArgumentParser(description="Safely stage refreshed Basketball-Reference HTML fixtures.")
     parser.add_argument("keys", nargs="*", help="Fixture keys to refresh")
@@ -929,6 +1064,7 @@ def parse_args(argv=None):
     parser.add_argument("--max-requests", type=int, default=DEFAULT_MAX_REQUESTS, help="Maximum live requests per run")
     parser.add_argument("--delay", type=float, default=DEFAULT_DELAY_SECONDS, help="Base delay between requests")
     parser.add_argument("--list", action="store_true", help="List available fixture keys")
+    parser.add_argument("--skip-drift-check", action="store_true", help="Skip post-refresh drift detection")
     return parser.parse_args(argv)
 
 
@@ -954,6 +1090,9 @@ def main(argv=None):
         ))
 
     output_root = Path(args.output_root)
+    skip_drift = args.skip_drift_check
+    drift_warnings = []
+
     for index, key in enumerate(keys):
         result = refresh_fixture(fixture=FIXTURES[key], output_root=output_root)
         print("Staged {key}: {path} ({bytes} bytes, sha256={sha})".format(
@@ -962,8 +1101,28 @@ def main(argv=None):
             bytes=result.byte_count,
             sha=result.sha256,
         ))
+
+        if not skip_drift:
+            promoted = promote_to_final_destination(output_root=output_root, fixture=FIXTURES[key])
+            if promoted:
+                warning = check_expected_drift(fixture=FIXTURES[key], output_root=output_root)
+                if warning:
+                    print(warning, file=sys.stderr)
+                    drift_warnings.append(warning)
+
         if index < len(keys) - 1:
             time.sleep(args.delay + random.uniform(0, 2))
+
+    n_total = len(keys)
+    n_drift = len(drift_warnings)
+    summary = "Refreshed {n} fixtures.".format(n=n_total)
+    if drift_warnings:
+        summary = "{base} {count} warning(s): drift={drift}".format(
+            base=summary, count=n_drift, drift=n_drift,
+        )
+    else:
+        summary = "{base} No drift detected.".format(base=summary)
+    print(summary)
 
     return 0
 

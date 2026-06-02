@@ -30,7 +30,8 @@ class BaseCSVOutputTest(TestCase):
         )
 
     def tearDown(self):
-        os.remove(self.output_file_path)
+        if not os.environ.get("BR_REGEN"):
+            os.remove(self.output_file_path)
 
     @requests_mock.Mocker()
     def assert_csv(self, m):
@@ -70,7 +71,8 @@ class BaseJSONOutputTest(TestCase):
         )
 
     def tearDown(self):
-        os.remove(self.output_file_path)
+        if not os.environ.get("BR_REGEN"):
+            os.remove(self.output_file_path)
 
     @requests_mock.Mocker()
     def assert_json(self, m):

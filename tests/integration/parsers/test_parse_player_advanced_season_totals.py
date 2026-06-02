@@ -15,7 +15,7 @@ class TestPlayersAdvancedSeasonTotals(TestCase):
         with open(os.path.join(
                 os.path.dirname(__file__),
                 f"../files/player_advanced_season_totals/2019.html",
-        ), 'r') as file_input: self._html = file_input.read()
+        ), 'r', encoding="utf-8") as file_input: self._html = file_input.read()
         self.parser = PlayerAdvancedSeasonTotalsParser(
             position_abbreviation_parser=PositionAbbreviationParser(
                 abbreviations_to_positions=POSITION_ABBREVIATIONS_TO_POSITION

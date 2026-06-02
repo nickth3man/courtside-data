@@ -296,7 +296,8 @@ class TestTeamBoxScoresCSVOutput(TestCase):
         )
 
     def tearDown(self):
-        os.remove(self.output_file_path)
+        if not os.environ.get("BR_REGEN"):
+            os.remove(self.output_file_path)
 
     def test_output(self):
         client.team_box_scores(
@@ -349,7 +350,8 @@ class TestTeamBoxScoresJSONOutput(TestCase):
         )
 
     def tearDown(self):
-        os.remove(self.output_file_path)
+        if not os.environ.get("BR_REGEN"):
+            os.remove(self.output_file_path)
 
     def test_output(self):
         client.team_box_scores(

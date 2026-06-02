@@ -266,7 +266,8 @@ class TestCSVStandingsFor2001(TestCase):
         )
 
     def tearDown(self):
-        os.remove(self.output_file_path)
+        if not os.environ.get("BR_REGEN"):
+            os.remove(self.output_file_path)
 
     def test_2001_standings(self):
         standings(
@@ -300,7 +301,8 @@ class TestJSONPlayerBoxScores2001(TestCase):
         )
 
     def tearDown(self):
-        os.remove(self.output_file_path)
+        if not os.environ.get("BR_REGEN"):
+            os.remove(self.output_file_path)
 
     def test_2001_standings(self):
         standings(
@@ -362,7 +364,8 @@ class TestCSVStandingsFor2019(TestCase):
         )
 
     def tearDown(self):
-        os.remove(self.output_file_path)
+        if not os.environ.get("BR_REGEN"):
+            os.remove(self.output_file_path)
 
     def test_2019_standings(self):
         standings(
@@ -396,7 +399,8 @@ class TestJSONPlayerBoxScores2019(TestCase):
         )
 
     def tearDown(self):
-        os.remove(self.output_file_path)
+        if not os.environ.get("BR_REGEN"):
+            os.remove(self.output_file_path)
 
     def test_2019_standings(self):
         standings(

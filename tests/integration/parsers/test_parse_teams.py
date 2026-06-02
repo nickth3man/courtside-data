@@ -16,7 +16,7 @@ class TestParseTeams(TestCase):
         with open(os.path.join(
                 os.path.dirname(__file__),
                 f"../files/boxscores/2017/1/201701010ATL.html",
-        ), 'r') as file_input: _html = file_input.read()
+        ), 'r', encoding="utf-8") as file_input: _html = file_input.read()
         first_team_totals, second_team_totals = [
             TeamTotal(team_abbreviation=table.team_abbreviation, totals=table.team_totals)
             for table in BoxScoresPage(html.fromstring(html=_html)).basic_statistics_tables

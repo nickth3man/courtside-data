@@ -8,15 +8,28 @@ bin/
 lib/
 .vscode/
 
-# Don't commit files from integration test output
-tests/integration/output/**.csv
-tests/integration/output/**.json
-!tests/integration/output/.gitkeep
+# Don't commit generated test outputs (real path: tests/integration/client/output/)
+tests/integration/client/output/generated/*.csv
+tests/integration/client/output/generated/*/*.csv
+tests/integration/client/output/generated/*/*/*.csv
+tests/integration/client/output/generated/*.json
+tests/integration/client/output/generated/*/*.json
+tests/integration/client/output/generated/*/*/*.json
 
 # Don't commit files from end to end test output
 tests/end to end/output/generated/**.json
 tests/end to end/output/generated/**.csv
 !tests/end to end/output/.gitkeep
+
+# Staged fixtures are local-only (HTML is large and replaceable from BR).
+# The .meta.json sidecars are kept so the pre-commit drift hook can compare
+# downloaded_at to expected file mtime (see scripts/check_fixture_sync.py).
+staged_fixtures/**/*.html
+!staged_fixtures/**/.gitkeep
+
+# Stray local artifacts (Windows `nul` device redirect, leftover staging dirs)
+nul
+staged_fixtures_test/
 
 # Ignore generated code coverage files
 .coverage

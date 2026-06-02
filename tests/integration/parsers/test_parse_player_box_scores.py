@@ -22,7 +22,7 @@ class BaseBoxScoresTestCase(TestCase):
         with open(os.path.join(
                 os.path.dirname(__file__),
                 f"../files/player_box_scores/{year}/{month}/{day}.html",
-        ), 'r') as file_input: _html = file_input.read()
+        ), 'r', encoding="utf-8") as file_input: _html = file_input.read()
         cls._parsed_results = PlayerBoxScoresParser(
             team_abbreviation_parser=TeamAbbreviationParser(
                 abbreviations_to_teams=TEAM_ABBREVIATIONS_TO_TEAM

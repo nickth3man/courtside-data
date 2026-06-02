@@ -50,7 +50,8 @@ class BaseTestPlayerAdvancedSeasonTotalsCSVOutput(TestCase):
         )
 
     def tearDown(self):
-        os.remove(self.output_file_path)
+        if not os.environ.get("BR_REGEN"):
+            os.remove(self.output_file_path)
 
     @requests_mock.Mocker()
     def assert_player_advanced_season_totals_csv(self, m):
@@ -96,7 +97,8 @@ class BaseTestPlayerAdvancedSeasonTotalsJSONOutput(TestCase):
         )
 
     def tearDown(self):
-        os.remove(self.output_file_path)
+        if not os.environ.get("BR_REGEN"):
+            os.remove(self.output_file_path)
 
     @requests_mock.Mocker()
     def assert_player_advanced_season_totals_json(self, m):

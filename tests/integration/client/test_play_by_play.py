@@ -194,7 +194,7 @@ class TestPlayByPlayCSVOutput(TestCase):
         with open(os.path.join(
                 os.path.dirname(__file__),
                 "../files/play_by_play/200310290TOR.html",
-        ), 'r') as file_input: self._html = file_input.read();
+        ), 'r', encoding="utf-8") as file_input: self._html = file_input.read();
 
     def tearDown(self):
         os.remove(self.output_file_path)

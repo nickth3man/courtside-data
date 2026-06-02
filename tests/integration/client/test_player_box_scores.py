@@ -67,7 +67,8 @@ class Test20010101(TestCase):
                         "./output/expected/player_box_scores/2001/1/1.json",
                     )))
         finally:
-            os.remove(output_file_path)
+            if not os.environ.get("BR_REGEN"):
+                os.remove(output_file_path)
 
     @requests_mock.Mocker()
     def test_in_memory_json_output(self, m):
@@ -114,7 +115,8 @@ class Test20010101(TestCase):
                         "./output/expected/player_box_scores/2001/1/1.csv",
                     )))
         finally:
-            os.remove(output_file_path)
+            if not os.environ.get("BR_REGEN"):
+                os.remove(output_file_path)
 
 
 class TestPlayerBoxScores(TestCase):

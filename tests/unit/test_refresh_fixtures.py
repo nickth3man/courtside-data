@@ -84,6 +84,128 @@ class TestRefreshFixtures(TestCase):
         with self.assertRaises(self.refresh_fixtures.FixtureRefreshError):
             self.refresh_fixtures.main([])
 
+    # ------------------------------------------------------------------
+    # promote_to_final_destination
+    # ------------------------------------------------------------------
+
+    def test_promote_to_final_destination_copies_staged_to_fixture_path(self):
+        rf = self.refresh_fixtures
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            staged_root = root / "staged"
+
+            fixture = rf.Fixture(
+                key="test_fixture",
+                url="http://example.com/test.html",
+                path=Path("subdir/test.html"),
+                checks=(),
+            )
+
+            staged_src = staged_root / fixture.path
+            staged_src.parent.mkdir(parents=True)
+            staged_src.write_bytes(b"<html>staged</html>")
+
+            copyfile_calls = []
+
+            def tracking_copyfile(src, dst):
+                copyfile_calls.append((src, dst))
+
+            result = rf.promote_to_final_destination(
+                output_root=staged_root,
+                fixture=fixture,
+                copyfile=tracking_copyfile,
+            )
+
+            self.assertTrue(result)
+            self.assertEqual(len(copyfile_calls), 1)
+            self.assertEqual(copyfile_calls[0][0], str(staged_src))
+            self.assertEqual(copyfile_calls[0][1], str(fixture.path))
+
+    def test_promote_to_final_destination_skips_if_staged_missing(self):
+        rf = self.refresh_fixtures
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            fixture = rf.Fixture(
+                key="test_fixture",
+                url="http://example.com/test.html",
+                path=Path("nonexistent.html"),
+                checks=(),
+            )
+            result = rf.promote_to_final_destination(
+                output_root=root / "staged",
+                fixture=fixture,
+                copyfile=lambda src, dst: None,
+            )
+            self.assertFalse(result)
+
+    # ------------------------------------------------------------------
+    # check_expected_drift
+    # ------------------------------------------------------------------
+
+    def test_check_expected_drift_unmapped_key_returns_none(self):
+        """Keys not in FIXTURE_KEY_TO_TEST return None without invoking pytest."""
+        rf = self.refresh_fixtures
+        spy = []
+
+        def fake_pytest(*args, **kwargs):
+            spy.append(True)
+            return _PytestResult(returncode=0)
+
+        result = rf.check_expected_drift(
+            fixture=rf.Fixture(
+                key="unmapped_key",
+                url="http://example.com",
+                path=Path("x.html"),
+                checks=(),
+            ),
+            output_root=Path("/tmp"),
+            run_pytest=fake_pytest,
+        )
+        self.assertIsNone(result)
+        self.assertEqual(len(spy), 0)
+
+    def test_check_expected_drift_pytest_passes_returns_none(self):
+        """When pytest exits 0, drift is None."""
+        rf = self.refresh_fixtures
+        # players_season_totals_2018 is mapped AND its expected file exists
+        fixture = rf.Fixture(
+            key="players_season_totals_2018",
+            url="http://example.com",
+            path=Path("x.html"),
+            checks=(),
+        )
+        result = rf.check_expected_drift(
+            fixture=fixture,
+            output_root=Path("/tmp"),
+            run_pytest=lambda args, **kwargs: _PytestResult(returncode=0),
+        )
+        self.assertIsNone(result)
+
+    def test_check_expected_drift_pytest_fails_returns_warning(self):
+        """When pytest exits non-zero, a drift warning is returned."""
+        rf = self.refresh_fixtures
+        fixture = rf.Fixture(
+            key="players_season_totals_2018",
+            url="http://example.com",
+            path=Path("x.html"),
+            checks=(),
+        )
+        result = rf.check_expected_drift(
+            fixture=fixture,
+            output_root=Path("/tmp"),
+            run_pytest=lambda args, **kwargs: _PytestResult(returncode=1),
+        )
+        self.assertIsNotNone(result)
+        self.assertIn("drift", result.lower())
+        self.assertIn("players_season_totals_2018", result)
+
+
+class _PytestResult:
+    def __init__(self, returncode=0, stdout="", stderr=""):
+        self.returncode = returncode
+        self.stdout = stdout
+        self.stderr = stderr
+
 
 class _Response:
     def __init__(self, status_code=200, content=b"<html></html>", url="https://www.basketball-reference.com/test.html", headers=None):

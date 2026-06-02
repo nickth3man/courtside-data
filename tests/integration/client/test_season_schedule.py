@@ -57,7 +57,7 @@ class TestFutureSeasonSchedule(TestCase):
         with open(os.path.join(
                 os.path.dirname(__file__),
                 f"../files/schedule/not-found.html",
-        ), 'r') as file_input: self._html = file_input.read()
+        ), 'r', encoding="utf-8") as file_input: self._html = file_input.read()
 
     @requests_mock.Mocker()
     def test_future_season_schedule_returns_empty_list(self, m):
@@ -85,7 +85,8 @@ class Test2018SeasonScheduleCsvOutput(TestCase):
         )
 
     def tearDown(self):
-        os.remove(self.output_file_path)
+        if not os.environ.get("BR_REGEN"):
+            os.remove(self.output_file_path)
 
     def test_output(self):
         season_schedule(season_end_year=2018, output_type=OutputType.CSV, output_file_path=self.output_file_path)
@@ -114,7 +115,8 @@ class Test2018SeasonScheduleJsonOutput(TestCase):
         )
 
     def tearDown(self):
-        os.remove(self.output_file_path)
+        if not os.environ.get("BR_REGEN"):
+            os.remove(self.output_file_path)
 
     def test_file_output(self):
         season_schedule(season_end_year=2018, output_type=OutputType.JSON, output_file_path=self.output_file_path)
@@ -166,7 +168,8 @@ class Test2001SeasonScheduleCsvOutput(TestCase):
         )
 
     def tearDown(self):
-        os.remove(self.output_file_path)
+        if not os.environ.get("BR_REGEN"):
+            os.remove(self.output_file_path)
 
     def test_output(self):
         season_schedule(season_end_year=2001, output_type=OutputType.CSV, output_file_path=self.output_file_path)
@@ -195,7 +198,8 @@ class Test2018SeasonScheduleJsonOutput(TestCase):
         )
 
     def tearDown(self):
-        os.remove(self.output_file_path)
+        if not os.environ.get("BR_REGEN"):
+            os.remove(self.output_file_path)
 
     def test_file_output(self):
         season_schedule(season_end_year=2001, output_type=OutputType.JSON, output_file_path=self.output_file_path)
