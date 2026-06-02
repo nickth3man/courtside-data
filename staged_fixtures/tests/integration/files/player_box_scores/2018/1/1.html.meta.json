@@ -1,0 +1,9 @@
+{
+  "byte_count": 263070,
+  "content_type": "text/html; charset=utf-8",
+  "downloaded_at": "2026-06-02T10:49:25.306418+00:00",
+  "sha256": "8da3a0a0e825da29188071a817758dcf4eec8d5d5d7395f83a21187c9d624d0f",
+  "status_code": 200,
+  "tool": "requests",
+  "url": "https://www.basketball-reference.com/friv/dailyleaders.cgi?month=1&day=1&year=2018"
+}

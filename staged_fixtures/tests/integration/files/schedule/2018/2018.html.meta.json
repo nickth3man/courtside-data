@@ -1,0 +1,9 @@
+{
+  "byte_count": 304802,
+  "content_type": "text/html",
+  "downloaded_at": "2026-06-02T10:53:13.242932+00:00",
+  "sha256": "2f65bdcfc30839a5168f0e3412dfdb123357d99fbfb93eb24c2352ba1d852c2c",
+  "status_code": 200,
+  "tool": "requests",
+  "url": "https://www.basketball-reference.com/leagues/NBA_2018_games.html"
+}

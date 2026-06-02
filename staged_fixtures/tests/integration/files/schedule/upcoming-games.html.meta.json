@@ -1,0 +1,9 @@
+{
+  "byte_count": 145150,
+  "content_type": "text/html; charset=utf-8",
+  "downloaded_at": "2026-06-02T10:55:13.926880+00:00",
+  "sha256": "257c3501bda0cf345b6c2b4f7b48826bb4bdcf6ed34d66cdaad778a9011f025d",
+  "status_code": 200,
+  "tool": "requests",
+  "url": "https://www.basketball-reference.com/boxscores/"
+}
