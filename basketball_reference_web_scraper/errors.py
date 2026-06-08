@@ -26,3 +26,17 @@ class InvalidSearch(Exception):
     def __init__(self, term):
         message = "Search term \"{term}\" returned no results".format(term=term)
         super().__init__(message)
+
+
+class InvalidPlayer(Exception):
+    def __init__(self, player_identifier):
+        self.player_identifier = player_identifier
+        message = "Invalid player: {player_identifier}".format(player_identifier=player_identifier)
+        super().__init__(message)
+
+
+class InvalidTeam(Exception):
+    def __init__(self, team_abbreviation):
+        self.team_abbreviation = team_abbreviation
+        message = "Invalid team: {team_abbreviation}".format(team_abbreviation=team_abbreviation)
+        super().__init__(message)

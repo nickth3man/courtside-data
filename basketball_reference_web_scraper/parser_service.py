@@ -1,5 +1,6 @@
 from basketball_reference_web_scraper.data import TEAM_ABBREVIATIONS_TO_TEAM, LOCATION_ABBREVIATIONS_TO_POSITION, OUTCOME_ABBREVIATIONS_TO_OUTCOME, TEAM_NAME_TO_TEAM, \
     POSITION_ABBREVIATIONS_TO_POSITION, LEAGUE_ABBREVIATIONS_TO_LEAGUE, Division, Team, DIVISIONS_TO_CONFERENCES
+from basketball_reference_web_scraper.html import GenericTable
 from basketball_reference_web_scraper.parsers import PositionAbbreviationParser, TeamAbbreviationParser, \
     PlayerSeasonTotalsParser, TeamTotalsParser, LocationAbbreviationParser, OutcomeAbbreviationParser, \
     SecondsPlayedParser, PlayerBoxScoresParser, PlayerAdvancedSeasonTotalsParser, PeriodDetailsParser, \
@@ -118,3 +119,17 @@ class ParserService:
 
     def parse_player_data(self, player):
         return self.player_data_parser.parse(player=player)
+
+    def parse_generic_table(self, table: 'GenericTable') -> list[dict[str, str]]:
+        """Convert a GenericTable to a list of dictionaries.
+
+        Each row becomes a dict where keys are data-stat attribute values
+        and values are the cell text content.
+
+        Args:
+            table: A GenericTable instance from html.py
+
+        Returns:
+            List of dicts, one per data row
+        """
+        return [row.to_dict() for row in table.rows]
