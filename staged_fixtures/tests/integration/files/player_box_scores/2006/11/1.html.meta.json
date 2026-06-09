@@ -1,0 +1,9 @@
+{
+  "byte_count": 570067,
+  "content_type": "text/html; charset=utf-8",
+  "downloaded_at": "2026-06-02T17:59:12.583979+00:00",
+  "sha256": "0536a097d941ffbc123543a2af459269f4e56550a4569f538e88d41670033c63",
+  "status_code": 200,
+  "tool": "requests",
+  "url": "https://www.basketball-reference.com/friv/dailyleaders.cgi?month=11&day=1&year=2006"
+}

@@ -1,0 +1,9 @@
+{
+  "byte_count": 1523620,
+  "content_type": "text/html",
+  "downloaded_at": "2026-06-02T18:01:58.954496+00:00",
+  "sha256": "ddd3586405c9c96e62e90ac6aacd780b8843122451c022b18927d60c6b815da1",
+  "status_code": 200,
+  "tool": "requests",
+  "url": "https://www.basketball-reference.com/leagues/NBA_2005_totals.html"
+}

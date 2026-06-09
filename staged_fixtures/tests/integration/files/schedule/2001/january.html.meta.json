@@ -1,0 +1,9 @@
+{
+  "byte_count": 480425,
+  "content_type": "text/html",
+  "downloaded_at": "2026-06-02T18:08:00.995160+00:00",
+  "sha256": "1f1392a87efdce49bc8fe173d8ad6ab616edd100bce579ac292529d957c00188",
+  "status_code": 200,
+  "tool": "requests",
+  "url": "https://www.basketball-reference.com/leagues/NBA_2001_games-january.html"
+}

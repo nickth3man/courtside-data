@@ -1,0 +1,9 @@
+{
+  "byte_count": 1565537,
+  "content_type": "text/html",
+  "downloaded_at": "2026-06-02T18:02:38.094635+00:00",
+  "sha256": "315ecbd0607f7b149e620d48239e7b89673b40d919a288d9677bd8757d4a2ee4",
+  "status_code": 200,
+  "tool": "requests",
+  "url": "https://www.basketball-reference.com/leagues/NBA_2008_totals.html"
+}

@@ -62,7 +62,7 @@ TRIPWIRE_LENGTHS: dict[tuple[str, int], int] = {
     ("players_season_totals", 2018): 605,
     ("players_season_totals", 2019): 622,
     # season_schedule – TestSeasonScheduleInMemoryOutput::test_2018_season_schedule_length
-    ("season_schedule", 2018): 1416,
+    ("season_schedule", 2018): 1312,
     # standings – Test{year}StandingsInMemory::test_{year}_standings
     ("standings", 2000): 29,
     ("standings", 2001): 29,

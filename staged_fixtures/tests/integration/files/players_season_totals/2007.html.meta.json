@@ -1,0 +1,9 @@
+{
+  "byte_count": 1406687,
+  "content_type": "text/html",
+  "downloaded_at": "2026-06-02T18:02:23.144551+00:00",
+  "sha256": "da79452f6f5a2346c1f6d60727cc41346de8c422593eab4be001d7ce290380d6",
+  "status_code": 200,
+  "tool": "requests",
+  "url": "https://www.basketball-reference.com/leagues/NBA_2007_totals.html"
+}

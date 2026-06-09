@@ -1,0 +1,9 @@
+{
+  "byte_count": 232420,
+  "content_type": "text/html; charset=UTF-8",
+  "downloaded_at": "2026-06-02T18:19:37.517126+00:00",
+  "sha256": "cacd499b3c9254172b4a8ce151fce9fe87caa580dba8abd341338b3f1939d7bd",
+  "status_code": 200,
+  "tool": "requests",
+  "url": "https://www.basketball-reference.com/wnba/players/w/wilsoa01w/gamelog/2024"
+}

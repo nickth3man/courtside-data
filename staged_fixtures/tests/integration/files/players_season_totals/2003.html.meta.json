@@ -1,0 +1,9 @@
+{
+  "byte_count": 1340062,
+  "content_type": "text/html",
+  "downloaded_at": "2026-06-02T18:01:33.444328+00:00",
+  "sha256": "c1a38d6d1cb3c99711d363950bea217f957c9b4d3eba908d831d1dd6c94fe845",
+  "status_code": 200,
+  "tool": "requests",
+  "url": "https://www.basketball-reference.com/leagues/NBA_2003_totals.html"
+}

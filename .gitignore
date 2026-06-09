@@ -49,3 +49,18 @@ pyvenv.cfg
 # caches
 .pytest_cache/
 **/*/__pycache__/
+
+# Local opencode/slim state
+.slim/
+
+# Local AI tooling artifacts
+.ignore
+
+# Generated codemaps
+codemap.md
+basketball_reference_web_scraper/codemap.md
+basketball_reference_web_scraper/output/codemap.md
+
+# Local analysis / sample data
+endpoint_samples.csv
+missing_datapoints.md

@@ -1,0 +1,9 @@
+{
+  "byte_count": 460083,
+  "content_type": "text/html",
+  "downloaded_at": "2026-06-02T18:06:07.709664+00:00",
+  "sha256": "8fdc92241cbe2c6fb76ae9e70ffd1cc6904275cce563e1b3c192538f0e4a5047",
+  "status_code": 200,
+  "tool": "requests",
+  "url": "https://www.basketball-reference.com/leagues/NBA_2000_games.html"
+}

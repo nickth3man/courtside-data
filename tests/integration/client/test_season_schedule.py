@@ -23,7 +23,7 @@ class TestSeasonScheduleInMemoryOutput(TestCase):
 
     def test_2018_season_schedule_length(self):
         result = season_schedule(season_end_year=2018)
-        self.assertEqual(1416, len(result))
+        self.assertEqual(1312, len(result))
 
     def test_first_game_of_2018_season(self):
         result = season_schedule(season_end_year=2018)

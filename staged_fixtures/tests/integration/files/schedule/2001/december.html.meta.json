@@ -1,0 +1,9 @@
+{
+  "byte_count": 485365,
+  "content_type": "text/html",
+  "downloaded_at": "2026-06-02T18:07:49.154769+00:00",
+  "sha256": "633e51fd79cc4d4173ef3c141c90a09b32882aecc1c81bfd0310423d2693bde2",
+  "status_code": 200,
+  "tool": "requests",
+  "url": "https://www.basketball-reference.com/leagues/NBA_2001_games-december.html"
+}

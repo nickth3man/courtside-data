@@ -1,5 +1,6 @@
 import os
 import random
+import re
 import time
 
 import requests
@@ -68,6 +69,42 @@ class HTTPService:
     def _get(self, url, **kwargs):
         self._apply_rate_limiting()
         return self._session.get(url=url, **kwargs)
+
+    @staticmethod
+    def _clean_text(values):
+        return re.sub(r'\s+', ' ', ' '.join(values)).strip()
+
+    @classmethod
+    def _parse_transaction_list(cls, selector):
+        transactions = []
+        for day in selector.css('ul.page_index > li'):
+            date = cls._clean_text(day.xpath('./span//text()').getall())
+            for transaction in day.xpath('./p[normalize-space()]'):
+                linked_resources = []
+                from_team_abbreviations = []
+                to_team_abbreviations = []
+                for link in transaction.css('a'):
+                    from_team = link.attrib.get('data-attr-from')
+                    to_team = link.attrib.get('data-attr-to')
+                    if from_team:
+                        from_team_abbreviations.append(from_team)
+                    if to_team:
+                        to_team_abbreviations.append(to_team)
+                    linked_resources.append({
+                        'text': cls._clean_text(link.css('::text').getall()),
+                        'href': link.attrib.get('href', ''),
+                        'from_team_abbreviation': from_team or '',
+                        'to_team_abbreviation': to_team or '',
+                    })
+
+                transactions.append({
+                    'date': date,
+                    'transaction': cls._clean_text(transaction.css('::text').getall()),
+                    'from_team_abbreviations': from_team_abbreviations,
+                    'to_team_abbreviations': to_team_abbreviations,
+                    'linked_resources': linked_resources,
+                })
+        return transactions
 
     def standings(self, season_end_year):
         url = '{BASE_URL}/leagues/NBA_{season_end_year}.html'.format(
@@ -373,38 +410,46 @@ class HTTPService:
         return self.parser.parse_generic_table(table)
 
     def standings_by_date(self, season_end_year):
-        url = '{BASE_URL}/leagues/NBA_{season_end_year}_standings_by_date.html'.format(
-            BASE_URL=HTTPService.BASE_URL,
-            season_end_year=season_end_year,
-        )
-        response = self._get(url=url, allow_redirects=False)
-        response.raise_for_status()
+        standings = []
+        for conference in ['eastern_conference', 'western_conference']:
+            url = '{BASE_URL}/leagues/NBA_{season_end_year}_standings_by_date_{conference}.html'.format(
+                BASE_URL=HTTPService.BASE_URL,
+                season_end_year=season_end_year,
+                conference=conference,
+            )
+            response = self._get(url=url, allow_redirects=False)
+            response.raise_for_status()
 
-        selector = Selector(text=response.text)
-        table_selector = selector.css('table#standings')
-        if not table_selector:
-            return []
-
-        table = GenericTable(table_selector[0])
-        return self.parser.parse_generic_table(table)
+            selector = Selector(text=response.text)
+            table_selector = selector.css('table#standings_by_date')
+            if table_selector:
+                table = GenericTable(table_selector[0])
+                standings.extend(self.parser.parse_generic_table(table))
+        return standings
 
     def attendance(self, season_end_year):
-        url = '{BASE_URL}/leagues/NBA_{season_end_year}_attendance.html'.format(
+        url = '{BASE_URL}/leagues/NBA_{season_end_year}.html'.format(
             BASE_URL=HTTPService.BASE_URL,
             season_end_year=season_end_year,
         )
         response = self._get(url=url, allow_redirects=False)
-        if response.status_code == 404:
-            return []
         response.raise_for_status()
 
         selector = Selector(text=response.text)
-        table_selector = selector.css('table#attendance')
+        table_selector = selector.css('table#advanced-team')
         if not table_selector:
             return []
 
         table = GenericTable(table_selector[0])
-        return self.parser.parse_generic_table(table)
+        return [
+            {
+                'team': row.get('team', ''),
+                'arena_name': row.get('arena_name', ''),
+                'attendance': row.get('attendance', ''),
+                'attendance_per_g': row.get('attendance_per_g', ''),
+            }
+            for row in table.rows
+        ]
 
     def league_transactions(self, season_end_year):
         url = '{BASE_URL}/leagues/NBA_{season_end_year}_transactions.html'.format(
@@ -417,7 +462,7 @@ class HTTPService:
         selector = Selector(text=response.text)
         table_selector = selector.css('table#transactions')
         if not table_selector:
-            return []
+            return self._parse_transaction_list(selector)
 
         table = GenericTable(table_selector[0])
         return self.parser.parse_generic_table(table)
@@ -524,7 +569,7 @@ class HTTPService:
         selector = Selector(text=response.text)
         table_selector = selector.css('table#transactions')
         if not table_selector:
-            return []
+            return self._parse_transaction_list(selector)
 
         from basketball_reference_web_scraper.html import GenericTable
         table = GenericTable(table_selector[0])
@@ -560,7 +605,7 @@ class HTTPService:
             return []
 
         from basketball_reference_web_scraper.html import GenericTable
-        table = GenericTable(table_selector[0])
+        table = GenericTable(table_selector[0], use_header_fallback=True)
         return self.parser.parse_generic_table(table)
 
     def career_leaders(self):
@@ -575,7 +620,7 @@ class HTTPService:
             return []
 
         from basketball_reference_web_scraper.html import GenericTable
-        table = GenericTable(table_selector[0])
+        table = GenericTable(table_selector[0], use_header_fallback=True)
         return self.parser.parse_generic_table(table)
 
     def playoff_bracket(self, season_end_year):
@@ -593,7 +638,7 @@ class HTTPService:
             return []
 
         from basketball_reference_web_scraper.html import GenericTable
-        table = GenericTable(table_selector[0])
+        table = GenericTable(table_selector[0], use_header_fallback=True)
         return self.parser.parse_generic_table(table)
 
     def season_awards(self, season_end_year):

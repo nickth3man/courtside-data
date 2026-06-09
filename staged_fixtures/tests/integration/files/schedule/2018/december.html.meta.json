@@ -1,0 +1,9 @@
+{
+  "byte_count": 502339,
+  "content_type": "text/html",
+  "downloaded_at": "2026-06-02T18:09:18.705365+00:00",
+  "sha256": "832083fb7c95e494cb3327e2d7c8461d59cc5288152fbc4493ab154e3fb4bc34",
+  "status_code": 200,
+  "tool": "requests",
+  "url": "https://www.basketball-reference.com/leagues/NBA_2018_games-december.html"
+}

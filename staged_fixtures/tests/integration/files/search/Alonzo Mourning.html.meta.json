@@ -1,0 +1,9 @@
+{
+  "byte_count": 92788,
+  "content_type": "text/html; charset=utf-8",
+  "downloaded_at": "2026-06-02T18:12:43.205474+00:00",
+  "sha256": "2c586f15ebb622743dd25d745abd1de6379fb13ff7a9371b98feef4df4aef483",
+  "status_code": 200,
+  "tool": "requests",
+  "url": "https://www.basketball-reference.com/search/search.fcgi?search=Alonzo+Mourning"
+}

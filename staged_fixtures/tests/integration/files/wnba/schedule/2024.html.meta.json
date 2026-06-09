@@ -1,0 +1,9 @@
+{
+  "byte_count": 297082,
+  "content_type": "text/html",
+  "downloaded_at": "2026-06-02T18:19:15.151301+00:00",
+  "sha256": "5ec1e4ab5c33ec7b79cd340c0dab3af8de4eda729a59194f87fed678f4bb886e",
+  "status_code": 200,
+  "tool": "requests",
+  "url": "https://www.basketball-reference.com/wnba/years/2024_games.html"
+}

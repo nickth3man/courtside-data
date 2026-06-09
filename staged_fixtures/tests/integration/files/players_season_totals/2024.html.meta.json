@@ -1,0 +1,9 @@
+{
+  "byte_count": 1835841,
+  "content_type": "text/html",
+  "downloaded_at": "2026-06-02T18:05:55.784615+00:00",
+  "sha256": "701b41f172b7233d03fddd5762b46ceed3a5cb1911bdd3d140eed414c779574d",
+  "status_code": 200,
+  "tool": "requests",
+  "url": "https://www.basketball-reference.com/leagues/NBA_2024_totals.html"
+}

@@ -1,0 +1,9 @@
+{
+  "byte_count": 252638,
+  "content_type": "text/html",
+  "downloaded_at": "2026-06-02T17:57:21.061896+00:00",
+  "sha256": "0c716bd6978d93d518e36238f5fea1bece548a05fe2d055382ecd54fbb9d7ad5",
+  "status_code": 200,
+  "tool": "requests",
+  "url": "https://www.basketball-reference.com/boxscores/pbp/201810270MIL.html"
+}

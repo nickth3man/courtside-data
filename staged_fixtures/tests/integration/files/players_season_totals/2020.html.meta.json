@@ -1,0 +1,9 @@
+{
+  "byte_count": 1690695,
+  "content_type": "text/html",
+  "downloaded_at": "2026-06-02T18:05:02.604478+00:00",
+  "sha256": "4df476a2e527a24b7ef1ef5d357980d60d56d0d74ab3836281571ef93f3dde0b",
+  "status_code": 200,
+  "tool": "requests",
+  "url": "https://www.basketball-reference.com/leagues/NBA_2020_totals.html"
+}

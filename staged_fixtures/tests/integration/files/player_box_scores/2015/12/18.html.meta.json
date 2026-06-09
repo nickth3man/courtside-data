@@ -1,0 +1,9 @@
+{
+  "byte_count": 534722,
+  "content_type": "text/html; charset=utf-8",
+  "downloaded_at": "2026-06-02T17:59:23.544079+00:00",
+  "sha256": "db14cebbcfde1330166e8da54419cf2c7c883f9351a7fb62e3fca93f5c4840c2",
+  "status_code": 200,
+  "tool": "requests",
+  "url": "https://www.basketball-reference.com/friv/dailyleaders.cgi?month=12&day=18&year=2015"
+}

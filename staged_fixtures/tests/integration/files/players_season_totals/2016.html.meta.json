@@ -1,0 +1,9 @@
+{
+  "byte_count": 1559769,
+  "content_type": "text/html",
+  "downloaded_at": "2026-06-02T18:04:27.354678+00:00",
+  "sha256": "26b1e14b5c9140fadc2ef2e4c7bc68062642be0ed9c2f599c268b9638c912ac3",
+  "status_code": 200,
+  "tool": "requests",
+  "url": "https://www.basketball-reference.com/leagues/NBA_2016_totals.html"
+}

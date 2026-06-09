@@ -1,0 +1,9 @@
+{
+  "byte_count": 1604554,
+  "content_type": "text/html",
+  "downloaded_at": "2026-06-02T18:03:25.774598+00:00",
+  "sha256": "05f9bb4bc378e93e4f0ba3d88dc891e0c44aee6e2c9d58b4d8c5eee87661dff1",
+  "status_code": 200,
+  "tool": "requests",
+  "url": "https://www.basketball-reference.com/leagues/NBA_2011_totals.html"
+}

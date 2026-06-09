@@ -1536,15 +1536,21 @@ class GenericTableRow:
     Cell attributes (except data-stat) are exposed via the metadata property.
     """
     
-    def __init__(self, selector: Selector) -> None:
+    def __init__(self, selector: Selector, fallback_headers: Optional[list[str]] = None) -> None:
         self._data: dict[str, str] = {}
         self._metadata: dict[str, dict[str, str]] = {}
-        for cell in selector.css('td, th'):
+        for index, cell in enumerate(selector.css('td, th')):
             stat: Optional[str] = cell.attrib.get('data-stat')
+            if not stat and fallback_headers is not None:
+                stat = fallback_headers[index] if index < len(fallback_headers) else f'col_{index + 1}'
             if stat:
-                text: str = cell.css('::text').get('').strip()
+                text: str = ' '.join(
+                    value.strip()
+                    for value in cell.css('::text').getall()
+                    if value.strip()
+                )
                 # Remove asterisks (used for player notes like All-Star)
-                self._data[stat] = text.replace('*', '')
+                self._data[stat] = text.replace('*', '').strip()
                 # Collect all attributes from the cell and its descendants
                 # (e.g., data-append-csv is sometimes on child <a> tags)
                 all_attrs: dict[str, str] = {}
@@ -1575,10 +1581,17 @@ class GenericTable:
     instances for each data row.
     """
     
-    def __init__(self, table_selector: Selector) -> None:
+    def __init__(self, table_selector: Selector, use_header_fallback: bool = False) -> None:
         self.rows: list[GenericTableRow] = []
-        for row in table_selector.css('tbody tr:not(.thead)'):
-            generic_row = GenericTableRow(row)
+        row_selectors = table_selector.css('tbody tr:not(.thead)')
+        if not row_selectors:
+            row_selectors = table_selector.css('tr:not(.thead)')
+        fallback_headers = self._fallback_headers(table_selector) if use_header_fallback else None
+
+        for row in row_selectors:
+            if self._is_header_row(row):
+                continue
+            generic_row = GenericTableRow(row, fallback_headers=fallback_headers)
             if generic_row._data:
                 self.rows.append(generic_row)
     
@@ -1587,6 +1600,27 @@ class GenericTable:
     
     def __getitem__(self, index: int) -> GenericTableRow:
         return self.rows[index]
+
+    @staticmethod
+    def _is_header_row(row: Selector) -> bool:
+        cells = row.css('td, th')
+        return bool(cells) and not row.css('td') and bool(row.css('th'))
+
+    @classmethod
+    def _fallback_headers(cls, table_selector: Selector) -> list[str]:
+        for row in table_selector.css('tr'):
+            cells = row.css('td, th')
+            if cells and not row.css('td') and row.css('th'):
+                return [
+                    cls._normalize_header(cell.attrib.get('data-stat') or cell.css('::text').get(''))
+                    for cell in cells
+                ]
+        return []
+
+    @staticmethod
+    def _normalize_header(value: str) -> str:
+        header = re.sub(r'[^0-9A-Za-z]+', '_', value.strip().lower()).strip('_')
+        return header or 'col'
 
 
 def extract_commented_table(selector: Selector, table_id: str) -> Optional[Selector]:

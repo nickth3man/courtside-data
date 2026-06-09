@@ -1,0 +1,9 @@
+{
+  "byte_count": 484399,
+  "content_type": "text/html",
+  "downloaded_at": "2026-06-02T18:09:31.145248+00:00",
+  "sha256": "4e10a286f6830b52174ca4a3e04b1e232a5263815bade685eb6af4497bd91161",
+  "status_code": 200,
+  "tool": "requests",
+  "url": "https://www.basketball-reference.com/leagues/NBA_2018_games-january.html"
+}

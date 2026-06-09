@@ -1,0 +1,9 @@
+{
+  "byte_count": 1441264,
+  "content_type": "text/html",
+  "downloaded_at": "2026-06-02T18:01:08.461187+00:00",
+  "sha256": "d83f96b5b6bd78c68f3090b715306626f72dee4175d2148508d134860a19e10d",
+  "status_code": 200,
+  "tool": "requests",
+  "url": "https://www.basketball-reference.com/leagues/NBA_2001_totals.html"
+}

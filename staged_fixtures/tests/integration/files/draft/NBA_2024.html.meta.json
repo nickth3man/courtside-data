@@ -1,0 +1,9 @@
+{
+  "byte_count": 242489,
+  "content_type": "text/html",
+  "downloaded_at": "2026-06-02T18:20:03.366556+00:00",
+  "sha256": "c283cd164ba44dae853332a6877a65f0f289ac3a7320bf6416c49c404854f534",
+  "status_code": 200,
+  "tool": "requests",
+  "url": "https://www.basketball-reference.com/draft/NBA_2024.html"
+}

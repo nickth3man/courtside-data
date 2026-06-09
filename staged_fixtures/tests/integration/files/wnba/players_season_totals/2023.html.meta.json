@@ -1,0 +1,9 @@
+{
+  "byte_count": 404665,
+  "content_type": "text/html",
+  "downloaded_at": "2026-06-02T18:18:49.511546+00:00",
+  "sha256": "3f77e94d32540c2a865e11f8a6bc0374d39b754bb40b4f215be772d12909c1f2",
+  "status_code": 200,
+  "tool": "requests",
+  "url": "https://www.basketball-reference.com/wnba/years/2023_totals.html"
+}

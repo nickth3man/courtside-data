@@ -1,0 +1,9 @@
+{
+  "byte_count": 158276,
+  "content_type": "text/html",
+  "downloaded_at": "2026-06-02T18:07:25.886884+00:00",
+  "sha256": "66e8e1a4c890970871dec671662f8265fe660bf74b36bdbff9e7edb7af5a05ba",
+  "status_code": 200,
+  "tool": "requests",
+  "url": "https://www.basketball-reference.com/leagues/NBA_2001_games-october.html"
+}

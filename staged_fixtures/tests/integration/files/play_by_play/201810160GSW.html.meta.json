@@ -1,0 +1,9 @@
+{
+  "byte_count": 258359,
+  "content_type": "text/html",
+  "downloaded_at": "2026-06-02T17:57:04.993611+00:00",
+  "sha256": "ecbf3554bcef683491d68d1fa90c009182f9b963709bd2ab0476a8ca7f605528",
+  "status_code": 200,
+  "tool": "requests",
+  "url": "https://www.basketball-reference.com/boxscores/pbp/201810160GSW.html"
+}

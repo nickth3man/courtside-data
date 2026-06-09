@@ -1,0 +1,9 @@
+{
+  "byte_count": 1496692,
+  "content_type": "text/html",
+  "downloaded_at": "2026-06-02T18:02:11.130308+00:00",
+  "sha256": "c183c96a5c0fdefe3285557ffb4ac445689623f7a25d5a8eca3aec8d5b50d97c",
+  "status_code": 200,
+  "tool": "requests",
+  "url": "https://www.basketball-reference.com/leagues/NBA_2006_totals.html"
+}

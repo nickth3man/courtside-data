@@ -1,0 +1,9 @@
+{
+  "byte_count": 90701,
+  "content_type": "text/html; charset=utf-8",
+  "downloaded_at": "2026-06-02T18:13:20.540575+00:00",
+  "sha256": "824efcc73e48eee823e407b87918e717e854e6d504ed0f293d8585d97140bdb6",
+  "status_code": 200,
+  "tool": "requests",
+  "url": "https://www.basketball-reference.com/search/search.fcgi?search=jaebaebae"
+}

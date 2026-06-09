@@ -1,0 +1,9 @@
+{
+  "byte_count": 1490507,
+  "content_type": "text/html",
+  "downloaded_at": "2026-06-02T18:03:36.924453+00:00",
+  "sha256": "bee1cb631e54782c177ce3eb9f91324901352cbb5597a523a2c6db08a502c0bb",
+  "status_code": 200,
+  "tool": "requests",
+  "url": "https://www.basketball-reference.com/leagues/NBA_2012_totals.html"
+}

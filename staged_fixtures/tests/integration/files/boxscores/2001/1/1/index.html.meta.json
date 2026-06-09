@@ -1,0 +1,9 @@
+{
+  "byte_count": 146525,
+  "content_type": "text/html; charset=utf-8",
+  "downloaded_at": "2026-06-02T18:10:47.305167+00:00",
+  "sha256": "871d27b5e7c27b0ccfd7f57b0cf9bc9114d3580ecf3dbf72e61898e8df1190b5",
+  "status_code": 200,
+  "tool": "requests",
+  "url": "https://www.basketball-reference.com/boxscores/?day=1&month=1&year=2001"
+}

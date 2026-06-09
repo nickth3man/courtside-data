@@ -1,0 +1,9 @@
+{
+  "byte_count": 104528,
+  "content_type": "text/html; charset=utf-8",
+  "downloaded_at": "2026-06-02T18:12:31.750403+00:00",
+  "sha256": "6f5c82cce6eec41de74473856ea941ed5d76f24aee5761a906e4dd5d800bf5e4",
+  "status_code": 200,
+  "tool": "requests",
+  "url": "https://www.basketball-reference.com/search/search.fcgi?search=Alonz"
+}

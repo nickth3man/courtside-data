@@ -1,0 +1,9 @@
+{
+  "byte_count": 456995,
+  "content_type": "text/html",
+  "downloaded_at": "2026-06-02T18:11:09.738384+00:00",
+  "sha256": "655328f4500336336fb6bf4311150ac4d04d61b7194847320312b527c43cae40",
+  "status_code": 200,
+  "tool": "requests",
+  "url": "https://www.basketball-reference.com/boxscores/200101010POR.html"
+}

@@ -1,0 +1,9 @@
+{
+  "byte_count": 357367,
+  "content_type": "text/html; charset=UTF-8",
+  "downloaded_at": "2026-06-02T18:00:27.794405+00:00",
+  "sha256": "29d94ef305845a33e47a8a0e16019d1b581a39edc5600eecc2a974cf94c3ae1b",
+  "status_code": 200,
+  "tool": "requests",
+  "url": "https://www.basketball-reference.com/players/b/bradlav01/gamelog/2019"
+}

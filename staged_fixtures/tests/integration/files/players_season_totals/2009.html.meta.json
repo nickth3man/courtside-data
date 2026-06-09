@@ -1,0 +1,9 @@
+{
+  "byte_count": 1536877,
+  "content_type": "text/html",
+  "downloaded_at": "2026-06-02T18:02:49.634292+00:00",
+  "sha256": "bec48577a61519ebc3fe46304013b4f7ac7f73a8964963db8ad9801325e78352",
+  "status_code": 200,
+  "tool": "requests",
+  "url": "https://www.basketball-reference.com/leagues/NBA_2009_totals.html"
+}

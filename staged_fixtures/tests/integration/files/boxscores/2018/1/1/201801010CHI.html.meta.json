@@ -1,0 +1,9 @@
+{
+  "byte_count": 493463,
+  "content_type": "text/html",
+  "downloaded_at": "2026-06-02T18:11:56.679327+00:00",
+  "sha256": "e411af58423b00100dc602fc94f666756f2711010c977b94c60885946856fea0",
+  "status_code": 200,
+  "tool": "requests",
+  "url": "https://www.basketball-reference.com/boxscores/201801010CHI.html"
+}

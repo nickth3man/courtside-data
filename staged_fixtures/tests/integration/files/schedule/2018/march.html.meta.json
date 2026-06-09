@@ -1,0 +1,9 @@
+{
+  "byte_count": 494072,
+  "content_type": "text/html",
+  "downloaded_at": "2026-06-02T18:09:52.429028+00:00",
+  "sha256": "0ded61f223c2c9040fc969a54488472b138ff8113fd14149b3d40f9e2c7f6525",
+  "status_code": 200,
+  "tool": "requests",
+  "url": "https://www.basketball-reference.com/leagues/NBA_2018_games-march.html"
+}

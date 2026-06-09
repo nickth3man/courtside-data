@@ -1,0 +1,9 @@
+{
+  "byte_count": 1976650,
+  "content_type": "text/html",
+  "downloaded_at": "2026-06-02T18:05:27.754677+00:00",
+  "sha256": "d94195975134fb142dbef33779a87035607ef9d6ce8f9fbab8e45c4971057746",
+  "status_code": 200,
+  "tool": "requests",
+  "url": "https://www.basketball-reference.com/leagues/NBA_2022_totals.html"
+}
