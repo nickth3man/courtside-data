@@ -289,30 +289,10 @@ def _compute_params(name: str, endpoint: TableEndpoint) -> list[str]:
     return list(endpoint.params)
 
 
-def _make_beta_function(name: str, endpoint: TableEndpoint, param_names: list[str]) -> Callable[..., Any]:
-    """Generate a beta endpoint client function with the proper signature.
+_OUTPUT_PARAM_NAMES = ("output_type", "output_file_path", "output_write_option", "json_options")
 
-    The generated function:
 
-    * Accepts the endpoint-specific parameters + the standard output parameters.
-    * Calls ``_execute`` with a ``service_call`` lambda that invokes the
-      corresponding ``HTTPService`` method by name.
-    * Passes ``endpoint.csv_columns`` and ``endpoint.error_mappings(params)``
-      to ``_execute``.
-    """
-    all_params = list(param_names) + [
-        "output_type=None",
-        "output_file_path=None",
-        "output_write_option=None",
-        "json_options=None",
-    ]
-    params_str = ", ".join(all_params)
-
-    # Build the ``params`` dict literal and the service-call keyword arguments
-    params_dict_entries = ", ".join(f'"{p}": {p}' for p in param_names)
-    service_args = ", ".join(f"{p}={p}" for p in param_names)
-
-    # Build docstring from endpoint metadata
+def _build_beta_docstring(name: str, endpoint: TableEndpoint, param_names: list[str]) -> str:
     table = endpoint.table_id or endpoint.commented_table_id or "(auto)"
     doc_lines = [
         f"Fetch {name.replace('_', ' ')} data from Basketball Reference.",
@@ -329,26 +309,40 @@ def _make_beta_function(name: str, endpoint: TableEndpoint, param_names: list[st
         "    json_options: JSON formatting options",
         "",
     ]
-    doc = "\n    ".join(doc_lines)
+    return "\n    ".join(doc_lines)
 
-    source = f'''def {name}({params_str}):
-    """{doc}"""
-    endpoint = ENDPOINTS["{name}"]
-    params = {{{params_dict_entries}}}
-    return _execute(
-        service_call=lambda: getattr(HTTPService(parser=ParserService()), "{name}")({service_args}),
-        csv_column_names=endpoint.csv_columns,
-        error_mappings=endpoint.error_mappings(params),
-        output_type=output_type,
-        output_file_path=output_file_path,
-        output_write_option=output_write_option,
-        json_options=json_options,
+
+def _make_beta_function(name: str, endpoint: TableEndpoint, param_names: list[str]) -> Callable[..., Any]:
+    """Generate a beta endpoint client function with the proper signature.
+
+    The generated function accepts the endpoint-specific parameters plus the
+    standard output parameters, and calls ``_execute`` with a ``service_call``
+    that invokes the corresponding ``HTTPService`` method. The published
+    ``__signature__`` makes it introspect like a hand-written function.
+    """
+    kind = inspect.Parameter.POSITIONAL_OR_KEYWORD
+    signature = inspect.Signature(
+        [inspect.Parameter(p, kind) for p in param_names]
+        + [inspect.Parameter(p, kind, default=None) for p in _OUTPUT_PARAM_NAMES]
     )
-'''
 
-    namespace: dict[str, Callable[..., Any]] = {}
-    exec(source, globals(), namespace)
-    return namespace[name]
+    def beta_function(*args: Any, **kwargs: Any) -> Any:
+        bound = signature.bind(*args, **kwargs)
+        bound.apply_defaults()
+        params = {p: bound.arguments[p] for p in param_names}
+        output_args = {p: bound.arguments[p] for p in _OUTPUT_PARAM_NAMES}
+        return _execute(
+            service_call=lambda: getattr(HTTPService(parser=ParserService()), name)(**params),
+            csv_column_names=endpoint.csv_columns,
+            error_mappings=endpoint.error_mappings(params),
+            **output_args,
+        )
+
+    beta_function.__name__ = name
+    beta_function.__qualname__ = name
+    beta_function.__doc__ = _build_beta_docstring(name, endpoint, param_names)
+    beta_function.__signature__ = signature  # type: ignore[attr-defined]
+    return beta_function
 
 
 # ── Register all beta endpoints at import time ─────────────────────────────
