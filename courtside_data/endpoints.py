@@ -85,9 +85,12 @@ class TableEndpoint:
     commented_table_id: str | None = None
     use_header_fallback: bool = False
     transaction_list_fallback: bool = False
-    # True for endpoints with a bespoke HTTPService method (multi-request or
-    # projected output); fetch_table() must not be used for these.
+    # True for endpoints with a bespoke HTTPService method (e.g. multi-request);
+    # fetch_table() must not be used for these.
     custom: bool = False
+    # When set, fetch_table() projects each row down to exactly these keys
+    # (missing keys become empty strings).
+    projection: tuple[str, ...] | None = None
     csv_columns: Sequence[str] | None = None
     error: type[Exception] | None = None
     error_params: tuple[str, ...] = ()
@@ -117,6 +120,7 @@ def _endpoint(
     use_header_fallback: bool = False,
     transaction_list_fallback: bool = False,
     custom: bool = False,
+    projection: tuple[str, ...] | None = None,
     csv_columns: Sequence[str] | None = None,
 ) -> TableEndpoint:
     return TableEndpoint(
@@ -127,6 +131,7 @@ def _endpoint(
         use_header_fallback=use_header_fallback,
         transaction_list_fallback=transaction_list_fallback,
         custom=custom,
+        projection=projection,
         csv_columns=csv_columns,
         error=error,
         error_params=error_params,
@@ -214,7 +219,7 @@ ENDPOINTS: dict[str, TableEndpoint] = {
     "attendance": _season(
         "/leagues/NBA_{season_end_year}.html",
         table_id="advanced-team",
-        custom=True,
+        projection=("team", "arena_name", "attendance", "attendance_per_g"),
         csv_columns=ATTENDANCE_COLUMN_NAMES,
     ),
     # ── Playoffs ──

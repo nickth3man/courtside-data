@@ -197,7 +197,10 @@ class HTTPService:
             return []
 
         table = GenericTable(table_selector, use_header_fallback=endpoint.use_header_fallback)
-        return self.parser.parse_generic_table(table)
+        rows = self.parser.parse_generic_table(table)
+        if endpoint.projection is not None:
+            rows = [{key: row.get(key, "") for key in endpoint.projection} for row in rows]
+        return rows
 
     # ── Legacy endpoints (dedicated page classes and parser chains) ─────
 
@@ -391,23 +394,3 @@ class HTTPService:
                 table = GenericTable(table_selector[0])
                 standings.extend(self.parser.parse_generic_table(table))
         return standings
-
-    def attendance(self, season_end_year: int) -> list[dict[str, Any]]:
-        endpoint = ENDPOINTS["attendance"]
-        selector = self._get_selector(
-            url=f"{HTTPService.BASE_URL}{endpoint.path.format(season_end_year=season_end_year)}"
-        )
-        table_selector = selector.css(f"table#{endpoint.table_id}")
-        if not table_selector:
-            return []
-
-        table = GenericTable(table_selector[0])
-        return [
-            {
-                "team": row.get("team", ""),
-                "arena_name": row.get("arena_name", ""),
-                "attendance": row.get("attendance", ""),
-                "attendance_per_g": row.get("attendance_per_g", ""),
-            }
-            for row in table.rows
-        ]
