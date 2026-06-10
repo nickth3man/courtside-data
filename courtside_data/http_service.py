@@ -151,6 +151,12 @@ class HTTPService:
         response.raise_for_status()
         return Selector(text=response.text)
 
+    def _get_html(self, url: str, **kwargs: Any) -> html.HtmlElement:
+        """Fetch a page, raise on HTTP errors, and parse the body with lxml."""
+        response = self._get(url=url, **kwargs)
+        response.raise_for_status()
+        return html.fromstring(response.content)
+
     @staticmethod
     def _clean_text(values: list[str]) -> str:
         return re.sub(r"\s+", " ", " ".join(values)).strip()
@@ -225,11 +231,7 @@ class HTTPService:
     def standings(self, season_end_year: int) -> list[dict[str, Any]]:
         url = f"{HTTPService.BASE_URL}/leagues/NBA_{season_end_year}.html"
 
-        response = self._get(url=url, follow_redirects=False)
-
-        response.raise_for_status()
-
-        page = StandingsPage(html=html.fromstring(response.content))
+        page = StandingsPage(html=self._get_html(url=url, follow_redirects=False))
         return self.parser.parse_division_standings(
             standings=page.division_standings.eastern_conference_table.rows
         ) + self.parser.parse_division_standings(standings=page.division_standings.western_conference_table.rows)
@@ -255,10 +257,7 @@ class HTTPService:
         # starting with first few characters of player's surname
         url = f"{HTTPService.BASE_URL}/players/{player_identifier[0]}/{player_identifier}/gamelog/{season_end_year}"
 
-        response = self._get(url=url, follow_redirects=False)
-        response.raise_for_status()
-
-        return PlayerSeasonBoxScoresPage(html=html.fromstring(response.content))
+        return PlayerSeasonBoxScoresPage(html=self._get_html(url=url, follow_redirects=False))
 
     def regular_season_player_box_scores(
         self, player_identifier: str, season_end_year: int, include_inactive_games: bool = False
@@ -287,10 +286,7 @@ class HTTPService:
         # the hard-coded `0` in the url assumes we always take the first match of the given date and team.
         game_id = f"{year}{month_and_day}0{TEAM_TO_TEAM_ABBREVIATION[home_team]}"
         url = f"{HTTPService.BASE_URL}/boxscores/pbp/{game_id}.html"
-        response = self._get(url=url)
-        response.raise_for_status()
-
-        page = PlayByPlayPage(html=html.fromstring(response.content))
+        page = PlayByPlayPage(html=self._get_html(url=url))
 
         return self.parser.parse_play_by_plays(
             play_by_plays=page.play_by_play_table.rows,
@@ -303,39 +299,23 @@ class HTTPService:
     ) -> list[dict[str, Any]]:
         url = f"{HTTPService.BASE_URL}/leagues/NBA_{season_end_year}_advanced.html"
 
-        response = self._get(url=url)
-
-        response.raise_for_status()
-
-        table = PlayerAdvancedSeasonTotalsTable(html=html.fromstring(response.content))
+        table = PlayerAdvancedSeasonTotalsTable(html=self._get_html(url=url))
         return self.parser.parse_player_advanced_season_totals(totals=table.get_rows(include_combined_values))
 
     def players_season_totals(self, season_end_year: int) -> list[dict[str, Any]]:
         url = f"{HTTPService.BASE_URL}/leagues/NBA_{season_end_year}_totals.html"
 
-        response = self._get(url=url)
-
-        response.raise_for_status()
-
-        table = PlayerSeasonTotalTable(html=html.fromstring(response.content))
+        table = PlayerSeasonTotalTable(html=self._get_html(url=url))
         return self.parser.parse_player_season_totals(totals=table.rows)
 
     def schedule_for_month(self, url: str) -> list[dict[str, Any]]:
-        response = self._get(url=url)
-
-        response.raise_for_status()
-
-        page = SchedulePage(html=html.fromstring(html=response.content))
+        page = SchedulePage(html=self._get_html(url=url))
         return self.parser.parse_scheduled_games(games=page.rows)
 
     def season_schedule(self, season_end_year: int) -> list[dict[str, Any]]:
         url = f"{HTTPService.BASE_URL}/leagues/NBA_{season_end_year}_games.html"
 
-        response = self._get(url=url)
-
-        response.raise_for_status()
-
-        page = SchedulePage(html=html.fromstring(html=response.content))
+        page = SchedulePage(html=self._get_html(url=url))
         season_schedule_values = self.parser.parse_scheduled_games(games=page.rows)
 
         for month_url_path in page.other_months_schedule_urls:
@@ -348,11 +328,7 @@ class HTTPService:
     def team_box_score(self, game_url_path: str) -> list[dict[str, Any]]:
         url = f"{HTTPService.BASE_URL}/{game_url_path.lstrip('/')}"
 
-        response = self._get(url=url)
-
-        response.raise_for_status()
-
-        page = BoxScoresPage(html.fromstring(response.content))
+        page = BoxScoresPage(self._get_html(url=url))
         combined_team_totals = [
             TeamTotal(team_abbreviation=table.team_abbreviation, totals=table.team_totals)
             for table in page.basic_statistics_tables
@@ -366,11 +342,7 @@ class HTTPService:
     def team_box_scores(self, day: int, month: int, year: int) -> list[dict[str, Any]]:
         url = f"{HTTPService.BASE_URL}/boxscores/"
 
-        response = self._get(url=url, params={"day": day, "month": month, "year": year})
-
-        response.raise_for_status()
-
-        page = DailyBoxScoresPage(html=html.fromstring(response.content))
+        page = DailyBoxScoresPage(html=self._get_html(url=url, params={"day": day, "month": month, "year": year}))
 
         if not page.game_url_paths:
             raise InvalidDate(day=day, month=month, year=year)

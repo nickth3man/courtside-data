@@ -13,6 +13,14 @@ PLAYER_SEASON_BOX_SCORES_OUTCOME_REGEX: str = "(?P<outcome_abbreviation>W|L),"
 SEARCH_RESULT_NAME_REGEX: str = "(?P<name>^[^\\(]+)"
 
 
+def _match_group(pattern: str, text: str, group_name: str, description: str) -> str:
+    """Extract a named regex group from text, raising ValueError when unmatched."""
+    match = re.search(pattern, text)
+    if match is None:
+        raise ValueError(f"Could not parse {description} from: {text}")
+    return match.group(group_name)
+
+
 class TeamAbbreviationParser:
     def __init__(self, abbreviations_to_teams: dict[str, Team]) -> None:
         self.abbreviations_to_teams = abbreviations_to_teams
@@ -29,9 +37,7 @@ class PositionAbbreviationParser:
         return self.abbreviations_to_positions.get(abbreviation)
 
     def from_abbreviations(self, abbreviations: str) -> list[Position]:
-        parsed_positions = list(
-            map(lambda position_abbreviation: self.from_abbreviation(position_abbreviation), abbreviations.split("-"))
-        )
+        parsed_positions = [self.from_abbreviation(abbreviation) for abbreviation in abbreviations.split("-")]
         return [position for position in parsed_positions if position is not None]
 
 
@@ -90,14 +96,13 @@ class PlayerBoxScoreOutcomeParser:
         self.formatted_outcome_regex = formatted_outcome_regex
         self.outcome_abbreviation_regex_group_name = outcome_abbreviation_regex_group_name
 
-    def search_formatted_outcome(self, formatted_outcome: str) -> re.Match[str] | None:
-        return re.search(self.formatted_outcome_regex, formatted_outcome)
-
     def parse_outcome_abbreviation(self, formatted_outcome: str) -> str:
-        match = self.search_formatted_outcome(formatted_outcome=formatted_outcome)
-        if match is None:
-            raise ValueError(f"Could not parse outcome from: {formatted_outcome}")
-        return match.group(self.outcome_abbreviation_regex_group_name)
+        return _match_group(
+            self.formatted_outcome_regex,
+            formatted_outcome,
+            self.outcome_abbreviation_regex_group_name,
+            description="outcome",
+        )
 
     def parse_outcome(self, formatted_outcome: str) -> Outcome:
         return self.outcome_abbreviation_parser.from_abbreviation(
@@ -164,20 +169,11 @@ class ScoresParser:
         self.away_team_score_group_name = away_team_score_group_name
         self.home_team_score_group_name = home_team_score_group_name
 
-    def parse_scores(self, formatted_scores: str) -> re.Match[str] | None:
-        return re.search(self.scores_regex, formatted_scores)
-
     def parse_away_team_score(self, formatted_scores: str) -> int:
-        match = self.parse_scores(formatted_scores=formatted_scores)
-        if match is None:
-            raise ValueError(f"Could not parse scores from: {formatted_scores}")
-        return int(match.group(self.away_team_score_group_name))
+        return int(_match_group(self.scores_regex, formatted_scores, self.away_team_score_group_name, "scores"))
 
     def parse_home_team_score(self, formatted_scores: str) -> int:
-        match = self.parse_scores(formatted_scores=formatted_scores)
-        if match is None:
-            raise ValueError(f"Could not parse scores from: {formatted_scores}")
-        return int(match.group(self.home_team_score_group_name))
+        return int(_match_group(self.scores_regex, formatted_scores, self.home_team_score_group_name, "scores"))
 
 
 class TeamNameParser:
@@ -229,10 +225,12 @@ class SearchResultNameParser:
         self.result_name_regex_group_name = result_name_regex_group_name
 
     def parse(self, search_result_name: str) -> str:
-        match = re.search(self.search_result_name_regex, search_result_name)
-        if match is None:
-            raise ValueError(f"Could not parse search result name from: {search_result_name}")
-        return match.group(self.result_name_regex_group_name).strip()
+        return _match_group(
+            self.search_result_name_regex,
+            search_result_name,
+            self.result_name_regex_group_name,
+            description="search result name",
+        ).strip()
 
 
 class ResourceLocationParser:
@@ -246,20 +244,21 @@ class ResourceLocationParser:
         self.resource_type_regex_group_name = resource_type_regex_group_name
         self.resource_identifier_regex_group_name = resource_identifier_regex_group_name
 
-    def search(self, resource_location: str) -> re.Match[str] | None:
-        return re.search(self.resource_location_regex, resource_location)
-
     def parse_resource_type(self, resource_location: str) -> str:
-        match = self.search(resource_location=resource_location)
-        if match is None:
-            raise ValueError(f"Could not parse resource location from: {resource_location}")
-        return match.group(self.resource_type_regex_group_name)
+        return _match_group(
+            self.resource_location_regex,
+            resource_location,
+            self.resource_type_regex_group_name,
+            description="resource location",
+        )
 
     def parse_resource_identifier(self, resource_location: str) -> str:
-        match = self.search(resource_location=resource_location)
-        if match is None:
-            raise ValueError(f"Could not parse resource location from: {resource_location}")
-        return match.group(self.resource_identifier_regex_group_name)
+        return _match_group(
+            self.resource_location_regex,
+            resource_location,
+            self.resource_identifier_regex_group_name,
+            description="resource location",
+        )
 
 
 class TeamStandingsParser:
