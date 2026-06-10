@@ -7,7 +7,7 @@ import time
 import random
 import sys
 import requests
-from basketball_reference_web_scraper.client import (
+from courtside_data.client import (
     league_per_game_stats, league_per_36_minutes, league_totals,
     rookie_stats, standings_by_date, attendance, league_transactions,
     league_per_100_possessions, league_shooting, playoff_per_game, playoff_totals,

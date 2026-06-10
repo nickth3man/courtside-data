@@ -1,7 +1,7 @@
 from unittest import TestCase
 from unittest.mock import MagicMock, patch, PropertyMock
 
-from basketball_reference_web_scraper.html import PlayerIdentificationRow
+from courtside_data.html import PlayerIdentificationRow
 
 
 class TestPlayerIdentificationRow(TestCase):

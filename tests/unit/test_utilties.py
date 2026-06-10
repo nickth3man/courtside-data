@@ -1,6 +1,6 @@
 from unittest import TestCase
 
-from basketball_reference_web_scraper.utilities import str_to_int, str_to_float, merge_two_dicts
+from courtside_data.utilities import str_to_int, str_to_float, merge_two_dicts
 
 
 class TestStrToInt(TestCase):

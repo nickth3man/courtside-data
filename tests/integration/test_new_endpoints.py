@@ -9,7 +9,7 @@ from unittest.mock import patch
 import pytest
 import requests_mock
 
-from basketball_reference_web_scraper.client import (
+from courtside_data.client import (
     # League endpoints
     league_per_game_stats,
     league_per_36_minutes,

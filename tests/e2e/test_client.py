@@ -3,10 +3,10 @@ import filecmp
 import os
 from unittest import TestCase
 
-from basketball_reference_web_scraper.client import player_box_scores, season_schedule, players_advanced_season_totals, \
+from courtside_data.client import player_box_scores, season_schedule, players_advanced_season_totals, \
     play_by_play, players_season_totals
-from basketball_reference_web_scraper.data import Location, Outcome
-from basketball_reference_web_scraper.data import OutputWriteOption, OutputType, Team, PeriodType
+from courtside_data.data import Location, Outcome
+from courtside_data.data import OutputWriteOption, OutputType, Team, PeriodType
 
 
 class BaseEndToEndTest(TestCase):

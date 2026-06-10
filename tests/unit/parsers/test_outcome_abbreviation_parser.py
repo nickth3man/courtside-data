@@ -1,7 +1,7 @@
 from unittest import TestCase
 
-from basketball_reference_web_scraper.data import Outcome, OUTCOME_ABBREVIATIONS_TO_OUTCOME
-from basketball_reference_web_scraper.parsers import OutcomeAbbreviationParser
+from courtside_data.data import Outcome, OUTCOME_ABBREVIATIONS_TO_OUTCOME
+from courtside_data.parsers import OutcomeAbbreviationParser
 
 
 class TestOutcomeAbbreviationParser(TestCase):

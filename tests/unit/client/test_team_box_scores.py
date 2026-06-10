@@ -4,9 +4,9 @@ from unittest.mock import patch, MagicMock
 import requests
 from requests.exceptions import HTTPError
 
-import basketball_reference_web_scraper.client as client
-from basketball_reference_web_scraper.errors import InvalidDate
-from basketball_reference_web_scraper.http_service import HTTPService
+import courtside_data.client as client
+from courtside_data.errors import InvalidDate
+from courtside_data.http_service import HTTPService
 
 
 class TestTeamBoxScores(TestCase):

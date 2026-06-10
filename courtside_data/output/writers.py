@@ -1,8 +1,8 @@
 import csv
 import json
 
-from basketball_reference_web_scraper.data import OutputType, OutputWriteOption
-from basketball_reference_web_scraper.utilities import merge_two_dicts
+from courtside_data.data import OutputType, OutputWriteOption
+from courtside_data.utilities import merge_two_dicts
 
 DEFAULT_JSON_SORT_KEYS = True
 DEFAULT_JSON_INDENT = 4

@@ -1,8 +1,8 @@
 from unittest import TestCase, mock
 
-from basketball_reference_web_scraper.data import OutputType, OutputWriteOption
-from basketball_reference_web_scraper.output.service import OutputService
-from basketball_reference_web_scraper.output.writers import OutputOptions, FileOptions
+from courtside_data.data import OutputType, OutputWriteOption
+from courtside_data.output.service import OutputService
+from courtside_data.output.writers import OutputOptions, FileOptions
 
 
 class TestOutput(TestCase):

@@ -1,7 +1,7 @@
 from unittest import TestCase
 
-from basketball_reference_web_scraper.data import League, LEAGUE_ABBREVIATIONS_TO_LEAGUE
-from basketball_reference_web_scraper.parsers import LeagueAbbreviationParser
+from courtside_data.data import League, LEAGUE_ABBREVIATIONS_TO_LEAGUE
+from courtside_data.parsers import LeagueAbbreviationParser
 
 
 class TestLeagueAbbreviationParser(TestCase):

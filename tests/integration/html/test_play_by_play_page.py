@@ -1,7 +1,7 @@
 import os
 from unittest import TestCase
 
-from basketball_reference_web_scraper.html import PlayByPlayPage
+from courtside_data.html import PlayByPlayPage
 from lxml import html
 
 

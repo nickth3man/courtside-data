@@ -3,8 +3,8 @@ from datetime import datetime
 
 import pytz
 
-from basketball_reference_web_scraper.data import PeriodType, Outcome
-from basketball_reference_web_scraper.utilities import str_to_int, str_to_float
+from courtside_data.data import PeriodType, Outcome
+from courtside_data.utilities import str_to_int, str_to_float
 
 PLAYER_SEASON_BOX_SCORES_GAME_DATE_FORMAT = '%Y-%m-%d'
 PLAYER_SEASON_BOX_SCORES_OUTCOME_REGEX = '(?P<outcome_abbreviation>W|L),'

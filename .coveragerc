@@ -1,6 +1,6 @@
 [run]
 branch = True
-source = basketball_reference_web_scraper
+source = courtside_data
 
 [report]
 exclude_lines =

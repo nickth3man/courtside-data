@@ -3,8 +3,8 @@ from unittest import TestCase, mock
 
 from requests import codes
 
-from basketball_reference_web_scraper.errors import InvalidDate, InvalidPlayer, InvalidTeam
-from basketball_reference_web_scraper.http_service import HTTPService
+from courtside_data.errors import InvalidDate, InvalidPlayer, InvalidTeam
+from courtside_data.http_service import HTTPService
 
 
 class TestHTTPService(TestCase):

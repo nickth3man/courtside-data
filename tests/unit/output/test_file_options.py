@@ -1,6 +1,6 @@
 from unittest import TestCase
 
-from basketball_reference_web_scraper.output.writers import FileOptions
+from courtside_data.output.writers import FileOptions
 
 
 class TestFileOptions(TestCase):

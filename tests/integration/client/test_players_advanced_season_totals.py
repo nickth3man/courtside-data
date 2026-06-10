@@ -6,9 +6,9 @@ from unittest import TestCase
 
 import requests_mock
 
-from basketball_reference_web_scraper.client import players_advanced_season_totals
-from basketball_reference_web_scraper.data import OutputType, Team, Position
-from basketball_reference_web_scraper.errors import InvalidSeason
+from courtside_data.client import players_advanced_season_totals
+from courtside_data.data import OutputType, Team, Position
+from courtside_data.errors import InvalidSeason
 
 
 class Test2019(TestCase):

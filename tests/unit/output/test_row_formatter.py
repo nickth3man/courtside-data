@@ -1,7 +1,7 @@
 from unittest import TestCase
 
-from basketball_reference_web_scraper.data import Team, Location, Outcome, Position
-from basketball_reference_web_scraper.output.fields import format_value
+from courtside_data.data import Team, Location, Outcome, Position
+from courtside_data.output.fields import format_value
 
 
 class TestRowFormatter(TestCase):

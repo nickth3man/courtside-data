@@ -1,6 +1,6 @@
 import pytest
 
-from basketball_reference_web_scraper.http_service import HTTPService
+from courtside_data.http_service import HTTPService
 from tests.e2e.live_policy import LiveRequestPolicy, live_tests_enabled
 
 

@@ -105,7 +105,7 @@ assert any(row["tm"] == "BOS" for row in result)
 | #   | Task                                                          | Priority | Effort | Status |
 | --- | ------------------------------------------------------------- | -------- | ------ | ------ |
 | 3.1 | Update `codemap.md` — now ~50 endpoints, not 10                | High     | 1h     |        |
-| 3.2 | Update `basketball_reference_web_scraper/codemap.md`           | Medium   | 30m    |        |
+| 3.2 | Update `courtside_data/codemap.md`           | Medium   | 30m    |        |
 | 3.3 | Update `output/codemap.md`                                     | Low      | 15m    |        |
 | 3.4 | Regenerate `REFERENCE.md` with new endpoint mappings           | Medium   | 1h     |        |
 | 3.5 | Update MkDocs `docs/` to include new endpoints                | Medium   | 2h     |        |

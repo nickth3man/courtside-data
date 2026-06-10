@@ -20,7 +20,7 @@ and translated into a usable API.
 It can be installed via `pip`.
 
 ```bash
-pip install basketball_reference_web_scraper
+pip install courtside-data
 ```
 
 !!! note

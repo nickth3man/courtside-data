@@ -1,8 +1,8 @@
 import requests
 
-from basketball_reference_web_scraper.errors import InvalidSeason, InvalidDate, InvalidPlayer, InvalidPlayerAndSeason, InvalidSearch, InvalidTeam
-from basketball_reference_web_scraper.http_service import HTTPService
-from basketball_reference_web_scraper.output.columns import BOX_SCORE_COLUMN_NAMES, SCHEDULE_COLUMN_NAMES, \
+from courtside_data.errors import InvalidSeason, InvalidDate, InvalidPlayer, InvalidPlayerAndSeason, InvalidSearch, InvalidTeam
+from courtside_data.http_service import HTTPService
+from courtside_data.output.columns import BOX_SCORE_COLUMN_NAMES, SCHEDULE_COLUMN_NAMES, \
     PLAYER_SEASON_TOTALS_COLUMN_NAMES, \
     PLAYER_ADVANCED_SEASON_TOTALS_COLUMN_NAMES, TEAM_BOX_SCORES_COLUMN_NAMES, PLAY_BY_PLAY_COLUMN_NAMES, \
     PLAYER_SEASON_BOX_SCORE_COLUMN_NAMES, SEARCH_RESULTS_COLUMN_NAMES, STANDINGS_COLUMNS_NAMES, \
@@ -25,10 +25,10 @@ from basketball_reference_web_scraper.output.columns import BOX_SCORE_COLUMN_NAM
     TEAM_LINEUPS_COLUMN_NAMES, TEAM_STARTING_LINEUPS_COLUMN_NAMES, \
     TEAM_ON_OFF_COLUMN_NAMES, TEAM_OPPONENT_STATS_COLUMN_NAMES, \
     FRANCHISE_HISTORY_COLUMN_NAMES
-from basketball_reference_web_scraper.output.fields import format_value, BasketballReferenceJSONEncoder
-from basketball_reference_web_scraper.output.service import OutputService
-from basketball_reference_web_scraper.output.writers import CSVWriter, JSONWriter, FileOptions, OutputOptions
-from basketball_reference_web_scraper.parser_service import ParserService
+from courtside_data.output.fields import format_value, BasketballReferenceJSONEncoder
+from courtside_data.output.service import OutputService
+from courtside_data.output.writers import CSVWriter, JSONWriter, FileOptions, OutputOptions
+from courtside_data.parser_service import ParserService
 
 
 def _execute(

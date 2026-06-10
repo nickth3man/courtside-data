@@ -3,9 +3,9 @@ from unittest.mock import patch, MagicMock
 
 from requests import HTTPError, codes
 
-from basketball_reference_web_scraper.client import players_advanced_season_totals
-from basketball_reference_web_scraper.errors import InvalidSeason
-from basketball_reference_web_scraper.http_service import HTTPService
+from courtside_data.client import players_advanced_season_totals
+from courtside_data.errors import InvalidSeason
+from courtside_data.http_service import HTTPService
 
 
 class TestPlayerAdvancedSeasonTotals(TestCase):

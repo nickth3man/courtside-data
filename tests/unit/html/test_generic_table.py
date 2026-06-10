@@ -2,7 +2,7 @@ from unittest import TestCase
 
 from parsel import Selector
 
-from basketball_reference_web_scraper.html import GenericTable, GenericTableRow, extract_commented_table
+from courtside_data.html import GenericTable, GenericTableRow, extract_commented_table
 
 
 SIMPLE_TABLE_HTML = """

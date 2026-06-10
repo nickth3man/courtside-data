@@ -4,8 +4,8 @@ import os
 from datetime import date
 from unittest import TestCase
 
-import basketball_reference_web_scraper.client as client
-from basketball_reference_web_scraper.data import OutputWriteOption, OutputType, Team, Outcome
+import courtside_data.client as client
+from courtside_data.data import OutputWriteOption, OutputType, Team, Outcome
 from tests.integration.client.utilities import ResponseMocker
 
 

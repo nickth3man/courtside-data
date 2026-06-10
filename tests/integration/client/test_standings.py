@@ -6,8 +6,8 @@ from unittest import TestCase
 
 import requests_mock
 
-from basketball_reference_web_scraper.client import standings
-from basketball_reference_web_scraper.data import Team, Division, Conference, OutputWriteOption, OutputType
+from courtside_data.client import standings
+from courtside_data.data import Team, Division, Conference, OutputWriteOption, OutputType
 
 
 class StandingsMocker:

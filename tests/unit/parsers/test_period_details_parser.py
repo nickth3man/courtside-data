@@ -1,8 +1,8 @@
 from unittest import TestCase
 from unittest.mock import patch
 
-from basketball_reference_web_scraper.data import PeriodType
-from basketball_reference_web_scraper.parsers import PeriodDetailsParser
+from courtside_data.data import PeriodType
+from courtside_data.parsers import PeriodDetailsParser
 
 
 class TestPeriodDetailsParser(TestCase):

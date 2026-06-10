@@ -5,9 +5,9 @@ from unittest import TestCase
 import pytz
 from lxml import html
 
-from basketball_reference_web_scraper.data import Team, TEAM_NAME_TO_TEAM
-from basketball_reference_web_scraper.html import SchedulePage
-from basketball_reference_web_scraper.parsers import ScheduledGamesParser, TeamNameParser, ScheduledStartTimeParser
+from courtside_data.data import Team, TEAM_NAME_TO_TEAM
+from courtside_data.html import SchedulePage
+from courtside_data.parsers import ScheduledGamesParser, TeamNameParser, ScheduledStartTimeParser
 
 
 class BaseTest(TestCase):

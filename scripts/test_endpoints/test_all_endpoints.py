@@ -1,4 +1,4 @@
-"""Test every endpoint of basketball_reference_web_scraper and record results.
+"""Test every endpoint of courtside_data and record results.
 
 For each endpoint we:
   1. Call it with sensible arguments
@@ -14,8 +14,8 @@ import time
 import traceback
 from datetime import datetime, timezone
 
-from basketball_reference_web_scraper import client
-from basketball_reference_web_scraper.data import (
+from courtside_data import client
+from courtside_data.data import (
     OutputType,
     OutputWriteOption,
     Team,

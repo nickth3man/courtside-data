@@ -5,9 +5,9 @@ from unittest import TestCase
 
 import requests_mock
 
-from basketball_reference_web_scraper.client import regular_season_player_box_scores
-from basketball_reference_web_scraper.data import Team, Outcome, OutputType
-from basketball_reference_web_scraper.errors import InvalidPlayerAndSeason
+from courtside_data.client import regular_season_player_box_scores
+from courtside_data.data import Team, Outcome, OutputType
+from courtside_data.errors import InvalidPlayerAndSeason
 
 
 class TestWestbrook2020(TestCase):

@@ -5,9 +5,9 @@ import time
 import traceback
 from datetime import datetime, timezone
 
-from basketball_reference_web_scraper import client
-from basketball_reference_web_scraper.data import Team
-from basketball_reference_web_scraper.errors import (
+from courtside_data import client
+from courtside_data.data import Team
+from courtside_data.errors import (
     InvalidDate,
     InvalidPlayerAndSeason,
     InvalidSearch,

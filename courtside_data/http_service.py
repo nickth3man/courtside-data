@@ -7,11 +7,11 @@ import requests
 from lxml import html
 from parsel import Selector
 
-from basketball_reference_web_scraper.html import GenericTable, extract_commented_table
+from courtside_data.html import GenericTable, extract_commented_table
 
-from basketball_reference_web_scraper.data import TEAM_TO_TEAM_ABBREVIATION, TeamTotal, PlayerData
-from basketball_reference_web_scraper.errors import InvalidDate, InvalidPlayer, InvalidPlayerAndSeason, InvalidTeam
-from basketball_reference_web_scraper.html import DailyLeadersPage, PlayerSeasonBoxScoresPage, PlayerSeasonTotalTable, \
+from courtside_data.data import TEAM_TO_TEAM_ABBREVIATION, TeamTotal, PlayerData
+from courtside_data.errors import InvalidDate, InvalidPlayer, InvalidPlayerAndSeason, InvalidTeam
+from courtside_data.html import DailyLeadersPage, PlayerSeasonBoxScoresPage, PlayerSeasonTotalTable, \
     PlayerAdvancedSeasonTotalsTable, PlayByPlayPage, SchedulePage, BoxScoresPage, DailyBoxScoresPage, SearchPage, \
     PlayerPage, StandingsPage
 
@@ -556,7 +556,7 @@ class HTTPService:
         if not table_selector:
             return []
 
-        from basketball_reference_web_scraper.html import GenericTable
+        from courtside_data.html import GenericTable
         table = GenericTable(table_selector[0])
         return self.parser.parse_generic_table(table)
 
@@ -575,7 +575,7 @@ class HTTPService:
         if not table_selector:
             return self._parse_transaction_list(selector)
 
-        from basketball_reference_web_scraper.html import GenericTable
+        from courtside_data.html import GenericTable
         table = GenericTable(table_selector[0])
         return self.parser.parse_generic_table(table)
 
@@ -593,7 +593,7 @@ class HTTPService:
         if not table_selector:
             return []
 
-        from basketball_reference_web_scraper.html import GenericTable
+        from courtside_data.html import GenericTable
         table = GenericTable(table_selector[0])
         return self.parser.parse_generic_table(table)
 
@@ -608,7 +608,7 @@ class HTTPService:
         if not table_selector:
             return []
 
-        from basketball_reference_web_scraper.html import GenericTable
+        from courtside_data.html import GenericTable
         table = GenericTable(table_selector[0], use_header_fallback=True)
         return self.parser.parse_generic_table(table)
 
@@ -623,7 +623,7 @@ class HTTPService:
         if not table_selector:
             return []
 
-        from basketball_reference_web_scraper.html import GenericTable
+        from courtside_data.html import GenericTable
         table = GenericTable(table_selector[0], use_header_fallback=True)
         return self.parser.parse_generic_table(table)
 
@@ -641,7 +641,7 @@ class HTTPService:
         if not table_selector:
             return []
 
-        from basketball_reference_web_scraper.html import GenericTable
+        from courtside_data.html import GenericTable
         table = GenericTable(table_selector[0], use_header_fallback=True)
         return self.parser.parse_generic_table(table)
 
@@ -659,7 +659,7 @@ class HTTPService:
         if not table_selector:
             return []
 
-        from basketball_reference_web_scraper.html import GenericTable
+        from courtside_data.html import GenericTable
         table = GenericTable(table_selector[0])
         return self.parser.parse_generic_table(table)
 
@@ -678,7 +678,7 @@ class HTTPService:
         if not table_selector:
             return []
 
-        from basketball_reference_web_scraper.html import GenericTable
+        from courtside_data.html import GenericTable
         table = GenericTable(table_selector[0])
         return self.parser.parse_generic_table(table)
 
@@ -716,7 +716,7 @@ class HTTPService:
         if not table_selector:
             return []
 
-        from basketball_reference_web_scraper.html import GenericTable
+        from courtside_data.html import GenericTable
         table = GenericTable(table_selector[0])
         return self.parser.parse_generic_table(table)
 
@@ -736,7 +736,7 @@ class HTTPService:
         if not table_selector:
             return []
 
-        from basketball_reference_web_scraper.html import GenericTable
+        from courtside_data.html import GenericTable
         table = GenericTable(table_selector[0])
         return self.parser.parse_generic_table(table)
 
@@ -757,7 +757,7 @@ class HTTPService:
         if not table_selector:
             return []
 
-        from basketball_reference_web_scraper.html import GenericTable
+        from courtside_data.html import GenericTable
         table = GenericTable(table_selector[0])
         return self.parser.parse_generic_table(table)
 
@@ -884,7 +884,7 @@ class HTTPService:
         if not table_selector:
             return []
 
-        from basketball_reference_web_scraper.html import GenericTable
+        from courtside_data.html import GenericTable
         table = GenericTable(table_selector[0])
         return self.parser.parse_generic_table(table)
 
@@ -901,7 +901,7 @@ class HTTPService:
         if not table_selector:
             return []
 
-        from basketball_reference_web_scraper.html import GenericTable
+        from courtside_data.html import GenericTable
         table = GenericTable(table_selector[0])
         return self.parser.parse_generic_table(table)
 
@@ -956,7 +956,7 @@ class HTTPService:
         if not table_selector:
             return []
 
-        from basketball_reference_web_scraper.html import GenericTable
+        from courtside_data.html import GenericTable
         table = GenericTable(table_selector[0])
         return self.parser.parse_generic_table(table)
 
@@ -974,7 +974,7 @@ class HTTPService:
         if not table_selector:
             return []
 
-        from basketball_reference_web_scraper.html import GenericTable
+        from courtside_data.html import GenericTable
         table = GenericTable(table_selector[0])
         return self.parser.parse_generic_table(table)
 
@@ -1011,7 +1011,7 @@ class HTTPService:
         if not table_selector:
             return []
 
-        from basketball_reference_web_scraper.html import GenericTable
+        from courtside_data.html import GenericTable
         table = GenericTable(table_selector[0])
         return self.parser.parse_generic_table(table)
 
@@ -1030,7 +1030,7 @@ class HTTPService:
         if not table_selector:
             return []
 
-        from basketball_reference_web_scraper.html import GenericTable
+        from courtside_data.html import GenericTable
         table = GenericTable(table_selector[0])
         return self.parser.parse_generic_table(table)
 
@@ -1066,6 +1066,6 @@ class HTTPService:
         if not table_selector:
             return []
 
-        from basketball_reference_web_scraper.html import GenericTable
+        from courtside_data.html import GenericTable
         table = GenericTable(table_selector[0])
         return self.parser.parse_generic_table(table)

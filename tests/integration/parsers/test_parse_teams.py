@@ -3,10 +3,10 @@ from unittest import TestCase
 
 from lxml import html
 
-from basketball_reference_web_scraper.data import TEAM_ABBREVIATIONS_TO_TEAM, TeamTotal
-from basketball_reference_web_scraper.data import Team, Outcome
-from basketball_reference_web_scraper.html import BoxScoresPage
-from basketball_reference_web_scraper.parsers import TeamAbbreviationParser, \
+from courtside_data.data import TEAM_ABBREVIATIONS_TO_TEAM, TeamTotal
+from courtside_data.data import Team, Outcome
+from courtside_data.html import BoxScoresPage
+from courtside_data.parsers import TeamAbbreviationParser, \
     TeamTotalsParser
 
 

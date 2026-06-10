@@ -2,9 +2,9 @@ from unittest import TestCase, mock
 
 from requests import HTTPError, codes
 
-from basketball_reference_web_scraper.client import player_box_scores
-from basketball_reference_web_scraper.errors import InvalidDate
-from basketball_reference_web_scraper.http_service import HTTPService
+from courtside_data.client import player_box_scores
+from courtside_data.errors import InvalidDate
+from courtside_data.http_service import HTTPService
 
 
 class TestPlayerBoxScores(TestCase):

@@ -3,7 +3,7 @@ from unittest import TestCase
 
 from lxml import html
 
-from basketball_reference_web_scraper.html import DailyBoxScoresPage
+from courtside_data.html import DailyBoxScoresPage
 
 
 class TestDailyBoxScoresPage(TestCase):

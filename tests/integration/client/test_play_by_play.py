@@ -4,10 +4,10 @@ from unittest import TestCase
 
 import requests_mock
 
-from basketball_reference_web_scraper.client import play_by_play
-from basketball_reference_web_scraper.data import OutputType, OutputWriteOption, PeriodType
-from basketball_reference_web_scraper.data import Team
-from basketball_reference_web_scraper.errors import InvalidDate
+from courtside_data.client import play_by_play
+from courtside_data.data import OutputType, OutputWriteOption, PeriodType
+from courtside_data.data import Team
+from courtside_data.errors import InvalidDate
 
 
 class Test199911160ATLPlayByPlay(TestCase):

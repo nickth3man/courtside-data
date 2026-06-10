@@ -5,8 +5,8 @@ from unittest import TestCase
 
 import requests_mock
 
-from basketball_reference_web_scraper import client
-from basketball_reference_web_scraper.data import Position, Team, OutputType
+from courtside_data import client
+from courtside_data.data import Position, Team, OutputType
 
 
 class BaseCSVOutputTest(TestCase):

@@ -4,11 +4,11 @@ from unittest import TestCase
 
 from lxml import html
 
-from basketball_reference_web_scraper.data import TEAM_ABBREVIATIONS_TO_TEAM, LOCATION_ABBREVIATIONS_TO_POSITION, \
+from courtside_data.data import TEAM_ABBREVIATIONS_TO_TEAM, LOCATION_ABBREVIATIONS_TO_POSITION, \
     OUTCOME_ABBREVIATIONS_TO_OUTCOME
-from basketball_reference_web_scraper.data import Team, Outcome
-from basketball_reference_web_scraper.html import DailyLeadersPage
-from basketball_reference_web_scraper.parsers import TeamAbbreviationParser, \
+from courtside_data.data import Team, Outcome
+from courtside_data.html import DailyLeadersPage
+from courtside_data.parsers import TeamAbbreviationParser, \
     LocationAbbreviationParser, OutcomeAbbreviationParser, \
     SecondsPlayedParser, PlayerBoxScoresParser
 

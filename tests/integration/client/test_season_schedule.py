@@ -7,8 +7,8 @@ from unittest import TestCase
 import pytz
 import requests_mock
 
-from basketball_reference_web_scraper.client import season_schedule
-from basketball_reference_web_scraper.data import OutputType, Team
+from courtside_data.client import season_schedule
+from courtside_data.data import OutputType, Team
 from tests.integration.client.utilities import SeasonScheduleMocker
 
 

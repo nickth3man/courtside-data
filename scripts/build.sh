@@ -24,7 +24,7 @@ function main() {
 
   # Intentionally ignore end to end tests as they execute HTTP requests to basketball reference.com and are subject to
   # rate limits
-  "${uv_program_path}" run coverage run --source=basketball_reference_web_scraper --module pytest \
+  "${uv_program_path}" run coverage run --source=courtside_data --module pytest \
     --ignore="tests/e2e/"
 
   local uv_exit_code="$?"

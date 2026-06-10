@@ -11,7 +11,7 @@ pip install courtside-data
 ## Quick Start
 
 ```python
-from basketball_reference_web_scraper import client
+from courtside_data import client
 
 # Get league-wide per-game stats for the 2024 season
 stats = client.league_per_game_stats(season_end_year=2024)

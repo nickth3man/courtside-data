@@ -5,7 +5,7 @@
 The `import`ed `client` contains the API methods that will access **Basketball Reference**
 
 ```python
-from basketball_reference_web_scraper import client
+from courtside_data import client
 ```
 
 ## Enums
@@ -16,7 +16,7 @@ They are `import`ed from the `data` path.
 
 === "League"
     ```python
-    from basketball_reference_web_scraper.data import League
+    from courtside_data.data import League
     ```
     
     !!! note
@@ -27,7 +27,7 @@ They are `import`ed from the `data` path.
 
 === "Location"
     ```python
-    from basketball_reference_web_scraper.data import Location 
+    from courtside_data.data import Location 
     ```
     
     !!! note
@@ -37,7 +37,7 @@ They are `import`ed from the `data` path.
         
 === "Outcome"
     ```python
-    from basketball_reference_web_scraper.data import Outcome 
+    from courtside_data.data import Outcome 
     ```
     
     !!! note
@@ -47,7 +47,7 @@ They are `import`ed from the `data` path.
 
 === "OutputType"
     ```python
-    from basketball_reference_web_scraper.data import OutputType 
+    from courtside_data.data import OutputType 
     ```
     
     !!! note
@@ -57,7 +57,7 @@ They are `import`ed from the `data` path.
 
 === "OutputWriteOption"
     ```python
-    from basketball_reference_web_scraper.data import OutputWriteOption 
+    from courtside_data.data import OutputWriteOption 
     ```
     
     !!! note
@@ -68,7 +68,7 @@ They are `import`ed from the `data` path.
 
 === "Position"
     ```python
-    from basketball_reference_web_scraper.data import Position 
+    from courtside_data.data import Position 
     ```
     
     !!! note
@@ -77,7 +77,7 @@ They are `import`ed from the `data` path.
 
 === "PeriodType"
     ```python
-    from basketball_reference_web_scraper.data import PeriodType 
+    from courtside_data.data import PeriodType 
     ```
     
     !!! note
@@ -85,7 +85,7 @@ They are `import`ed from the `data` path.
         
 === "Team"
     ```python
-    from basketball_reference_web_scraper.data import Team
+    from courtside_data.data import Team
     ```
     
     !!! note
@@ -124,23 +124,23 @@ or appended to the specified file path (or any of other the Python file mode opt
 
 === "Python Data Structures"
     ```python
-    from basketball_reference_web_scraper import client
+    from courtside_data import client
 
     client.player_box_scores(day=1, month=1, year=2017)
     ```
     
 === "JSON"
     ```python
-    from basketball_reference_web_scraper import client
-    from basketball_reference_web_scraper.data import OutputType
+    from courtside_data import client
+    from courtside_data.data import OutputType
 
     client.player_box_scores(day=1, month=1, year=2017, output_type=OutputType.JSON)
     ```
 
 === "JSON to file"
     ```python
-    from basketball_reference_web_scraper import client
-    from basketball_reference_web_scraper.data import OutputType
+    from courtside_data import client
+    from courtside_data.data import OutputType
 
     client.player_box_scores(
         day=1, month=1, year=2017, 
@@ -151,8 +151,8 @@ or appended to the specified file path (or any of other the Python file mode opt
        
 === "CSV to file"
     ```python
-    from basketball_reference_web_scraper import client
-    from basketball_reference_web_scraper.data import OutputType
+    from courtside_data import client
+    from courtside_data.data import OutputType
 
     client.player_box_scores(
         day=1, month=1, year=2017, 
@@ -167,23 +167,23 @@ or appended to the specified file path (or any of other the Python file mode opt
 
 === "Python Data Structures"
     ```python
-    from basketball_reference_web_scraper import client
+    from courtside_data import client
 
     client.team_box_scores(day=1, month=1, year=2018)
     ```
     
 === "JSON"
     ```python
-    from basketball_reference_web_scraper import client
-    from basketball_reference_web_scraper.data import OutputType
+    from courtside_data import client
+    from courtside_data.data import OutputType
 
     client.team_box_scores(day=1, month=1, year=2017, output_type=OutputType.JSON)
     ```
 
 === "JSON to file"
     ```python
-    from basketball_reference_web_scraper import client
-    from basketball_reference_web_scraper.data import OutputType
+    from courtside_data import client
+    from courtside_data.data import OutputType
 
     client.team_box_scores(
         day=1, month=1, year=2017, 
@@ -194,8 +194,8 @@ or appended to the specified file path (or any of other the Python file mode opt
        
 === "CSV to file"
     ```python
-    from basketball_reference_web_scraper import client
-    from basketball_reference_web_scraper.data import OutputType
+    from courtside_data import client
+    from courtside_data.data import OutputType
 
     client.team_box_scores(
         day=1, month=1, year=2017, 
@@ -210,23 +210,23 @@ or appended to the specified file path (or any of other the Python file mode opt
 
 === "Python Data Structures"
     ```python
-    from basketball_reference_web_scraper import client
+    from courtside_data import client
 
     client.season_schedule(season_end_year=2018)
     ```
     
 === "JSON"
     ```python
-    from basketball_reference_web_scraper import client
-    from basketball_reference_web_scraper.data import OutputType
+    from courtside_data import client
+    from courtside_data.data import OutputType
 
     client.season_schedule(season_end_year=2018, output_type=OutputType.JSON)
     ```
 
 === "JSON to file"
     ```python
-    from basketball_reference_web_scraper import client
-    from basketball_reference_web_scraper.data import OutputType
+    from courtside_data import client
+    from courtside_data.data import OutputType
     
     client.season_schedule(
         season_end_year=2018, 
@@ -237,8 +237,8 @@ or appended to the specified file path (or any of other the Python file mode opt
        
 === "CSV to file"
     ```python
-    from basketball_reference_web_scraper import client
-    from basketball_reference_web_scraper.data import OutputType
+    from courtside_data import client
+    from courtside_data.data import OutputType
 
     client.season_schedule(
         season_end_year=2018, 
@@ -253,23 +253,23 @@ or appended to the specified file path (or any of other the Python file mode opt
 
 === "Python Data Structures"
     ```python
-    from basketball_reference_web_scraper import client
+    from courtside_data import client
 
     client.players_season_totals(season_end_year=2018)
     ```
     
 === "JSON"
     ```python
-    from basketball_reference_web_scraper import client
-    from basketball_reference_web_scraper.data import OutputType
+    from courtside_data import client
+    from courtside_data.data import OutputType
 
     client.players_season_totals(season_end_year=2018, output_type=OutputType.JSON)
     ```
 
 === "JSON to file"
     ```python
-    from basketball_reference_web_scraper import client
-    from basketball_reference_web_scraper.data import OutputType
+    from courtside_data import client
+    from courtside_data.data import OutputType
     
     client.players_season_totals(
         season_end_year=2018, 
@@ -280,8 +280,8 @@ or appended to the specified file path (or any of other the Python file mode opt
        
 === "CSV to file"
     ```python
-    from basketball_reference_web_scraper import client
-    from basketball_reference_web_scraper.data import OutputType
+    from courtside_data import client
+    from courtside_data.data import OutputType
 
     client.players_season_totals(
         season_end_year=2018, 
@@ -296,23 +296,23 @@ or appended to the specified file path (or any of other the Python file mode opt
 
 === "Python Data Structures"
     ```python
-    from basketball_reference_web_scraper import client
+    from courtside_data import client
 
     client.players_advanced_season_totals(season_end_year=2018)
     ```
     
 === "JSON"
     ```python
-    from basketball_reference_web_scraper import client
-    from basketball_reference_web_scraper.data import OutputType
+    from courtside_data import client
+    from courtside_data.data import OutputType
 
     client.players_advanced_season_totals(season_end_year=2018, output_type=OutputType.JSON)
     ```
 
 === "JSON to file"
     ```python
-    from basketball_reference_web_scraper import client
-    from basketball_reference_web_scraper.data import OutputType
+    from courtside_data import client
+    from courtside_data.data import OutputType
     
     client.players_advanced_season_totals(
         season_end_year=2018, 
@@ -323,8 +323,8 @@ or appended to the specified file path (or any of other the Python file mode opt
        
 === "CSV to file"
     ```python
-    from basketball_reference_web_scraper import client
-    from basketball_reference_web_scraper.data import OutputType
+    from courtside_data import client
+    from courtside_data.data import OutputType
     
     client.players_advanced_season_totals(
         season_end_year=2018,
@@ -343,16 +343,16 @@ or appended to the specified file path (or any of other the Python file mode opt
 
 === "Python Data Structures"
     ```python
-    from basketball_reference_web_scraper import client
-    from basketball_reference_web_scraper.data import Team
+    from courtside_data import client
+    from courtside_data.data import Team
 
     client.play_by_play(home_team=Team.BOSTON_CELTICS, year=2018, month=10, day=16)
     ```
     
 === "JSON"
     ```python
-    from basketball_reference_web_scraper import client
-    from basketball_reference_web_scraper.data import OutputType, Team
+    from courtside_data import client
+    from courtside_data.data import OutputType, Team
 
     client.play_by_play(
         home_team=Team.BOSTON_CELTICS, 
@@ -363,8 +363,8 @@ or appended to the specified file path (or any of other the Python file mode opt
 
 === "JSON to file"
     ```python
-    from basketball_reference_web_scraper import client
-    from basketball_reference_web_scraper.data import OutputType, Team
+    from courtside_data import client
+    from courtside_data.data import OutputType, Team
     
     client.play_by_play(
         home_team=Team.BOSTON_CELTICS, 
@@ -376,8 +376,8 @@ or appended to the specified file path (or any of other the Python file mode opt
        
 === "CSV to file"
     ```python
-    from basketball_reference_web_scraper import client
-    from basketball_reference_web_scraper.data import OutputType, Team
+    from courtside_data import client
+    from courtside_data.data import OutputType, Team
 
     client.play_by_play(
         home_team=Team.BOSTON_CELTICS, 
@@ -401,7 +401,7 @@ or appended to the specified file path (or any of other the Python file mode opt
 
 === "Python Data Structures"
     ```python
-    from basketball_reference_web_scraper import client
+    from courtside_data import client
 
     client.regular_season_player_box_scores(
         player_identifier="westbru01", 
@@ -411,8 +411,8 @@ or appended to the specified file path (or any of other the Python file mode opt
     
 === "JSON"
     ```python
-    from basketball_reference_web_scraper import client
-    from basketball_reference_web_scraper.data import OutputType
+    from courtside_data import client
+    from courtside_data.data import OutputType
 
     client.regular_season_player_box_scores(
         player_identifier="westbru01", 
@@ -423,8 +423,8 @@ or appended to the specified file path (or any of other the Python file mode opt
 
 === "JSON to file"
     ```python
-    from basketball_reference_web_scraper import client
-    from basketball_reference_web_scraper.data import OutputType
+    from courtside_data import client
+    from courtside_data.data import OutputType
 
     client.regular_season_player_box_scores(
         player_identifier="westbru01", 
@@ -436,8 +436,8 @@ or appended to the specified file path (or any of other the Python file mode opt
        
 === "CSV to file"
     ```python
-    from basketball_reference_web_scraper import client
-    from basketball_reference_web_scraper.data import OutputType
+    from courtside_data import client
+    from courtside_data.data import OutputType
 
     client.regular_season_player_box_scores(
         player_identifier="westbru01", 
@@ -462,7 +462,7 @@ or appended to the specified file path (or any of other the Python file mode opt
 
 === "Python Data Structures"
     ```python
-    from basketball_reference_web_scraper import client
+    from courtside_data import client
 
     client.playoff_player_box_scores(
         player_identifier="westbru01", 
@@ -472,8 +472,8 @@ or appended to the specified file path (or any of other the Python file mode opt
     
 === "JSON"
     ```python
-    from basketball_reference_web_scraper import client
-    from basketball_reference_web_scraper.data import OutputType
+    from courtside_data import client
+    from courtside_data.data import OutputType
 
     client.playoff_player_box_scores(
         player_identifier="westbru01", 
@@ -484,8 +484,8 @@ or appended to the specified file path (or any of other the Python file mode opt
 
 === "JSON to file"
     ```python
-    from basketball_reference_web_scraper import client
-    from basketball_reference_web_scraper.data import OutputType
+    from courtside_data import client
+    from courtside_data.data import OutputType
 
     client.playoff_player_box_scores(
         player_identifier="westbru01", 
@@ -497,8 +497,8 @@ or appended to the specified file path (or any of other the Python file mode opt
        
 === "CSV to file"
     ```python
-    from basketball_reference_web_scraper import client
-    from basketball_reference_web_scraper.data import OutputType
+    from courtside_data import client
+    from courtside_data.data import OutputType
 
     client.playoff_player_box_scores(
         player_identifier="westbru01", 
@@ -514,23 +514,23 @@ or appended to the specified file path (or any of other the Python file mode opt
 
 === "Python Data Structures"
     ```python
-    from basketball_reference_web_scraper import client
+    from courtside_data import client
 
     client.search(term="Ko")
     ```
     
 === "JSON"
     ```python
-    from basketball_reference_web_scraper import client
-    from basketball_reference_web_scraper.data import OutputType
+    from courtside_data import client
+    from courtside_data.data import OutputType
 
     client.search(term="Ko", output_type=OutputType.JSON)
     ```
 
 === "JSON to file"
     ```python
-    from basketball_reference_web_scraper import client
-    from basketball_reference_web_scraper.data import OutputType
+    from courtside_data import client
+    from courtside_data.data import OutputType
 
     client.search(
         term="Ko",
@@ -541,8 +541,8 @@ or appended to the specified file path (or any of other the Python file mode opt
        
 === "CSV to file"
     ```python
-    from basketball_reference_web_scraper import client
-    from basketball_reference_web_scraper.data import OutputType
+    from courtside_data import client
+    from courtside_data.data import OutputType
 
     client.search(
         term="Ko",
@@ -557,23 +557,23 @@ or appended to the specified file path (or any of other the Python file mode opt
 
 === "Python Data Structures"
     ```python
-    from basketball_reference_web_scraper import client
+    from courtside_data import client
 
     client.standings(season_end_year=2019)
     ```
     
 === "JSON"
     ```python
-    from basketball_reference_web_scraper import client
-    from basketball_reference_web_scraper.data import OutputType
+    from courtside_data import client
+    from courtside_data.data import OutputType
 
     client.standings(season_end_year=2019, output_type=OutputType.JSON)
     ```
 
 === "JSON to file"
     ```python
-    from basketball_reference_web_scraper import client
-    from basketball_reference_web_scraper.data import OutputType
+    from courtside_data import client
+    from courtside_data.data import OutputType
 
     client.standings(
         season_end_year=2019,
@@ -584,8 +584,8 @@ or appended to the specified file path (or any of other the Python file mode opt
        
 === "CSV to file"
     ```python
-    from basketball_reference_web_scraper import client
-    from basketball_reference_web_scraper.data import OutputType
+    from courtside_data import client
+    from courtside_data.data import OutputType
 
     client.standings(
         season_end_year=2019,

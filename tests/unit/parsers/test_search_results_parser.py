@@ -1,9 +1,9 @@
 from unittest import TestCase
 from unittest.mock import MagicMock
 
-from basketball_reference_web_scraper.data import LEAGUE_ABBREVIATIONS_TO_LEAGUE, League
-from basketball_reference_web_scraper.parser_service import ParserService
-from basketball_reference_web_scraper.parsers import SearchResultsParser, SearchResultNameParser, \
+from courtside_data.data import LEAGUE_ABBREVIATIONS_TO_LEAGUE, League
+from courtside_data.parser_service import ParserService
+from courtside_data.parsers import SearchResultsParser, SearchResultNameParser, \
     ResourceLocationParser, LeagueAbbreviationParser
 
 

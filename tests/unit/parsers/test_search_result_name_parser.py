@@ -1,6 +1,6 @@
 from unittest import TestCase
 
-from basketball_reference_web_scraper.parsers import SearchResultNameParser
+from courtside_data.parsers import SearchResultNameParser
 
 
 class TestSearchResultNameParser(TestCase):

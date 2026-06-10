@@ -24,7 +24,7 @@ function main() {
   "${uv_program_path}" sync --extra dev --frozen
   if [[ "0" != "$?" ]]; then printf "Cannot execute uv sync at ${uv_program_path}\n" && exit 255; fi
 
-  "${uv_program_path}" run coverage run --source=basketball_reference_web_scraper --module pytest \
+  "${uv_program_path}" run coverage run --source=courtside_data --module pytest \
     --ignore="tests/integration/" \
     --ignore="tests/unit/"
 

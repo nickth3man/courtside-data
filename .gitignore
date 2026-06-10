@@ -59,8 +59,8 @@ AGENTS.md
 
 # Generated codemaps
 codemap.md
-basketball_reference_web_scraper/codemap.md
-basketball_reference_web_scraper/output/codemap.md
+courtside_data/codemap.md
+courtside_data/output/codemap.md
 
 # Local analysis / sample data
 endpoint_samples.csv

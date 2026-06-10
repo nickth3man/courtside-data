@@ -5,9 +5,9 @@ from unittest import TestCase
 
 import requests_mock
 
-from basketball_reference_web_scraper.client import player_box_scores
-from basketball_reference_web_scraper.data import OutputType, OutputWriteOption
-from basketball_reference_web_scraper.errors import InvalidDate
+from courtside_data.client import player_box_scores
+from courtside_data.data import OutputType, OutputWriteOption
+from courtside_data.errors import InvalidDate
 
 
 class Test20180101(TestCase):

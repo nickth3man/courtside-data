@@ -6,9 +6,9 @@ from unittest import TestCase
 
 import requests_mock
 
-from basketball_reference_web_scraper.client import playoff_player_box_scores
-from basketball_reference_web_scraper.data import Team, Outcome, OutputType
-from basketball_reference_web_scraper.errors import InvalidPlayerAndSeason
+from courtside_data.client import playoff_player_box_scores
+from courtside_data.data import Team, Outcome, OutputType
+from courtside_data.errors import InvalidPlayerAndSeason
 
 
 class TestRussellWestbrook2019(TestCase):

@@ -1,6 +1,6 @@
 from unittest import TestCase
 
-from basketball_reference_web_scraper.data import PlayerData
+from courtside_data.data import PlayerData
 
 
 class TestPlayerData(TestCase):
