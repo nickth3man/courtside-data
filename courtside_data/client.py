@@ -33,6 +33,43 @@ from courtside_data.output.writers import CSVWriter, FileOptions, JSONWriter, Ou
 from courtside_data.parser_service import ParserService
 
 
+def _call_with_error_mapping(
+    service_call: Callable[[], Any],
+    error_mappings: dict[int, Callable[[], Exception]] | None,
+) -> Any:
+    """Invoke the service call, translating mapped HTTP status codes to domain errors."""
+    try:
+        return service_call()
+    except httpx.HTTPStatusError as http_error:
+        if error_mappings:
+            factory = error_mappings.get(http_error.response.status_code)
+            if factory:
+                raise factory() from http_error
+        raise
+
+
+def _extract_rows(values: Any) -> list[dict[str, Any]] | None:
+    """Pull the row list out of endpoint output (list[dict] or dict[str, list[dict]])."""
+    if isinstance(values, list) and values and isinstance(values[0], dict):
+        return values
+    if isinstance(values, dict):
+        for v in values.values():
+            if isinstance(v, list) and v and isinstance(v[0], dict):
+                return v
+    return None
+
+
+def _detect_csv_columns(rows: list[dict[str, Any]]) -> Sequence[str]:
+    """Auto-detect CSV column names from row keys, stripping all-empty columns.
+
+    Only used when an endpoint doesn't declare explicit column names; declared
+    columns keep their contract even when empty.
+    """
+    column_names = list(rows[0].keys())
+    non_empty = [k for k in column_names if any(row.get(k) not in (None, "", set(), []) for row in rows)]
+    return non_empty or column_names
+
+
 def _execute(
     service_call: Callable[[], Any],
     csv_column_names: Sequence[str] | None = None,
@@ -43,41 +80,20 @@ def _execute(
     json_options: dict[str, Any] | None = None,
     validate_output: bool = False,
 ) -> Any:
-    try:
-        values = service_call()
-    except httpx.HTTPStatusError as http_error:
-        if error_mappings:
-            factory = error_mappings.get(http_error.response.status_code)
-            if factory:
-                raise factory() from http_error
-        raise http_error
+    values = _call_with_error_mapping(service_call, error_mappings)
     # Coerce raw string values to proper Python types (idempotent for legacy endpoints)
     values = coerce_data(values)
-    # Extract rows and auto-detect column names for CSV output
-    if output_type == OutputType.CSV:
-        rows = None
-        if isinstance(values, list) and values and isinstance(values[0], dict):
-            rows = values
-        elif isinstance(values, dict):
-            for v in values.values():
-                if isinstance(v, list) and v and isinstance(v[0], dict):
-                    rows = v
-                    break
+
+    if output_type == OutputType.CSV and csv_column_names is None:
+        rows = _extract_rows(values)
         if rows is not None:
-            if csv_column_names is None:
-                csv_column_names = list(rows[0].keys())
-                # Only filter empty columns in auto-detection mode.
-                # Endpoints with explicit column names keep their contract.
-                non_empty = [
-                    k for k in csv_column_names if any(row.get(k) not in (None, "", set(), []) for row in rows)
-                ]
-                if non_empty:
-                    csv_column_names = non_empty
-    # Validate coerced types if requested
+            csv_column_names = _detect_csv_columns(rows)
+
     if validate_output and isinstance(values, list) and values and isinstance(values[0], dict):
         report = validate_rows(values, expected_columns=csv_column_names)
         if not report.ok:
             raise ValueError(str(report))
+
     options = OutputOptions.of(
         file_options=FileOptions.of(path=output_file_path, mode=output_write_option),
         output_type=output_type,
