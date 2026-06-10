@@ -32,19 +32,19 @@ class StandingsMocker:
         @functools.wraps(callable)
         def inner(*args, **kwargs):
             html_files_directory = os.path.join(self._schedules_directory, str(self._season_end_year))
-            for file in os.listdir(os.fsencode(html_files_directory)):
-                filename = os.fsdecode(file)
-                if not filename.endswith(".html"):
-                    raise ValueError(
-                        f"Unexpected prefix for {filename}. Expected all files in {html_files_directory} to end with .html.")
+            with requests_mock.Mocker() as m:
+                for file in os.listdir(os.fsencode(html_files_directory)):
+                    filename = os.fsdecode(file)
+                    if not filename.endswith(".html"):
+                        raise ValueError(
+                            f"Unexpected prefix for {filename}. Expected all files in {html_files_directory} to end with .html.")
 
-                with open(os.path.join(html_files_directory, filename), 'r', encoding="utf8") as file_input:
-                    if filename.startswith(str(self._season_end_year)):
-                        key = f"https://www.basketball-reference.com/leagues/NBA_{self._season_end_year}_games.html"
-                        with requests_mock.Mocker() as m:
+                    with open(os.path.join(html_files_directory, filename), 'r', encoding="utf8") as file_input:
+                        if filename.startswith(str(self._season_end_year)):
+                            key = f"https://www.basketball-reference.com/leagues/NBA_{self._season_end_year}.html"
                             m.get(key, text=file_input.read(), status_code=200)
 
-            return callable(*args, **kwargs)
+                return callable(*args, **kwargs)
 
         return inner
 

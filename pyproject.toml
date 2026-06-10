@@ -1,12 +1,16 @@
 [project]
-name = "basketball_reference_web_scraper"
-version = "4.15.4"
-description = "A Basketball Reference client that generates data by scraping the website"
+name = "courtside-data"
+version = "5.0.0a1"
+description = "A comprehensive Basketball Reference scraping library with 50+ endpoints, typed models, and built-in caching"
 readme = "README.md"
 license = "MIT"
-keywords = ["NBA", "Basketball", "Reference", "basketball-reference.com"]
-authors = [{name = "Jae Bradley", email = "jae.b.bradley@gmail.com"}]
-maintainers = [{name = "Jae Bradley", email = "jae.b.bradley@gmail.com"}]
+keywords = ["NBA", "Basketball", "Reference", "basketball-reference.com", "sports-data", "scraping"]
+authors = [
+    {name = "Nicolas Alexander", email = "nick.isaiah.alexander@gmail.com"},
+]
+maintainers = [
+    {name = "Nicolas Alexander", email = "nick.isaiah.alexander@gmail.com"},
+]
 classifiers = [
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: MIT License",
@@ -24,6 +28,7 @@ dependencies = [
 dev = [
     "pytest>=8.0",
     "pytest-freezer>=0.4.2",
+    "pytest-socket>=0.7.0",
     "requests-mock>=1.12.1",
     "coverage>=7.0",
     "mkdocs>=1.5.3",
@@ -33,10 +38,10 @@ dev = [
 ]
 
 [project.urls]
-Repository = "https://github.com/jaebradley/basketball_reference_web_scraper"
-Homepage = "https://jaebradley.github.io/basketball_reference_web_scraper"
-Issues = "https://github.com/jaebradley/basketball_reference_web_scraper/issues"
-Pull-requests = "https://github.com/jaebradley/basketball_reference_web_scraper/pull_requests"
+Repository = "https://github.com/nickth3man/courtside-data"
+Homepage = "https://github.com/nickth3man/courtside-data"
+Issues = "https://github.com/nickth3man/courtside-data/issues"
+Pull-requests = "https://github.com/nickth3man/courtside-data/pull_requests"
 
 [build-system]
 requires = ["hatchling"]
@@ -48,4 +53,4 @@ packages = ["basketball_reference_web_scraper"]
 [tool.pytest.ini_options]
 pythonpath = ["."]
 testpaths = "tests"
-addopts = ["-p", "no:freezegun"]
+addopts = ["-p", "no:freezegun", "--disable-socket"]

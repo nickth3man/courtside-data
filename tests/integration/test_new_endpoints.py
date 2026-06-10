@@ -95,8 +95,8 @@ LEAGUE_URL = "https://www.basketball-reference.com/leagues/NBA_{year}_per_game.h
 PER_MINUTE_URL = "https://www.basketball-reference.com/leagues/NBA_{year}_per_minute.html"
 TOTALS_URL = "https://www.basketball-reference.com/leagues/NBA_{year}_totals.html"
 ROOKIES_URL = "https://www.basketball-reference.com/leagues/NBA_{year}_rookies.html"
-STANDINGS_BY_DATE_URL = "https://www.basketball-reference.com/leagues/NBA_{year}_standings_by_date.html"
-ATTENDANCE_URL = "https://www.basketball-reference.com/leagues/NBA_{year}_attendance.html"
+STANDINGS_BY_DATE_URL = "https://www.basketball-reference.com/leagues/NBA_{year}_standings_by_date_{conference}.html"
+ATTENDANCE_URL = "https://www.basketball-reference.com/leagues/NBA_{year}.html"
 TRANSACTIONS_URL = "https://www.basketball-reference.com/leagues/NBA_{year}_transactions.html"
 PER_POSS_URL = "https://www.basketball-reference.com/leagues/NBA_{year}_per_poss.html"
 SHOOTING_URL = "https://www.basketball-reference.com/leagues/NBA_{year}_shooting.html"
@@ -107,19 +107,20 @@ PLAYOFF_BRACKET_URL = "https://www.basketball-reference.com/playoffs/NBA_{year}.
 AWARDS_URL = "https://www.basketball-reference.com/awards/awards_{year}.html"
 
 PLAYER_BASE_URL = "https://www.basketball-reference.com/players/j/jamesle01.html"
-PLAYER_SPLITS_URL = "https://www.basketball-reference.com/players/jamesle01/splits/{year}"
-PLAYER_ON_OFF_URL = "https://www.basketball-reference.com/players/jamesle01/on-off/{year}"
-PLAYER_SHOT_CHARTS_URL = "https://www.basketball-reference.com/players/jamesle01/shooting/{year}"
+PLAYER_SPLITS_URL = "https://www.basketball-reference.com/players/j/jamesle01/splits/{year}"
+PLAYER_ON_OFF_URL = "https://www.basketball-reference.com/players/j/jamesle01/on-off/{year}"
+PLAYER_SHOT_CHARTS_URL = "https://www.basketball-reference.com/players/j/jamesle01/shooting/{year}"
 
 TEAM_URL = "https://www.basketball-reference.com/teams/LAL/{year}.html"
 TEAM_GAMES_URL = "https://www.basketball-reference.com/teams/LAL/{year}_games.html"
 TEAM_TRANSACTIONS_URL = "https://www.basketball-reference.com/teams/LAL/{year}_transactions.html"
-TEAM_SPLITS_URL = "https://www.basketball-reference.com/teams/LAL/{year}_splits.html"
+TEAM_SPLITS_URL = "https://www.basketball-reference.com/teams/LAL/{year}/splits/"
 TEAM_CONTRACTS_URL = "https://www.basketball-reference.com/contracts/LAL.html"
 TEAM_LINEUPS_URL = "https://www.basketball-reference.com/teams/LAL/{year}/lineups/"
 TEAM_STARTING_LINEUPS_URL = "https://www.basketball-reference.com/teams/LAL/{year}_start.html"
 TEAM_ON_OFF_URL = "https://www.basketball-reference.com/teams/LAL/{year}/on-off/"
-TEAM_OPPONENT_URL = "https://www.basketball-reference.com/teams/LAL/{year}_opp.html"
+TEAM_OPPONENT_URL = "https://www.basketball-reference.com/teams/LAL/{year}.html"
+INJURY_URL = "https://www.basketball-reference.com/friv/injuries.fcgi"
 FRANCHISE_HISTORY_URL = "https://www.basketball-reference.com/teams/LAL/"
 
 
@@ -168,10 +169,11 @@ class TestLeagueEndpoints:
                 assert isinstance(result, list)
 
     def test_standings_by_date(self):
-        html = MINIMAL_TABLE.format(table_id="standings")
+        html = MINIMAL_TABLE.format(table_id="standings_by_date")
         with patch("time.sleep"):
             with requests_mock.Mocker() as m:
-                _mock_url(m, STANDINGS_BY_DATE_URL.format(year=2024), html)
+                _mock_url(m, STANDINGS_BY_DATE_URL.format(year=2024, conference="eastern_conference"), html)
+                _mock_url(m, STANDINGS_BY_DATE_URL.format(year=2024, conference="western_conference"), html)
                 result = standings_by_date(2024)
                 assert isinstance(result, list)
 
@@ -405,7 +407,7 @@ class TestTeamEndpoints:
         html = MINIMAL_TABLE.format(table_id="injuries")
         with patch("time.sleep"):
             with requests_mock.Mocker() as m:
-                _mock_url(m, TEAM_URL.format(year=2024), html)
+                _mock_url(m, INJURY_URL, html)
                 result = team_injury_report("LAL", 2024)
                 assert isinstance(result, list)
 

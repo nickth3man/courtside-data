@@ -17,6 +17,7 @@ from basketball_reference_web_scraper.html import DailyLeadersPage, PlayerSeason
 
 _DEFAULT_RATE_LIMIT_INTERVAL = 3.5
 _DEFAULT_RATE_LIMIT_JITTER = 1.2
+_DEFAULT_TIMEOUT = (10, 30)  # (connect_timeout, read_timeout) in seconds
 
 
 class HTTPService:
@@ -31,6 +32,7 @@ class HTTPService:
         time_func=None,
         sleep=None,
         random_func=None,
+        timeout=None,
     ):
         self.parser = parser
         # Constructor param > env var > default
@@ -55,6 +57,7 @@ class HTTPService:
         self._time = time_func if time_func is not None else time.time
         self._sleep = sleep if sleep is not None else time.sleep
         self._random = random_func if random_func is not None else random.uniform
+        self._timeout = timeout if timeout is not None else _DEFAULT_TIMEOUT
 
     def _apply_rate_limiting(self):
         current_time = self._time()
@@ -68,6 +71,7 @@ class HTTPService:
 
     def _get(self, url, **kwargs):
         self._apply_rate_limiting()
+        kwargs.setdefault("timeout", self._timeout)
         return self._session.get(url=url, **kwargs)
 
     @staticmethod
