@@ -1,0 +1,14 @@
+{
+  "recommendations": [
+    // Python language support, environment discovery, test UI
+    "ms-python.python",
+    // Debugger (debugpy) used by launch.json
+    "ms-python.debugpy",
+    // Ruff: linting, import sorting, formatting (project default formatter)
+    "charliermarsh.ruff",
+    // ty: type checking + language server (replaces Pylance diagnostics)
+    "astral-sh.ty",
+    // pyproject.toml / ruff.toml editing support
+    "tamasfe.even-better-toml"
+  ]
+}

@@ -1,0 +1,45 @@
+{
+  // ── Python environment ──────────────────────────────────────────────
+  // The Python extension auto-detects the uv-managed .venv at the workspace
+  // root. Create it with: uv sync  (or: uv pip install -e ".[dev]")
+  "python.terminal.activateEnvironment": true,
+
+  // ── Type checking: ty (astral-sh.ty) ────────────────────────────────
+  // The ty extension runs the project's pinned ty as a language server and
+  // disables the Python extension's language server by default to avoid
+  // duplicate diagnostics. Settings live in pyproject.toml [tool.ty].
+  "ty.importStrategy": "fromEnvironment",
+
+  // ── Lint + format: Ruff (charliermarsh.ruff) ────────────────────────
+  // Rule selection and line length come from pyproject.toml [tool.ruff].
+  "ruff.importStrategy": "fromEnvironment",
+  "[python]": {
+    "editor.defaultFormatter": "charliermarsh.ruff",
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": {
+      "source.fixAll.ruff": "explicit",
+      "source.organizeImports.ruff": "explicit"
+    }
+  },
+
+  // ── Testing: pytest ─────────────────────────────────────────────────
+  // e2e tests skip unless RUN_LIVE_BASKETBALL_REFERENCE_TESTS=1 (live-network
+  // policy), so test discovery over the whole tree is safe.
+  "python.testing.pytestEnabled": true,
+  "python.testing.unittestEnabled": false,
+  "python.testing.pytestArgs": ["tests"],
+
+  // ── Workspace hygiene ───────────────────────────────────────────────
+  "files.exclude": {
+    "**/__pycache__": true,
+    "**/.pytest_cache": true,
+    "**/.ruff_cache": true
+  },
+  "search.exclude": {
+    "**/.venv": true,
+    "**/uv.lock": true,
+    "tests/fixtures": true
+  },
+  "files.insertFinalNewline": true,
+  "files.trimTrailingWhitespace": true
+}

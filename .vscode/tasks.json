@@ -1,0 +1,52 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "test",
+      "detail": "Run unit + integration tests via uv",
+      "type": "shell",
+      "command": "uv run pytest tests/unit tests/integration -q",
+      "group": { "kind": "test", "isDefault": true },
+      "problemMatcher": []
+    },
+    {
+      "label": "test: all",
+      "detail": "Full test tree (e2e skips unless RUN_LIVE_BASKETBALL_REFERENCE_TESTS=1)",
+      "type": "shell",
+      "command": "uv run pytest tests -q",
+      "group": "test",
+      "problemMatcher": []
+    },
+    {
+      "label": "lint",
+      "detail": "Ruff lint check",
+      "type": "shell",
+      "command": "uv run ruff check .",
+      "group": "build",
+      "problemMatcher": []
+    },
+    {
+      "label": "format",
+      "detail": "Ruff format the repo",
+      "type": "shell",
+      "command": "uv run ruff format .",
+      "group": "build",
+      "problemMatcher": []
+    },
+    {
+      "label": "typecheck",
+      "detail": "ty type check the package",
+      "type": "shell",
+      "command": "uv run ty check courtside_data",
+      "group": "build",
+      "problemMatcher": []
+    },
+    {
+      "label": "check: all",
+      "detail": "Lint + typecheck + tests (same gauntlet as CI)",
+      "dependsOrder": "sequence",
+      "dependsOn": ["lint", "typecheck", "test"],
+      "problemMatcher": []
+    }
+  ]
+}
