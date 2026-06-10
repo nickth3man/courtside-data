@@ -16,56 +16,35 @@ from typing import Any
 # ─── Coercion functions ────────────────────────────────────────────────
 
 
-def coerce_int(value: Any) -> int | Any:
-    """Convert str to int. Pass through non-str values (already typed)."""
-    if not isinstance(value, str):
-        return value
-    stripped = value.strip()
-    if not stripped or stripped == "\xa0":
-        return 0
-    try:
-        return int(stripped)
-    except ValueError:
-        return value  # can't parse, leave as-is
+def _make_coercion(name: str, target: Callable[[str], Any], empty_value: Any) -> Callable[[Any], Any]:
+    """Build a string-coercion function.
+
+    The returned function converts str values via ``target``, maps empty/nbsp
+    cells to ``empty_value``, passes non-str (already typed) values through,
+    and leaves unparseable strings as-is. ``name`` is assigned as ``__name__``
+    because ``type_validator._get_target_type`` dispatches on it.
+    """
+
+    def coerce(value: Any) -> Any:
+        if not isinstance(value, str):
+            return value
+        stripped = value.strip()
+        if not stripped or stripped == "\xa0":
+            return empty_value
+        try:
+            return target(stripped)
+        except ValueError:
+            return value  # can't parse, leave as-is
+
+    coerce.__name__ = name
+    coerce.__qualname__ = name
+    return coerce
 
 
-def coerce_float(value: Any) -> float | Any:
-    """Convert str to float. Pass through non-str values."""
-    if not isinstance(value, str):
-        return value
-    stripped = value.strip()
-    if not stripped or stripped == "\xa0":
-        return 0.0
-    try:
-        return float(stripped)
-    except ValueError:
-        return value
-
-
-def coerce_int_or_none(value: Any) -> int | None | Any:
-    """Convert str to int, empty str to None. Pass through non-str."""
-    if not isinstance(value, str):
-        return value
-    stripped = value.strip()
-    if not stripped or stripped == "\xa0":
-        return None
-    try:
-        return int(stripped)
-    except ValueError:
-        return value
-
-
-def coerce_float_or_none(value: Any) -> float | None | Any:
-    """Convert str to float, empty str to None. Pass through non-str."""
-    if not isinstance(value, str):
-        return value
-    stripped = value.strip()
-    if not stripped or stripped == "\xa0":
-        return None
-    try:
-        return float(stripped)
-    except ValueError:
-        return value
+coerce_int = _make_coercion("coerce_int", int, 0)
+coerce_float = _make_coercion("coerce_float", float, 0.0)
+coerce_int_or_none = _make_coercion("coerce_int_or_none", int, None)
+coerce_float_or_none = _make_coercion("coerce_float_or_none", float, None)
 
 
 # ─── Column → type mapping ─────────────────────────────────────────────
