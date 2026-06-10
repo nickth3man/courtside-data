@@ -1,9 +1,0 @@
-{
-  "byte_count": 492894,
-  "content_type": "text/html",
-  "downloaded_at": "2026-06-02T18:12:19.735640+00:00",
-  "sha256": "ce96fb4708709aebe61046528350bdf22f590026179725cdadb7d792204fe8fd",
-  "status_code": 200,
-  "tool": "requests",
-  "url": "https://www.basketball-reference.com/boxscores/201801010TOR.html"
-}

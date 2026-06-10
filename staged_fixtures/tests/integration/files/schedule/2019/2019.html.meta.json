@@ -1,9 +1,0 @@
-{
-  "byte_count": 314297,
-  "content_type": "text/html",
-  "downloaded_at": "2026-06-02T18:06:52.884965+00:00",
-  "sha256": "0ed4975dc03cb459ba3bf0997bcb190631b991fd64e669d368d7dbf6321042c5",
-  "status_code": 200,
-  "tool": "requests",
-  "url": "https://www.basketball-reference.com/leagues/NBA_2019_games.html"
-}

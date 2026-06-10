@@ -1,9 +1,0 @@
-{
-  "byte_count": 142261,
-  "content_type": "text/html",
-  "downloaded_at": "2026-06-02T18:10:26.535312+00:00",
-  "sha256": "596a6adaa400ecfb3f836282b7f05ebaa42e41e95a5f73a58d5a026cbd128d23",
-  "status_code": 200,
-  "tool": "requests",
-  "url": "https://www.basketball-reference.com/leagues/NBA_2018_games-june.html"
-}

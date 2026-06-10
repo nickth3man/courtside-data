@@ -3,28 +3,28 @@ from unittest import TestCase
 
 from lxml import html
 
-from courtside_data.data import TEAM_ABBREVIATIONS_TO_TEAM, TeamTotal
-from courtside_data.data import Team, Outcome
+from courtside_data.data import TEAM_ABBREVIATIONS_TO_TEAM, Outcome, Team, TeamTotal
 from courtside_data.html import BoxScoresPage
-from courtside_data.parsers import TeamAbbreviationParser, \
-    TeamTotalsParser
+from courtside_data.parsers import TeamAbbreviationParser, TeamTotalsParser
 
 
 class TestParseTeams(TestCase):
     @classmethod
     def setUpClass(cls):
-        with open(os.path.join(
+        with open(
+            os.path.join(
                 os.path.dirname(__file__),
-                f"../files/boxscores/2017/1/201701010ATL.html",
-        ), 'r', encoding="utf-8") as file_input: _html = file_input.read()
+                "../files/boxscores/2017/1/201701010ATL.html",
+            ),
+            encoding="utf-8",
+        ) as file_input:
+            _html = file_input.read()
         first_team_totals, second_team_totals = [
             TeamTotal(team_abbreviation=table.team_abbreviation, totals=table.team_totals)
             for table in BoxScoresPage(html.fromstring(html=_html)).basic_statistics_tables
         ]
         cls._parsed_results = TeamTotalsParser(
-            team_abbreviation_parser=TeamAbbreviationParser(
-                abbreviations_to_teams=TEAM_ABBREVIATIONS_TO_TEAM
-            ),
+            team_abbreviation_parser=TeamAbbreviationParser(abbreviations_to_teams=TEAM_ABBREVIATIONS_TO_TEAM),
         ).parse(
             first_team_totals=first_team_totals,
             second_team_totals=second_team_totals,

@@ -1,9 +1,0 @@
-{
-  "byte_count": 1538968,
-  "content_type": "text/html",
-  "downloaded_at": "2026-06-02T18:03:47.888733+00:00",
-  "sha256": "42301fc8303a1da5dff76ccd47598bf9c0715dbebff4d61b936752b89212a3a5",
-  "status_code": 200,
-  "tool": "requests",
-  "url": "https://www.basketball-reference.com/leagues/NBA_2013_totals.html"
-}

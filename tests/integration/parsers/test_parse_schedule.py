@@ -1,13 +1,13 @@
 import os
-from zoneinfo import ZoneInfo
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from unittest import TestCase
+from zoneinfo import ZoneInfo
 
 from lxml import html
 
-from courtside_data.data import Team, TEAM_NAME_TO_TEAM
+from courtside_data.data import TEAM_NAME_TO_TEAM, Team
 from courtside_data.html import SchedulePage
-from courtside_data.parsers import ScheduledGamesParser, TeamNameParser, ScheduledStartTimeParser
+from courtside_data.parsers import ScheduledGamesParser, ScheduledStartTimeParser, TeamNameParser
 
 
 class BaseTest(TestCase):
@@ -15,23 +15,30 @@ class BaseTest(TestCase):
 
     @classmethod
     def setUpClass(cls):
-        with open(os.path.join(
+        with open(
+            os.path.join(
                 os.path.dirname(__file__),
                 f"../files/schedule/{cls._path_from_schedule_directory}",
-        ), 'r', encoding="utf-8") as file_input: _html = file_input.read()
+            ),
+            encoding="utf-8",
+        ) as file_input:
+            _html = file_input.read()
         cls._page = SchedulePage(html=html.fromstring(_html))
 
         super().setUpClass()
 
 
 class BaseParserTest(BaseTest):
-
     @classmethod
     def setUpClass(cls):
-        with open(os.path.join(
+        with open(
+            os.path.join(
                 os.path.dirname(__file__),
                 f"../files/schedule/{cls._path_from_schedule_directory}",
-        ), 'r', encoding="utf-8") as file_input: _html = file_input.read()
+            ),
+            encoding="utf-8",
+        ) as file_input:
+            _html = file_input.read()
         cls._parsed_results = ScheduledGamesParser(
             start_time_parser=ScheduledStartTimeParser(),
             team_name_parser=TeamNameParser(team_names_to_teams=TEAM_NAME_TO_TEAM),
@@ -44,16 +51,19 @@ class TestSchedulePage(BaseTest):
     _path_from_schedule_directory = "2001/2001.html"
 
     def test_expected_urls(self):
-        self.assertEqual(self._page.other_months_schedule_urls, [
-            "/leagues/NBA_2001_games-november.html",
-            "/leagues/NBA_2001_games-december.html",
-            "/leagues/NBA_2001_games-january.html",
-            "/leagues/NBA_2001_games-february.html",
-            "/leagues/NBA_2001_games-march.html",
-            "/leagues/NBA_2001_games-april.html",
-            "/leagues/NBA_2001_games-may.html",
-            "/leagues/NBA_2001_games-june.html",
-        ])
+        self.assertEqual(
+            self._page.other_months_schedule_urls,
+            [
+                "/leagues/NBA_2001_games-november.html",
+                "/leagues/NBA_2001_games-december.html",
+                "/leagues/NBA_2001_games-january.html",
+                "/leagues/NBA_2001_games-february.html",
+                "/leagues/NBA_2001_games-march.html",
+                "/leagues/NBA_2001_games-april.html",
+                "/leagues/NBA_2001_games-may.html",
+                "/leagues/NBA_2001_games-june.html",
+            ],
+        )
 
 
 class TestOctober2001Parser(BaseParserTest):
@@ -64,7 +74,11 @@ class TestOctober2001Parser(BaseParserTest):
 
     def test_first_game(self):
         first_game = self._parsed_results[0]
-        expected_datetime = datetime(year=2000, month=10, day=31, hour=19, minute=30).replace(tzinfo=ZoneInfo("US/Eastern")).astimezone(timezone.utc)
+        expected_datetime = (
+            datetime(year=2000, month=10, day=31, hour=19, minute=30)
+            .replace(tzinfo=ZoneInfo("US/Eastern"))
+            .astimezone(UTC)
+        )
 
         self.assertTrue(abs(first_game["start_time"] - expected_datetime) < timedelta(seconds=1))
         self.assertEqual(first_game["away_team"], Team.CHARLOTTE_HORNETS)
@@ -89,8 +103,12 @@ class TestParsingUpcomingGames(BaseParserTest):
     def test_first_game(self):
         first_game = self._parsed_results[0]
 
-        self.assertEqual(first_game["start_time"],
-                         datetime(year=2019, month=4, day=1, hour=19, minute=30).replace(tzinfo=ZoneInfo("US/Eastern")).astimezone(timezone.utc))
+        self.assertEqual(
+            first_game["start_time"],
+            datetime(year=2019, month=4, day=1, hour=19, minute=30)
+            .replace(tzinfo=ZoneInfo("US/Eastern"))
+            .astimezone(UTC),
+        )
         self.assertEqual(first_game["away_team"], Team.MIAMI_HEAT)
         self.assertEqual(first_game["home_team"], Team.BOSTON_CELTICS)
         self.assertIsNone(first_game["away_team_score"])

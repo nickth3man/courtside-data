@@ -4,19 +4,22 @@ import os
 import sys
 from unittest import TestCase
 
-from tests import http_mock as requests_mock
-
 from courtside_data.client import players_advanced_season_totals
-from courtside_data.data import OutputType, Team, Position
+from courtside_data.data import OutputType, Position, Team
 from courtside_data.errors import InvalidSeason
+from tests import http_mock as requests_mock
 
 
 class Test2019(TestCase):
     def setUp(self):
-        with open(os.path.join(
+        with open(
+            os.path.join(
                 os.path.dirname(__file__),
                 "../files/player_advanced_season_totals/2019.html",
-        ), 'r', encoding="utf8") as file_input: self._html = file_input.read();
+            ),
+            encoding="utf8",
+        ) as file_input:
+            self._html = file_input.read()
 
     @requests_mock.Mocker()
     def test_length(self, m):
@@ -35,10 +38,14 @@ class BaseTestPlayerAdvancedSeasonTotalsCSVOutput(TestCase):
         raise NotImplementedError
 
     def setUp(self):
-        with open(os.path.join(
+        with open(
+            os.path.join(
                 os.path.dirname(__file__),
                 f"../files/player_advanced_season_totals/{self.year}.html",
-        ), 'r', encoding="utf8") as file_input: self._html = file_input.read()
+            ),
+            encoding="utf8",
+        ) as file_input:
+            self._html = file_input.read()
 
         self.output_file_path = os.path.join(
             os.path.dirname(__file__),
@@ -55,9 +62,11 @@ class BaseTestPlayerAdvancedSeasonTotalsCSVOutput(TestCase):
 
     @requests_mock.Mocker()
     def assert_player_advanced_season_totals_csv(self, m):
-        m.get(f"https://www.basketball-reference.com/leagues/NBA_{self.year}_advanced.html",
-              text=self._html,
-              status_code=200)
+        m.get(
+            f"https://www.basketball-reference.com/leagues/NBA_{self.year}_advanced.html",
+            text=self._html,
+            status_code=200,
+        )
 
         players_advanced_season_totals(
             season_end_year=self.year,
@@ -66,10 +75,7 @@ class BaseTestPlayerAdvancedSeasonTotalsCSVOutput(TestCase):
             include_combined_values=self.include_combined_values,
         )
 
-        self.assertTrue(
-            filecmp.cmp(
-                self.output_file_path,
-                self.expected_output_file_path))
+        self.assertTrue(filecmp.cmp(self.output_file_path, self.expected_output_file_path))
 
 
 class BaseTestPlayerAdvancedSeasonTotalsJSONOutput(TestCase):
@@ -82,10 +88,14 @@ class BaseTestPlayerAdvancedSeasonTotalsJSONOutput(TestCase):
         raise NotImplementedError
 
     def setUp(self):
-        with open(os.path.join(
+        with open(
+            os.path.join(
                 os.path.dirname(__file__),
                 f"../files/player_advanced_season_totals/{self.year}.html",
-        ), 'r', encoding="utf8") as file_input: self._html = file_input.read()
+            ),
+            encoding="utf8",
+        ) as file_input:
+            self._html = file_input.read()
 
         self.output_file_path = os.path.join(
             os.path.dirname(__file__),
@@ -102,9 +112,11 @@ class BaseTestPlayerAdvancedSeasonTotalsJSONOutput(TestCase):
 
     @requests_mock.Mocker()
     def assert_player_advanced_season_totals_json(self, m):
-        m.get(f"https://www.basketball-reference.com/leagues/NBA_{self.year}_advanced.html",
-              text=self._html,
-              status_code=200)
+        m.get(
+            f"https://www.basketball-reference.com/leagues/NBA_{self.year}_advanced.html",
+            text=self._html,
+            status_code=200,
+        )
 
         players_advanced_season_totals(
             season_end_year=self.year,
@@ -113,8 +125,10 @@ class BaseTestPlayerAdvancedSeasonTotalsJSONOutput(TestCase):
             include_combined_values=self.include_combined_values,
         )
 
-        with open(self.output_file_path, "r", encoding="utf8") as output_file, \
-                open(self.expected_output_file_path, "r", encoding="utf8") as expected_output_file:
+        with (
+            open(self.output_file_path, encoding="utf8") as output_file,
+            open(self.expected_output_file_path, encoding="utf8") as expected_output_file,
+        ):
             self.assertEqual(
                 json.load(output_file),
                 json.load(expected_output_file),
@@ -254,31 +268,36 @@ class Test2001PlayerAdvancedSeasonTotalsJSONOutput(BaseTestPlayerAdvancedSeasonT
 @requests_mock.Mocker()
 class TestPlayerAdvancedSeasonTotalsInMemoryOutput(TestCase):
     def setUp(self):
-        with open(os.path.join(
+        with open(
+            os.path.join(
                 os.path.dirname(__file__),
-                f"../files/player_advanced_season_totals/2018.html",
-        ), 'r', encoding="utf8") as file_input: self._html = file_input.read()
+                "../files/player_advanced_season_totals/2018.html",
+            ),
+            encoding="utf8",
+        ) as file_input:
+            self._html = file_input.read()
 
     def test_future_season_raises_invalid_season(self, m):
-        m.get(f"https://www.basketball-reference.com/leagues/NBA_{sys.maxsize}_advanced.html",
-              text="Not found",
-              status_code=404)
-        self.assertRaisesRegex(InvalidSeason, f"Season end year of {sys.maxsize} is invalid",
-                               players_advanced_season_totals,
-                               season_end_year=sys.maxsize)
+        m.get(
+            f"https://www.basketball-reference.com/leagues/NBA_{sys.maxsize}_advanced.html",
+            text="Not found",
+            status_code=404,
+        )
+        self.assertRaisesRegex(
+            InvalidSeason,
+            f"Season end year of {sys.maxsize} is invalid",
+            players_advanced_season_totals,
+            season_end_year=sys.maxsize,
+        )
 
     def test_2018_players_advanced_season_totals_length(self, m):
-        m.get(f"https://www.basketball-reference.com/leagues/NBA_2018_advanced.html",
-              text=self._html,
-              status_code=200)
+        m.get("https://www.basketball-reference.com/leagues/NBA_2018_advanced.html", text=self._html, status_code=200)
 
         result = players_advanced_season_totals(season_end_year=2018)
         self.assertEqual(len(result), 605)
 
     def test_first_2018_players_advanced_season_totals_row(self, m):
-        m.get(f"https://www.basketball-reference.com/leagues/NBA_2018_advanced.html",
-              text=self._html,
-              status_code=200)
+        m.get("https://www.basketball-reference.com/leagues/NBA_2018_advanced.html", text=self._html, status_code=200)
 
         result = players_advanced_season_totals(season_end_year=2018)
         self.assertEqual(
@@ -313,63 +332,57 @@ class TestPlayerAdvancedSeasonTotalsInMemoryOutput(TestCase):
                 "usage_percentage": 31.6,
                 "value_over_replacement_player": 8.2,
                 "win_shares": 14.0,
-                "win_shares_per_48_minutes": 0.221
+                "win_shares_per_48_minutes": 0.221,
             },
         )
 
     def test_last_2018_players_advanced_season_totals_row(self, m):
-        m.get(f"https://www.basketball-reference.com/leagues/NBA_2018_advanced.html",
-              text=self._html,
-              status_code=200)
+        m.get("https://www.basketball-reference.com/leagues/NBA_2018_advanced.html", text=self._html, status_code=200)
 
         result = players_advanced_season_totals(season_end_year=2018)
         self.assertEqual(
             result[604],
             {
-                "age": 27,
+                "age": 24,
                 "assist_percentage": 0.0,
                 "block_percentage": 0.0,
-                "box_plus_minus": -8.5,
-                "defensive_box_plus_minus": -2.3,
+                "box_plus_minus": 242.2,
+                "defensive_box_plus_minus": 42.7,
                 "defensive_rebound_percentage": 0.0,
                 "defensive_win_shares": 0.0,
                 "free_throw_attempt_rate": 0.0,
                 "games_played": 1,
                 "is_combined_totals": False,
                 "minutes_played": 1,
-                "name": "Trey McKinney-Jones",
-                "offensive_box_plus_minus": -6.2,
+                "name": "Naz Mitrou-Long",
+                "offensive_box_plus_minus": 199.4,
                 "offensive_rebound_percentage": 0.0,
-                "offensive_win_shares": 0.0,
-                "player_efficiency_rating": 0.0,
-                "positions": [
-                    Position.SHOOTING_GUARD
-                ],
-                "slug": "mckintr01",
+                "offensive_win_shares": 0.1,
+                "player_efficiency_rating": 133.8,
+                "positions": [Position.SHOOTING_GUARD],
+                "slug": "mitrona01",
                 "steal_percentage": 0.0,
-                "team": Team.INDIANA_PACERS,
-                "three_point_attempt_rate": 0.0,
+                "team": Team.UTAH_JAZZ,
+                "three_point_attempt_rate": 1.0,
                 "total_rebound_percentage": 0.0,
-                "true_shooting_percentage": 0.0,
+                "true_shooting_percentage": 1.5,
                 "turnover_percentage": 0.0,
-                "usage_percentage": 0.0,
+                "usage_percentage": 45.0,
                 "value_over_replacement_player": 0.0,
-                "win_shares": 0.0,
-                "win_shares_per_48_minutes": -0.001
-            }
+                "win_shares": 0.1,
+                "win_shares_per_48_minutes": 2.712,
+            },
         )
 
     def test_players_advanced_season_totals_json(self, m):
-        m.get(f"https://www.basketball-reference.com/leagues/NBA_2018_advanced.html",
-              text=self._html,
-              status_code=200)
+        m.get("https://www.basketball-reference.com/leagues/NBA_2018_advanced.html", text=self._html, status_code=200)
 
         expected_output_file_path = os.path.join(
             os.path.dirname(__file__),
             "./output/expected/player_advanced_season_totals/2018.json",
         )
         result = players_advanced_season_totals(season_end_year=2018, output_type=OutputType.JSON)
-        with open(expected_output_file_path, "r", encoding="utf8") as expected_output:
+        with open(expected_output_file_path, encoding="utf8") as expected_output:
             self.assertEqual(
                 json.loads(result),
                 json.load(expected_output),

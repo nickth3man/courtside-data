@@ -45,10 +45,7 @@ class TestSearchResult(TestCase):
         link.attrib.__getitem__ = MagicMock(return_value="some href")
         mocked_resource_link.return_value = link
 
-        self.assertEqual(
-            SearchResult(html=MagicMock()).resource_location,
-            "some href"
-        )
+        self.assertEqual(SearchResult(html=MagicMock()).resource_location, "some href")
         link.attrib.__getitem__.assert_called_once_with("href")
 
     @patch.object(SearchResult, "resource_link", new_callable=PropertyMock)
@@ -61,23 +58,14 @@ class TestSearchResult(TestCase):
         link = MagicMock()
         link.text_content = MagicMock(return_value="some content")
         mocked_resource_link.return_value = link
-        self.assertEqual(
-            SearchResult(html=MagicMock()).resource_name,
-            "some content"
-        )
+        self.assertEqual(SearchResult(html=MagicMock()).resource_name, "some content")
         link.text_content.assert_called_once_with()
 
     def test_different_class_is_not_equal(self):
-        self.assertNotEqual(
-            SearchResult(html=MagicMock()),
-            "jaebaebae"
-        )
+        self.assertNotEqual(SearchResult(html=MagicMock()), "jaebaebae")
 
     def test_different_html_but_same_class_is_not_equal(self):
-        self.assertNotEqual(
-            SearchResult(html=MagicMock()),
-            SearchResult(html=MagicMock())
-        )
+        self.assertNotEqual(SearchResult(html=MagicMock()), SearchResult(html=MagicMock()))
 
     def test_same_html_and_same_class_is_equal(self):
         html = MagicMock()
@@ -85,4 +73,3 @@ class TestSearchResult(TestCase):
             SearchResult(html=html),
             SearchResult(html=html),
         )
-

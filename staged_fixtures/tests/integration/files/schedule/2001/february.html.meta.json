@@ -1,9 +1,0 @@
-{
-  "byte_count": 422787,
-  "content_type": "text/html",
-  "downloaded_at": "2026-06-02T18:08:12.274961+00:00",
-  "sha256": "5808ad08fc14033183677e03fbdd96cce50d99a9ce2be762ee2ed3af0d9ace0d",
-  "status_code": 200,
-  "tool": "requests",
-  "url": "https://www.basketball-reference.com/leagues/NBA_2001_games-february.html"
-}

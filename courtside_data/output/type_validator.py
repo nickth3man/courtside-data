@@ -6,11 +6,10 @@ Handles columns that can be None (e.g., empty cells for age, combined-totals row
 
 from __future__ import annotations
 
-import warnings
-from typing import Any, Sequence
+from collections.abc import Sequence
+from typing import Any
 
 from courtside_data.output.field_types import get_coercion
-
 
 # ─── Expected type extraction ─────────────────────────────────────────
 
@@ -22,7 +21,7 @@ def _get_target_type(column_name: str) -> type | tuple[type, ...] | None:
     The coercion function's __name__ tells us what it produces.
     """
     fn = get_coercion(column_name)
-    name = fn.__name__
+    name = getattr(fn, "__name__", "")
 
     # coerce_int, coerce_float, coerce_int_or_none, coerce_float_or_none
     if name == "coerce_int":
@@ -52,10 +51,7 @@ class ValidationError:
         self.value = value
 
     def __str__(self) -> str:
-        return (
-            f"row[{self.row_index}].{self.column}: "
-            f"expected {self.expected}, got {self.actual} ({self.value!r})"
-        )
+        return f"row[{self.row_index}].{self.column}: expected {self.expected}, got {self.actual} ({self.value!r})"
 
 
 class ValidationReport:

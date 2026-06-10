@@ -6,7 +6,9 @@ The test suite was written against requests-mock's ``Mocker`` API
 migration, this shim preserves that API on top of respx so the ~160
 existing ``m.get(...)`` call sites stay untouched.
 """
+
 import functools
+import re
 
 import httpx
 import respx
@@ -27,14 +29,29 @@ class Mocker:
     def __init__(self):
         self._router = None
 
-    def get(self, url, text="", status_code=200, json=None, headers=None):
+    def get(self, url, text="", status_code=200, json=None, headers=None, complete_qs=False):
+        # complete_qs is accepted for requests-mock API compatibility; respx
+        # already matches query strings exactly when the URL includes one.
+        del complete_qs
         if self._router is None:
             raise RuntimeError("Mocker must be active (used as a context manager) before registering routes")
+        # requests-mock collapsed duplicate slashes when matching; respx is
+        # exact. Normalize registrations so legacy "BASE_URL//path" entries
+        # still match the single-slash URLs the client now requests.
+        parsed = httpx.URL(url)
+        if "//" in parsed.path:
+            url = str(parsed.copy_with(path=re.sub(r"/{2,}", "/", parsed.path)))
         if json is not None:
             response = httpx.Response(status_code, json=json, headers=headers)
         else:
             response = httpx.Response(status_code, text=text, headers=headers)
         self._router.get(url).mock(return_value=response)
+
+    @property
+    def call_count(self):
+        if self._router is None:
+            return 0
+        return self._router.calls.call_count
 
     def __enter__(self):
         self._router = respx.mock(assert_all_called=False)
@@ -45,12 +62,21 @@ class Mocker:
         router, self._router = self._router, None
         return router.__exit__(exc_type, exc, tb)
 
-    def __call__(self, func):
-        @functools.wraps(func)
+    def __call__(self, obj):
+        # requests-mock supports decorating a TestCase class, which wraps
+        # every ``test*`` method. Without this branch the class would be
+        # replaced by a plain function and pytest would silently skip it.
+        if isinstance(obj, type):
+            for name in dir(obj):
+                if name.startswith("test") and callable(getattr(obj, name)):
+                    setattr(obj, name, self(getattr(obj, name)))
+            return obj
+
+        @functools.wraps(obj)
         def wrapper(*args, **kwargs):
             # requests-mock injects the active mocker as the last
             # positional argument; tests rely on that signature.
             with Mocker() as m:
-                return func(*args, m, **kwargs)
+                return obj(*args, m, **kwargs)
 
         return wrapper

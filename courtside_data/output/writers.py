@@ -1,5 +1,6 @@
 import csv
 import json
+from typing import Any
 
 from courtside_data.data import OutputType, OutputWriteOption
 
@@ -16,9 +17,9 @@ class FileOptions:
     def of(path=None, mode=None):
         if mode is None:
             return FileOptions(path=path, mode=OutputWriteOption.WRITE)
-        
+
         return FileOptions(path=path, mode=mode)
-    
+
     def __init__(self, path, mode):
         self.path = path
         self.mode = mode
@@ -29,8 +30,7 @@ class FileOptions:
 
     def __eq__(self, other):
         if isinstance(other, FileOptions):
-            return self.path == other.path \
-                   and self.mode == other.mode
+            return self.path == other.path and self.mode == other.mode
         return False
 
 
@@ -47,7 +47,7 @@ class OutputOptions:
         elif output_type is None:
             return OutputOptions(file_options=None, formatting_options={}, output_type=None)
         else:
-            raise ValueError("Unknown output type: {output_type}".format(output_type=output_type))
+            raise ValueError(f"Unknown output type: {output_type}")
 
         return OutputOptions(
             file_options=file_options,
@@ -62,9 +62,11 @@ class OutputOptions:
 
     def __eq__(self, other):
         if isinstance(other, OutputOptions):
-            return self.file_options == other.file_options \
-                    and self.formatting_options == other.formatting_options \
-                    and self.output_type == other.output_type
+            return (
+                self.file_options == other.file_options
+                and self.formatting_options == other.formatting_options
+                and self.output_type == other.output_type
+            )
 
         return False
 
@@ -79,13 +81,10 @@ class Writer:
 
 class JSONWriter(Writer):
     def write(self, data, options):
-        output_options = {**DEFAULT_JSON_OPTIONS, **options.formatting_options}
+        output_options: dict[str, Any] = {**DEFAULT_JSON_OPTIONS, **options.formatting_options}
         if options.file_options.should_write_to_file:
             with open(
-                    options.file_options.path,
-                    options.file_options.mode.value,
-                    newline="",
-                    encoding="utf8"
+                options.file_options.path, options.file_options.mode.value, newline="", encoding="utf8"
             ) as json_file:
                 return json.dump(
                     data,
@@ -122,10 +121,7 @@ class CSVWriter(Writer):
 
     def rows(self, data):
         extracted = self._extract_rows(data)
-        return [
-            dict((key, self.value_formatter(value)) for key, value in row.items())
-            for row in extracted
-        ]
+        return [dict((key, self.value_formatter(value)) for key, value in row.items()) for row in extracted]
 
     def write(self, data, options):
         rows = self._extract_rows(data)
@@ -133,10 +129,10 @@ class CSVWriter(Writer):
             # Write an empty CSV with just a header
             fieldnames = options.formatting_options.get("column_names") or []
             with open(
-                    options.file_options.path,
-                    options.file_options.mode.value,
-                    newline="",
-                    encoding="utf8",
+                options.file_options.path,
+                options.file_options.mode.value,
+                newline="",
+                encoding="utf8",
             ) as csv_file:
                 writer = csv.writer(csv_file)
                 writer.writerow(fieldnames)
@@ -148,17 +144,16 @@ class CSVWriter(Writer):
             fieldnames = self._detect_fieldnames(rows)
 
         with open(
-                options.file_options.path,
-                options.file_options.mode.value,
-                newline="",
-                encoding="utf8",
+            options.file_options.path,
+            options.file_options.mode.value,
+            newline="",
+            encoding="utf8",
         ) as csv_file:
             writer = csv.DictWriter(
                 csv_file,
                 fieldnames=fieldnames,
-                extrasaction='ignore',
-                lineterminator='\n',
+                extrasaction="ignore",
+                lineterminator="\n",
             )
             writer.writeheader()
             writer.writerows(self.rows(data=data))
-

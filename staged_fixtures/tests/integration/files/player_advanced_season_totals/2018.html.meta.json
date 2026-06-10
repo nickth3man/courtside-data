@@ -1,9 +1,0 @@
-{
-  "byte_count": 2015542,
-  "content_type": "text/html",
-  "downloaded_at": "2026-06-02T17:58:34.024227+00:00",
-  "sha256": "a5816a261cebf89ec6e293ea0c5f2f4504f282cefdc43a7c1e672da316db4d09",
-  "status_code": 200,
-  "tool": "requests",
-  "url": "https://www.basketball-reference.com/leagues/NBA_2018_advanced.html"
-}

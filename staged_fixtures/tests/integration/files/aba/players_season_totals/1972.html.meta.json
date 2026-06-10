@@ -1,9 +1,0 @@
-{
-  "byte_count": 608874,
-  "content_type": "text/html",
-  "downloaded_at": "2026-06-02T18:20:28.278106+00:00",
-  "sha256": "c51d56d6a06088fee879606c2518fca43b35675c5d515da45601fc5994a47745",
-  "status_code": 200,
-  "tool": "requests",
-  "url": "https://www.basketball-reference.com/leagues/ABA_1972_totals.html"
-}

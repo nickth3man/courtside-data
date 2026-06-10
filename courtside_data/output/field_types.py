@@ -10,7 +10,8 @@ Legacy endpoints already produce typed values — coercion is idempotent for the
 
 from __future__ import annotations
 
-from typing import Any, Callable, Sequence
+from collections.abc import Callable, Sequence
+from typing import Any
 
 # ─── Coercion functions ────────────────────────────────────────────────
 
@@ -120,7 +121,6 @@ _COLUMN_TYPE_MAP: dict[str, Callable] = {
     "number": lambda v: v,  # jersey number (could be "00")
     "starts": lambda v: v,
     "active": lambda v: v,
-
     # ── Integer stats ──
     "age": coerce_int_or_none,
     "games": coerce_int,
@@ -182,7 +182,6 @@ _COLUMN_TYPE_MAP: dict[str, Callable] = {
     "home_score": coerce_int,
     "away_team_score": coerce_int,
     "home_team_score": coerce_int,
-
     # ── More integer stats ──
     "wins": coerce_int,
     "losses": coerce_int,
@@ -202,7 +201,6 @@ _COLUMN_TYPE_MAP: dict[str, Callable] = {
     "num_shots_heaved": coerce_int,
     "made": coerce_int,
     "attempted": coerce_int,
-
     # ── Float stats ──
     "fg_pct": coerce_float,
     "fg3_pct": coerce_float,
@@ -222,7 +220,6 @@ _COLUMN_TYPE_MAP: dict[str, Callable] = {
     "bpm": coerce_float,
     "vorp": coerce_float,
     "similarity_score": coerce_float,
-
     # ── Per-36 / per-100 / per-g (float) ──
     "mp_per_g": coerce_float,
     "fg_per_36_min": coerce_float,
@@ -259,11 +256,9 @@ _COLUMN_TYPE_MAP: dict[str, Callable] = {
     "tov_per_100_poss": coerce_float,
     "pf_per_100_poss": coerce_float,
     "pts_per_100_poss": coerce_float,
-
     # ── Percentage/rate stats ──
     "home_attendance_per_g": coerce_float,
     "away_attendance_per_g": coerce_float,
-    "pts_per_g": coerce_float,
     "opp_pts_per_g": coerce_float,
     "player_efficiency_rating": coerce_float,
     "true_shooting_percentage": coerce_float,
@@ -296,7 +291,6 @@ _COLUMN_TYPE_MAP: dict[str, Callable] = {
     "adjusted_fg_pct": coerce_float,
     "adjusted_fg3_pct": coerce_float,
     "adjusted_ft_pct": coerce_float,
-
     # ── Shooting distribution ──
     "fg_pct_from_0_3_ft": coerce_float,
     "fg_pct_from_3_10_ft": coerce_float,
@@ -313,7 +307,6 @@ _COLUMN_TYPE_MAP: dict[str, Callable] = {
     "fg_pct_from_corner_3": coerce_float,
     "pct_fga_from_corner_3": coerce_float,
     "pct_shots_heaved": coerce_float,
-
     # ── Play-by-play ──
     "pct_fg_2pt": coerce_float,
     "pct_fg_3pt": coerce_float,
@@ -322,7 +315,6 @@ _COLUMN_TYPE_MAP: dict[str, Callable] = {
     "pct_dunks": coerce_float,
     "pct_corner_3s": coerce_float,
     "pct_heaves": coerce_float,
-
     # ── Generic fallback columns (col_N from ad-hoc tables) ──
     # These are used by playoff_bracket, season_awards and other irregular tables.
     # They contain mixed content (dates, team names, scores). Leave as str.
@@ -357,14 +349,50 @@ def _infer_coercion(column_name: str) -> Callable:
 
     # Count / integer patterns
     int_patterns = (
-        "games", "wins", "losses", "rank", "pick_", "seasons",
-        "years_", "salary", "overtimes", "_attendance", "_games",
-        "fg", "fga", "fg3", "fg3a", "fg2", "fg2a",
-        "ft", "fta", "orb", "drb", "trb", "ast", "stl", "blk", "tov", "pf",
-        "pts", "points", "score", "made_", "attempted_",
-        "rebounds", "assists", "steals", "blocks", "turnovers",
-        "personal_fouls", "seconds_played", "minutes_played",
-        "period", "num_shots", "attempted", "made",
+        "games",
+        "wins",
+        "losses",
+        "rank",
+        "pick_",
+        "seasons",
+        "years_",
+        "salary",
+        "overtimes",
+        "_attendance",
+        "_games",
+        "fg",
+        "fga",
+        "fg3",
+        "fg3a",
+        "fg2",
+        "fg2a",
+        "ft",
+        "fta",
+        "orb",
+        "drb",
+        "trb",
+        "ast",
+        "stl",
+        "blk",
+        "tov",
+        "pf",
+        "pts",
+        "points",
+        "score",
+        "made_",
+        "attempted_",
+        "rebounds",
+        "assists",
+        "steals",
+        "blocks",
+        "turnovers",
+        "personal_fouls",
+        "seconds_played",
+        "minutes_played",
+        "period",
+        "num_shots",
+        "attempted",
+        "made",
     )
     if any(name.startswith(pat) or name.endswith(f"_{pat}") or pat in name for pat in int_patterns):
         return coerce_int
@@ -389,10 +417,7 @@ def coerce_row(row: dict[str, Any]) -> dict[str, Any]:
     Idempotent — already-typed values (int, float, Enum, etc.) pass through
     unchanged. Only raw strings from HTML are converted.
     """
-    return {
-        key: get_coercion(key)(value)
-        for key, value in row.items()
-    }
+    return {key: get_coercion(key)(value) for key, value in row.items()}
 
 
 def coerce_rows(rows: Sequence[dict[str, Any]]) -> list[dict[str, Any]]:

@@ -1,6 +1,6 @@
 from unittest import TestCase
 
-from courtside_data.utilities import str_to_int, str_to_float
+from courtside_data.utilities import str_to_float, str_to_int
 
 
 class TestStrToInt(TestCase):
@@ -41,4 +41,3 @@ class TestStrToFloat(TestCase):
 
     def test_with_default(self):
         self.assertIsNone(str_to_float("", default=None))
-

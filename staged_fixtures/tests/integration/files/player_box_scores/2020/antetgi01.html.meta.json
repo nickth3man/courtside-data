@@ -1,9 +1,0 @@
-{
-  "byte_count": 387445,
-  "content_type": "text/html; charset=UTF-8",
-  "downloaded_at": "2026-06-02T18:00:44.974018+00:00",
-  "sha256": "69fd2dfe761ad591deced92d8aaf56570f2b5dba66e365bc96008dbe49df713c",
-  "status_code": 200,
-  "tool": "requests",
-  "url": "https://www.basketball-reference.com/players/a/antetgi01/gamelog/2020"
-}

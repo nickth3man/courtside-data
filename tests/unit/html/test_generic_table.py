@@ -4,7 +4,6 @@ from parsel import Selector
 
 from courtside_data.html import GenericTable, GenericTableRow, extract_commented_table
 
-
 SIMPLE_TABLE_HTML = """
 <table id="per_game_stats">
   <thead>

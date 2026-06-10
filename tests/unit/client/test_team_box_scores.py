@@ -1,5 +1,5 @@
 from unittest import TestCase
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
 import httpx
 
@@ -22,5 +22,5 @@ class TestTeamBoxScores(TestCase):
             client.team_box_scores,
             day="bae",
             month="bae",
-            year="jae"
+            year="jae",
         )

@@ -1,9 +1,0 @@
-{
-  "byte_count": 394404,
-  "content_type": "text/html",
-  "downloaded_at": "2026-06-02T18:09:41.335139+00:00",
-  "sha256": "c89d55010544233527bfccf1a2d956843f96a321196ad9a6154f3b41144215d7",
-  "status_code": 200,
-  "tool": "requests",
-  "url": "https://www.basketball-reference.com/leagues/NBA_2018_games-february.html"
-}

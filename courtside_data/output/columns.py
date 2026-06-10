@@ -57,7 +57,7 @@ PLAYER_SEASON_TOTALS_COLUMN_NAMES = [
     "blocks",
     "turnovers",
     "personal_fouls",
-    "points"
+    "points",
 ]
 
 PLAYER_ADVANCED_SEASON_TOTALS_COLUMN_NAMES = [
@@ -139,215 +139,675 @@ STANDINGS_COLUMNS_NAMES = [
 
 # League per game stats - matches data-stat attributes from basketball-reference
 LEAGUE_PER_GAME_COLUMN_NAMES = [
-    "name_display", "pos", "age", "team_name_abbr", "games", "games_started", "mp_per_g", "fg_per_g", "fga_per_g",
-    "fg_pct", "fg3_per_g", "fg3a_per_g", "fg3_pct", "fg2_per_g", "fg2a_per_g", "fg2_pct",
-    "efg_pct", "ft_per_g", "fta_per_g", "ft_pct", "orb_per_g", "drb_per_g", "trb_per_g",
-    "ast_per_g", "stl_per_g", "blk_per_g", "tov_per_g", "pf_per_g", "pts_per_g"
+    "name_display",
+    "pos",
+    "age",
+    "team_name_abbr",
+    "games",
+    "games_started",
+    "mp_per_g",
+    "fg_per_g",
+    "fga_per_g",
+    "fg_pct",
+    "fg3_per_g",
+    "fg3a_per_g",
+    "fg3_pct",
+    "fg2_per_g",
+    "fg2a_per_g",
+    "fg2_pct",
+    "efg_pct",
+    "ft_per_g",
+    "fta_per_g",
+    "ft_pct",
+    "orb_per_g",
+    "drb_per_g",
+    "trb_per_g",
+    "ast_per_g",
+    "stl_per_g",
+    "blk_per_g",
+    "tov_per_g",
+    "pf_per_g",
+    "pts_per_g",
 ]
 
 LEAGUE_PER_36_COLUMN_NAMES = [
-    "name_display", "pos", "age", "team_name_abbr", "games", "games_started", "mp", "fg_per_36_min", "fga_per_36_min",
-    "fg_pct", "fg3_per_36_min", "fg3a_per_36_min", "fg3_pct", "fg2_per_36_min", "fg2a_per_36_min",
-    "fg2_pct", "ft_per_36_min", "fta_per_36_min", "ft_pct", "orb_per_36_min", "drb_per_36_min",
-    "trb_per_36_min", "ast_per_36_min", "stl_per_36_min", "blk_per_36_min", "tov_per_36_min",
-    "pf_per_36_min", "pts_per_36_min"
+    "name_display",
+    "pos",
+    "age",
+    "team_name_abbr",
+    "games",
+    "games_started",
+    "mp",
+    "fg_per_36_min",
+    "fga_per_36_min",
+    "fg_pct",
+    "fg3_per_36_min",
+    "fg3a_per_36_min",
+    "fg3_pct",
+    "fg2_per_36_min",
+    "fg2a_per_36_min",
+    "fg2_pct",
+    "ft_per_36_min",
+    "fta_per_36_min",
+    "ft_pct",
+    "orb_per_36_min",
+    "drb_per_36_min",
+    "trb_per_36_min",
+    "ast_per_36_min",
+    "stl_per_36_min",
+    "blk_per_36_min",
+    "tov_per_36_min",
+    "pf_per_36_min",
+    "pts_per_36_min",
 ]
 
 LEAGUE_TOTALS_COLUMN_NAMES = [
-    "name_display", "pos", "age", "team_name_abbr", "games", "games_started", "mp", "fg", "fga", "fg_pct", "fg3", "fg3a",
-    "fg3_pct", "fg2", "fg2a", "fg2_pct", "efg_pct", "ft", "fta", "ft_pct", "orb", "drb",
-    "trb", "ast", "stl", "blk", "tov", "pf", "pts"
+    "name_display",
+    "pos",
+    "age",
+    "team_name_abbr",
+    "games",
+    "games_started",
+    "mp",
+    "fg",
+    "fga",
+    "fg_pct",
+    "fg3",
+    "fg3a",
+    "fg3_pct",
+    "fg2",
+    "fg2a",
+    "fg2_pct",
+    "efg_pct",
+    "ft",
+    "fta",
+    "ft_pct",
+    "orb",
+    "drb",
+    "trb",
+    "ast",
+    "stl",
+    "blk",
+    "tov",
+    "pf",
+    "pts",
 ]
 
 ROOKIE_STATS_COLUMN_NAMES = [
-    "name_display", "pos", "age", "team_name_abbr", "games", "games_started", "mp_per_g", "fg_per_g", "fga_per_g",
-    "fg_pct", "fg3_per_g", "fg3a_per_g", "fg3_pct", "fg2_per_g", "fg2a_per_g", "fg2_pct",
-    "efg_pct", "ft_per_g", "fta_per_g", "ft_pct", "orb_per_g", "drb_per_g", "trb_per_g",
-    "ast_per_g", "stl_per_g", "blk_per_g", "tov_per_g", "pf_per_g", "pts_per_g"
+    "name_display",
+    "pos",
+    "age",
+    "team_name_abbr",
+    "games",
+    "games_started",
+    "mp_per_g",
+    "fg_per_g",
+    "fga_per_g",
+    "fg_pct",
+    "fg3_per_g",
+    "fg3a_per_g",
+    "fg3_pct",
+    "fg2_per_g",
+    "fg2a_per_g",
+    "fg2_pct",
+    "efg_pct",
+    "ft_per_g",
+    "fta_per_g",
+    "ft_pct",
+    "orb_per_g",
+    "drb_per_g",
+    "trb_per_g",
+    "ast_per_g",
+    "stl_per_g",
+    "blk_per_g",
+    "tov_per_g",
+    "pf_per_g",
+    "pts_per_g",
 ]
 
-STANDINGS_BY_DATE_COLUMN_NAMES = [
-    "team", "wins", "losses", "win_loss_pct", "gb", "pts_per_g", "opp_pts_per_g", "srs"
-]
+STANDINGS_BY_DATE_COLUMN_NAMES = ["team", "wins", "losses", "win_loss_pct", "gb", "pts_per_g", "opp_pts_per_g", "srs"]
 
 ATTENDANCE_COLUMN_NAMES = [
-    "team", "home_games", "home_attendance", "home_attendance_per_g",
-    "away_games", "away_attendance", "away_attendance_per_g"
+    "team",
+    "home_games",
+    "home_attendance",
+    "home_attendance_per_g",
+    "away_games",
+    "away_attendance",
+    "away_attendance_per_g",
 ]
 
-LEAGUE_TRANSACTIONS_COLUMN_NAMES = [
-    "date", "transaction"
-]
+LEAGUE_TRANSACTIONS_COLUMN_NAMES = ["date", "transaction"]
 
 LEAGUE_PER_100_POSSESSIONS_COLUMN_NAMES = [
-    "name_display", "pos", "age", "team_name_abbr", "games", "games_started", "mp", "fg_per_100_poss", "fga_per_100_poss",
-    "fg_pct", "fg3_per_100_poss", "fg3a_per_100_poss", "fg3_pct", "fg2_per_100_poss",
-    "fg2a_per_100_poss", "fg2_pct", "ft_per_100_poss", "fta_per_100_poss", "ft_pct",
-    "orb_per_100_poss", "drb_per_100_poss", "trb_per_100_poss", "ast_per_100_poss",
-    "stl_per_100_poss", "blk_per_100_poss", "tov_per_100_poss", "pf_per_100_poss", "pts_per_100_poss"
+    "name_display",
+    "pos",
+    "age",
+    "team_name_abbr",
+    "games",
+    "games_started",
+    "mp",
+    "fg_per_100_poss",
+    "fga_per_100_poss",
+    "fg_pct",
+    "fg3_per_100_poss",
+    "fg3a_per_100_poss",
+    "fg3_pct",
+    "fg2_per_100_poss",
+    "fg2a_per_100_poss",
+    "fg2_pct",
+    "ft_per_100_poss",
+    "fta_per_100_poss",
+    "ft_pct",
+    "orb_per_100_poss",
+    "drb_per_100_poss",
+    "trb_per_100_poss",
+    "ast_per_100_poss",
+    "stl_per_100_poss",
+    "blk_per_100_poss",
+    "tov_per_100_poss",
+    "pf_per_100_poss",
+    "pts_per_100_poss",
 ]
 
 LEAGUE_SHOOTING_COLUMN_NAMES = [
-    "name_display", "pos", "age", "team_name_abbr", "games", "mp",
-    "fg_pct_from_0_3_ft", "fg_pct_from_3_10_ft", "fg_pct_from_10_16_ft",
-    "fg_pct_from_16_3p", "fg_pct_from_3p",
-    "pct_fga_from_0_3_ft", "pct_fga_from_3_10_ft", "pct_fga_from_10_16_ft",
-    "pct_fga_from_16_3p", "pct_fga_from_3p",
-    "fg_pct_from_2p", "fg_pct_from_0_3_ft_2", "fg_pct_from_corner_3",
-    "pct_fga_from_corner_3", "num_shots_heaved", "pct_shots_heaved"
+    "name_display",
+    "pos",
+    "age",
+    "team_name_abbr",
+    "games",
+    "mp",
+    "fg_pct_from_0_3_ft",
+    "fg_pct_from_3_10_ft",
+    "fg_pct_from_10_16_ft",
+    "fg_pct_from_16_3p",
+    "fg_pct_from_3p",
+    "pct_fga_from_0_3_ft",
+    "pct_fga_from_3_10_ft",
+    "pct_fga_from_10_16_ft",
+    "pct_fga_from_16_3p",
+    "pct_fga_from_3p",
+    "fg_pct_from_2p",
+    "fg_pct_from_0_3_ft_2",
+    "fg_pct_from_corner_3",
+    "pct_fga_from_corner_3",
+    "num_shots_heaved",
+    "pct_shots_heaved",
 ]
 
 PLAYOFF_PER_GAME_COLUMN_NAMES = [
-    "name_display", "pos", "age", "team_name_abbr", "games", "games_started", "mp_per_g", "fg_per_g", "fga_per_g",
-    "fg_pct", "fg3_per_g", "fg3a_per_g", "fg3_pct", "fg2_per_g", "fg2a_per_g", "fg2_pct",
-    "efg_pct", "ft_per_g", "fta_per_g", "ft_pct", "orb_per_g", "drb_per_g", "trb_per_g",
-    "ast_per_g", "stl_per_g", "blk_per_g", "tov_per_g", "pf_per_g", "pts_per_g"
+    "name_display",
+    "pos",
+    "age",
+    "team_name_abbr",
+    "games",
+    "games_started",
+    "mp_per_g",
+    "fg_per_g",
+    "fga_per_g",
+    "fg_pct",
+    "fg3_per_g",
+    "fg3a_per_g",
+    "fg3_pct",
+    "fg2_per_g",
+    "fg2a_per_g",
+    "fg2_pct",
+    "efg_pct",
+    "ft_per_g",
+    "fta_per_g",
+    "ft_pct",
+    "orb_per_g",
+    "drb_per_g",
+    "trb_per_g",
+    "ast_per_g",
+    "stl_per_g",
+    "blk_per_g",
+    "tov_per_g",
+    "pf_per_g",
+    "pts_per_g",
 ]
 
 PLAYOFF_TOTALS_COLUMN_NAMES = [
-    "name_display", "pos", "age", "team_name_abbr", "games", "games_started", "mp", "fg", "fga", "fg_pct", "fg3", "fg3a",
-    "fg3_pct", "fg2", "fg2a", "fg2_pct", "efg_pct", "ft", "fta", "ft_pct", "orb", "drb",
-    "trb", "ast", "stl", "blk", "tov", "pf", "pts"
+    "name_display",
+    "pos",
+    "age",
+    "team_name_abbr",
+    "games",
+    "games_started",
+    "mp",
+    "fg",
+    "fga",
+    "fg_pct",
+    "fg3",
+    "fg3a",
+    "fg3_pct",
+    "fg2",
+    "fg2a",
+    "fg2_pct",
+    "efg_pct",
+    "ft",
+    "fta",
+    "ft_pct",
+    "orb",
+    "drb",
+    "trb",
+    "ast",
+    "stl",
+    "blk",
+    "tov",
+    "pf",
+    "pts",
 ]
 
 DRAFT_PICKS_COLUMN_NAMES = [
-    "pick_overall", "player", "college_name", "team_id", "seasons", "g", "mp", "pts", "trb", "ast", "fg_pct",
-    "fg3_pct", "ft_pct", "mp_per_g", "pts_per_g", "trb_per_g", "ast_per_g", "ws", "ws_per_48",
-    "bpm", "vorp"
+    "pick_overall",
+    "player",
+    "college_name",
+    "team_id",
+    "seasons",
+    "g",
+    "mp",
+    "pts",
+    "trb",
+    "ast",
+    "fg_pct",
+    "fg3_pct",
+    "ft_pct",
+    "mp_per_g",
+    "pts_per_g",
+    "trb_per_g",
+    "ast_per_g",
+    "ws",
+    "ws_per_48",
+    "bpm",
+    "vorp",
 ]
 
-SEASON_LEADERS_COLUMN_NAMES = [
-    "rank", "player", "value", "season", "team_id"
-]
+SEASON_LEADERS_COLUMN_NAMES = ["rank", "player", "value", "season", "team_id"]
 
-CAREER_LEADERS_COLUMN_NAMES = [
-    "rank", "player", "value"
-]
+CAREER_LEADERS_COLUMN_NAMES = ["rank", "player", "value"]
 
-PLAYOFF_BRACKET_COLUMN_NAMES = [
-    "series", "team", "result"
-]
+PLAYOFF_BRACKET_COLUMN_NAMES = ["series", "team", "result"]
 
-SEASON_AWARDS_COLUMN_NAMES = [
-    "award", "player"
-]
+SEASON_AWARDS_COLUMN_NAMES = ["award", "player"]
 
 PLAYER_CAREER_STATS_COLUMN_NAMES = [
-    "season", "age", "team_name_abbr", "league_id", "pos", "games", "games_started", "mp_per_g", "fg_per_g", "fga_per_g",
-    "fg_pct", "fg3_per_g", "fg3a_per_g", "fg3_pct", "fg2_per_g", "fg2a_per_g", "fg2_pct",
-    "efg_pct", "ft_per_g", "fta_per_g", "ft_pct", "orb_per_g", "drb_per_g", "trb_per_g",
-    "ast_per_g", "stl_per_g", "blk_per_g", "tov_per_g", "pf_per_g", "pts_per_g"
+    "season",
+    "age",
+    "team_name_abbr",
+    "league_id",
+    "pos",
+    "games",
+    "games_started",
+    "mp_per_g",
+    "fg_per_g",
+    "fga_per_g",
+    "fg_pct",
+    "fg3_per_g",
+    "fg3a_per_g",
+    "fg3_pct",
+    "fg2_per_g",
+    "fg2a_per_g",
+    "fg2_pct",
+    "efg_pct",
+    "ft_per_g",
+    "fta_per_g",
+    "ft_pct",
+    "orb_per_g",
+    "drb_per_g",
+    "trb_per_g",
+    "ast_per_g",
+    "stl_per_g",
+    "blk_per_g",
+    "tov_per_g",
+    "pf_per_g",
+    "pts_per_g",
 ]
 
 PLAYER_PLAYOFF_SERIES_COLUMN_NAMES = [
-    "season", "age", "team_name_abbr", "league_id", "pos", "games", "games_started", "mp_per_g", "fg_per_g", "fga_per_g",
-    "fg_pct", "fg3_per_g", "fg3a_per_g", "fg3_pct", "fg2_per_g", "fg2a_per_g", "fg2_pct",
-    "efg_pct", "ft_per_g", "fta_per_g", "ft_pct", "orb_per_g", "drb_per_g", "trb_per_g",
-    "ast_per_g", "stl_per_g", "blk_per_g", "tov_per_g", "pf_per_g", "pts_per_g"
+    "season",
+    "age",
+    "team_name_abbr",
+    "league_id",
+    "pos",
+    "games",
+    "games_started",
+    "mp_per_g",
+    "fg_per_g",
+    "fga_per_g",
+    "fg_pct",
+    "fg3_per_g",
+    "fg3a_per_g",
+    "fg3_pct",
+    "fg2_per_g",
+    "fg2a_per_g",
+    "fg2_pct",
+    "efg_pct",
+    "ft_per_g",
+    "fta_per_g",
+    "ft_pct",
+    "orb_per_g",
+    "drb_per_g",
+    "trb_per_g",
+    "ast_per_g",
+    "stl_per_g",
+    "blk_per_g",
+    "tov_per_g",
+    "pf_per_g",
+    "pts_per_g",
 ]
 
 PLAYER_SPLITS_COLUMN_NAMES = [
-    "split_type", "value", "g", "mp", "fg", "fga", "fg_pct", "fg3", "fg3a", "fg3_pct",
-    "ft", "fta", "ft_pct", "orb", "drb", "trb", "ast", "stl", "blk", "tov", "pf", "pts"
+    "split_type",
+    "value",
+    "g",
+    "mp",
+    "fg",
+    "fga",
+    "fg_pct",
+    "fg3",
+    "fg3a",
+    "fg3_pct",
+    "ft",
+    "fta",
+    "ft_pct",
+    "orb",
+    "drb",
+    "trb",
+    "ast",
+    "stl",
+    "blk",
+    "tov",
+    "pf",
+    "pts",
 ]
 
 PLAYER_ON_OFF_COLUMN_NAMES = [
-    "situation", "g", "mp", "fg", "fga", "fg_pct", "fg3", "fg3a", "fg3_pct",
-    "ft", "fta", "ft_pct", "orb", "drb", "trb", "ast", "stl", "blk", "tov", "pf", "pts"
+    "situation",
+    "g",
+    "mp",
+    "fg",
+    "fga",
+    "fg_pct",
+    "fg3",
+    "fg3a",
+    "fg3_pct",
+    "ft",
+    "fta",
+    "ft_pct",
+    "orb",
+    "drb",
+    "trb",
+    "ast",
+    "stl",
+    "blk",
+    "tov",
+    "pf",
+    "pts",
 ]
 
-PLAYER_SHOT_CHARTS_COLUMN_NAMES = [
-    "shot_type", "made", "attempted", "fg_pct"
-]
+PLAYER_SHOT_CHARTS_COLUMN_NAMES = ["shot_type", "made", "attempted", "fg_pct"]
 
 PLAYER_ADJUSTED_SHOOTING_COLUMN_NAMES = [
-    "season", "age", "team_id", "league_id", "pos", "g", "mp",
-    "fg_pct", "fg3_pct", "ft_pct",
-    "ts_pct", "fg_per_36_min", "fga_per_36_min",
-    "adjusted_fg_pct", "adjusted_fg3_pct", "adjusted_ft_pct"
+    "season",
+    "age",
+    "team_id",
+    "league_id",
+    "pos",
+    "g",
+    "mp",
+    "fg_pct",
+    "fg3_pct",
+    "ft_pct",
+    "ts_pct",
+    "fg_per_36_min",
+    "fga_per_36_min",
+    "adjusted_fg_pct",
+    "adjusted_fg3_pct",
+    "adjusted_ft_pct",
 ]
 
 PLAYER_PLAY_BY_PLAY_COLUMN_NAMES = [
-    "season", "age", "team_id", "league_id", "pos", "g", "mp",
-    "pct_fg_2pt", "pct_fg_3pt", "pct_ast_2pt", "pct_ast_3pt",
-    "pct_dunks", "pct_corner_3s", "pct_heaves"
+    "season",
+    "age",
+    "team_id",
+    "league_id",
+    "pos",
+    "g",
+    "mp",
+    "pct_fg_2pt",
+    "pct_fg_3pt",
+    "pct_ast_2pt",
+    "pct_ast_3pt",
+    "pct_dunks",
+    "pct_corner_3s",
+    "pct_heaves",
 ]
 
-PLAYER_GAME_HIGHS_COLUMN_NAMES = [
-    "stat", "value", "date", "opponent"
-]
+PLAYER_GAME_HIGHS_COLUMN_NAMES = ["stat", "value", "date", "opponent"]
 
 PLAYER_ALL_STAR_COLUMN_NAMES = [
-    "season", "age", "team_name_abbr", "league_id", "pos", "games", "games_started", "mp_per_g",
-    "fg_per_g", "fga_per_g", "fg_pct", "fg3_per_g", "fg3a_per_g", "fg3_pct",
-    "ft_per_g", "fta_per_g", "ft_pct", "orb_per_g", "drb_per_g", "trb_per_g",
-    "ast_per_g", "stl_per_g", "blk_per_g", "tov_per_g", "pf_per_g", "pts_per_g"
+    "season",
+    "age",
+    "team_name_abbr",
+    "league_id",
+    "pos",
+    "games",
+    "games_started",
+    "mp_per_g",
+    "fg_per_g",
+    "fga_per_g",
+    "fg_pct",
+    "fg3_per_g",
+    "fg3a_per_g",
+    "fg3_pct",
+    "ft_per_g",
+    "fta_per_g",
+    "ft_pct",
+    "orb_per_g",
+    "drb_per_g",
+    "trb_per_g",
+    "ast_per_g",
+    "stl_per_g",
+    "blk_per_g",
+    "tov_per_g",
+    "pf_per_g",
+    "pts_per_g",
 ]
 
-PLAYER_SIMILARITY_SCORES_COLUMN_NAMES = [
-    "rank", "player", "similarity_score"
-]
+PLAYER_SIMILARITY_SCORES_COLUMN_NAMES = ["rank", "player", "similarity_score"]
 
-PLAYER_SALARIES_COLUMN_NAMES = [
-    "season", "team_id", "salary"
-]
+PLAYER_SALARIES_COLUMN_NAMES = ["season", "team_id", "salary"]
 
 TEAM_ROSTER_COLUMN_NAMES = [
-    "player", "number", "pos", "height", "weight", "birth_date", "flag", "years_experience", "college"
+    "player",
+    "number",
+    "pos",
+    "height",
+    "weight",
+    "birth_date",
+    "flag",
+    "years_experience",
+    "college",
 ]
 
-TEAM_INJURY_REPORT_COLUMN_NAMES = [
-    "player", "date", "description"
-]
+TEAM_INJURY_REPORT_COLUMN_NAMES = ["player", "date", "description"]
 
 TEAM_AND_OPPONENT_COLUMN_NAMES = [
-    "stat_type", "g", "mp", "fg", "fga", "fg_pct", "fg3", "fg3a", "fg3_pct",
-    "ft", "fta", "ft_pct", "orb", "drb", "trb", "ast", "stl", "blk", "tov", "pf", "pts"
+    "stat_type",
+    "g",
+    "mp",
+    "fg",
+    "fga",
+    "fg_pct",
+    "fg3",
+    "fg3a",
+    "fg3_pct",
+    "ft",
+    "fta",
+    "ft_pct",
+    "orb",
+    "drb",
+    "trb",
+    "ast",
+    "stl",
+    "blk",
+    "tov",
+    "pf",
+    "pts",
 ]
 
 TEAM_MISC_FOUR_FACTORS_COLUMN_NAMES = [
-    "stat_type", "pace", "efg_pct", "tov_pct", "orb_pct", "ft_rate",
-    "opp_efg_pct", "opp_tov_pct", "drb_pct", "opp_ft_rate"
+    "stat_type",
+    "pace",
+    "efg_pct",
+    "tov_pct",
+    "orb_pct",
+    "ft_rate",
+    "opp_efg_pct",
+    "opp_tov_pct",
+    "drb_pct",
+    "opp_ft_rate",
 ]
 
 TEAM_SCHEDULE_COLUMN_NAMES = [
-    "game_number", "date", "start_time", "away_team", "away_team_score",
-    "home_team", "home_team_score", "result", "overtimes", "wins", "losses", "streak"
+    "game_number",
+    "date",
+    "start_time",
+    "away_team",
+    "away_team_score",
+    "home_team",
+    "home_team_score",
+    "result",
+    "overtimes",
+    "wins",
+    "losses",
+    "streak",
 ]
 
-TEAM_TRANSACTIONS_COLUMN_NAMES = [
-    "date", "transaction"
-]
+TEAM_TRANSACTIONS_COLUMN_NAMES = ["date", "transaction"]
 
 TEAM_SPLITS_COLUMN_NAMES = [
-    "split_type", "value", "g", "mp", "fg", "fga", "fg_pct", "fg3", "fg3a", "fg3_pct",
-    "ft", "fta", "ft_pct", "orb", "drb", "trb", "ast", "stl", "blk", "tov", "pf", "pts"
+    "split_type",
+    "value",
+    "g",
+    "mp",
+    "fg",
+    "fga",
+    "fg_pct",
+    "fg3",
+    "fg3a",
+    "fg3_pct",
+    "ft",
+    "fta",
+    "ft_pct",
+    "orb",
+    "drb",
+    "trb",
+    "ast",
+    "stl",
+    "blk",
+    "tov",
+    "pf",
+    "pts",
 ]
 
-TEAM_CONTRACTS_COLUMN_NAMES = [
-    "player", "salary", "years_remaining"
-]
+TEAM_CONTRACTS_COLUMN_NAMES = ["player", "salary", "years_remaining"]
 
 TEAM_LINEUPS_COLUMN_NAMES = [
-    "lineup", "g", "mp", "fg", "fga", "fg_pct", "fg3", "fg3a", "fg3_pct",
-    "ft", "fta", "ft_pct", "orb", "drb", "trb", "ast", "stl", "blk", "tov", "pf", "pts"
+    "lineup",
+    "g",
+    "mp",
+    "fg",
+    "fga",
+    "fg_pct",
+    "fg3",
+    "fg3a",
+    "fg3_pct",
+    "ft",
+    "fta",
+    "ft_pct",
+    "orb",
+    "drb",
+    "trb",
+    "ast",
+    "stl",
+    "blk",
+    "tov",
+    "pf",
+    "pts",
 ]
 
 TEAM_STARTING_LINEUPS_COLUMN_NAMES = [
-    "player", "g", "mp", "fg", "fga", "fg_pct", "fg3", "fg3a", "fg3_pct",
-    "ft", "fta", "ft_pct", "orb", "drb", "trb", "ast", "stl", "blk", "tov", "pf", "pts"
+    "player",
+    "g",
+    "mp",
+    "fg",
+    "fga",
+    "fg_pct",
+    "fg3",
+    "fg3a",
+    "fg3_pct",
+    "ft",
+    "fta",
+    "ft_pct",
+    "orb",
+    "drb",
+    "trb",
+    "ast",
+    "stl",
+    "blk",
+    "tov",
+    "pf",
+    "pts",
 ]
 
 TEAM_ON_OFF_COLUMN_NAMES = [
-    "situation", "g", "mp", "fg", "fga", "fg_pct", "fg3", "fg3a", "fg3_pct",
-    "ft", "fta", "ft_pct", "orb", "drb", "trb", "ast", "stl", "blk", "tov", "pf", "pts"
+    "situation",
+    "g",
+    "mp",
+    "fg",
+    "fga",
+    "fg_pct",
+    "fg3",
+    "fg3a",
+    "fg3_pct",
+    "ft",
+    "fta",
+    "ft_pct",
+    "orb",
+    "drb",
+    "trb",
+    "ast",
+    "stl",
+    "blk",
+    "tov",
+    "pf",
+    "pts",
 ]
 
 TEAM_OPPONENT_STATS_COLUMN_NAMES = [
-    "stat_type", "g", "mp", "fg", "fga", "fg_pct", "fg3", "fg3a", "fg3_pct",
-    "ft", "fta", "ft_pct", "orb", "drb", "trb", "ast", "stl", "blk", "tov", "pf", "pts"
+    "stat_type",
+    "g",
+    "mp",
+    "fg",
+    "fga",
+    "fg_pct",
+    "fg3",
+    "fg3a",
+    "fg3_pct",
+    "ft",
+    "fta",
+    "ft_pct",
+    "orb",
+    "drb",
+    "trb",
+    "ast",
+    "stl",
+    "blk",
+    "tov",
+    "pf",
+    "pts",
 ]
 
-FRANCHISE_HISTORY_COLUMN_NAMES = [
-    "season", "team_abbreviation", "wins", "losses", "playoffs"
-]
+FRANCHISE_HISTORY_COLUMN_NAMES = ["season", "team_abbreviation", "wins", "losses", "playoffs"]

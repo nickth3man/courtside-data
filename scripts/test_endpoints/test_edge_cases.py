@@ -1,9 +1,8 @@
 """Test edge cases / error paths for the endpoints."""
+
 import json
-import sys
 import time
-import traceback
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from courtside_data import client
 from courtside_data.data import Team
@@ -13,7 +12,6 @@ from courtside_data.errors import (
     InvalidSearch,
     InvalidSeason,
 )
-
 
 EDGE_CASES = [
     # (name, fn, expected_exception_type_or_None)
@@ -116,16 +114,22 @@ def main():
     for name, fn, expected in EDGE_CASES:
         rec = run_one(name, fn, expected)
         results.append(rec)
-        marker = "PASS" if (
-            (expected is None and rec["actual_status"] == "RETURNED")
-            or (expected is not None and rec["actual_exception_type"] == expected.__name__)
-        ) else "FAIL"
+        marker = (
+            "PASS"
+            if (
+                (expected is None and rec["actual_status"] == "RETURNED")
+                or (expected is not None and rec["actual_exception_type"] == expected.__name__)
+            )
+            else "FAIL"
+        )
         rec["match"] = marker
-        print(f"{marker:4}  {name:55s}  expected={rec['expected_exception'] or '-':25s} actual={rec['actual_exception_type'] or rec['actual_status']}")
+        print(
+            f"{marker:4}  {name:55s}  expected={rec['expected_exception'] or '-':25s} actual={rec['actual_exception_type'] or rec['actual_status']}"
+        )
         time.sleep(2)
     out_path = "scripts/test_endpoints/edge_results.json"
     with open(out_path, "w", encoding="utf-8") as f:
-        json.dump({"generated_at": datetime.now(timezone.utc).isoformat(), "results": results}, f, indent=2, default=str)
+        json.dump({"generated_at": datetime.now(UTC).isoformat(), "results": results}, f, indent=2, default=str)
     print(f"\nWrote {out_path}")
     matches = sum(1 for r in results if r["match"] == "PASS")
     print(f"Summary: {matches}/{len(results)} matched expected behavior")

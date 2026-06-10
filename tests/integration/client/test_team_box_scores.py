@@ -5,24 +5,22 @@ from datetime import date
 from unittest import TestCase
 
 import courtside_data.client as client
-from courtside_data.data import OutputWriteOption, OutputType, Team, Outcome
+from courtside_data.data import Outcome, OutputType, OutputWriteOption, Team
 from tests.integration.client.utilities import ResponseMocker
 
 
 class BoxScoresResponseMocker(ResponseMocker):
-
     def __init__(self, boxscore_date: date):
         year, month, day = boxscore_date.year, boxscore_date.month, boxscore_date.day
-        boxscores_directory = os.path.join(
-            os.path.dirname(__file__),
-            f"../files/boxscores/{year}/{month}/{day}")
+        boxscores_directory = os.path.join(os.path.dirname(__file__), f"../files/boxscores/{year}/{month}/{day}")
 
         basketball_reference_paths_by_filename = {}
         for file in os.listdir(os.fsencode(boxscores_directory)):
             filename = os.fsdecode(file)
             if not filename.endswith(".html"):
                 raise ValueError(
-                    f"Unexpected prefix for {filename}. Expected all files in {boxscores_directory} to end with .html.")
+                    f"Unexpected prefix for {filename}. Expected all files in {boxscores_directory} to end with .html."
+                )
 
             if filename.startswith("index"):
                 key = f"boxscores/?day={day}&month={month}&year={year}"
@@ -192,7 +190,7 @@ class Test20180101TeamBoxScoresInMemoryOutput(TestCase):
                     "personal_fouls": 20,
                     "points": 131,
                 },
-            ]
+            ],
         )
 
 
@@ -204,95 +202,104 @@ class Test20010101TeamBoxScoresInMemoryOutput(TestCase):
 
     def test_output(self):
         team_box_scores = client.team_box_scores(day=1, month=1, year=2001)
-        self.assertTrue({
-                            "team": Team.HOUSTON_ROCKETS,
-                            "outcome": Outcome.LOSS,
-                            "minutes_played": 240,
-                            "made_field_goals": 31,
-                            "attempted_field_goals": 77,
-                            "made_three_point_field_goals": 6,
-                            "attempted_three_point_field_goals": 17,
-                            "made_free_throws": 28,
-                            "attempted_free_throws": 37,
-                            "offensive_rebounds": 10,
-                            "defensive_rebounds": 26,
-                            "assists": 16,
-                            "steals": 4,
-                            "blocks": 3,
-                            "turnovers": 11,
-                            "personal_fouls": 19,
-                            "points": 96,
-                        } in team_box_scores)
-        self.assertTrue({
-                            "team": Team.MINNESOTA_TIMBERWOLVES,
-                            "outcome": Outcome.WIN,
-                            "minutes_played": 240,
-                            "made_field_goals": 41,
-                            "attempted_field_goals": 82,
-                            "made_three_point_field_goals": 3,
-                            "attempted_three_point_field_goals": 9,
-                            "made_free_throws": 21,
-                            "attempted_free_throws": 27,
-                            "offensive_rebounds": 11,
-                            "defensive_rebounds": 36,
-                            "assists": 35,
-                            "steals": 6,
-                            "blocks": 2,
-                            "turnovers": 8,
-                            "personal_fouls": 29,
-                            "points": 106,
-                        } in team_box_scores)
-        self.assertTrue({
-                            "team": Team.CHARLOTTE_HORNETS,
-                            "outcome": Outcome.LOSS,
-                            "minutes_played": 240,
-                            "made_field_goals": 26,
-                            "attempted_field_goals": 80,
-                            "made_three_point_field_goals": 3,
-                            "attempted_three_point_field_goals": 10,
-                            "made_free_throws": 12,
-                            "attempted_free_throws": 14,
-                            "offensive_rebounds": 15,
-                            "defensive_rebounds": 26,
-                            "assists": 16,
-                            "steals": 7,
-                            "blocks": 1,
-                            "turnovers": 15,
-                            "personal_fouls": 25,
-                            "points": 67,
-                        } in team_box_scores)
-        self.assertTrue({
-                            "team": Team.PORTLAND_TRAIL_BLAZERS,
-                            "outcome": Outcome.WIN,
-                            "minutes_played": 240,
-                            "made_field_goals": 29,
-                            "attempted_field_goals": 70,
-                            "made_three_point_field_goals": 4,
-                            "attempted_three_point_field_goals": 15,
-                            "made_free_throws": 27,
-                            "attempted_free_throws": 30,
-                            "offensive_rebounds": 11,
-                            "defensive_rebounds": 36,
-                            "assists": 20,
-                            "steals": 8,
-                            "blocks": 4,
-                            "turnovers": 14,
-                            "personal_fouls": 17,
-                            "points": 89,
-                        } in team_box_scores)
+        self.assertTrue(
+            {
+                "team": Team.HOUSTON_ROCKETS,
+                "outcome": Outcome.LOSS,
+                "minutes_played": 240,
+                "made_field_goals": 31,
+                "attempted_field_goals": 77,
+                "made_three_point_field_goals": 6,
+                "attempted_three_point_field_goals": 17,
+                "made_free_throws": 28,
+                "attempted_free_throws": 37,
+                "offensive_rebounds": 10,
+                "defensive_rebounds": 26,
+                "assists": 16,
+                "steals": 4,
+                "blocks": 3,
+                "turnovers": 11,
+                "personal_fouls": 19,
+                "points": 96,
+            }
+            in team_box_scores
+        )
+        self.assertTrue(
+            {
+                "team": Team.MINNESOTA_TIMBERWOLVES,
+                "outcome": Outcome.WIN,
+                "minutes_played": 240,
+                "made_field_goals": 41,
+                "attempted_field_goals": 82,
+                "made_three_point_field_goals": 3,
+                "attempted_three_point_field_goals": 9,
+                "made_free_throws": 21,
+                "attempted_free_throws": 27,
+                "offensive_rebounds": 11,
+                "defensive_rebounds": 36,
+                "assists": 35,
+                "steals": 6,
+                "blocks": 2,
+                "turnovers": 8,
+                "personal_fouls": 29,
+                "points": 106,
+            }
+            in team_box_scores
+        )
+        self.assertTrue(
+            {
+                "team": Team.CHARLOTTE_HORNETS,
+                "outcome": Outcome.LOSS,
+                "minutes_played": 240,
+                "made_field_goals": 26,
+                "attempted_field_goals": 80,
+                "made_three_point_field_goals": 3,
+                "attempted_three_point_field_goals": 10,
+                "made_free_throws": 12,
+                "attempted_free_throws": 14,
+                "offensive_rebounds": 15,
+                "defensive_rebounds": 26,
+                "assists": 16,
+                "steals": 7,
+                "blocks": 1,
+                "turnovers": 15,
+                "personal_fouls": 25,
+                "points": 67,
+            }
+            in team_box_scores
+        )
+        self.assertTrue(
+            {
+                "team": Team.PORTLAND_TRAIL_BLAZERS,
+                "outcome": Outcome.WIN,
+                "minutes_played": 240,
+                "made_field_goals": 29,
+                "attempted_field_goals": 70,
+                "made_three_point_field_goals": 4,
+                "attempted_three_point_field_goals": 15,
+                "made_free_throws": 27,
+                "attempted_free_throws": 30,
+                "offensive_rebounds": 11,
+                "defensive_rebounds": 36,
+                "assists": 20,
+                "steals": 8,
+                "blocks": 4,
+                "turnovers": 14,
+                "personal_fouls": 17,
+                "points": 89,
+            }
+            in team_box_scores
+        )
 
 
 @BoxScoresResponseMocker(boxscore_date=date(year=2018, month=1, day=1))
 class TestTeamBoxScoresCSVOutput(TestCase):
-
     def setUp(self):
         self.output_file_path = os.path.join(
-            os.path.dirname(__file__),
-            "./output/generated/team_box_scores/2018/01/01.csv"
+            os.path.dirname(__file__), "./output/generated/team_box_scores/2018/01/01.csv"
         )
         self.expected_output_file_path = os.path.join(
-            os.path.dirname(__file__),
-            "./output/expected/team_box_scores/2018/01/01.csv"
+            os.path.dirname(__file__), "./output/expected/team_box_scores/2018/01/01.csv"
         )
 
     def tearDown(self):
@@ -306,21 +313,17 @@ class TestTeamBoxScoresCSVOutput(TestCase):
             year=2018,
             output_type=OutputType.CSV,
             output_file_path=self.output_file_path,
-            output_write_option=OutputWriteOption.WRITE
+            output_write_option=OutputWriteOption.WRITE,
         )
 
-        self.assertTrue(
-            filecmp.cmp(
-                self.output_file_path,
-                self.expected_output_file_path))
+        self.assertTrue(filecmp.cmp(self.output_file_path, self.expected_output_file_path))
 
 
 @BoxScoresResponseMocker(boxscore_date=date(year=2018, month=1, day=1))
 class TestTeamBoxScoresInMemoryJSON(TestCase):
     def setUp(self):
         self.expected_output_file_path = os.path.join(
-            os.path.dirname(__file__),
-            "./output/expected/team_box_scores/2018/01/01.json"
+            os.path.dirname(__file__), "./output/expected/team_box_scores/2018/01/01.json"
         )
 
     def test_output(self):
@@ -330,7 +333,7 @@ class TestTeamBoxScoresInMemoryJSON(TestCase):
             year=2018,
             output_type=OutputType.JSON,
         )
-        with open(self.expected_output_file_path, "r", encoding="utf8") as expected_output_file:
+        with open(self.expected_output_file_path, encoding="utf8") as expected_output_file:
             self.assertEqual(
                 json.loads(results),
                 json.load(expected_output_file),
@@ -341,12 +344,10 @@ class TestTeamBoxScoresInMemoryJSON(TestCase):
 class TestTeamBoxScoresJSONOutput(TestCase):
     def setUp(self):
         self.output_file_path = os.path.join(
-            os.path.dirname(__file__),
-            "./output/generated/team_box_scores/2018/01/01.json"
+            os.path.dirname(__file__), "./output/generated/team_box_scores/2018/01/01.json"
         )
         self.expected_output_file_path = os.path.join(
-            os.path.dirname(__file__),
-            "./output/expected/team_box_scores/2018/01/01.json"
+            os.path.dirname(__file__), "./output/expected/team_box_scores/2018/01/01.json"
         )
 
     def tearDown(self):
@@ -360,9 +361,6 @@ class TestTeamBoxScoresJSONOutput(TestCase):
             year=2018,
             output_type=OutputType.JSON,
             output_file_path=self.output_file_path,
-            output_write_option=OutputWriteOption.WRITE
+            output_write_option=OutputWriteOption.WRITE,
         )
-        self.assertTrue(
-            filecmp.cmp(
-                self.output_file_path,
-                self.expected_output_file_path))
+        self.assertTrue(filecmp.cmp(self.output_file_path, self.expected_output_file_path))

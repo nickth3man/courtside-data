@@ -208,7 +208,13 @@ class _PytestResult:
 
 
 class _Response:
-    def __init__(self, status_code=200, content=b"<html></html>", url="https://www.basketball-reference.com/test.html", headers=None):
+    def __init__(
+        self,
+        status_code=200,
+        content=b"<html></html>",
+        url="https://www.basketball-reference.com/test.html",
+        headers=None,
+    ):
         self.status_code = status_code
         self.content = content
         self.url = url

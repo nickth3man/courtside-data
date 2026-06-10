@@ -1,9 +1,0 @@
-{
-  "byte_count": 148648,
-  "content_type": "text/html",
-  "downloaded_at": "2026-06-02T18:08:57.091823+00:00",
-  "sha256": "7bd34f298dbc997a2c26bea4090e999269ccc8227524008ffe930450002c0755",
-  "status_code": 200,
-  "tool": "requests",
-  "url": "https://www.basketball-reference.com/leagues/NBA_2001_games-june.html"
-}

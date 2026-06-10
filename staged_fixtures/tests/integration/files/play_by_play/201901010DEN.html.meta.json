@@ -1,9 +1,0 @@
-{
-  "byte_count": 250211,
-  "content_type": "text/html",
-  "downloaded_at": "2026-06-02T17:57:42.120161+00:00",
-  "sha256": "1992149a2055a77dc559d165d02519ea02877a4ef820162cc1562baee0aa3f6e",
-  "status_code": 200,
-  "tool": "requests",
-  "url": "https://www.basketball-reference.com/boxscores/pbp/201901010DEN.html"
-}

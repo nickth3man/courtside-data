@@ -1,9 +1,0 @@
-{
-  "byte_count": 479715,
-  "content_type": "text/html",
-  "downloaded_at": "2026-06-02T18:09:07.605318+00:00",
-  "sha256": "f723582e73549ce8cd17bc62bfd9c23e77133d584dd5a586e9a209920c6c5072",
-  "status_code": 200,
-  "tool": "requests",
-  "url": "https://www.basketball-reference.com/leagues/NBA_2018_games-november.html"
-}

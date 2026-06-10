@@ -1,9 +1,0 @@
-{
-  "byte_count": 1839988,
-  "content_type": "text/html",
-  "downloaded_at": "2026-06-02T17:58:06.423855+00:00",
-  "sha256": "3a6f87d3f9554906534cc6b76283e25a6a764ef1caf3da3447c3697c35f64651",
-  "status_code": 200,
-  "tool": "requests",
-  "url": "https://www.basketball-reference.com/leagues/NBA_2016_advanced.html"
-}

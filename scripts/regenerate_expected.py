@@ -23,7 +23,6 @@ import sys
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any
 
 # Ensure stdout can handle Unicode characters (e.g. accented player names)
 if sys.stdout.encoding and sys.stdout.encoding.upper() != "UTF-8":
@@ -83,6 +82,7 @@ TRIPWIRE_LENGTHS: dict[tuple[str, int], int] = {
 @dataclass(frozen=True)
 class ModuleSnapshotInfo:
     """Metadata about a snapshot-testing module."""
+
     years: list[int]
     formats: list[str]
     test_file: str
@@ -159,7 +159,9 @@ def _make_player_box_node(year, fmt):
 
 def _make_player_box_tripwire(year):
     if year == 2001:
-        return "tests/integration/client/test_player_box_scores.py::Test20010101::test_2001_01_01_player_box_scores_length"
+        return (
+            "tests/integration/client/test_player_box_scores.py::Test20010101::test_2001_01_01_player_box_scores_length"
+        )
     if year == 2018:
         return "tests/integration/client/test_player_box_scores.py::Test20180101::test_player_box_scores_length"
     return None
@@ -261,6 +263,7 @@ def resolve_expected_path(module_key: str, year: int, fmt: str) -> Path:
 # Core helpers
 # ---------------------------------------------------------------------------
 
+
 def run_tripwire(node_id: str, expected_length: int) -> tuple[bool, str]:
     """Run the in-memory tripwire test and return (passed, detail)."""
     env = os.environ.copy()
@@ -320,11 +323,14 @@ def print_diff(generated_path: Path, expected_path: Path) -> None:
     except FileNotFoundError:
         exp_lines = []
 
-    diff = list(difflib.unified_diff(
-        exp_lines, gen_lines,
-        fromfile=str(expected_path),
-        tofile=str(generated_path),
-    ))
+    diff = list(
+        difflib.unified_diff(
+            exp_lines,
+            gen_lines,
+            fromfile=str(expected_path),
+            tofile=str(generated_path),
+        )
+    )
     out = sys.stdout
     for line in diff:
         try:
@@ -338,16 +344,15 @@ def parse_args(argv=None):
     parser = argparse.ArgumentParser(
         description="Regenerate expected output snapshots for integration tests.",
     )
-    parser.add_argument("--apply", action="store_true",
-                        help="Actually copy generated → expected. Default is dry-run (show diff).")
-    parser.add_argument("--module", choices=list(SNAPSHOT_MODULES.keys()),
-                        help="Module to regenerate (required unless --all).")
-    parser.add_argument("--year", type=int,
-                        help="4-digit year (required unless --all).")
-    parser.add_argument("--format", choices=["json", "csv"],
-                        help="Output format. If omitted, regenerate both.")
-    parser.add_argument("--all", action="store_true",
-                        help="Regenerate every known (module, year) combination.")
+    parser.add_argument(
+        "--apply", action="store_true", help="Actually copy generated → expected. Default is dry-run (show diff)."
+    )
+    parser.add_argument(
+        "--module", choices=list(SNAPSHOT_MODULES.keys()), help="Module to regenerate (required unless --all)."
+    )
+    parser.add_argument("--year", type=int, help="4-digit year (required unless --all).")
+    parser.add_argument("--format", choices=["json", "csv"], help="Output format. If omitted, regenerate both.")
+    parser.add_argument("--all", action="store_true", help="Regenerate every known (module, year) combination.")
     return parser.parse_args(argv)
 
 
@@ -375,7 +380,10 @@ def main(argv=None):
             return 1
         info = SNAPSHOT_MODULES[module_key]
         if args.year not in info.years:
-            print(f"warning: year {args.year} has no snapshot tests for module {module_key!r} (known years: {info.years})", file=sys.stderr)
+            print(
+                f"warning: year {args.year} has no snapshot tests for module {module_key!r} (known years: {info.years})",
+                file=sys.stderr,
+            )
             # Still proceed — maybe someone added fixtures but not tripwires yet
         formats = [args.format] if args.format else info.formats
         for fmt in formats:
@@ -400,7 +408,7 @@ def main(argv=None):
         generated_path = resolve_generated_path(module_key, year, fmt)
         expected_path = resolve_expected_path(module_key, year, fmt)
 
-        print(f"\n{'='*60}")
+        print(f"\n{'=' * 60}")
         print(f"[{label}]")
         print(f"  snapshot node : {node_id}")
         print(f"  generated     : {generated_path.relative_to(REPO_ROOT)}")
@@ -426,7 +434,7 @@ def main(argv=None):
                 # New year — no known length, warn but continue
                 print(f"  [warning] no tripwire length known for {module_key}/{year} — skipping tripwire check")
             else:
-                print(f"  tripwire      : (none for this year)")
+                print("  tripwire      : (none for this year)")
 
             # 2. Run the snapshot test
             gen_dir = generated_path.parent
@@ -438,7 +446,7 @@ def main(argv=None):
 
             passed, detail = run_snapshot_test(node_id)
             if not passed:
-                print(f"  [failed] pytest snapshot test failed")
+                print("  [failed] pytest snapshot test failed")
                 print(f"    pytest output:\n{detail}")
                 counts["failed"] += 1
                 continue
@@ -451,13 +459,13 @@ def main(argv=None):
 
             # 4. Compare / copy
             if expected_path.exists() and filecmp.cmp(str(generated_path), str(expected_path), shallow=False):
-                print(f"  unchanged     : generated matches expected")
+                print("  unchanged     : generated matches expected")
                 if not dry_run:
                     pass  # nothing to do
                 counts["unchanged"] += 1
             else:
                 if dry_run:
-                    print(f"  [diff] generated differs from expected:")
+                    print("  [diff] generated differs from expected:")
                     print_diff(generated_path, expected_path)
                 else:
                     expected_path.parent.mkdir(parents=True, exist_ok=True)
@@ -469,7 +477,7 @@ def main(argv=None):
             counts["failed"] += 1
 
     # Summary
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print("Regeneration summary:")
     print(f"  Unchanged  : {counts['unchanged']}")
     print(f"  Regenerated: {counts['regenerated']}")

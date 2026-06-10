@@ -1,9 +1,0 @@
-{
-  "byte_count": 1785743,
-  "content_type": "text/html",
-  "downloaded_at": "2026-06-02T18:04:50.320557+00:00",
-  "sha256": "1578cd2cbf4df5e69a4bafb222c9dc03a5279d197d3adc7bb78bc56dfe7b17c7",
-  "status_code": 200,
-  "tool": "requests",
-  "url": "https://www.basketball-reference.com/leagues/NBA_2019_totals.html"
-}

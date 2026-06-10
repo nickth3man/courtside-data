@@ -1,9 +1,0 @@
-{
-  "byte_count": 1676784,
-  "content_type": "text/html",
-  "downloaded_at": "2026-06-02T18:04:16.113533+00:00",
-  "sha256": "75e37b69fd856f18b524c86145ca11b6f1576f7cc14b0ac936124a2884eddbfb",
-  "status_code": 200,
-  "tool": "requests",
-  "url": "https://www.basketball-reference.com/leagues/NBA_2015_totals.html"
-}

@@ -1,9 +1,0 @@
-{
-  "byte_count": 474077,
-  "content_type": "text/html",
-  "downloaded_at": "2026-06-02T18:06:42.444672+00:00",
-  "sha256": "f5fdafc4fc6d4cd5ba1bf93679078febec5057789eed8e81ff112adb75c1d488",
-  "status_code": 200,
-  "tool": "requests",
-  "url": "https://www.basketball-reference.com/leagues/NBA_2005_games.html"
-}

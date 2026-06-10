@@ -1,9 +1,0 @@
-{
-  "byte_count": 150050,
-  "content_type": "text/html; charset=utf-8",
-  "downloaded_at": "2026-06-02T18:11:33.395226+00:00",
-  "sha256": "9808c5cb0c92646a42c7651a8e5219f58d0722de432d8fc1101882ccd295f7a9",
-  "status_code": 200,
-  "tool": "requests",
-  "url": "https://www.basketball-reference.com/boxscores/?day=1&month=1&year=2018"
-}

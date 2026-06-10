@@ -1,9 +1,0 @@
-{
-  "byte_count": 1702940,
-  "content_type": "text/html",
-  "downloaded_at": "2026-06-02T17:57:54.501296+00:00",
-  "sha256": "0c58b93425057476791f75a39c64789db34e20f350da71056526ba6d4bd06f92",
-  "status_code": 200,
-  "tool": "requests",
-  "url": "https://www.basketball-reference.com/leagues/NBA_2001_advanced.html"
-}

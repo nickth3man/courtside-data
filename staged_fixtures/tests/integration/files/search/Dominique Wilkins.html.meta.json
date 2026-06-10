@@ -1,9 +1,0 @@
-{
-  "byte_count": 92165,
-  "content_type": "text/html; charset=utf-8",
-  "downloaded_at": "2026-06-02T18:12:53.915304+00:00",
-  "sha256": "a5dcff75c2477103c88b046a5ef9f5ccbf77ca84821f5a1b6dea51e017fadf75",
-  "status_code": 200,
-  "tool": "requests",
-  "url": "https://www.basketball-reference.com/search/search.fcgi?search=Dominique+Wilkins"
-}

@@ -1,9 +1,0 @@
-{
-  "byte_count": 239440,
-  "content_type": "text/html",
-  "downloaded_at": "2026-06-02T18:20:15.272061+00:00",
-  "sha256": "196671adf45ac412b9fd1a6669045fc2e8eb12f75c550b01037ed4a5df4c433f",
-  "status_code": 200,
-  "tool": "requests",
-  "url": "https://www.basketball-reference.com/draft/NBA_2001.html"
-}

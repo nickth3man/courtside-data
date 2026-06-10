@@ -1,9 +1,0 @@
-{
-  "byte_count": 463636,
-  "content_type": "text/html",
-  "downloaded_at": "2026-06-02T18:11:44.473537+00:00",
-  "sha256": "de0d7494546840436f467d0ba7ed57642be8d2920f1fc9fc6313f341055a5d74",
-  "status_code": 200,
-  "tool": "requests",
-  "url": "https://www.basketball-reference.com/boxscores/201801010BRK.html"
-}

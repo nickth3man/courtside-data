@@ -9,21 +9,18 @@ import subprocess
 import sys
 import time
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 import requests
 from lxml import html
-
 
 DEFAULT_OUTPUT_ROOT = Path("staged_fixtures")
 DEFAULT_TIMEOUT_SECONDS = 30
 DEFAULT_DELAY_SECONDS = 8
 DEFAULT_MAX_REQUESTS = 3
 USER_AGENT = (
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-    "AppleWebKit/537.36 (KHTML, like Gecko) "
-    "Chrome/124.0.0.0 Safari/537.36"
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
 )
 
 
@@ -69,7 +66,7 @@ def refresh_fixture(fixture, output_root, get=requests.get, sleep=time.sleep):
         json.dumps(
             {
                 "url": fixture.url,
-                "downloaded_at": datetime.now(timezone.utc).isoformat(),
+                "downloaded_at": datetime.now(UTC).isoformat(),
                 "status_code": response.status_code,
                 "content_type": response.headers.get("content-type", ""),
                 "sha256": digest,
@@ -94,12 +91,7 @@ def refresh_fixture(fixture, output_root, get=requests.get, sleep=time.sleep):
 
 def validate_response(response, fixture):
     if response.status_code in {403, 429}:
-        raise FixtureRefreshError(
-            "Stopping fixture refresh: {status_code} received for {url}".format(
-                status_code=response.status_code,
-                url=fixture.url,
-            )
-        )
+        raise FixtureRefreshError(f"Stopping fixture refresh: {response.status_code} received for {fixture.url}")
 
     if response.status_code not in fixture.allowed_statuses:
         raise FixtureRefreshError(
@@ -111,17 +103,11 @@ def validate_response(response, fixture):
         )
 
     if not response.url.startswith("https://www.basketball-reference.com/"):
-        raise FixtureRefreshError("Unexpected response URL for {url}: {response_url}".format(
-            url=fixture.url,
-            response_url=response.url,
-        ))
+        raise FixtureRefreshError(f"Unexpected response URL for {fixture.url}: {response.url}")
 
     content_type = response.headers.get("content-type", "")
     if "text/html" not in content_type:
-        raise FixtureRefreshError("Expected text/html for {url}, got {content_type}".format(
-            url=fixture.url,
-            content_type=content_type,
-        ))
+        raise FixtureRefreshError(f"Expected text/html for {fixture.url}, got {content_type}")
 
     blocked_markers = (
         b"Rate Limited Request",
@@ -129,7 +115,7 @@ def validate_response(response, fixture):
         b"Too Many Requests",
     )
     if any(marker in response.content for marker in blocked_markers):
-        raise FixtureRefreshError("Blocked or rate-limited content detected for {url}".format(url=fixture.url))
+        raise FixtureRefreshError(f"Blocked or rate-limited content detected for {fixture.url}")
 
 
 def verify_html_fixture(html_bytes):
@@ -157,17 +143,15 @@ def verify_table_exists(*table_ids):
     def verify(html_bytes):
         document = html.fromstring(html_bytes)
         for table_id in table_ids:
-            if document.xpath('//table[@id="{table_id}"]'.format(table_id=table_id)):
+            if document.xpath(f'//table[@id="{table_id}"]'):
                 return
         html_text = html_bytes.decode("utf-8", errors="ignore")
         for table_id in table_ids:
-            if 'id="{table_id}"'.format(table_id=table_id) in html_text:
+            if f'id="{table_id}"' in html_text:
                 return
-            if "id='{table_id}'".format(table_id=table_id) in html_text:
+            if f"id='{table_id}'" in html_text:
                 return
-        raise FixtureRefreshError(
-            "Expected table with id one of {ids} was not found".format(ids=", ".join(table_ids))
-        )
+        raise FixtureRefreshError("Expected table with id one of {ids} was not found".format(ids=", ".join(table_ids)))
 
     return verify
 
@@ -177,7 +161,7 @@ def verify_xpath_exists(xpath, description):
         document = html.fromstring(html_bytes)
         if document.xpath(xpath):
             return
-        raise FixtureRefreshError("Expected {description} was not found".format(description=description))
+        raise FixtureRefreshError(f"Expected {description} was not found")
 
     return verify
 
@@ -933,20 +917,18 @@ FIXTURES = {
 FIXTURE_KEY_TO_TEST = {
     # players_season_totals: 2001 … 2018 (1976-through-2000 have no snapshot tests)
     **{
-        "players_season_totals_{year}".format(year=year): (
+        f"players_season_totals_{year}": (
             "tests/integration/client/test_players_season_totals.py"
-            "::Test{year}PlayerSeasonJSONTotals::test_{year}_json_output"
-        ).format(year=year)
+            f"::Test{year}PlayerSeasonJSONTotals::test_{year}_json_output"
+        )
         for year in range(2001, 2019)
     },
     # season_schedule: only 2001 and 2018 have snapshot tests
     "season_schedule_2001": (
-        "tests/integration/client/test_season_schedule.py"
-        "::Test2001SeasonScheduleCsvOutput::test_output"
+        "tests/integration/client/test_season_schedule.py::Test2001SeasonScheduleCsvOutput::test_output"
     ),
     "season_schedule_2018": (
-        "tests/integration/client/test_season_schedule.py"
-        "::Test2018SeasonScheduleCsvOutput::test_output"
+        "tests/integration/client/test_season_schedule.py::Test2018SeasonScheduleCsvOutput::test_output"
     ),
     # player_advanced_season_totals
     "player_advanced_season_totals_2001": (
@@ -976,8 +958,7 @@ FIXTURE_KEY_TO_TEST = {
     ),
     # player_box_scores_daily
     "player_box_scores_daily_2001_1_1": (
-        "tests/integration/client/test_player_box_scores.py"
-        "::Test20010101::test_json_output"
+        "tests/integration/client/test_player_box_scores.py::Test20010101::test_json_output"
     ),
 }
 
@@ -986,22 +967,20 @@ def _expected_output_path_for_fixture_key(key):
     """Return the *expected* output path (relative to repo root) for a fixture key, or None."""
     m = re.match(r"^players_season_totals_(\d{4})$", key)
     if m:
-        return Path("tests/integration/client/output/expected/players_season_totals/{year}.json".format(year=m.group(1)))
+        return Path(f"tests/integration/client/output/expected/players_season_totals/{m.group(1)}.json")
 
     m = re.match(r"^season_schedule_(\d{4})$", key)
     if m:
-        return Path("tests/integration/client/output/expected/season_schedule/{year}.csv".format(year=m.group(1)))
+        return Path(f"tests/integration/client/output/expected/season_schedule/{m.group(1)}.csv")
 
     m = re.match(r"^player_advanced_season_totals_(\d{4})$", key)
     if m:
-        return Path("tests/integration/client/output/expected/player_advanced_season_totals/{year}.json".format(year=m.group(1)))
+        return Path(f"tests/integration/client/output/expected/player_advanced_season_totals/{m.group(1)}.json")
 
     m = re.match(r"^player_box_scores_daily_(\d{4})_(\d+)_(\d+)$", key)
     if m:
         return Path(
-            "tests/integration/client/output/expected/player_box_scores/{year}/{month}/{day}.json".format(
-                year=m.group(1), month=m.group(2), day=m.group(3)
-            )
+            f"tests/integration/client/output/expected/player_box_scores/{m.group(1)}/{m.group(2)}/{m.group(3)}.json"
         )
 
     return None
@@ -1015,7 +994,7 @@ def promote_to_final_destination(output_root, fixture, copyfile=shutil.copyfile)
     staged_path = output_root / fixture.path
     if not staged_path.exists():
         print(
-            "WARNING: staged fixture {path} does not exist, skipping promotion".format(path=staged_path),
+            f"WARNING: staged fixture {staged_path} does not exist, skipping promotion",
             file=sys.stderr,
         )
         return False
@@ -1045,13 +1024,10 @@ def check_expected_drift(fixture, output_root, run_pytest=subprocess.run):
             timeout=60,
         )
     except subprocess.TimeoutExpired:
-        return "[drift] {key}: pytest timed out after 60s".format(key=fixture.key)
+        return f"[drift] {fixture.key}: pytest timed out after 60s"
 
     if result.returncode != 0:
-        return "[drift] {key}: {node_id} failed (run scripts/regenerate_expected.py)".format(
-            key=fixture.key,
-            node_id=node_id,
-        )
+        return f"[drift] {fixture.key}: {node_id} failed (run scripts/regenerate_expected.py)"
 
     return None
 
@@ -1072,7 +1048,7 @@ def main(argv=None):
     args = parse_args(argv)
     if args.list:
         for key, fixture in sorted(FIXTURES.items()):
-            print("{key}: {url} -> {path}".format(key=key, url=fixture.url, path=fixture.path))
+            print(f"{key}: {fixture.url} -> {fixture.path}")
         return 0
 
     keys = list(args.keys)
@@ -1084,10 +1060,7 @@ def main(argv=None):
     if unknown_keys:
         raise FixtureRefreshError("Unknown fixture keys: {keys}".format(keys=", ".join(unknown_keys)))
     if len(keys) > args.max_requests:
-        raise FixtureRefreshError("Requested {count} fixtures but max requests is {max_requests}".format(
-            count=len(keys),
-            max_requests=args.max_requests,
-        ))
+        raise FixtureRefreshError(f"Requested {len(keys)} fixtures but max requests is {args.max_requests}")
 
     output_root = Path(args.output_root)
     skip_drift = args.skip_drift_check
@@ -1095,12 +1068,7 @@ def main(argv=None):
 
     for index, key in enumerate(keys):
         result = refresh_fixture(fixture=FIXTURES[key], output_root=output_root)
-        print("Staged {key}: {path} ({bytes} bytes, sha256={sha})".format(
-            key=key,
-            path=result.output_path,
-            bytes=result.byte_count,
-            sha=result.sha256,
-        ))
+        print(f"Staged {key}: {result.output_path} ({result.byte_count} bytes, sha256={result.sha256})")
 
         if not skip_drift:
             promoted = promote_to_final_destination(output_root=output_root, fixture=FIXTURES[key])
@@ -1115,13 +1083,11 @@ def main(argv=None):
 
     n_total = len(keys)
     n_drift = len(drift_warnings)
-    summary = "Refreshed {n} fixtures.".format(n=n_total)
+    summary = f"Refreshed {n_total} fixtures."
     if drift_warnings:
-        summary = "{base} {count} warning(s): drift={drift}".format(
-            base=summary, count=n_drift, drift=n_drift,
-        )
+        summary = f"{summary} {n_drift} warning(s): drift={n_drift}"
     else:
-        summary = "{base} No drift detected.".format(base=summary)
+        summary = f"{summary} No drift detected."
     print(summary)
 
     return 0
@@ -1132,4 +1098,4 @@ if __name__ == "__main__":
         raise SystemExit(main())
     except FixtureRefreshError as error:
         print(error)
-        raise SystemExit(1)
+        raise SystemExit(1) from error

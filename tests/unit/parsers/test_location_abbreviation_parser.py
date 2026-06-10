@@ -1,6 +1,6 @@
 from unittest import TestCase
 
-from courtside_data.data import Location, LOCATION_ABBREVIATIONS_TO_POSITION
+from courtside_data.data import LOCATION_ABBREVIATIONS_TO_POSITION, Location
 from courtside_data.parsers import LocationAbbreviationParser
 
 

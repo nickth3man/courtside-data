@@ -1,7 +1,7 @@
 from unittest import TestCase
 from unittest.mock import MagicMock
 
-from courtside_data.html import PlayerPageTotalsTable, PlayerPageTotalsRow
+from courtside_data.html import PlayerPageTotalsRow, PlayerPageTotalsTable
 
 
 class TestPlayerPageTotalsTable(TestCase):
@@ -9,11 +9,8 @@ class TestPlayerPageTotalsTable(TestCase):
         html = MagicMock()
         html.xpath = MagicMock(return_value=[])
 
-        self.assertEqual(
-            PlayerPageTotalsTable(html=html).rows,
-            []
-        )
-        html.xpath.assert_called_once_with('.//tbody/tr')
+        self.assertEqual(PlayerPageTotalsTable(html=html).rows, [])
+        html.xpath.assert_called_once_with(".//tbody/tr")
 
     def test_rows_when_results(self):
         first_row = MagicMock(name="first row html")
@@ -27,21 +24,15 @@ class TestPlayerPageTotalsTable(TestCase):
             [
                 PlayerPageTotalsRow(html=first_row),
                 PlayerPageTotalsRow(html=second_row),
-            ]
+            ],
         )
-        html.xpath.assert_called_once_with('.//tbody/tr')
+        html.xpath.assert_called_once_with(".//tbody/tr")
 
     def test_different_class_is_not_equal(self):
-        self.assertNotEqual(
-            PlayerPageTotalsTable(html=MagicMock()),
-            "jaebaebae"
-        )
+        self.assertNotEqual(PlayerPageTotalsTable(html=MagicMock()), "jaebaebae")
 
     def test_different_html_but_same_class_is_not_equal(self):
-        self.assertNotEqual(
-            PlayerPageTotalsTable(html=MagicMock()),
-            PlayerPageTotalsTable(html=MagicMock())
-        )
+        self.assertNotEqual(PlayerPageTotalsTable(html=MagicMock()), PlayerPageTotalsTable(html=MagicMock()))
 
     def test_same_html_and_same_class_is_equal(self):
         html = MagicMock()

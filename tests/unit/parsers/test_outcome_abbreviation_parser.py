@@ -1,6 +1,6 @@
 from unittest import TestCase
 
-from courtside_data.data import Outcome, OUTCOME_ABBREVIATIONS_TO_OUTCOME
+from courtside_data.data import OUTCOME_ABBREVIATIONS_TO_OUTCOME, Outcome
 from courtside_data.parsers import OutcomeAbbreviationParser
 
 

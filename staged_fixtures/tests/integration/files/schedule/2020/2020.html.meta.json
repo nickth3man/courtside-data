@@ -1,9 +1,0 @@
-{
-  "byte_count": 246890,
-  "content_type": "text/html",
-  "downloaded_at": "2026-06-02T18:07:14.192358+00:00",
-  "sha256": "e6eaf42f3edb383a8edfeed84cd80f767d695bc9adb6d576248a7b780c929f49",
-  "status_code": 200,
-  "tool": "requests",
-  "url": "https://www.basketball-reference.com/leagues/NBA_2020_games.html"
-}

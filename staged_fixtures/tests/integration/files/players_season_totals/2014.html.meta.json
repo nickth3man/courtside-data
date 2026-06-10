@@ -1,9 +1,0 @@
-{
-  "byte_count": 1596946,
-  "content_type": "text/html",
-  "downloaded_at": "2026-06-02T18:04:04.790523+00:00",
-  "sha256": "e0ddd57e0f3dfcb4e7092491deff6c76257d944d3c6ebb286166cfcb40d07ad9",
-  "status_code": 200,
-  "tool": "requests",
-  "url": "https://www.basketball-reference.com/leagues/NBA_2014_totals.html"
-}

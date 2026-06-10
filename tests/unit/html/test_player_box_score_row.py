@@ -32,7 +32,7 @@ class TestPlayerBoxScoreRow(TestCase):
 
     def test_team_abbreviation_is_empty_string_when_cells_do_not_exist(self):
         self.html.xpath = MagicMock(return_value=[])
-        self.assertEqual(PlayerBoxScoreRow(html=self.html).team_abbreviation, '')
+        self.assertEqual(PlayerBoxScoreRow(html=self.html).team_abbreviation, "")
         self.html.xpath.assert_called_once_with('td[@data-stat="team_id"]')
 
     def test_location_abbreviation_when_cells_exist(self):
@@ -43,7 +43,7 @@ class TestPlayerBoxScoreRow(TestCase):
 
     def test_location_abbreviation_is_empty_string_when_cells_exist(self):
         self.html.xpath = MagicMock(return_value=[])
-        self.assertEqual(PlayerBoxScoreRow(html=self.html).location_abbreviation, '')
+        self.assertEqual(PlayerBoxScoreRow(html=self.html).location_abbreviation, "")
         self.html.xpath.assert_called_once_with('td[@data-stat="game_location"]')
 
     def test_opponent_abbreviation_when_cells_exist(self):
@@ -54,7 +54,7 @@ class TestPlayerBoxScoreRow(TestCase):
 
     def test_opponent_abbreviation_is_empty_string_when_cells_exist(self):
         self.html.xpath = MagicMock(return_value=[])
-        self.assertEqual(PlayerBoxScoreRow(html=self.html).opponent_abbreviation, '')
+        self.assertEqual(PlayerBoxScoreRow(html=self.html).opponent_abbreviation, "")
         self.html.xpath.assert_called_once_with('td[@data-stat="opp_id"]')
 
     def test_outcome_when_cells_exist(self):
@@ -65,7 +65,7 @@ class TestPlayerBoxScoreRow(TestCase):
 
     def test_outcome_is_empty_string_when_cells_exist(self):
         self.html.xpath = MagicMock(return_value=[])
-        self.assertEqual(PlayerBoxScoreRow(html=self.html).outcome, '')
+        self.assertEqual(PlayerBoxScoreRow(html=self.html).outcome, "")
         self.html.xpath.assert_called_once_with('td[@data-stat="game_result"]')
 
     def test_plus_minus_when_cells_exist(self):
@@ -76,7 +76,7 @@ class TestPlayerBoxScoreRow(TestCase):
 
     def test_plus_minus_is_empty_string_when_cells_exist(self):
         self.html.xpath = MagicMock(return_value=[])
-        self.assertEqual(PlayerBoxScoreRow(html=self.html).plus_minus, '')
+        self.assertEqual(PlayerBoxScoreRow(html=self.html).plus_minus, "")
         self.html.xpath.assert_called_once_with('td[@data-stat="plus_minus"]')
 
     def test_game_score_when_cells_exist(self):
@@ -87,6 +87,5 @@ class TestPlayerBoxScoreRow(TestCase):
 
     def test_game_score_is_empty_string_when_cells_exist(self):
         self.html.xpath = MagicMock(return_value=[])
-        self.assertEqual(PlayerBoxScoreRow(html=self.html).game_score, '')
+        self.assertEqual(PlayerBoxScoreRow(html=self.html).game_score, "")
         self.html.xpath.assert_called_once_with('td[@data-stat="game_score"]')
-

@@ -1,9 +1,0 @@
-{
-  "byte_count": 239781,
-  "content_type": "text/html",
-  "downloaded_at": "2026-06-02T17:56:43.826889+00:00",
-  "sha256": "88bb669e20b9c187d534a28a37483c0f58787c304cc0366d77334247332f4ae0",
-  "status_code": 200,
-  "tool": "requests",
-  "url": "https://www.basketball-reference.com/boxscores/pbp/199911160ATL.html"
-}

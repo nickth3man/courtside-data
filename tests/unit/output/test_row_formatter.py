@@ -1,6 +1,6 @@
 from unittest import TestCase
 
-from courtside_data.data import Team, Location, Outcome, Position
+from courtside_data.data import Location, Outcome, Position, Team
 from courtside_data.output.fields import format_value
 
 

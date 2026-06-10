@@ -1,9 +1,0 @@
-{
-  "byte_count": 428523,
-  "content_type": "text/html",
-  "downloaded_at": "2026-06-02T18:19:51.741047+00:00",
-  "sha256": "c89101a45dfea08a8107a34d9d463b9d7593e8f747605f8d19395bc358b7edd7",
-  "status_code": 200,
-  "tool": "requests",
-  "url": "https://www.basketball-reference.com/wnba/boxscores/202410130NYL.html"
-}

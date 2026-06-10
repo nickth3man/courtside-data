@@ -27,9 +27,7 @@ class TestTripwireComparison(unittest.TestCase):
         mock_run.return_value.stdout = ""
         mock_run.return_value.stderr = ""
 
-        passed, detail = regenerate_expected.run_tripwire(
-            "some::node::id", expected_length=605
-        )
+        passed, detail = regenerate_expected.run_tripwire("some::node::id", expected_length=605)
         self.assertTrue(passed)
         self.assertEqual(detail, "")
         mock_run.assert_called_once()
@@ -41,9 +39,7 @@ class TestTripwireComparison(unittest.TestCase):
         mock_run.return_value.stdout = "AssertionError: 605 != 600"
         mock_run.return_value.stderr = ""
 
-        passed, detail = regenerate_expected.run_tripwire(
-            "some::node::id", expected_length=605
-        )
+        passed, detail = regenerate_expected.run_tripwire("some::node::id", expected_length=605)
         self.assertFalse(passed)
         self.assertIn("AssertionError", detail)
 
@@ -52,9 +48,7 @@ class TestTripwireComparison(unittest.TestCase):
         """A timeout is caught and reported."""
         mock_run.side_effect = subprocess.TimeoutExpired(cmd="pytest", timeout=30)
 
-        passed, detail = regenerate_expected.run_tripwire(
-            "some::node::id", expected_length=605
-        )
+        passed, detail = regenerate_expected.run_tripwire("some::node::id", expected_length=605)
         self.assertFalse(passed)
         self.assertIn("timed out", detail)
 
@@ -90,9 +84,7 @@ class TestDiffPrinter(unittest.TestCase):
         with mock.patch("builtins.print") as mock_print:
             regenerate_expected.print_diff(self.gen, self.exp)
 
-        mock_print.assert_any_call(
-            f"  (generated file not found: {self.gen})"
-        )
+        mock_print.assert_any_call(f"  (generated file not found: {self.gen})")
 
     def test_diff_no_expected(self):
         """If expected file doesn't exist yet, treat as empty."""
@@ -128,7 +120,8 @@ class TestModuleInfo(unittest.TestCase):
     def test_tripwire_lengths_are_positive(self):
         for (module_key, year), length in regenerate_expected.TRIPWIRE_LENGTHS.items():
             self.assertGreater(
-                length, 0,
+                length,
+                0,
                 f"Tripwire for {module_key}/{year} is {length}, expected > 0",
             )
 

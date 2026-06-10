@@ -16,7 +16,10 @@ class TestHTTPService(TestCase):
             InvalidDate,
             "Date with year set to 2018, month set to 1, and day set to 1 is invalid",
             HTTPService(parser=mock.MagicMock(), session=session, rate_limit_interval=0).player_box_scores,
-            day=1, month=1, year=2018)
+            day=1,
+            month=1,
+            year=2018,
+        )
 
 
 class TestHTTPServiceBackwardCompatibility(TestCase):

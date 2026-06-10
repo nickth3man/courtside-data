@@ -3,10 +3,10 @@
 The output is intentionally compact: one CSV row per endpoint call with the
 total row count and up to two sample records serialized as JSON.
 """
+
 import csv
 import json
 import sys
-import time
 from pathlib import Path
 
 import requests
@@ -14,7 +14,6 @@ import requests
 from courtside_data.data import Team
 from courtside_data.http_service import HTTPService
 from courtside_data.parser_service import ParserService
-
 
 OUTPUT_PATH = Path("endpoint_samples.csv")
 RATE_LIMIT_INTERVAL = 5.0
@@ -39,30 +38,94 @@ def _call_specs(service):
         ("standings", lambda: service.standings(2025), {"season_end_year": 2025}),
         ("player_box_scores", lambda: service.player_box_scores(25, 12, 2023), {"day": 25, "month": 12, "year": 2023}),
         ("player_box_scores", lambda: service.player_box_scores(27, 1, 2024), {"day": 27, "month": 1, "year": 2024}),
-        ("regular_season_player_box_scores", lambda: service.regular_season_player_box_scores("jamesle01", 2024), {"player_identifier": "jamesle01", "season_end_year": 2024}),
-        ("regular_season_player_box_scores", lambda: service.regular_season_player_box_scores("curryst01", 2024), {"player_identifier": "curryst01", "season_end_year": 2024}),
-        ("playoff_player_box_scores", lambda: service.playoff_player_box_scores("jamesle01", 2023), {"player_identifier": "jamesle01", "season_end_year": 2023}),
-        ("playoff_player_box_scores", lambda: service.playoff_player_box_scores("curryst01", 2022), {"player_identifier": "curryst01", "season_end_year": 2022}),
+        (
+            "regular_season_player_box_scores",
+            lambda: service.regular_season_player_box_scores("jamesle01", 2024),
+            {"player_identifier": "jamesle01", "season_end_year": 2024},
+        ),
+        (
+            "regular_season_player_box_scores",
+            lambda: service.regular_season_player_box_scores("curryst01", 2024),
+            {"player_identifier": "curryst01", "season_end_year": 2024},
+        ),
+        (
+            "playoff_player_box_scores",
+            lambda: service.playoff_player_box_scores("jamesle01", 2023),
+            {"player_identifier": "jamesle01", "season_end_year": 2023},
+        ),
+        (
+            "playoff_player_box_scores",
+            lambda: service.playoff_player_box_scores("curryst01", 2022),
+            {"player_identifier": "curryst01", "season_end_year": 2022},
+        ),
         ("season_schedule", lambda: service.season_schedule(2024), {"season_end_year": 2024}),
         ("season_schedule", lambda: service.season_schedule(2025), {"season_end_year": 2025}),
         ("players_season_totals", lambda: service.players_season_totals(2024), {"season_end_year": 2024}),
         ("players_season_totals", lambda: service.players_season_totals(2025), {"season_end_year": 2025}),
-        ("players_advanced_season_totals", lambda: service.players_advanced_season_totals(2024), {"season_end_year": 2024}),
-        ("players_advanced_season_totals", lambda: service.players_advanced_season_totals(2025), {"season_end_year": 2025}),
+        (
+            "players_advanced_season_totals",
+            lambda: service.players_advanced_season_totals(2024),
+            {"season_end_year": 2024},
+        ),
+        (
+            "players_advanced_season_totals",
+            lambda: service.players_advanced_season_totals(2025),
+            {"season_end_year": 2025},
+        ),
         ("team_box_scores", lambda: service.team_box_scores(25, 12, 2023), {"day": 25, "month": 12, "year": 2023}),
         ("team_box_scores", lambda: service.team_box_scores(27, 1, 2024), {"day": 27, "month": 1, "year": 2024}),
-        ("play_by_play", lambda: service.play_by_play(Team.LOS_ANGELES_LAKERS, 25, 12, 2023), {"home_team": "LOS_ANGELES_LAKERS", "day": 25, "month": 12, "year": 2023}),
-        ("play_by_play", lambda: service.play_by_play(Team.GOLDEN_STATE_WARRIORS, 27, 1, 2024), {"home_team": "GOLDEN_STATE_WARRIORS", "day": 27, "month": 1, "year": 2024}),
+        (
+            "play_by_play",
+            lambda: service.play_by_play(Team.LOS_ANGELES_LAKERS, 25, 12, 2023),
+            {"home_team": "LOS_ANGELES_LAKERS", "day": 25, "month": 12, "year": 2023},
+        ),
+        (
+            "play_by_play",
+            lambda: service.play_by_play(Team.GOLDEN_STATE_WARRIORS, 27, 1, 2024),
+            {"home_team": "GOLDEN_STATE_WARRIORS", "day": 27, "month": 1, "year": 2024},
+        ),
         ("search", lambda: service.search("LeBron James"), {"term": "LeBron James"}),
         ("search", lambda: service.search("Stephen Curry"), {"term": "Stephen Curry"}),
-        ("team_roster", lambda: service.team_roster("LAL", 2024), {"team_abbreviation": "LAL", "season_end_year": 2024}),
-        ("team_roster", lambda: service.team_roster("BOS", 2024), {"team_abbreviation": "BOS", "season_end_year": 2024}),
-        ("team_injury_report", lambda: service.team_injury_report("LAL", 2024), {"team_abbreviation": "LAL", "season_end_year": 2024}),
-        ("team_injury_report", lambda: service.team_injury_report("BOS", 2024), {"team_abbreviation": "BOS", "season_end_year": 2024}),
-        ("team_and_opponent", lambda: service.team_and_opponent("LAL", 2024), {"team_abbreviation": "LAL", "season_end_year": 2024}),
-        ("team_and_opponent", lambda: service.team_and_opponent("BOS", 2024), {"team_abbreviation": "BOS", "season_end_year": 2024}),
-        ("team_misc_four_factors", lambda: service.team_misc_four_factors("LAL", 2024), {"team_abbreviation": "LAL", "season_end_year": 2024}),
-        ("team_misc_four_factors", lambda: service.team_misc_four_factors("BOS", 2024), {"team_abbreviation": "BOS", "season_end_year": 2024}),
+        (
+            "team_roster",
+            lambda: service.team_roster("LAL", 2024),
+            {"team_abbreviation": "LAL", "season_end_year": 2024},
+        ),
+        (
+            "team_roster",
+            lambda: service.team_roster("BOS", 2024),
+            {"team_abbreviation": "BOS", "season_end_year": 2024},
+        ),
+        (
+            "team_injury_report",
+            lambda: service.team_injury_report("LAL", 2024),
+            {"team_abbreviation": "LAL", "season_end_year": 2024},
+        ),
+        (
+            "team_injury_report",
+            lambda: service.team_injury_report("BOS", 2024),
+            {"team_abbreviation": "BOS", "season_end_year": 2024},
+        ),
+        (
+            "team_and_opponent",
+            lambda: service.team_and_opponent("LAL", 2024),
+            {"team_abbreviation": "LAL", "season_end_year": 2024},
+        ),
+        (
+            "team_and_opponent",
+            lambda: service.team_and_opponent("BOS", 2024),
+            {"team_abbreviation": "BOS", "season_end_year": 2024},
+        ),
+        (
+            "team_misc_four_factors",
+            lambda: service.team_misc_four_factors("LAL", 2024),
+            {"team_abbreviation": "LAL", "season_end_year": 2024},
+        ),
+        (
+            "team_misc_four_factors",
+            lambda: service.team_misc_four_factors("BOS", 2024),
+            {"team_abbreviation": "BOS", "season_end_year": 2024},
+        ),
         ("league_per_game_stats", lambda: service.league_per_game_stats(2024), {"season_end_year": 2024}),
         ("league_per_game_stats", lambda: service.league_per_game_stats(2025), {"season_end_year": 2025}),
         ("league_per_36_minutes", lambda: service.league_per_36_minutes(2024), {"season_end_year": 2024}),
@@ -97,42 +160,146 @@ def _call_specs(service):
         ("season_awards", lambda: service.season_awards(2025), {"season_end_year": 2025}),
         ("player_career_stats", lambda: service.player_career_stats("jamesle01"), {"player_identifier": "jamesle01"}),
         ("player_career_stats", lambda: service.player_career_stats("curryst01"), {"player_identifier": "curryst01"}),
-        ("player_playoff_series", lambda: service.player_playoff_series("jamesle01"), {"player_identifier": "jamesle01"}),
-        ("player_playoff_series", lambda: service.player_playoff_series("curryst01"), {"player_identifier": "curryst01"}),
-        ("player_splits", lambda: service.player_splits("jamesle01", 2024), {"player_identifier": "jamesle01", "season_end_year": 2024}),
-        ("player_splits", lambda: service.player_splits("curryst01", 2024), {"player_identifier": "curryst01", "season_end_year": 2024}),
-        ("player_on_off", lambda: service.player_on_off("jamesle01", 2024), {"player_identifier": "jamesle01", "season_end_year": 2024}),
-        ("player_on_off", lambda: service.player_on_off("curryst01", 2024), {"player_identifier": "curryst01", "season_end_year": 2024}),
-        ("player_shot_charts", lambda: service.player_shot_charts("jamesle01", 2024), {"player_identifier": "jamesle01", "season_end_year": 2024}),
-        ("player_shot_charts", lambda: service.player_shot_charts("curryst01", 2024), {"player_identifier": "curryst01", "season_end_year": 2024}),
-        ("player_adjusted_shooting", lambda: service.player_adjusted_shooting("jamesle01"), {"player_identifier": "jamesle01"}),
-        ("player_adjusted_shooting", lambda: service.player_adjusted_shooting("curryst01"), {"player_identifier": "curryst01"}),
+        (
+            "player_playoff_series",
+            lambda: service.player_playoff_series("jamesle01"),
+            {"player_identifier": "jamesle01"},
+        ),
+        (
+            "player_playoff_series",
+            lambda: service.player_playoff_series("curryst01"),
+            {"player_identifier": "curryst01"},
+        ),
+        (
+            "player_splits",
+            lambda: service.player_splits("jamesle01", 2024),
+            {"player_identifier": "jamesle01", "season_end_year": 2024},
+        ),
+        (
+            "player_splits",
+            lambda: service.player_splits("curryst01", 2024),
+            {"player_identifier": "curryst01", "season_end_year": 2024},
+        ),
+        (
+            "player_on_off",
+            lambda: service.player_on_off("jamesle01", 2024),
+            {"player_identifier": "jamesle01", "season_end_year": 2024},
+        ),
+        (
+            "player_on_off",
+            lambda: service.player_on_off("curryst01", 2024),
+            {"player_identifier": "curryst01", "season_end_year": 2024},
+        ),
+        (
+            "player_shot_charts",
+            lambda: service.player_shot_charts("jamesle01", 2024),
+            {"player_identifier": "jamesle01", "season_end_year": 2024},
+        ),
+        (
+            "player_shot_charts",
+            lambda: service.player_shot_charts("curryst01", 2024),
+            {"player_identifier": "curryst01", "season_end_year": 2024},
+        ),
+        (
+            "player_adjusted_shooting",
+            lambda: service.player_adjusted_shooting("jamesle01"),
+            {"player_identifier": "jamesle01"},
+        ),
+        (
+            "player_adjusted_shooting",
+            lambda: service.player_adjusted_shooting("curryst01"),
+            {"player_identifier": "curryst01"},
+        ),
         ("player_play_by_play", lambda: service.player_play_by_play("jamesle01"), {"player_identifier": "jamesle01"}),
         ("player_play_by_play", lambda: service.player_play_by_play("curryst01"), {"player_identifier": "curryst01"}),
         ("player_game_highs", lambda: service.player_game_highs("jamesle01"), {"player_identifier": "jamesle01"}),
         ("player_game_highs", lambda: service.player_game_highs("curryst01"), {"player_identifier": "curryst01"}),
         ("player_all_star", lambda: service.player_all_star("jamesle01"), {"player_identifier": "jamesle01"}),
         ("player_all_star", lambda: service.player_all_star("curryst01"), {"player_identifier": "curryst01"}),
-        ("player_similarity_scores", lambda: service.player_similarity_scores("jamesle01"), {"player_identifier": "jamesle01"}),
-        ("player_similarity_scores", lambda: service.player_similarity_scores("curryst01"), {"player_identifier": "curryst01"}),
+        (
+            "player_similarity_scores",
+            lambda: service.player_similarity_scores("jamesle01"),
+            {"player_identifier": "jamesle01"},
+        ),
+        (
+            "player_similarity_scores",
+            lambda: service.player_similarity_scores("curryst01"),
+            {"player_identifier": "curryst01"},
+        ),
         ("player_salaries", lambda: service.player_salaries("jamesle01"), {"player_identifier": "jamesle01"}),
         ("player_salaries", lambda: service.player_salaries("curryst01"), {"player_identifier": "curryst01"}),
-        ("team_schedule", lambda: service.team_schedule("LAL", 2024), {"team_abbreviation": "LAL", "season_end_year": 2024}),
-        ("team_schedule", lambda: service.team_schedule("BOS", 2024), {"team_abbreviation": "BOS", "season_end_year": 2024}),
-        ("team_transactions", lambda: service.team_transactions("LAL", 2024), {"team_abbreviation": "LAL", "season_end_year": 2024}),
-        ("team_transactions", lambda: service.team_transactions("BOS", 2024), {"team_abbreviation": "BOS", "season_end_year": 2024}),
-        ("team_splits", lambda: service.team_splits("LAL", 2024), {"team_abbreviation": "LAL", "season_end_year": 2024}),
-        ("team_splits", lambda: service.team_splits("BOS", 2024), {"team_abbreviation": "BOS", "season_end_year": 2024}),
+        (
+            "team_schedule",
+            lambda: service.team_schedule("LAL", 2024),
+            {"team_abbreviation": "LAL", "season_end_year": 2024},
+        ),
+        (
+            "team_schedule",
+            lambda: service.team_schedule("BOS", 2024),
+            {"team_abbreviation": "BOS", "season_end_year": 2024},
+        ),
+        (
+            "team_transactions",
+            lambda: service.team_transactions("LAL", 2024),
+            {"team_abbreviation": "LAL", "season_end_year": 2024},
+        ),
+        (
+            "team_transactions",
+            lambda: service.team_transactions("BOS", 2024),
+            {"team_abbreviation": "BOS", "season_end_year": 2024},
+        ),
+        (
+            "team_splits",
+            lambda: service.team_splits("LAL", 2024),
+            {"team_abbreviation": "LAL", "season_end_year": 2024},
+        ),
+        (
+            "team_splits",
+            lambda: service.team_splits("BOS", 2024),
+            {"team_abbreviation": "BOS", "season_end_year": 2024},
+        ),
         ("team_contracts", lambda: service.team_contracts("LAL"), {"team_abbreviation": "LAL"}),
         ("team_contracts", lambda: service.team_contracts("BOS"), {"team_abbreviation": "BOS"}),
-        ("team_lineups", lambda: service.team_lineups("LAL", 2024), {"team_abbreviation": "LAL", "season_end_year": 2024}),
-        ("team_lineups", lambda: service.team_lineups("BOS", 2024), {"team_abbreviation": "BOS", "season_end_year": 2024}),
-        ("team_starting_lineups", lambda: service.team_starting_lineups("LAL", 2024), {"team_abbreviation": "LAL", "season_end_year": 2024}),
-        ("team_starting_lineups", lambda: service.team_starting_lineups("BOS", 2024), {"team_abbreviation": "BOS", "season_end_year": 2024}),
-        ("team_on_off", lambda: service.team_on_off("LAL", 2024), {"team_abbreviation": "LAL", "season_end_year": 2024}),
-        ("team_on_off", lambda: service.team_on_off("BOS", 2024), {"team_abbreviation": "BOS", "season_end_year": 2024}),
-        ("team_opponent_stats", lambda: service.team_opponent_stats("LAL", 2024), {"team_abbreviation": "LAL", "season_end_year": 2024}),
-        ("team_opponent_stats", lambda: service.team_opponent_stats("BOS", 2024), {"team_abbreviation": "BOS", "season_end_year": 2024}),
+        (
+            "team_lineups",
+            lambda: service.team_lineups("LAL", 2024),
+            {"team_abbreviation": "LAL", "season_end_year": 2024},
+        ),
+        (
+            "team_lineups",
+            lambda: service.team_lineups("BOS", 2024),
+            {"team_abbreviation": "BOS", "season_end_year": 2024},
+        ),
+        (
+            "team_starting_lineups",
+            lambda: service.team_starting_lineups("LAL", 2024),
+            {"team_abbreviation": "LAL", "season_end_year": 2024},
+        ),
+        (
+            "team_starting_lineups",
+            lambda: service.team_starting_lineups("BOS", 2024),
+            {"team_abbreviation": "BOS", "season_end_year": 2024},
+        ),
+        (
+            "team_on_off",
+            lambda: service.team_on_off("LAL", 2024),
+            {"team_abbreviation": "LAL", "season_end_year": 2024},
+        ),
+        (
+            "team_on_off",
+            lambda: service.team_on_off("BOS", 2024),
+            {"team_abbreviation": "BOS", "season_end_year": 2024},
+        ),
+        (
+            "team_opponent_stats",
+            lambda: service.team_opponent_stats("LAL", 2024),
+            {"team_abbreviation": "LAL", "season_end_year": 2024},
+        ),
+        (
+            "team_opponent_stats",
+            lambda: service.team_opponent_stats("BOS", 2024),
+            {"team_abbreviation": "BOS", "season_end_year": 2024},
+        ),
         ("franchise_history", lambda: service.franchise_history("LAL"), {"team_abbreviation": "LAL"}),
         ("franchise_history", lambda: service.franchise_history("BOS"), {"team_abbreviation": "BOS"}),
     ]
@@ -177,30 +344,34 @@ def main():
                 status = "http_error"
                 error = str(exc)
                 if exc.response is not None and exc.response.status_code == 429:
-                    writer.writerow({
-                        "endpoint": endpoint,
-                        "call_index": call_index,
-                        "args_json": _json(args),
-                        "status": status,
-                        "row_count": 0,
-                        "sample_rows_json": "[]",
-                        "error": error,
-                    })
+                    writer.writerow(
+                        {
+                            "endpoint": endpoint,
+                            "call_index": call_index,
+                            "args_json": _json(args),
+                            "status": status,
+                            "row_count": 0,
+                            "sample_rows_json": "[]",
+                            "error": error,
+                        }
+                    )
                     print("Rate limited with HTTP 429; stopping.", file=sys.stderr)
                     return 1
             except Exception as exc:
                 status = "error"
                 error = str(exc)
 
-            writer.writerow({
-                "endpoint": endpoint,
-                "call_index": call_index,
-                "args_json": _json(args),
-                "status": status,
-                "row_count": len(rows),
-                "sample_rows_json": _json(rows[:2]),
-                "error": error,
-            })
+            writer.writerow(
+                {
+                    "endpoint": endpoint,
+                    "call_index": call_index,
+                    "args_json": _json(args),
+                    "status": status,
+                    "row_count": len(rows),
+                    "sample_rows_json": _json(rows[:2]),
+                    "error": error,
+                }
+            )
 
     print(f"Wrote {len(specs)} calls to {OUTPUT_PATH.resolve()}")
     return 0

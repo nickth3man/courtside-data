@@ -4,13 +4,21 @@ from unittest import TestCase
 
 from lxml import html
 
-from courtside_data.data import TEAM_ABBREVIATIONS_TO_TEAM, LOCATION_ABBREVIATIONS_TO_POSITION, \
-    OUTCOME_ABBREVIATIONS_TO_OUTCOME
-from courtside_data.data import Team, Outcome
+from courtside_data.data import (
+    LOCATION_ABBREVIATIONS_TO_POSITION,
+    OUTCOME_ABBREVIATIONS_TO_OUTCOME,
+    TEAM_ABBREVIATIONS_TO_TEAM,
+    Outcome,
+    Team,
+)
 from courtside_data.html import DailyLeadersPage
-from courtside_data.parsers import TeamAbbreviationParser, \
-    LocationAbbreviationParser, OutcomeAbbreviationParser, \
-    SecondsPlayedParser, PlayerBoxScoresParser
+from courtside_data.parsers import (
+    LocationAbbreviationParser,
+    OutcomeAbbreviationParser,
+    PlayerBoxScoresParser,
+    SecondsPlayedParser,
+    TeamAbbreviationParser,
+)
 
 
 class BaseBoxScoresTestCase(TestCase):
@@ -19,14 +27,16 @@ class BaseBoxScoresTestCase(TestCase):
     @classmethod
     def setUpClass(cls):
         year, month, day = cls._date.year, cls._date.month, cls._date.day
-        with open(os.path.join(
+        with open(
+            os.path.join(
                 os.path.dirname(__file__),
                 f"../files/player_box_scores/{year}/{month}/{day}.html",
-        ), 'r', encoding="utf-8") as file_input: _html = file_input.read()
-        cls._parsed_results = PlayerBoxScoresParser(
-            team_abbreviation_parser=TeamAbbreviationParser(
-                abbreviations_to_teams=TEAM_ABBREVIATIONS_TO_TEAM
             ),
+            encoding="utf-8",
+        ) as file_input:
+            _html = file_input.read()
+        cls._parsed_results = PlayerBoxScoresParser(
+            team_abbreviation_parser=TeamAbbreviationParser(abbreviations_to_teams=TEAM_ABBREVIATIONS_TO_TEAM),
             location_abbreviation_parser=LocationAbbreviationParser(
                 abbreviations_to_locations=LOCATION_ABBREVIATIONS_TO_POSITION
             ),

@@ -40,7 +40,7 @@ class TestJSONWriter(TestCase):
                 path="some path",
                 mode=OutputWriteOption.WRITE,
                 should_write_to_file=False,
-            )
+            ),
         )
 
         self.writer.write(data=self.mock_data, options=options)

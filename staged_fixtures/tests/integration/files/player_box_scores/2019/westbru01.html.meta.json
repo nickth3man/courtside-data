@@ -1,9 +1,0 @@
-{
-  "byte_count": 401891,
-  "content_type": "text/html; charset=UTF-8",
-  "downloaded_at": "2026-06-02T10:50:59.422314+00:00",
-  "sha256": "58bdb2606603a406ebe04d864cf0ff8a3d43facb3cdb2f4c64848124fe09d03d",
-  "status_code": 200,
-  "tool": "requests",
-  "url": "https://www.basketball-reference.com/players/w/westbru01/gamelog/2019"
-}

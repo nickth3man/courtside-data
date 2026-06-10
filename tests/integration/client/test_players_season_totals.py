@@ -3,10 +3,9 @@ import json
 import os
 from unittest import TestCase
 
-from tests import http_mock as requests_mock
-
 from courtside_data import client
-from courtside_data.data import Position, Team, OutputType
+from courtside_data.data import OutputType, Position, Team
+from tests import http_mock as requests_mock
 
 
 class BaseCSVOutputTest(TestCase):
@@ -15,18 +14,22 @@ class BaseCSVOutputTest(TestCase):
         raise NotImplementedError
 
     def setUp(self):
-        with open(os.path.join(
+        with open(
+            os.path.join(
                 os.path.dirname(__file__),
                 f"../files/players_season_totals/{self.year}.html",
-        ), 'r', encoding="utf8") as file_input: self._html = file_input.read()
+            ),
+            encoding="utf8",
+        ) as file_input:
+            self._html = file_input.read()
 
         self.output_file_path = os.path.join(
             os.path.dirname(__file__),
-            "./output/generated/players_season_totals/{year}.csv".format(year=self.year),
+            f"./output/generated/players_season_totals/{self.year}.csv",
         )
         self.expected_output_file_path = os.path.join(
             os.path.dirname(__file__),
-            "./output/expected/players_season_totals/{year}.csv".format(year=self.year),
+            f"./output/expected/players_season_totals/{self.year}.csv",
         )
 
     def tearDown(self):
@@ -35,8 +38,11 @@ class BaseCSVOutputTest(TestCase):
 
     @requests_mock.Mocker()
     def assert_csv(self, m):
-        m.get(f"https://www.basketball-reference.com/leagues/NBA_{self.year}_totals.html", text=self._html,
-              status_code=200)
+        m.get(
+            f"https://www.basketball-reference.com/leagues/NBA_{self.year}_totals.html",
+            text=self._html,
+            status_code=200,
+        )
 
         client.players_season_totals(
             season_end_year=self.year,
@@ -44,10 +50,7 @@ class BaseCSVOutputTest(TestCase):
             output_file_path=self.output_file_path,
         )
 
-        self.assertTrue(
-            filecmp.cmp(
-                self.output_file_path,
-                self.expected_output_file_path))
+        self.assertTrue(filecmp.cmp(self.output_file_path, self.expected_output_file_path))
 
 
 class BaseJSONOutputTest(TestCase):
@@ -56,18 +59,22 @@ class BaseJSONOutputTest(TestCase):
         raise NotImplementedError
 
     def setUp(self):
-        with open(os.path.join(
+        with open(
+            os.path.join(
                 os.path.dirname(__file__),
                 f"../files/players_season_totals/{self.year}.html",
-        ), 'r', encoding="utf8") as file_input: self._html = file_input.read()
+            ),
+            encoding="utf8",
+        ) as file_input:
+            self._html = file_input.read()
 
         self.output_file_path = os.path.join(
             os.path.dirname(__file__),
-            "./output/generated/players_season_totals/{year}.json".format(year=self.year),
+            f"./output/generated/players_season_totals/{self.year}.json",
         )
         self.expected_output_file_path = os.path.join(
             os.path.dirname(__file__),
-            "./output/expected/players_season_totals/{year}.json".format(year=self.year),
+            f"./output/expected/players_season_totals/{self.year}.json",
         )
 
     def tearDown(self):
@@ -76,8 +83,11 @@ class BaseJSONOutputTest(TestCase):
 
     @requests_mock.Mocker()
     def assert_json(self, m):
-        m.get(f"https://www.basketball-reference.com/leagues/NBA_{self.year}_totals.html", text=self._html,
-              status_code=200)
+        m.get(
+            f"https://www.basketball-reference.com/leagues/NBA_{self.year}_totals.html",
+            text=self._html,
+            status_code=200,
+        )
 
         client.players_season_totals(
             season_end_year=self.year,
@@ -85,10 +95,7 @@ class BaseJSONOutputTest(TestCase):
             output_file_path=self.output_file_path,
         )
 
-        self.assertTrue(
-            filecmp.cmp(
-                self.output_file_path,
-                self.expected_output_file_path))
+        self.assertTrue(filecmp.cmp(self.output_file_path, self.expected_output_file_path))
 
 
 class BaseInMemoryJSONOutputTest(TestCase):
@@ -97,27 +104,34 @@ class BaseInMemoryJSONOutputTest(TestCase):
         raise NotImplementedError
 
     def setUp(self):
-        with open(os.path.join(
+        with open(
+            os.path.join(
                 os.path.dirname(__file__),
                 f"../files/players_season_totals/{self.year}.html",
-        ), 'r', encoding="utf8") as file_input: self._html = file_input.read()
+            ),
+            encoding="utf8",
+        ) as file_input:
+            self._html = file_input.read()
 
         self.expected_output_file_path = os.path.join(
             os.path.dirname(__file__),
-            "./output/expected/players_season_totals/{year}.json".format(year=self.year),
+            f"./output/expected/players_season_totals/{self.year}.json",
         )
 
     @requests_mock.Mocker()
     def assert_json(self, m):
-        m.get(f"https://www.basketball-reference.com/leagues/NBA_{self.year}_totals.html", text=self._html,
-              status_code=200)
+        m.get(
+            f"https://www.basketball-reference.com/leagues/NBA_{self.year}_totals.html",
+            text=self._html,
+            status_code=200,
+        )
 
         results = client.players_season_totals(
             season_end_year=self.year,
             output_type=OutputType.JSON,
         )
 
-        with open(self.expected_output_file_path, "r", encoding="utf8") as expected_output_file:
+        with open(self.expected_output_file_path, encoding="utf8") as expected_output_file:
             self.assertEqual(
                 json.loads(results),
                 json.load(expected_output_file),
@@ -616,28 +630,37 @@ class BaseInMemoryTest(TestCase):
         raise NotImplementedError("Implement year to fetch players season totals for")
 
     def setUp(self):
-        with open(os.path.join(
+        with open(
+            os.path.join(
                 os.path.dirname(__file__),
                 f"../files/players_season_totals/{self.year}.html",
-        ), 'r', encoding="utf8") as file_input: self._html = file_input.read()
+            ),
+            encoding="utf8",
+        ) as file_input:
+            self._html = file_input.read()
 
 
 @requests_mock.Mocker()
 class Test2001InMemoryTotals(BaseInMemoryTest):
-
     @property
     def year(self):
         return 2001
 
     def test_length(self, m):
-        m.get(f"https://www.basketball-reference.com/leagues/NBA_{self.year}_totals.html", text=self._html,
-              status_code=200)
+        m.get(
+            f"https://www.basketball-reference.com/leagues/NBA_{self.year}_totals.html",
+            text=self._html,
+            status_code=200,
+        )
         players_season_totals = client.players_season_totals(season_end_year=self.year)
         self.assertEqual(len(players_season_totals), 490)
 
     def test_first_record(self, m):
-        m.get(f"https://www.basketball-reference.com/leagues/NBA_{self.year}_totals.html", text=self._html,
-              status_code=200)
+        m.get(
+            f"https://www.basketball-reference.com/leagues/NBA_{self.year}_totals.html",
+            text=self._html,
+            status_code=200,
+        )
         players_season_totals = client.players_season_totals(season_end_year=self.year)
         self.assertEqual(
             next(filter(lambda totals: "abdulma02" == totals["slug"], players_season_totals)),
@@ -664,274 +687,316 @@ class Test2001InMemoryTotals(BaseInMemoryTest):
                 "turnovers": 26,
                 "personal_fouls": 50,
                 "points": 266,
-            }
+            },
         )
 
 
 @requests_mock.Mocker()
 class Test2002InMemoryTotals(BaseInMemoryTest):
-
     @property
     def year(self):
         return 2002
 
     def test_length(self, m):
-        m.get(f"https://www.basketball-reference.com/leagues/NBA_{self.year}_totals.html", text=self._html,
-              status_code=200)
+        m.get(
+            f"https://www.basketball-reference.com/leagues/NBA_{self.year}_totals.html",
+            text=self._html,
+            status_code=200,
+        )
         players_season_totals = client.players_season_totals(season_end_year=self.year)
         self.assertEqual(len(players_season_totals), 470)
 
 
 @requests_mock.Mocker()
 class Test2003InMemoryTotals(BaseInMemoryTest):
-
     @property
     def year(self):
         return 2003
 
     def test_length(self, m):
-        m.get(f"https://www.basketball-reference.com/leagues/NBA_{self.year}_totals.html", text=self._html,
-              status_code=200)
+        m.get(
+            f"https://www.basketball-reference.com/leagues/NBA_{self.year}_totals.html",
+            text=self._html,
+            status_code=200,
+        )
         players_season_totals = client.players_season_totals(season_end_year=self.year)
         self.assertEqual(len(players_season_totals), 456)
 
 
 @requests_mock.Mocker()
 class Test2004InMemoryTotals(BaseInMemoryTest):
-
     @property
     def year(self):
         return 2004
 
     def test_length(self, m):
-        m.get(f"https://www.basketball-reference.com/leagues/NBA_{self.year}_totals.html", text=self._html,
-              status_code=200)
+        m.get(
+            f"https://www.basketball-reference.com/leagues/NBA_{self.year}_totals.html",
+            text=self._html,
+            status_code=200,
+        )
         players_season_totals = client.players_season_totals(season_end_year=self.year)
         self.assertEqual(len(players_season_totals), 517)
 
 
 @requests_mock.Mocker()
 class Test2005InMemoryTotals(BaseInMemoryTest):
-
     @property
     def year(self):
         return 2005
 
     def test_length(self, m):
-        m.get(f"https://www.basketball-reference.com/leagues/NBA_{self.year}_totals.html", text=self._html,
-              status_code=200)
+        m.get(
+            f"https://www.basketball-reference.com/leagues/NBA_{self.year}_totals.html",
+            text=self._html,
+            status_code=200,
+        )
         players_season_totals = client.players_season_totals(season_end_year=self.year)
         self.assertEqual(len(players_season_totals), 526)
 
 
 @requests_mock.Mocker()
 class Test2006InMemoryTotals(BaseInMemoryTest):
-
     @property
     def year(self):
         return 2006
 
     def test_length(self, m):
-        m.get(f"https://www.basketball-reference.com/leagues/NBA_{self.year}_totals.html", text=self._html,
-              status_code=200)
+        m.get(
+            f"https://www.basketball-reference.com/leagues/NBA_{self.year}_totals.html",
+            text=self._html,
+            status_code=200,
+        )
         players_season_totals = client.players_season_totals(season_end_year=self.year)
         self.assertEqual(len(players_season_totals), 512)
 
 
 @requests_mock.Mocker()
 class Test2007InMemoryTotals(BaseInMemoryTest):
-
     @property
     def year(self):
         return 2007
 
     def test_length(self, m):
-        m.get(f"https://www.basketball-reference.com/leagues/NBA_{self.year}_totals.html", text=self._html,
-              status_code=200)
+        m.get(
+            f"https://www.basketball-reference.com/leagues/NBA_{self.year}_totals.html",
+            text=self._html,
+            status_code=200,
+        )
         players_season_totals = client.players_season_totals(season_end_year=self.year)
         self.assertEqual(len(players_season_totals), 487)
 
 
 @requests_mock.Mocker()
 class Test2008InMemoryTotals(BaseInMemoryTest):
-
     @property
     def year(self):
         return 2008
 
     def test_length(self, m):
-        m.get(f"https://www.basketball-reference.com/leagues/NBA_{self.year}_totals.html", text=self._html,
-              status_code=200)
+        m.get(
+            f"https://www.basketball-reference.com/leagues/NBA_{self.year}_totals.html",
+            text=self._html,
+            status_code=200,
+        )
         players_season_totals = client.players_season_totals(season_end_year=self.year)
         self.assertEqual(len(players_season_totals), 527)
 
 
 @requests_mock.Mocker()
 class Test2009InMemoryTotals(BaseInMemoryTest):
-
     @property
     def year(self):
         return 2009
 
     def test_length(self, m):
-        m.get(f"https://www.basketball-reference.com/leagues/NBA_{self.year}_totals.html", text=self._html,
-              status_code=200)
+        m.get(
+            f"https://www.basketball-reference.com/leagues/NBA_{self.year}_totals.html",
+            text=self._html,
+            status_code=200,
+        )
         players_season_totals = client.players_season_totals(season_end_year=self.year)
         self.assertEqual(len(players_season_totals), 515)
 
 
 @requests_mock.Mocker()
 class Test2010InMemoryTotals(BaseInMemoryTest):
-
     @property
     def year(self):
         return 2010
 
     def test_length(self, m):
-        m.get(f"https://www.basketball-reference.com/leagues/NBA_{self.year}_totals.html", text=self._html,
-              status_code=200)
+        m.get(
+            f"https://www.basketball-reference.com/leagues/NBA_{self.year}_totals.html",
+            text=self._html,
+            status_code=200,
+        )
         players_season_totals = client.players_season_totals(season_end_year=self.year)
         self.assertEqual(len(players_season_totals), 512)
 
 
 @requests_mock.Mocker()
 class Test2011InMemoryTotals(BaseInMemoryTest):
-
     @property
     def year(self):
         return 2011
 
     def test_length(self, m):
-        m.get(f"https://www.basketball-reference.com/leagues/NBA_{self.year}_totals.html", text=self._html,
-              status_code=200)
+        m.get(
+            f"https://www.basketball-reference.com/leagues/NBA_{self.year}_totals.html",
+            text=self._html,
+            status_code=200,
+        )
         players_season_totals = client.players_season_totals(season_end_year=self.year)
         self.assertEqual(len(players_season_totals), 542)
 
 
 @requests_mock.Mocker()
 class Test2012InMemoryTotals(BaseInMemoryTest):
-
     @property
     def year(self):
         return 2012
 
     def test_length(self, m):
-        m.get(f"https://www.basketball-reference.com/leagues/NBA_{self.year}_totals.html", text=self._html,
-              status_code=200)
+        m.get(
+            f"https://www.basketball-reference.com/leagues/NBA_{self.year}_totals.html",
+            text=self._html,
+            status_code=200,
+        )
         players_season_totals = client.players_season_totals(season_end_year=self.year)
         self.assertEqual(len(players_season_totals), 515)
 
 
 @requests_mock.Mocker()
 class Test2013InMemoryTotals(BaseInMemoryTest):
-
     @property
     def year(self):
         return 2013
 
     def test_length(self, m):
-        m.get(f"https://www.basketball-reference.com/leagues/NBA_{self.year}_totals.html", text=self._html,
-              status_code=200)
+        m.get(
+            f"https://www.basketball-reference.com/leagues/NBA_{self.year}_totals.html",
+            text=self._html,
+            status_code=200,
+        )
         players_season_totals = client.players_season_totals(season_end_year=self.year)
         self.assertEqual(len(players_season_totals), 523)
 
 
 @requests_mock.Mocker()
 class Test2014InMemoryTotals(BaseInMemoryTest):
-
     @property
     def year(self):
         return 2014
 
     def test_length(self, m):
-        m.get(f"https://www.basketball-reference.com/leagues/NBA_{self.year}_totals.html", text=self._html,
-              status_code=200)
+        m.get(
+            f"https://www.basketball-reference.com/leagues/NBA_{self.year}_totals.html",
+            text=self._html,
+            status_code=200,
+        )
         players_season_totals = client.players_season_totals(season_end_year=self.year)
         self.assertEqual(len(players_season_totals), 548)
 
 
 @requests_mock.Mocker()
 class Test2015InMemoryTotals(BaseInMemoryTest):
-
     @property
     def year(self):
         return 2015
 
     def test_length(self, m):
-        m.get(f"https://www.basketball-reference.com/leagues/NBA_{self.year}_totals.html", text=self._html,
-              status_code=200)
+        m.get(
+            f"https://www.basketball-reference.com/leagues/NBA_{self.year}_totals.html",
+            text=self._html,
+            status_code=200,
+        )
         players_season_totals = client.players_season_totals(season_end_year=self.year)
         self.assertEqual(len(players_season_totals), 575)
 
 
 @requests_mock.Mocker()
 class Test2016InMemoryTotals(BaseInMemoryTest):
-
     @property
     def year(self):
         return 2016
 
     def test_length(self, m):
-        m.get(f"https://www.basketball-reference.com/leagues/NBA_{self.year}_totals.html", text=self._html,
-              status_code=200)
+        m.get(
+            f"https://www.basketball-reference.com/leagues/NBA_{self.year}_totals.html",
+            text=self._html,
+            status_code=200,
+        )
         players_season_totals = client.players_season_totals(season_end_year=self.year)
         self.assertEqual(len(players_season_totals), 528)
 
 
 @requests_mock.Mocker()
 class Test2017InMemoryTotals(BaseInMemoryTest):
-
     @property
     def year(self):
         return 2017
 
     def test_length(self, m):
-        m.get(f"https://www.basketball-reference.com/leagues/NBA_{self.year}_totals.html", text=self._html,
-              status_code=200)
+        m.get(
+            f"https://www.basketball-reference.com/leagues/NBA_{self.year}_totals.html",
+            text=self._html,
+            status_code=200,
+        )
         players_season_totals = client.players_season_totals(season_end_year=self.year)
         self.assertEqual(len(players_season_totals), 542)
 
 
 @requests_mock.Mocker()
 class Test2018InMemoryTotals(BaseInMemoryTest):
-
     @property
     def year(self):
         return 2018
 
     def test_length(self, m):
-        m.get(f"https://www.basketball-reference.com/leagues/NBA_{self.year}_totals.html", text=self._html,
-              status_code=200)
+        m.get(
+            f"https://www.basketball-reference.com/leagues/NBA_{self.year}_totals.html",
+            text=self._html,
+            status_code=200,
+        )
         players_season_totals = client.players_season_totals(season_end_year=self.year)
         self.assertEqual(len(players_season_totals), 605)
 
 
 @requests_mock.Mocker()
 class Test2019InMemoryTotals(BaseInMemoryTest):
-
     @property
     def year(self):
         return 2019
 
     def test_length(self, m):
-        m.get(f"https://www.basketball-reference.com/leagues/NBA_{self.year}_totals.html", text=self._html,
-              status_code=200)
+        m.get(
+            f"https://www.basketball-reference.com/leagues/NBA_{self.year}_totals.html",
+            text=self._html,
+            status_code=200,
+        )
         players_season_totals = client.players_season_totals(season_end_year=self.year)
         self.assertEqual(len(players_season_totals), 622)
 
     def test_last_is_not_league_average_row(self, m):
-        m.get(f"https://www.basketball-reference.com/leagues/NBA_{self.year}_totals.html", text=self._html,
-              status_code=200)
+        m.get(
+            f"https://www.basketball-reference.com/leagues/NBA_{self.year}_totals.html",
+            text=self._html,
+            status_code=200,
+        )
         players_season_totals = client.players_season_totals(season_end_year=self.year)
         self.assertIsNot(players_season_totals[-1]["name"], "League Average")
 
     def test_avery_bradley(self, m):
-        m.get(f"https://www.basketball-reference.com/leagues/NBA_{self.year}_totals.html", text=self._html,
-              status_code=200)
+        m.get(
+            f"https://www.basketball-reference.com/leagues/NBA_{self.year}_totals.html",
+            text=self._html,
+            status_code=200,
+        )
         players_season_totals = client.players_season_totals(season_end_year=self.year)
         clippers_avery_bradley = players_season_totals[198]
 
-        self.assertEqual('bradlav01', clippers_avery_bradley["slug"])
+        self.assertEqual("bradlav01", clippers_avery_bradley["slug"])
         self.assertEqual("Avery Bradley", clippers_avery_bradley["name"])
         self.assertListEqual([Position.SHOOTING_GUARD], clippers_avery_bradley["positions"])
         self.assertEqual(28, clippers_avery_bradley["age"])

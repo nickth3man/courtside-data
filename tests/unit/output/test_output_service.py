@@ -2,7 +2,7 @@ from unittest import TestCase, mock
 
 from courtside_data.data import OutputType, OutputWriteOption
 from courtside_data.output.service import OutputService
-from courtside_data.output.writers import OutputOptions, FileOptions
+from courtside_data.output.writers import FileOptions, OutputOptions
 
 
 class TestOutput(TestCase):
@@ -33,16 +33,13 @@ class TestOutput(TestCase):
             formatting_options={},
         )
         self.output_service.output(data=self.values, options=options)
-        self.json_writer.write.assert_called_once_with(
-            data=self.values,
-            options=options
-        )
+        self.json_writer.write.assert_called_once_with(data=self.values, options=options)
 
     def test_output_json_when_output_write_option_is_append_and_no_custom_options(self):
         options = OutputOptions(
             output_type=OutputType.JSON,
             file_options=FileOptions(path=self.output_file_path, mode=OutputWriteOption.APPEND),
-            formatting_options={}
+            formatting_options={},
         )
 
         self.output_service.output(data=self.values, options=options)
@@ -55,7 +52,7 @@ class TestOutput(TestCase):
             formatting_options={
                 "jae": "baebae",
                 "bae": "jadley",
-            }
+            },
         )
 
         self.output_service.output(data=self.values, options=options)
@@ -68,7 +65,7 @@ class TestOutput(TestCase):
             formatting_options={
                 "jae": "baebae",
                 "bae": "jadley",
-            }
+            },
         )
 
         self.output_service.output(data=self.values, options=options)
@@ -78,7 +75,7 @@ class TestOutput(TestCase):
         options = OutputOptions(
             output_type=OutputType.CSV,
             file_options=FileOptions(path=self.output_file_path, mode=OutputWriteOption.WRITE),
-            formatting_options={}
+            formatting_options={},
         )
 
         self.output_service.output(data=self.values, options=options)
@@ -88,7 +85,7 @@ class TestOutput(TestCase):
         options = OutputOptions(
             output_type=OutputType.CSV,
             file_options=FileOptions(path=self.output_file_path, mode=OutputWriteOption.APPEND),
-            formatting_options={}
+            formatting_options={},
         )
 
         self.output_service.output(data=self.values, options=options)
@@ -98,7 +95,7 @@ class TestOutput(TestCase):
         options = OutputOptions(
             output_type="jaebaebae",
             file_options=FileOptions(path=self.output_file_path, mode=OutputWriteOption.APPEND),
-            formatting_options={}
+            formatting_options={},
         )
         self.assertRaisesRegex(
             ValueError,

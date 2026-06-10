@@ -1,7 +1,6 @@
 import os
 import time
 
-
 LIVE_TEST_ENVIRONMENT_VARIABLE = "RUN_LIVE_BASKETBALL_REFERENCE_TESTS"
 
 
@@ -42,10 +41,7 @@ class LiveRequestPolicy:
 
         if self._request_count >= self.max_requests:
             raise LiveRequestLimitExceeded(
-                "Live e2e request cap exceeded: {max_requests}. Last attempted URL: {url}".format(
-                    max_requests=self.max_requests,
-                    url=url,
-                )
+                f"Live e2e request cap exceeded: {self.max_requests}. Last attempted URL: {url}"
             )
 
         now = self.clock()

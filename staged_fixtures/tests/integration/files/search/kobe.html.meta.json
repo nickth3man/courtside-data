@@ -1,9 +1,0 @@
-{
-  "byte_count": 102241,
-  "content_type": "text/html; charset=utf-8",
-  "downloaded_at": "2026-06-02T10:55:24.133637+00:00",
-  "sha256": "aa85ea16473f773e3b54f8ba692c90d02865e13da7d687cb321435c036ce62f9",
-  "status_code": 200,
-  "tool": "requests",
-  "url": "https://www.basketball-reference.com/search/search.fcgi?search=kobe"
-}

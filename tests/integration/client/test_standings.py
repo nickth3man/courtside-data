@@ -4,10 +4,9 @@ import json
 import os
 from unittest import TestCase
 
-from tests import http_mock as requests_mock
-
 from courtside_data.client import standings
-from courtside_data.data import Team, Division, Conference, OutputWriteOption, OutputType
+from courtside_data.data import Conference, Division, OutputType, OutputWriteOption, Team
+from tests import http_mock as requests_mock
 
 
 class StandingsMocker:
@@ -17,11 +16,11 @@ class StandingsMocker:
 
     def decorate_class(self, klass):
         for attr_name in dir(klass):
-            if not attr_name.startswith('test_'):
+            if not attr_name.startswith("test_"):
                 continue
 
             attr = getattr(klass, attr_name)
-            if not hasattr(attr, '__call__'):
+            if not callable(attr):
                 continue
 
             setattr(klass, attr_name, self.mock(attr))
@@ -37,9 +36,10 @@ class StandingsMocker:
                     filename = os.fsdecode(file)
                     if not filename.endswith(".html"):
                         raise ValueError(
-                            f"Unexpected prefix for {filename}. Expected all files in {html_files_directory} to end with .html.")
+                            f"Unexpected prefix for {filename}. Expected all files in {html_files_directory} to end with .html."
+                        )
 
-                    with open(os.path.join(html_files_directory, filename), 'r', encoding="utf8") as file_input:
+                    with open(os.path.join(html_files_directory, filename), encoding="utf8") as file_input:
                         if filename.startswith(str(self._season_end_year)):
                             key = f"https://www.basketball-reference.com/leagues/NBA_{self._season_end_year}.html"
                             m.get(key, text=file_input.read(), status_code=200)
@@ -60,7 +60,7 @@ class StandingsMocker:
         os.path.dirname(__file__),
         "../files/schedule",
     ),
-    season_end_year=2000
+    season_end_year=2000,
 )
 class Test2000StandingsInMemory(TestCase):
     def test_2000_standings(self):
@@ -87,10 +87,9 @@ class Test2000StandingsInMemory(TestCase):
         os.path.dirname(__file__),
         "../files/schedule",
     ),
-    season_end_year=2001
+    season_end_year=2001,
 )
 class Test2001StandingsInMemory(TestCase):
-
     def test_2001_standings(self):
         result = standings(season_end_year=2001)
         self.assertEqual(len(result), 29)
@@ -115,7 +114,7 @@ class Test2001StandingsInMemory(TestCase):
         os.path.dirname(__file__),
         "../files/schedule",
     ),
-    season_end_year=2002
+    season_end_year=2002,
 )
 class Test2002StandingsInMemory(TestCase):
     def test_2002_standings(self):
@@ -142,7 +141,7 @@ class Test2002StandingsInMemory(TestCase):
         os.path.dirname(__file__),
         "../files/schedule",
     ),
-    season_end_year=2005
+    season_end_year=2005,
 )
 class Test2005StandingsInMemory(TestCase):
     def test_2005_standings(self):
@@ -197,7 +196,7 @@ class Test2005StandingsInMemory(TestCase):
         os.path.dirname(__file__),
         "../files/schedule",
     ),
-    season_end_year=2020
+    season_end_year=2020,
 )
 class Test2020StandingsInMemory(TestCase):
     def test_2020_standings(self):
@@ -252,18 +251,12 @@ class Test2020StandingsInMemory(TestCase):
         os.path.dirname(__file__),
         "../files/schedule",
     ),
-    season_end_year=2001
+    season_end_year=2001,
 )
 class TestCSVStandingsFor2001(TestCase):
     def setUp(self):
-        self.output_file_path = os.path.join(
-            os.path.dirname(__file__),
-            "./output/generated/standings/2001.csv"
-        )
-        self.expected_output_file_path = os.path.join(
-            os.path.dirname(__file__),
-            "./output/expected/standings/2001.csv"
-        )
+        self.output_file_path = os.path.join(os.path.dirname(__file__), "./output/generated/standings/2001.csv")
+        self.expected_output_file_path = os.path.join(os.path.dirname(__file__), "./output/expected/standings/2001.csv")
 
     def tearDown(self):
         if not os.environ.get("BR_REGEN"):
@@ -276,10 +269,7 @@ class TestCSVStandingsFor2001(TestCase):
             output_file_path=self.output_file_path,
             output_write_option=OutputWriteOption.WRITE,
         )
-        self.assertTrue(
-            filecmp.cmp(
-                self.output_file_path,
-                self.expected_output_file_path))
+        self.assertTrue(filecmp.cmp(self.output_file_path, self.expected_output_file_path))
 
 
 @StandingsMocker(
@@ -287,17 +277,13 @@ class TestCSVStandingsFor2001(TestCase):
         os.path.dirname(__file__),
         "../files/schedule",
     ),
-    season_end_year=2001
+    season_end_year=2001,
 )
 class TestJSONPlayerBoxScores2001(TestCase):
     def setUp(self):
-        self.output_file_path = os.path.join(
-            os.path.dirname(__file__),
-            "./output/generated/standings/2001.json"
-        )
+        self.output_file_path = os.path.join(os.path.dirname(__file__), "./output/generated/standings/2001.json")
         self.expected_output_file_path = os.path.join(
-            os.path.dirname(__file__),
-            "./output/expected/standings/2001.json"
+            os.path.dirname(__file__), "./output/expected/standings/2001.json"
         )
 
     def tearDown(self):
@@ -312,10 +298,7 @@ class TestJSONPlayerBoxScores2001(TestCase):
             output_write_option=OutputWriteOption.WRITE,
         )
 
-        self.assertTrue(
-            filecmp.cmp(
-                self.output_file_path,
-                self.expected_output_file_path))
+        self.assertTrue(filecmp.cmp(self.output_file_path, self.expected_output_file_path))
 
 
 @StandingsMocker(
@@ -323,13 +306,12 @@ class TestJSONPlayerBoxScores2001(TestCase):
         os.path.dirname(__file__),
         "../files/schedule",
     ),
-    season_end_year=2001
+    season_end_year=2001,
 )
 class TestInMemoryJSONStandings2001(TestCase):
     def setUp(self):
         self.expected_output_file_path = os.path.join(
-            os.path.dirname(__file__),
-            "./output/expected/standings/2001.json"
+            os.path.dirname(__file__), "./output/expected/standings/2001.json"
         )
 
     def test_2001_standings(self):
@@ -338,11 +320,8 @@ class TestInMemoryJSONStandings2001(TestCase):
             output_type=OutputType.JSON,
         )
 
-        with open(self.expected_output_file_path, "r", encoding="utf8") as expected_output_file:
-            self.assertEqual(
-                json.loads(box_scores),
-                json.load(expected_output_file)
-            )
+        with open(self.expected_output_file_path, encoding="utf8") as expected_output_file:
+            self.assertEqual(json.loads(box_scores), json.load(expected_output_file))
 
 
 @StandingsMocker(
@@ -350,18 +329,12 @@ class TestInMemoryJSONStandings2001(TestCase):
         os.path.dirname(__file__),
         "../files/schedule",
     ),
-    season_end_year=2019
+    season_end_year=2019,
 )
 class TestCSVStandingsFor2019(TestCase):
     def setUp(self):
-        self.output_file_path = os.path.join(
-            os.path.dirname(__file__),
-            "./output/generated/standings/2019.csv"
-        )
-        self.expected_output_file_path = os.path.join(
-            os.path.dirname(__file__),
-            "./output/expected/standings/2019.csv"
-        )
+        self.output_file_path = os.path.join(os.path.dirname(__file__), "./output/generated/standings/2019.csv")
+        self.expected_output_file_path = os.path.join(os.path.dirname(__file__), "./output/expected/standings/2019.csv")
 
     def tearDown(self):
         if not os.environ.get("BR_REGEN"):
@@ -374,10 +347,7 @@ class TestCSVStandingsFor2019(TestCase):
             output_file_path=self.output_file_path,
             output_write_option=OutputWriteOption.WRITE,
         )
-        self.assertTrue(
-            filecmp.cmp(
-                self.output_file_path,
-                self.expected_output_file_path))
+        self.assertTrue(filecmp.cmp(self.output_file_path, self.expected_output_file_path))
 
 
 @StandingsMocker(
@@ -385,17 +355,13 @@ class TestCSVStandingsFor2019(TestCase):
         os.path.dirname(__file__),
         "../files/schedule",
     ),
-    season_end_year=2019
+    season_end_year=2019,
 )
 class TestJSONPlayerBoxScores2019(TestCase):
     def setUp(self):
-        self.output_file_path = os.path.join(
-            os.path.dirname(__file__),
-            "./output/generated/standings/2019.json"
-        )
+        self.output_file_path = os.path.join(os.path.dirname(__file__), "./output/generated/standings/2019.json")
         self.expected_output_file_path = os.path.join(
-            os.path.dirname(__file__),
-            "./output/expected/standings/2019.json"
+            os.path.dirname(__file__), "./output/expected/standings/2019.json"
         )
 
     def tearDown(self):
@@ -410,10 +376,7 @@ class TestJSONPlayerBoxScores2019(TestCase):
             output_write_option=OutputWriteOption.WRITE,
         )
 
-        self.assertTrue(
-            filecmp.cmp(
-                self.output_file_path,
-                self.expected_output_file_path))
+        self.assertTrue(filecmp.cmp(self.output_file_path, self.expected_output_file_path))
 
 
 @StandingsMocker(
@@ -421,13 +384,12 @@ class TestJSONPlayerBoxScores2019(TestCase):
         os.path.dirname(__file__),
         "../files/schedule",
     ),
-    season_end_year=2019
+    season_end_year=2019,
 )
 class TestInMemoryJSONStandings2019(TestCase):
     def setUp(self):
         self.expected_output_file_path = os.path.join(
-            os.path.dirname(__file__),
-            "./output/expected/standings/2019.json"
+            os.path.dirname(__file__), "./output/expected/standings/2019.json"
         )
 
     def test_2019_standings(self):
@@ -436,8 +398,5 @@ class TestInMemoryJSONStandings2019(TestCase):
             output_type=OutputType.JSON,
         )
 
-        with open(self.expected_output_file_path, "r", encoding="utf8") as expected_output_file:
-            self.assertEqual(
-                json.loads(box_scores),
-                json.load(expected_output_file)
-            )
+        with open(self.expected_output_file_path, encoding="utf8") as expected_output_file:
+            self.assertEqual(json.loads(box_scores), json.load(expected_output_file))

@@ -1,9 +1,0 @@
-{
-  "byte_count": 1875069,
-  "content_type": "text/html",
-  "downloaded_at": "2026-06-02T17:58:18.795085+00:00",
-  "sha256": "affc32d5346148a66929f032002b9d2597fb688e9ed9a4e564f89bca5d847204",
-  "status_code": 200,
-  "tool": "requests",
-  "url": "https://www.basketball-reference.com/leagues/NBA_2017_advanced.html"
-}

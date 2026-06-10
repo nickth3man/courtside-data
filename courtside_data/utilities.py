@@ -1,4 +1,4 @@
-def str_to_int(value, default=int(0)):
+def str_to_int(value, default=0):
     stripped_value = value.strip()
     try:
         return int(stripped_value)
@@ -12,5 +12,3 @@ def str_to_float(value, default=float(0)):
         return float(stripped_value)
     except ValueError:
         return default
-
-

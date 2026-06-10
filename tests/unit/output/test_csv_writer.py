@@ -6,11 +6,7 @@ from courtside_data.output.writers import CSVWriter, FileOptions, OutputOptions,
 
 class TestCSVWriter(TestCase):
     def setUp(self):
-        self.DATA = [
-            {"value": "some"},
-            {"value": "row"},
-            {"value": "data"}
-        ]
+        self.DATA = [{"value": "some"}, {"value": "row"}, {"value": "data"}]
         self.COLUMN_NAMES = ["some", "column", "names"]
         self.row_formatter = mock.Mock(side_effect=lambda x: x)
         self.csv_dict_writer = mock.Mock(writeheader=mock.Mock(), writerows=mock.Mock())
@@ -27,9 +23,7 @@ class TestCSVWriter(TestCase):
                         path="some file path",
                         mode=OutputWriteOption.WRITE,
                     ),
-                    formatting_options={
-                        "column_names": self.COLUMN_NAMES
-                    },
+                    formatting_options={"column_names": self.COLUMN_NAMES},
                     output_type=OutputType.CSV,
                 ),
             )
@@ -46,14 +40,13 @@ class TestCSVWriter(TestCase):
                         path="some file path",
                         mode=OutputWriteOption.WRITE,
                     ),
-                    formatting_options={
-                        "column_names": self.COLUMN_NAMES
-                    },
+                    formatting_options={"column_names": self.COLUMN_NAMES},
                     output_type=OutputType.CSV,
                 ),
             )
-            mock_csv_dict_writer.assert_called_with(mock_file(), fieldnames=self.COLUMN_NAMES, extrasaction='ignore',
-                                                    lineterminator='\n')
+            mock_csv_dict_writer.assert_called_with(
+                mock_file(), fieldnames=self.COLUMN_NAMES, extrasaction="ignore", lineterminator="\n"
+            )
 
     @mock.patch("csv.DictWriter")
     def test_header_is_written(self, mock_csv_dict_writer):
@@ -66,9 +59,7 @@ class TestCSVWriter(TestCase):
                         path="some file path",
                         mode=OutputWriteOption.WRITE,
                     ),
-                    formatting_options={
-                        "column_names": self.COLUMN_NAMES
-                    },
+                    formatting_options={"column_names": self.COLUMN_NAMES},
                     output_type=OutputType.CSV,
                 ),
             )
@@ -85,14 +76,10 @@ class TestCSVWriter(TestCase):
                         path="some file path",
                         mode=OutputWriteOption.WRITE,
                     ),
-                    formatting_options={
-                        "column_names": self.COLUMN_NAMES
-                    },
+                    formatting_options={"column_names": self.COLUMN_NAMES},
                     output_type=OutputType.CSV,
                 ),
             )
-            self.csv_dict_writer.writerows.assert_called_once_with([
-                {"value": "some"},
-                {"value": "row"},
-                {"value": "data"}
-            ])
+            self.csv_dict_writer.writerows.assert_called_once_with(
+                [{"value": "some"}, {"value": "row"}, {"value": "data"}]
+            )

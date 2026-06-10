@@ -3,22 +3,54 @@ Live verification of all new endpoints against basketball-reference.com.
 Respects rate limits with 5s + 2s jitter between requests.
 Stops immediately if a 429 (rate limit) response is received.
 """
-import time
+
 import random
 import sys
+import time
+
 import requests
+
 from courtside_data.client import (
-    league_per_game_stats, league_per_36_minutes, league_totals,
-    rookie_stats, standings_by_date, attendance, league_transactions,
-    league_per_100_possessions, league_shooting, playoff_per_game, playoff_totals,
-    draft_picks, season_leaders, career_leaders, playoff_bracket, season_awards,
-    player_career_stats, player_playoff_series, player_splits, player_on_off, player_shot_charts,
-    player_adjusted_shooting, player_play_by_play, player_game_highs, player_all_star,
-    player_similarity_scores, player_salaries,
-    team_roster, team_injury_report, team_and_opponent, team_misc_four_factors,
-    team_schedule, team_transactions,
-    team_splits, team_contracts, team_lineups, team_starting_lineups,
-    team_on_off, team_opponent_stats, franchise_history,
+    attendance,
+    career_leaders,
+    draft_picks,
+    franchise_history,
+    league_per_36_minutes,
+    league_per_100_possessions,
+    league_per_game_stats,
+    league_shooting,
+    league_totals,
+    league_transactions,
+    player_adjusted_shooting,
+    player_all_star,
+    player_career_stats,
+    player_game_highs,
+    player_on_off,
+    player_play_by_play,
+    player_playoff_series,
+    player_salaries,
+    player_shot_charts,
+    player_similarity_scores,
+    player_splits,
+    playoff_bracket,
+    playoff_per_game,
+    playoff_totals,
+    rookie_stats,
+    season_awards,
+    season_leaders,
+    standings_by_date,
+    team_and_opponent,
+    team_contracts,
+    team_injury_report,
+    team_lineups,
+    team_misc_four_factors,
+    team_on_off,
+    team_opponent_stats,
+    team_roster,
+    team_schedule,
+    team_splits,
+    team_starting_lineups,
+    team_transactions,
 )
 
 # Test parameters
@@ -79,14 +111,12 @@ def main():
         ("league_shooting", league_shooting, [SEASON]),
         ("playoff_per_game", playoff_per_game, [SEASON]),
         ("playoff_totals", playoff_totals, [SEASON]),
-
         # Draft & Awards
         ("draft_picks", draft_picks, [SEASON]),
-        ("season_leaders", season_leaders, []),           # no season param
-        ("career_leaders", career_leaders, []),           # no season param
+        ("season_leaders", season_leaders, []),  # no season param
+        ("career_leaders", career_leaders, []),  # no season param
         ("playoff_bracket", playoff_bracket, [SEASON]),
         ("season_awards", season_awards, [SEASON]),
-
         # Player endpoints
         ("player_career_stats", player_career_stats, [PLAYER_ID]),
         ("player_playoff_series", player_playoff_series, [PLAYER_ID]),
@@ -99,7 +129,6 @@ def main():
         ("player_all_star", player_all_star, [PLAYER_ID]),
         ("player_similarity_scores", player_similarity_scores, [PLAYER_ID]),
         ("player_salaries", player_salaries, [PLAYER_ID]),
-
         # Team endpoints
         ("team_roster", team_roster, [TEAM, SEASON]),
         ("team_injury_report", team_injury_report, [TEAM, SEASON]),

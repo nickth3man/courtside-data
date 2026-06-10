@@ -1,9 +1,0 @@
-{
-  "byte_count": 472510,
-  "content_type": "text/html",
-  "downloaded_at": "2026-06-02T18:07:37.133092+00:00",
-  "sha256": "13e340bf52168feb2d99a5fd535aa358043ae6d346cdcc95f04db618339726e2",
-  "status_code": 200,
-  "tool": "requests",
-  "url": "https://www.basketball-reference.com/leagues/NBA_2001_games-november.html"
-}

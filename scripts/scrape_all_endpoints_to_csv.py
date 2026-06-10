@@ -4,68 +4,68 @@ Respects rate limits — 3.5s base + 1.2s jitter between calls.
 Stops immediately on 429 (rate limit) to avoid getting banned.
 Output goes to temp_runs/<run_timestamp>/<endpoint_name>.csv
 """
+
 import datetime
 import os
 import random
 import sys
 import time
-import traceback
 
 import requests
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from courtside_data.client import (
-    standings,
-    player_box_scores,
-    regular_season_player_box_scores,
-    playoff_player_box_scores,
-    season_schedule,
-    players_season_totals,
-    players_advanced_season_totals,
-    team_box_scores,
-    play_by_play,
-    search,
-    league_per_game_stats,
-    league_per_36_minutes,
-    league_totals,
-    rookie_stats,
-    standings_by_date,
     attendance,
-    league_transactions,
-    league_per_100_possessions,
-    league_shooting,
-    playoff_per_game,
-    playoff_totals,
-    draft_picks,
-    season_leaders,
     career_leaders,
-    playoff_bracket,
-    season_awards,
-    player_career_stats,
-    player_playoff_series,
-    player_splits,
-    player_on_off,
-    player_shot_charts,
+    draft_picks,
+    franchise_history,
+    league_per_36_minutes,
+    league_per_100_possessions,
+    league_per_game_stats,
+    league_shooting,
+    league_totals,
+    league_transactions,
+    play_by_play,
     player_adjusted_shooting,
-    player_play_by_play,
-    player_game_highs,
     player_all_star,
-    player_similarity_scores,
+    player_box_scores,
+    player_career_stats,
+    player_game_highs,
+    player_on_off,
+    player_play_by_play,
+    player_playoff_series,
     player_salaries,
-    team_roster,
-    team_injury_report,
+    player_shot_charts,
+    player_similarity_scores,
+    player_splits,
+    players_advanced_season_totals,
+    players_season_totals,
+    playoff_bracket,
+    playoff_per_game,
+    playoff_player_box_scores,
+    playoff_totals,
+    regular_season_player_box_scores,
+    rookie_stats,
+    search,
+    season_awards,
+    season_leaders,
+    season_schedule,
+    standings,
+    standings_by_date,
     team_and_opponent,
-    team_misc_four_factors,
-    team_schedule,
-    team_transactions,
-    team_splits,
+    team_box_scores,
     team_contracts,
+    team_injury_report,
     team_lineups,
-    team_starting_lineups,
+    team_misc_four_factors,
     team_on_off,
     team_opponent_stats,
-    franchise_history,
+    team_roster,
+    team_schedule,
+    team_splits,
+    team_starting_lineups,
+    team_transactions,
 )
 from courtside_data.data import OutputType, OutputWriteOption, Team
 
@@ -110,7 +110,9 @@ def build_suite():
     suite = []
     suite.append(("standings", lambda **kw: standings(SEASON, **kw)))
     suite.append(("player_box_scores", lambda **kw: player_box_scores(DATE_DAY, DATE_MONTH, DATE_YEAR, **kw)))
-    suite.append(("regular_season_player_box_scores", lambda **kw: regular_season_player_box_scores(PLAYER_ID, SEASON, **kw)))
+    suite.append(
+        ("regular_season_player_box_scores", lambda **kw: regular_season_player_box_scores(PLAYER_ID, SEASON, **kw))
+    )
     suite.append(("playoff_player_box_scores", lambda **kw: playoff_player_box_scores(PLAYER_ID, SEASON, **kw)))
     suite.append(("season_schedule", lambda **kw: season_schedule(SEASON, **kw)))
     suite.append(("players_season_totals", lambda **kw: players_season_totals(SEASON, **kw)))
@@ -181,7 +183,7 @@ def run_endpoint_to_csv(name, callable_fn, output_path):
         )
         # Verify the file was written and count rows
         if os.path.exists(output_path):
-            with open(output_path, "r", encoding="utf-8") as f:
+            with open(output_path, encoding="utf-8") as f:
                 row_count = sum(1 for _ in f) - 1  # subtract header
             result["passed"] = True
             result["row_count"] = max(row_count, 0)
@@ -250,7 +252,7 @@ def main():
     print(f"Written to: {OUTPUT_DIR}")
     print(f"Results: {passed} passed, {failed} failed out of {len(results)} attempted")
     if rate_limited:
-        print(f"(stopped early due to rate limit)")
+        print("(stopped early due to rate limit)")
         skipped = total - len(results)
         print(f"({skipped} endpoints not attempted)")
 
@@ -264,15 +266,18 @@ def main():
     summary_path = os.path.join(OUTPUT_DIR, "_summary.csv")
     with open(summary_path, "w", newline="", encoding="utf-8") as f:
         import csv
+
         w = csv.writer(f)
         w.writerow(["endpoint", "passed", "rows", "error"])
         for r in results:
-            w.writerow([
-                r["name"],
-                "YES" if r["passed"] else "NO",
-                r["row_count"] if r["passed"] else 0,
-                r["error_detail"] or "",
-            ])
+            w.writerow(
+                [
+                    r["name"],
+                    "YES" if r["passed"] else "NO",
+                    r["row_count"] if r["passed"] else 0,
+                    r["error_detail"] or "",
+                ]
+            )
     print(f"\nSummary also at: {summary_path}")
 
     return 0 if failed == 0 else 1

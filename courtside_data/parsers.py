@@ -1,13 +1,13 @@
 import re
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from zoneinfo import ZoneInfo
 
-from courtside_data.data import PeriodType, Outcome
-from courtside_data.utilities import str_to_int, str_to_float
+from courtside_data.data import Outcome, PeriodType
+from courtside_data.utilities import str_to_float, str_to_int
 
-PLAYER_SEASON_BOX_SCORES_GAME_DATE_FORMAT = '%Y-%m-%d'
-PLAYER_SEASON_BOX_SCORES_OUTCOME_REGEX = '(?P<outcome_abbreviation>W|L),'
-SEARCH_RESULT_NAME_REGEX = '(?P<name>^[^\\(]+)'
+PLAYER_SEASON_BOX_SCORES_GAME_DATE_FORMAT = "%Y-%m-%d"
+PLAYER_SEASON_BOX_SCORES_OUTCOME_REGEX = "(?P<outcome_abbreviation>W|L),"
+SEARCH_RESULT_NAME_REGEX = "(?P<name>^[^\\(]+)"
 
 
 class TeamAbbreviationParser:
@@ -27,10 +27,7 @@ class PositionAbbreviationParser:
 
     def from_abbreviations(self, abbreviations):
         parsed_positions = list(
-            map(
-                lambda position_abbreviation: self.from_abbreviation(position_abbreviation),
-                abbreviations.split("-")
-            )
+            map(lambda position_abbreviation: self.from_abbreviation(position_abbreviation), abbreviations.split("-"))
         )
         return [position for position in parsed_positions if position is not None]
 
@@ -42,7 +39,7 @@ class LocationAbbreviationParser:
     def from_abbreviation(self, abbreviation):
         location = self.abbreviations_to_locations.get(abbreviation)
         if location is None:
-            raise ValueError("Unknown symbol: {abbreviation}".format(abbreviation=abbreviation))
+            raise ValueError(f"Unknown symbol: {abbreviation}")
 
         return location
 
@@ -54,7 +51,7 @@ class OutcomeAbbreviationParser:
     def from_abbreviation(self, abbreviation):
         outcome = self.abbreviations_to_outcomes.get(abbreviation)
         if outcome is None:
-            raise ValueError("Unknown symbol: {abbreviation}".format(abbreviation=abbreviation))
+            raise ValueError(f"Unknown symbol: {abbreviation}")
 
         return outcome
 
@@ -66,7 +63,7 @@ class LeagueAbbreviationParser:
     def from_abbreviation(self, abbreviation):
         league = self.abbreviations_to_league.get(abbreviation)
         if league is None:
-            raise ValueError("Unknown league abbreviation: {abbreviation}".format(abbreviation=abbreviation))
+            raise ValueError(f"Unknown league abbreviation: {abbreviation}")
 
         return league
 
@@ -75,17 +72,17 @@ class LeagueAbbreviationParser:
             return []
 
         return [
-            self.from_abbreviation(abbreviation=league_abbreviation)
-            for league_abbreviation in abbreviations.split("/")
+            self.from_abbreviation(abbreviation=league_abbreviation) for league_abbreviation in abbreviations.split("/")
         ]
 
 
 class PlayerBoxScoreOutcomeParser:
-    def __init__(self,
-                 outcome_abbreviation_parser,
-                 formatted_outcome_regex=PLAYER_SEASON_BOX_SCORES_OUTCOME_REGEX,
-                 outcome_abbreviation_regex_group_name='outcome_abbreviation',
-                 ):
+    def __init__(
+        self,
+        outcome_abbreviation_parser,
+        formatted_outcome_regex=PLAYER_SEASON_BOX_SCORES_OUTCOME_REGEX,
+        outcome_abbreviation_regex_group_name="outcome_abbreviation",
+    ):
         self.outcome_abbreviation_parser = outcome_abbreviation_parser
         self.formatted_outcome_regex = formatted_outcome_regex
         self.outcome_abbreviation_regex_group_name = outcome_abbreviation_regex_group_name
@@ -150,17 +147,15 @@ class PeriodTimestampParser:
 
     def to_seconds(self, timestamp):
         dt = datetime.strptime(timestamp, self.timestamp_format)
-        return float(
-            (dt.minute * 60) + dt.second + (dt.microsecond / 1000000)
-        )
+        return float((dt.minute * 60) + dt.second + (dt.microsecond / 1000000))
 
 
 class ScoresParser:
     def __init__(
-            self,
-            scores_regex,
-            away_team_score_group_name='away_team_score',
-            home_team_score_group_name='home_team_score',
+        self,
+        scores_regex,
+        away_team_score_group_name="away_team_score",
+        home_team_score_group_name="home_team_score",
     ):
         self.scores_regex = scores_regex
         self.away_team_score_group_name = away_team_score_group_name
@@ -194,7 +189,7 @@ class TeamNameParser:
 
 
 class ScheduledStartTimeParser:
-    def __init__(self, time_zone=timezone.utc):
+    def __init__(self, time_zone=UTC):
         self.time_zone = time_zone
 
     def parse_start_time(self, formatted_date, formatted_time_of_day):
@@ -238,10 +233,12 @@ class SearchResultNameParser:
 
 
 class ResourceLocationParser:
-    def __init__(self,
-                 resource_location_regex,
-                 resource_type_regex_group_name="resource_type",
-                 resource_identifier_regex_group_name="resource_identifier"):
+    def __init__(
+        self,
+        resource_location_regex,
+        resource_type_regex_group_name="resource_type",
+        resource_identifier_regex_group_name="resource_identifier",
+    ):
         self.resource_location_regex = resource_location_regex
         self.resource_type_regex_group_name = resource_type_regex_group_name
         self.resource_identifier_regex_group_name = resource_identifier_regex_group_name
@@ -280,7 +277,7 @@ class DivisionNameParser:
 
     def parse_division(self, formatted_name):
         for division in self.divisions:
-            if formatted_name.upper() == "{division} DIVISION".format(division=division.value):
+            if formatted_name.upper() == f"{division.value} DIVISION":
                 return division
 
         return None
@@ -343,7 +340,8 @@ class PlayerAdvancedSeasonTotalsParser:
                 "box_plus_minus": str_to_float(total.plus_minus),
                 "value_over_replacement_player": str_to_float(total.value_over_replacement_player),
                 "is_combined_totals": total.is_combined_totals,
-            } for total in totals
+            }
+            for total in totals
         ]
 
 
@@ -377,7 +375,8 @@ class PlayerSeasonTotalsParser:
                 "turnovers": str_to_int(total.turnovers),
                 "personal_fouls": str_to_int(total.personal_fouls),
                 "points": str_to_int(total.points),
-            } for total in totals
+            }
+            for total in totals
         ]
 
 
@@ -429,8 +428,9 @@ class TeamTotalsParser:
 
 
 class PlayerBoxScoresParser:
-    def __init__(self, team_abbreviation_parser, location_abbreviation_parser, outcome_abbreviation_parser,
-                 seconds_played_parser):
+    def __init__(
+        self, team_abbreviation_parser, location_abbreviation_parser, outcome_abbreviation_parser, seconds_played_parser
+    ):
         self.team_abbreviation_parser = team_abbreviation_parser
         self.location_abbreviation_parser = location_abbreviation_parser
         self.outcome_abbreviation_parser = outcome_abbreviation_parser
@@ -442,7 +442,9 @@ class PlayerBoxScoresParser:
                 "slug": str(box_score.slug),
                 "name": str(box_score.name).rstrip("*"),
                 "team": self.team_abbreviation_parser.from_abbreviation(box_score.team_abbreviation),
-                "location": self.location_abbreviation_parser.from_abbreviation(box_score.location_abbreviation.strip()),
+                "location": self.location_abbreviation_parser.from_abbreviation(
+                    box_score.location_abbreviation.strip()
+                ),
                 "opponent": self.team_abbreviation_parser.from_abbreviation(box_score.opponent_abbreviation),
                 "outcome": self.outcome_abbreviation_parser.from_abbreviation(box_score.outcome),
                 "seconds_played": self.seconds_played_parser.parse(box_score.playing_time),
@@ -461,7 +463,8 @@ class PlayerBoxScoresParser:
                 "personal_fouls": str_to_int(box_score.personal_fouls),
                 "plus_minus": str_to_float(box_score.plus_minus),
                 "game_score": str_to_float(box_score.game_score),
-            } for box_score in box_scores
+            }
+            for box_score in box_scores
         ]
 
 
@@ -478,54 +481,60 @@ class PlayerSeasonBoxScoresParser:
             common = {
                 "date": datetime.strptime(str(box_score.date), "%Y-%m-%d").date(),
                 "team": self.team_abbreviation_parser.from_abbreviation(box_score.team_abbreviation),
-                "location": self.location_abbreviation_parser.from_abbreviation(box_score.location_abbreviation.strip()),
+                "location": self.location_abbreviation_parser.from_abbreviation(
+                    box_score.location_abbreviation.strip()
+                ),
                 "opponent": self.team_abbreviation_parser.from_abbreviation(box_score.opponent_abbreviation),
                 "outcome": self.outcome_parser.parse_outcome(formatted_outcome=box_score.outcome),
             }
             if box_score.is_active:
-                results.append({
-                    **common,
-                    "active": True,
-                    "seconds_played": self.seconds_played_parser.parse(box_score.playing_time),
-                    "made_field_goals": str_to_int(box_score.made_field_goals),
-                    "attempted_field_goals": str_to_int(box_score.attempted_field_goals),
-                    "made_three_point_field_goals": str_to_int(box_score.made_three_point_field_goals),
-                    "attempted_three_point_field_goals": str_to_int(box_score.attempted_three_point_field_goals),
-                    "made_free_throws": str_to_int(box_score.made_free_throws),
-                    "attempted_free_throws": str_to_int(box_score.attempted_free_throws),
-                    "offensive_rebounds": str_to_int(box_score.offensive_rebounds),
-                    "defensive_rebounds": str_to_int(box_score.defensive_rebounds),
-                    "assists": str_to_int(box_score.assists),
-                    "steals": str_to_int(box_score.steals),
-                    "blocks": str_to_int(box_score.blocks),
-                    "turnovers": str_to_int(box_score.turnovers),
-                    "personal_fouls": str_to_int(box_score.personal_fouls),
-                    "points_scored": str_to_int(box_score.points_scored),
-                    "game_score": str_to_float(box_score.game_score),
-                    "plus_minus": str_to_int(box_score.plus_minus),
-                })
+                results.append(
+                    {
+                        **common,
+                        "active": True,
+                        "seconds_played": self.seconds_played_parser.parse(box_score.playing_time),
+                        "made_field_goals": str_to_int(box_score.made_field_goals),
+                        "attempted_field_goals": str_to_int(box_score.attempted_field_goals),
+                        "made_three_point_field_goals": str_to_int(box_score.made_three_point_field_goals),
+                        "attempted_three_point_field_goals": str_to_int(box_score.attempted_three_point_field_goals),
+                        "made_free_throws": str_to_int(box_score.made_free_throws),
+                        "attempted_free_throws": str_to_int(box_score.attempted_free_throws),
+                        "offensive_rebounds": str_to_int(box_score.offensive_rebounds),
+                        "defensive_rebounds": str_to_int(box_score.defensive_rebounds),
+                        "assists": str_to_int(box_score.assists),
+                        "steals": str_to_int(box_score.steals),
+                        "blocks": str_to_int(box_score.blocks),
+                        "turnovers": str_to_int(box_score.turnovers),
+                        "personal_fouls": str_to_int(box_score.personal_fouls),
+                        "points_scored": str_to_int(box_score.points_scored),
+                        "game_score": str_to_float(box_score.game_score),
+                        "plus_minus": str_to_int(box_score.plus_minus),
+                    }
+                )
             elif include_inactive_games:
-                results.append({
-                    **common,
-                    "active": False,
-                    "seconds_played": None,
-                    "made_field_goals": None,
-                    "attempted_field_goals": None,
-                    "made_three_point_field_goals": None,
-                    "attempted_three_point_field_goals": None,
-                    "made_free_throws": None,
-                    "attempted_free_throws": None,
-                    "offensive_rebounds": None,
-                    "defensive_rebounds": None,
-                    "assists": None,
-                    "steals": None,
-                    "blocks": None,
-                    "turnovers": None,
-                    "personal_fouls": None,
-                    "points_scored": None,
-                    "game_score": None,
-                    "plus_minus": None,
-                })
+                results.append(
+                    {
+                        **common,
+                        "active": False,
+                        "seconds_played": None,
+                        "made_field_goals": None,
+                        "attempted_field_goals": None,
+                        "made_three_point_field_goals": None,
+                        "attempted_three_point_field_goals": None,
+                        "made_free_throws": None,
+                        "attempted_free_throws": None,
+                        "offensive_rebounds": None,
+                        "defensive_rebounds": None,
+                        "assists": None,
+                        "steals": None,
+                        "blocks": None,
+                        "turnovers": None,
+                        "personal_fouls": None,
+                        "points_scored": None,
+                        "game_score": None,
+                        "plus_minus": None,
+                    }
+                )
 
         return results
 
@@ -543,12 +552,14 @@ class PlayByPlaysParser:
             if play_by_play.is_start_of_period:
                 current_period += 1
             elif play_by_play.has_play_by_play_data:
-                result.append(self.format_data(
-                    current_period=current_period,
-                    play_by_play=play_by_play,
-                    away_team=away_team,
-                    home_team=home_team,
-                ))
+                result.append(
+                    self.format_data(
+                        current_period=current_period,
+                        play_by_play=play_by_play,
+                        away_team=away_team,
+                        home_team=home_team,
+                    )
+                )
         return result
 
     def format_data(self, current_period, play_by_play, away_team, home_team):
@@ -582,11 +593,10 @@ class SearchResultsParser:
                         resource_location=result.resource_location
                     ),
                     "leagues": set(
-                        self.league_abbreviation_parser.from_abbreviations(
-                            abbreviations=result.league_abbreviations
-                        )
+                        self.league_abbreviation_parser.from_abbreviations(abbreviations=result.league_abbreviations)
                     ),
-                } for result in nba_aba_baa_players
+                }
+                for result in nba_aba_baa_players
             ]
         }
 
@@ -603,11 +613,9 @@ class PlayerDataParser:
                 resource_location=player.resource_location
             ),
             "leagues": set(
-                (
-                    self.league_abbreviation_parser.from_abbreviation(abbreviation=abbreviation)
-                    for abbreviation in player.league_abbreviations
-                )
-            )
+                self.league_abbreviation_parser.from_abbreviation(abbreviation=abbreviation)
+                for abbreviation in player.league_abbreviations
+            ),
         }
 
 
@@ -624,11 +632,13 @@ class ConferenceDivisionStandingsParser:
             if standing.is_division_name_row:
                 current_division = self.division_name_parser.parse_division(formatted_name=standing.division_name)
             else:
-                results.append({
-                    "team": self.team_standings_parser.parse_team(formatted_name=standing.team_name),
-                    "wins": str_to_int(standing.wins),
-                    "losses": str_to_int(standing.losses),
-                    "division": current_division,
-                    "conference": self.divisions_to_conferences.get(current_division),
-                })
+                results.append(
+                    {
+                        "team": self.team_standings_parser.parse_team(formatted_name=standing.team_name),
+                        "wins": str_to_int(standing.wins),
+                        "losses": str_to_int(standing.losses),
+                        "division": current_division,
+                        "conference": self.divisions_to_conferences.get(current_division),
+                    }
+                )
         return results

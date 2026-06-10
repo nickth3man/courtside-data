@@ -1,4 +1,4 @@
-from datetime import datetime, date
+from datetime import date, datetime
 from enum import Enum
 from json import JSONEncoder
 
@@ -40,9 +40,7 @@ class DictFormatter(FieldFormatter):
 
     def format(self):
         # Serialize dict to a compact string representation
-        return ";".join(
-            f"{k}={format_value(v)}" for k, v in self.data.items()
-        )
+        return ";".join(f"{k}={format_value(v)}" for k, v in self.data.items())
 
 
 class SetFormatter(FieldFormatter):
@@ -75,14 +73,14 @@ def format_value(value):
 
 
 class BasketballReferenceJSONEncoder(JSONEncoder):
-    def default(self, obj):
-        if isinstance(obj, datetime) or isinstance(obj, date):
-            return obj.isoformat()
+    def default(self, o):
+        if isinstance(o, datetime | date):
+            return o.isoformat()
 
-        if isinstance(obj, Enum):
-            return obj.value
+        if isinstance(o, Enum):
+            return o.value
 
-        if isinstance(obj, set):
-            return list(obj)
+        if isinstance(o, set):
+            return list(o)
 
-        return JSONEncoder.default(self, obj)
+        return JSONEncoder.default(self, o)

@@ -1,9 +1,0 @@
-{
-  "byte_count": 92072,
-  "content_type": "text/html; charset=utf-8",
-  "downloaded_at": "2026-06-02T18:13:08.055422+00:00",
-  "sha256": "63bba4a860fa9cc27e6effc0fd597fdcf62a9c3c4a398de562d388e8cdc9580a",
-  "status_code": 200,
-  "tool": "requests",
-  "url": "https://www.basketball-reference.com/search/search.fcgi?search=Rick+Barry"
-}

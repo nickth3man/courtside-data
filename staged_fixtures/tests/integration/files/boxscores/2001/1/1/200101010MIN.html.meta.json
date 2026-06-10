@@ -1,9 +1,0 @@
-{
-  "byte_count": 449545,
-  "content_type": "text/html",
-  "downloaded_at": "2026-06-02T18:10:58.655652+00:00",
-  "sha256": "6bdba18ad82d631b1c690cadbf1dc28fb0cf704e43ca1af864ce83d62ac03093",
-  "status_code": 200,
-  "tool": "requests",
-  "url": "https://www.basketball-reference.com/boxscores/200101010MIN.html"
-}

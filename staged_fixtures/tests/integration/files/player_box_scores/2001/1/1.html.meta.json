@@ -1,9 +1,0 @@
-{
-  "byte_count": 190912,
-  "content_type": "text/html; charset=utf-8",
-  "downloaded_at": "2026-06-02T17:58:45.604047+00:00",
-  "sha256": "6fea0556e9a952471415cd4364759700b207733a6d5431e90d2213d517d8661b",
-  "status_code": 200,
-  "tool": "requests",
-  "url": "https://www.basketball-reference.com/friv/dailyleaders.cgi?month=1&day=1&year=2001"
-}

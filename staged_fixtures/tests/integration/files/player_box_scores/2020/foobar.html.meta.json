@@ -1,9 +1,0 @@
-{
-  "byte_count": 133882,
-  "content_type": "text/html",
-  "downloaded_at": "2026-06-02T10:53:02.860620+00:00",
-  "sha256": "060aa203f6fa4cb64276a1658d552580ae2bd55c94c604c15c43050a9f13bc7f",
-  "status_code": 200,
-  "tool": "requests",
-  "url": "https://www.basketball-reference.com/players/"
-}

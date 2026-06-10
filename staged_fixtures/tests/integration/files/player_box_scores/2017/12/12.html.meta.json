@@ -1,9 +1,0 @@
-{
-  "byte_count": 370927,
-  "content_type": "text/html; charset=utf-8",
-  "downloaded_at": "2026-06-02T18:00:03.364229+00:00",
-  "sha256": "87b7c85b91036cb93aaeeb4b93b4215c90a51f1ab3567790dee72c267b826cbb",
-  "status_code": 200,
-  "tool": "requests",
-  "url": "https://www.basketball-reference.com/friv/dailyleaders.cgi?month=12&day=12&year=2017"
-}

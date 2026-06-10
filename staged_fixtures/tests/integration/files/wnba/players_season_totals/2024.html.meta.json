@@ -1,9 +1,0 @@
-{
-  "byte_count": 418924,
-  "content_type": "text/html",
-  "downloaded_at": "2026-06-02T18:18:39.198068+00:00",
-  "sha256": "135c52c954fdcc458c37005104af51415ea751e2d0d01937e1b78aca874f9232",
-  "status_code": 200,
-  "tool": "requests",
-  "url": "https://www.basketball-reference.com/wnba/years/2024_totals.html"
-}

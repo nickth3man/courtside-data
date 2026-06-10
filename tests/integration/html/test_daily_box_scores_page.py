@@ -8,10 +8,10 @@ from courtside_data.html import DailyBoxScoresPage
 
 class TestDailyBoxScoresPage(TestCase):
     def setUp(self):
-        with open(os.path.join(
-                os.path.dirname(__file__),
-                "../files/boxscores/2017/1/1.html"
-        ), 'r', encoding="utf-8") as file_input: self.january_01_2017_box_scores = file_input.read()
+        with open(
+            os.path.join(os.path.dirname(__file__), "../files/boxscores/2017/1/1.html"), encoding="utf-8"
+        ) as file_input:
+            self.january_01_2017_box_scores = file_input.read()
 
     def test_game_url_paths_query(self):
         page = DailyBoxScoresPage(html=html.fromstring(self.january_01_2017_box_scores))
@@ -21,8 +21,8 @@ class TestDailyBoxScoresPage(TestCase):
         page = DailyBoxScoresPage(html=html.fromstring(self.january_01_2017_box_scores))
         urls = page.game_url_paths
         self.assertEqual(len(urls), 5)
-        self.assertEqual(urls[0], '/boxscores/201701010ATL.html')
-        self.assertEqual(urls[1], '/boxscores/201701010IND.html')
-        self.assertEqual(urls[2], '/boxscores/201701010LAL.html')
-        self.assertEqual(urls[3], '/boxscores/201701010MIA.html')
-        self.assertEqual(urls[4], '/boxscores/201701010MIN.html')
+        self.assertEqual(urls[0], "/boxscores/201701010ATL.html")
+        self.assertEqual(urls[1], "/boxscores/201701010IND.html")
+        self.assertEqual(urls[2], "/boxscores/201701010LAL.html")
+        self.assertEqual(urls[3], "/boxscores/201701010MIA.html")
+        self.assertEqual(urls[4], "/boxscores/201701010MIN.html")

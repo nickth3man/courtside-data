@@ -1,9 +1,0 @@
-{
-  "byte_count": 386872,
-  "content_type": "text/html; charset=UTF-8",
-  "downloaded_at": "2026-06-02T18:00:57.318449+00:00",
-  "sha256": "9f8d9821c3f46021a3a975cfec638ea59225edc8cff815b22627af426dc7dc81",
-  "status_code": 200,
-  "tool": "requests",
-  "url": "https://www.basketball-reference.com/players/w/westbru01/gamelog/2020"
-}

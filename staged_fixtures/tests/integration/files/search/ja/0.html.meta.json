@@ -1,9 +1,0 @@
-{
-  "byte_count": 350018,
-  "content_type": "text/html; charset=utf-8",
-  "downloaded_at": "2026-06-02T10:57:00.395555+00:00",
-  "sha256": "c97320430d013ffd3735c8e302ffb0642166f796215986212f0fe3741e29c25a",
-  "status_code": 200,
-  "tool": "requests",
-  "url": "https://www.basketball-reference.com/search/search.fcgi?search=ja&i=players&offset=0"
-}

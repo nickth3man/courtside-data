@@ -1,9 +1,0 @@
-{
-  "byte_count": 93013,
-  "content_type": "text/html; charset=utf-8",
-  "downloaded_at": "2026-06-02T18:13:32.310320+00:00",
-  "sha256": "308293136a4afe1237b1c9f2c7dce2eaf0c5638d05e8509889699640e88b7ef9",
-  "status_code": 200,
-  "tool": "requests",
-  "url": "https://www.basketball-reference.com/search/search.fcgi?search=kobe+bryant"
-}

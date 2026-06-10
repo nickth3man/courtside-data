@@ -1,9 +1,0 @@
-{
-  "byte_count": 296481,
-  "content_type": "text/html",
-  "downloaded_at": "2026-06-02T18:19:26.065890+00:00",
-  "sha256": "299085e039a2daf5da8b7067e4dcbbe42877b188274cfcc53d5c27691049557b",
-  "status_code": 200,
-  "tool": "requests",
-  "url": "https://www.basketball-reference.com/wnba/years/2023_games.html"
-}

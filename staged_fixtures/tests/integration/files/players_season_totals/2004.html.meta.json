@@ -1,9 +1,0 @@
-{
-  "byte_count": 1524327,
-  "content_type": "text/html",
-  "downloaded_at": "2026-06-02T18:01:45.134581+00:00",
-  "sha256": "7b92f7c51c270926907f7c87d7977489aa8df0a88d5f7ae523a6dbe3dd1709da",
-  "status_code": 200,
-  "tool": "requests",
-  "url": "https://www.basketball-reference.com/leagues/NBA_2004_totals.html"
-}

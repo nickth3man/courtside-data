@@ -7,20 +7,18 @@ For each endpoint we:
 The output is written both to stdout and to scripts/test_endpoints/results.json
 so the markdown report can be regenerated from structured data.
 """
+
 import json
 import os
 import sys
 import time
 import traceback
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from courtside_data import client
 from courtside_data.data import (
-    OutputType,
-    OutputWriteOption,
     Team,
 )
-
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 
@@ -43,7 +41,7 @@ def _run(name, fn):
     """Run a single endpoint call, returning a structured result record."""
     record = {
         "endpoint": name,
-        "started_at": datetime.now(timezone.utc).isoformat(),
+        "started_at": datetime.now(UTC).isoformat(),
         "status": None,
         "duration_seconds": None,
         "result_summary": None,
@@ -63,7 +61,7 @@ def _run(name, fn):
         record["status"] = "PASS"
         record["result_summary"] = _summarize(value)
     record["duration_seconds"] = round(time.perf_counter() - started, 3)
-    record["finished_at"] = datetime.now(timezone.utc).isoformat()
+    record["finished_at"] = datetime.now(UTC).isoformat()
     return record
 
 
@@ -78,7 +76,12 @@ def _case(name, fn):
         if "length" in summary:
             print(f"return length: {summary['length']}")
             if summary["sample"]:
-                print("first sample row keys:", list(summary["sample"][0].keys())[:10] if isinstance(summary["sample"][0], dict) else summary["sample"][0])
+                print(
+                    "first sample row keys:",
+                    list(summary["sample"][0].keys())[:10]
+                    if isinstance(summary["sample"][0], dict)
+                    else summary["sample"][0],
+                )
     else:
         print(f"EXCEPTION ({record['exception_type']}): {record['exception_message']}")
     return record
@@ -139,7 +142,7 @@ def main():
 
     out_path = os.path.join(HERE, "results.json")
     with open(out_path, "w", encoding="utf-8") as f:
-        json.dump({"generated_at": datetime.now(timezone.utc).isoformat(), "results": results}, f, indent=2, default=str)
+        json.dump({"generated_at": datetime.now(UTC).isoformat(), "results": results}, f, indent=2, default=str)
     print(f"\nWrote {out_path}")
 
     # Final summary table

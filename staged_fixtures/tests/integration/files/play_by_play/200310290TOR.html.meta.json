@@ -1,9 +1,0 @@
-{
-  "byte_count": 244976,
-  "content_type": "text/html",
-  "downloaded_at": "2026-06-02T17:56:54.169038+00:00",
-  "sha256": "192a88f712b9d86fbaa31bd0f616e771f217828ea04e375530246dbef5b3690c",
-  "status_code": 200,
-  "tool": "requests",
-  "url": "https://www.basketball-reference.com/boxscores/pbp/200310290TOR.html"
-}

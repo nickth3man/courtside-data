@@ -8,6 +8,7 @@ sleeps, but some tests construct HTTPService instances before the env vars
 take effect or in subprocesses. This belt-and-suspenders fixture ensures
 the integration suite stays fast in all cases.
 """
+
 from unittest.mock import patch
 
 import pytest

@@ -1,9 +1,0 @@
-{
-  "byte_count": 164637,
-  "content_type": "text/html",
-  "downloaded_at": "2026-06-02T18:06:30.718715+00:00",
-  "sha256": "f0b24fd458d9c064b880f1be1c79b775296e105103ce8f9092eb7d87ae238ac3",
-  "status_code": 200,
-  "tool": "requests",
-  "url": "https://www.basketball-reference.com/leagues/NBA_2002_games.html"
-}

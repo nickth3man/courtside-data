@@ -1,9 +1,0 @@
-{
-  "byte_count": 1589896,
-  "content_type": "text/html",
-  "downloaded_at": "2026-06-02T18:04:39.366583+00:00",
-  "sha256": "fc187bb1bcd2997b3771de97878a812c6417cefc6cda5b89dfa6bc8c9b648f9a",
-  "status_code": 200,
-  "tool": "requests",
-  "url": "https://www.basketball-reference.com/leagues/NBA_2017_totals.html"
-}

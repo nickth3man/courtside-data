@@ -1,9 +1,0 @@
-{
-  "byte_count": 395498,
-  "content_type": "text/html",
-  "downloaded_at": "2026-06-02T18:19:01.145930+00:00",
-  "sha256": "0b05588fcb2210c2be23d7e2439c18c9e13723c927eb72318cd4c89917d09fb0",
-  "status_code": 200,
-  "tool": "requests",
-  "url": "https://www.basketball-reference.com/wnba/years/2019_totals.html"
-}

@@ -1,9 +1,0 @@
-{
-  "byte_count": 355990,
-  "content_type": "text/html",
-  "downloaded_at": "2026-06-02T18:10:03.965987+00:00",
-  "sha256": "9f89ccb8f7bacdb19fe3f7a72eff280bfca50109abe1fba36f8ba4a8c68e9ab0",
-  "status_code": 200,
-  "tool": "requests",
-  "url": "https://www.basketball-reference.com/leagues/NBA_2018_games-april.html"
-}

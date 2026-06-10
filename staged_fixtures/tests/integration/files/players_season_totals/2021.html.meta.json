@@ -1,9 +1,0 @@
-{
-  "byte_count": 1826655,
-  "content_type": "text/html",
-  "downloaded_at": "2026-06-02T18:05:16.847817+00:00",
-  "sha256": "4589cd7eb98d4feec3043ed1a2320d1268a71a8a0fe3635495d52af09ce4e674",
-  "status_code": 200,
-  "tool": "requests",
-  "url": "https://www.basketball-reference.com/leagues/NBA_2021_totals.html"
-}

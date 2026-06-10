@@ -1,9 +1,0 @@
-{
-  "byte_count": 187193,
-  "content_type": "text/html",
-  "downloaded_at": "2026-06-02T18:10:15.835059+00:00",
-  "sha256": "bfd09afacb8b9da2c5e22d2aa7831c0221ac6c1beb27fc00856d3101ac79fe61",
-  "status_code": 200,
-  "tool": "requests",
-  "url": "https://www.basketball-reference.com/leagues/NBA_2018_games-may.html"
-}

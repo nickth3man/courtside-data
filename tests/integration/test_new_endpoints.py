@@ -4,58 +4,57 @@ Integration tests for all 40 new endpoints.
 Tests verify the full pipeline (client function -> HTTPService -> ParserService -> output)
 using mocked HTTP responses via requests_mock and patched rate limiting.
 """
+
 from unittest.mock import patch
 
-import pytest
-from tests import http_mock as requests_mock
-
 from courtside_data.client import (
+    attendance,
+    career_leaders,
+    # Draft and awards
+    draft_picks,
+    franchise_history,
+    league_per_36_minutes,
+    league_per_100_possessions,
     # League endpoints
     league_per_game_stats,
-    league_per_36_minutes,
-    league_totals,
-    rookie_stats,
-    standings_by_date,
-    attendance,
-    league_transactions,
-    league_per_100_possessions,
     league_shooting,
+    league_totals,
+    league_transactions,
+    player_adjusted_shooting,
+    player_all_star,
+    # Player endpoints
+    player_career_stats,
+    player_game_highs,
+    player_on_off,
+    player_play_by_play,
+    player_playoff_series,
+    player_salaries,
+    player_shot_charts,
+    player_similarity_scores,
+    player_splits,
+    playoff_bracket,
     # Playoff endpoints
     playoff_per_game,
     playoff_totals,
-    # Draft and awards
-    draft_picks,
-    season_leaders,
-    career_leaders,
-    playoff_bracket,
+    rookie_stats,
     season_awards,
-    # Player endpoints
-    player_career_stats,
-    player_playoff_series,
-    player_splits,
-    player_on_off,
-    player_shot_charts,
-    player_adjusted_shooting,
-    player_play_by_play,
-    player_game_highs,
-    player_all_star,
-    player_similarity_scores,
-    player_salaries,
-    # Team endpoints
-    team_roster,
-    team_injury_report,
+    season_leaders,
+    standings_by_date,
     team_and_opponent,
-    team_misc_four_factors,
-    team_schedule,
-    team_transactions,
-    team_splits,
     team_contracts,
+    team_injury_report,
     team_lineups,
-    team_starting_lineups,
+    team_misc_four_factors,
     team_on_off,
     team_opponent_stats,
-    franchise_history,
+    # Team endpoints
+    team_roster,
+    team_schedule,
+    team_splits,
+    team_starting_lineups,
+    team_transactions,
 )
+from tests import http_mock as requests_mock
 
 # ---------------------------------------------------------------------------
 # HTML fixture templates
@@ -132,6 +131,7 @@ def _mock_url(m, url, html):
 # ===================================================================
 # League Endpoints (9)
 # ===================================================================
+
 
 class TestLeagueEndpoints:
     """Integration tests for league-level stats endpoints."""
@@ -216,6 +216,7 @@ class TestLeagueEndpoints:
 # Playoff Endpoints (2)
 # ===================================================================
 
+
 class TestPlayoffEndpoints:
     """Integration tests for playoff stats endpoints."""
 
@@ -241,6 +242,7 @@ class TestPlayoffEndpoints:
 # ===================================================================
 # Draft and Awards Endpoints (5)
 # ===================================================================
+
 
 class TestDraftAndAwards:
     """Integration tests for draft, leaders, and awards endpoints."""
@@ -289,6 +291,7 @@ class TestDraftAndAwards:
 # ===================================================================
 # Player Endpoints (11)
 # ===================================================================
+
 
 class TestPlayerEndpoints:
     """Integration tests for player-specific endpoints."""
@@ -391,6 +394,7 @@ class TestPlayerEndpoints:
 # ===================================================================
 # Team Endpoints (13)
 # ===================================================================
+
 
 class TestTeamEndpoints:
     """Integration tests for team-specific endpoints."""

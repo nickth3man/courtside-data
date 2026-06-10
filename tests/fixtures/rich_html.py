@@ -491,12 +491,14 @@ RICH_SHOOTING_TABLE = """
 </table>
 """
 
+
 # ---------------------------------------------------------------------------
 # Helper for commented (hidden) tables
 # ---------------------------------------------------------------------------
 def _commented(html_table: str) -> str:
     """Wrap an HTML table inside HTML comments."""
     return f"<!--\n{html_table}\n-->"
+
 
 # ---------------------------------------------------------------------------
 # Playoff per-game (commented table id = per_game_stats_post)

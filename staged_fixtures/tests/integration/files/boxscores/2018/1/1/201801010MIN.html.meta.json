@@ -1,9 +1,0 @@
-{
-  "byte_count": 473670,
-  "content_type": "text/html",
-  "downloaded_at": "2026-06-02T18:12:08.660609+00:00",
-  "sha256": "36558cf60a6fdc1de32456154e06576397e2881135add840366ec4c915798ceb",
-  "status_code": 200,
-  "tool": "requests",
-  "url": "https://www.basketball-reference.com/boxscores/201801010MIN.html"
-}

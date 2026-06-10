@@ -1,9 +1,0 @@
-{
-  "byte_count": 1367282,
-  "content_type": "text/html",
-  "downloaded_at": "2026-06-02T18:01:22.104320+00:00",
-  "sha256": "a623a7515405c55db6879a852218f8c957b658e773e309b2f95af65728a18a66",
-  "status_code": 200,
-  "tool": "requests",
-  "url": "https://www.basketball-reference.com/leagues/NBA_2002_totals.html"
-}

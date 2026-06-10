@@ -4,13 +4,12 @@ Respects rate limits — 3.5s base + 1.2s jitter between calls.
 Stops immediately on 429 (rate limit) to avoid getting banned.
 Outputs a detailed results document to docs/endpoint_verification_results.md
 """
+
 import datetime
-import json
 import os
 import random
 import sys
 import time
-import traceback
 from collections import OrderedDict
 
 import requests
@@ -19,62 +18,62 @@ import requests
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from courtside_data.client import (
-    # Original 10
-    standings,
-    player_box_scores,
-    regular_season_player_box_scores,
-    playoff_player_box_scores,
-    season_schedule,
-    players_season_totals,
-    players_advanced_season_totals,
-    team_box_scores,
-    play_by_play,
-    search,
-    # League (9)
-    league_per_game_stats,
-    league_per_36_minutes,
-    league_totals,
-    rookie_stats,
-    standings_by_date,
     attendance,
-    league_transactions,
-    league_per_100_possessions,
-    league_shooting,
-    # Playoff (2)
-    playoff_per_game,
-    playoff_totals,
+    career_leaders,
     # Draft & Awards (5)
     draft_picks,
-    season_leaders,
-    career_leaders,
-    playoff_bracket,
-    season_awards,
+    franchise_history,
+    league_per_36_minutes,
+    league_per_100_possessions,
+    # League (9)
+    league_per_game_stats,
+    league_shooting,
+    league_totals,
+    league_transactions,
+    play_by_play,
+    player_adjusted_shooting,
+    player_all_star,
+    player_box_scores,
     # Player (11)
     player_career_stats,
-    player_playoff_series,
-    player_splits,
-    player_on_off,
-    player_shot_charts,
-    player_adjusted_shooting,
-    player_play_by_play,
     player_game_highs,
-    player_all_star,
-    player_similarity_scores,
+    player_on_off,
+    player_play_by_play,
+    player_playoff_series,
     player_salaries,
-    # Team (13)
-    team_roster,
-    team_injury_report,
+    player_shot_charts,
+    player_similarity_scores,
+    player_splits,
+    players_advanced_season_totals,
+    players_season_totals,
+    playoff_bracket,
+    # Playoff (2)
+    playoff_per_game,
+    playoff_player_box_scores,
+    playoff_totals,
+    regular_season_player_box_scores,
+    rookie_stats,
+    search,
+    season_awards,
+    season_leaders,
+    season_schedule,
+    # Original 10
+    standings,
+    standings_by_date,
     team_and_opponent,
-    team_misc_four_factors,
-    team_schedule,
-    team_transactions,
-    team_splits,
+    team_box_scores,
     team_contracts,
+    team_injury_report,
     team_lineups,
-    team_starting_lineups,
+    team_misc_four_factors,
     team_on_off,
     team_opponent_stats,
-    franchise_history,
+    # Team (13)
+    team_roster,
+    team_schedule,
+    team_splits,
+    team_starting_lineups,
+    team_transactions,
 )
 from courtside_data.data import Team
 
@@ -82,12 +81,12 @@ from courtside_data.data import Team
 # Test parameters
 # ---------------------------------------------------------------------------
 SEASON = 2024
-PLAYER_ID = "jamesle01"       # LeBron James
+PLAYER_ID = "jamesle01"  # LeBron James
 TEAM_ABBR = "LAL"
 DATE_DAY, DATE_MONTH, DATE_YEAR = 11, 3, 2024  # March 11, 2024 — known-good date
 
 # Rate limiting
-BASE_DELAY = 3.5   # matches HTTPService default
+BASE_DELAY = 3.5  # matches HTTPService default
 JITTER = 1.2
 
 OUTPUT_FILE = os.path.join(
@@ -112,7 +111,13 @@ def _build_test_suite():
     # ── Original 10 ──
     suite.append(("standings (original)", lambda: standings(SEASON), False))
     suite.append(("player_box_scores (original)", lambda: player_box_scores(DATE_DAY, DATE_MONTH, DATE_YEAR), False))
-    suite.append(("regular_season_player_box_scores (original)", lambda: regular_season_player_box_scores(PLAYER_ID, SEASON), False))
+    suite.append(
+        (
+            "regular_season_player_box_scores (original)",
+            lambda: regular_season_player_box_scores(PLAYER_ID, SEASON),
+            False,
+        )
+    )
     suite.append(("playoff_player_box_scores (original)", lambda: playoff_player_box_scores(PLAYER_ID, SEASON), False))
     suite.append(("season_schedule (original)", lambda: season_schedule(SEASON), False))
     suite.append(("players_season_totals (original)", lambda: players_season_totals(SEASON), False))
@@ -253,12 +258,12 @@ def main():
 
     all_results = []  # list of (name, r1, r2)
 
-    for i, (name, callable_fn, is_new) in enumerate(suite, 1):
+    for i, (name, callable_fn, _is_new) in enumerate(suite, 1):
         print(f"\n[{i}/{total}] {name}")
         print("-" * 50)
 
         # Run 1
-        print(f"  Calling (1/2)...", end=" ", flush=True)
+        print("  Calling (1/2)...", end=" ", flush=True)
         r1 = test_endpoint(name, callable_fn, 1)
         print(format_run_result(r1, 1))
 
@@ -266,7 +271,7 @@ def main():
         sleep_with_jitter()
 
         # Run 2
-        print(f"  Calling (2/2)...", end=" ", flush=True)
+        print("  Calling (2/2)...", end=" ", flush=True)
         r2 = test_endpoint(name, callable_fn, 2)
         print(format_run_result(r2, 2))
 
@@ -292,14 +297,16 @@ def main():
     lines.append("")
     lines.append(f"**Date:** {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     lines.append("")
-    lines.append(f"**Test Parameters:** Season={SEASON}, Player={PLAYER_ID}, Team={TEAM_ABBR}, Date={DATE_MONTH}/{DATE_DAY}/{DATE_YEAR}")
+    lines.append(
+        f"**Test Parameters:** Season={SEASON}, Player={PLAYER_ID}, Team={TEAM_ABBR}, Date={DATE_MONTH}/{DATE_DAY}/{DATE_YEAR}"
+    )
     lines.append("")
     lines.append(f"**Total Endpoints:** {total_tested}  |  **Calls Made:** {total_tested * 2}")
     lines.append("")
     lines.append("## Summary")
     lines.append("")
-    lines.append(f"| Result | Count |")
-    lines.append(f"|--------|-------|")
+    lines.append("| Result | Count |")
+    lines.append("|--------|-------|")
     lines.append(f"| ✅ Both runs passed | {passed_both} |")
     lines.append(f"| ⚠️  One run failed | {partial} |")
     lines.append(f"| ❌ Both runs failed | {failed_both} |")
@@ -324,8 +331,12 @@ def main():
             lines.append("")
             lines.append("| Run | Passed | Rows | Detail |")
             lines.append("|-----|--------|------|--------|")
-            lines.append(f"| 1 | {'Yes' if r1['passed'] else 'No'} | {r1['row_count']} | {r1['error_detail'] or 'OK'} |")
-            lines.append(f"| 2 | {'Yes' if r2['passed'] else 'No'} | {r2['row_count']} | {r2['error_detail'] or 'OK'} |")
+            lines.append(
+                f"| 1 | {'Yes' if r1['passed'] else 'No'} | {r1['row_count']} | {r1['error_detail'] or 'OK'} |"
+            )
+            lines.append(
+                f"| 2 | {'Yes' if r2['passed'] else 'No'} | {r2['row_count']} | {r2['error_detail'] or 'OK'} |"
+            )
             if not r1["passed"] and r1["error_detail"]:
                 lines.append(f"- **Error:** `{r1['error_type']}` — {r1['error_detail']}")
             if not r2["passed"] and r2["error_detail"]:
@@ -337,7 +348,7 @@ def main():
     lines.append("")
     lines.append("| Endpoint | Rows | Sample Keys |")
     lines.append("|----------|------|-------------|")
-    for name, r1, r2 in all_results:
+    for name, r1, _r2 in all_results:
         if r1["passed"]:
             keys_str = ", ".join(r1["keys"][:10])
             if len(r1["keys"]) > 10:
@@ -348,19 +359,26 @@ def main():
     # ── Stats at bottom ──
     lines.append("## Stats by Endpoint Category")
     lines.append("")
-    categories = OrderedDict([
-        ("Original", [0, 0, 0]),
-        ("League", [0, 0, 0]),
-        ("Playoff", [0, 0, 0]),
-        ("Draft/Awards", [0, 0, 0]),
-        ("Player", [0, 0, 0]),
-        ("Team", [0, 0, 0]),
-    ])
+    categories = OrderedDict(
+        [
+            ("Original", [0, 0, 0]),
+            ("League", [0, 0, 0]),
+            ("Playoff", [0, 0, 0]),
+            ("Draft/Awards", [0, 0, 0]),
+            ("Player", [0, 0, 0]),
+            ("Team", [0, 0, 0]),
+        ]
+    )
     for name, r1, r2 in all_results:
         # simple category mapping by endpoint type
         if "(original)" in name:
             cat = "Original"
-        elif name.startswith("league_") or name.startswith("standings_by_date") or name.startswith("attendance") or name.startswith("rookie_"):
+        elif (
+            name.startswith("league_")
+            or name.startswith("standings_by_date")
+            or name.startswith("attendance")
+            or name.startswith("rookie_")
+        ):
             cat = "League"
         elif name in ("playoff_per_game", "playoff_totals"):
             cat = "Playoff"
@@ -373,7 +391,6 @@ def main():
         else:
             continue
         passed = r1["passed"] and r2["passed"]
-        failed = not r1["passed"] and not r2["passed"]
         partial_f = r1["passed"] != r2["passed"]
         if passed:
             categories[cat][0] += 1
@@ -395,7 +412,7 @@ def main():
     print("\n" + "=" * 70)
     print(f"Results written to: {OUTPUT_FILE}")
     summary = f"Summary: {passed_both} PASS both runs, {partial} PARTIAL (one fail), {failed_both} FAIL both runs ({total_tested} endpoints)"
-    print(summary.encode('utf-8', errors='replace').decode('utf-8', errors='replace'))
+    print(summary.encode("utf-8", errors="replace").decode("utf-8", errors="replace"))
 
     return 0 if failed_both == 0 else 1
 
