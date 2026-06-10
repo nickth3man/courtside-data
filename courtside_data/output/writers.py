@@ -2,7 +2,6 @@ import csv
 import json
 
 from courtside_data.data import OutputType, OutputWriteOption
-from courtside_data.utilities import merge_two_dicts
 
 DEFAULT_JSON_SORT_KEYS = True
 DEFAULT_JSON_INDENT = 4
@@ -42,7 +41,7 @@ class OutputOptions:
             if json_options is None:
                 formatting_options = DEFAULT_JSON_OPTIONS
             else:
-                formatting_options = merge_two_dicts(DEFAULT_JSON_OPTIONS, json_options)
+                formatting_options = {**DEFAULT_JSON_OPTIONS, **json_options}
         elif output_type == OutputType.CSV:
             formatting_options = csv_options
         elif output_type is None:
@@ -80,7 +79,7 @@ class Writer:
 
 class JSONWriter(Writer):
     def write(self, data, options):
-        output_options = merge_two_dicts(DEFAULT_JSON_OPTIONS, options.formatting_options)
+        output_options = {**DEFAULT_JSON_OPTIONS, **options.formatting_options}
         if options.file_options.should_write_to_file:
             with open(
                     options.file_options.path,
@@ -103,13 +102,51 @@ class JSONWriter(Writer):
 
 
 class CSVWriter(Writer):
+    @staticmethod
+    def _extract_rows(data):
+        """Extract a list of dict rows from data that may be a list or a dict."""
+        if isinstance(data, list):
+            return data
+        if isinstance(data, dict):
+            for v in data.values():
+                if isinstance(v, list):
+                    return v
+        return []
+
+    @staticmethod
+    def _detect_fieldnames(rows):
+        """Auto-detect column names from the first row if available."""
+        if rows and isinstance(rows[0], dict):
+            return list(rows[0].keys())
+        return []
+
     def rows(self, data):
+        extracted = self._extract_rows(data)
         return [
             dict((key, self.value_formatter(value)) for key, value in row.items())
-            for row in data
+            for row in extracted
         ]
 
     def write(self, data, options):
+        rows = self._extract_rows(data)
+        if not rows:
+            # Write an empty CSV with just a header
+            fieldnames = options.formatting_options.get("column_names") or []
+            with open(
+                    options.file_options.path,
+                    options.file_options.mode.value,
+                    newline="",
+                    encoding="utf8",
+            ) as csv_file:
+                writer = csv.writer(csv_file)
+                writer.writerow(fieldnames)
+            return
+
+        # Determine fieldnames: prefer explicit, fall back to auto-detect
+        fieldnames = options.formatting_options.get("column_names")
+        if not fieldnames:
+            fieldnames = self._detect_fieldnames(rows)
+
         with open(
                 options.file_options.path,
                 options.file_options.mode.value,
@@ -118,17 +155,10 @@ class CSVWriter(Writer):
         ) as csv_file:
             writer = csv.DictWriter(
                 csv_file,
-                fieldnames=options.formatting_options.get("column_names"),
+                fieldnames=fieldnames,
+                extrasaction='ignore',
+                lineterminator='\n',
             )
             writer.writeheader()
-
             writer.writerows(self.rows(data=data))
-
-
-class SearchCSVWriter(CSVWriter):
-    def rows(self, data):
-        return [
-            dict((key, self.value_formatter(value)) for key, value in row.items())
-            for row in data["players"]
-        ]
 

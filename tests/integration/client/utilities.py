@@ -2,7 +2,7 @@ import functools
 import os
 from typing import Dict
 
-import requests_mock
+from tests import http_mock as requests_mock
 
 
 class ResponseMocker:

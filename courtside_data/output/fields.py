@@ -33,6 +33,18 @@ class ListFormatter(FieldFormatter):
         return "-".join(map(lambda value: format_value(value=value), self.data))
 
 
+class DictFormatter(FieldFormatter):
+    @staticmethod
+    def can_format(data):
+        return isinstance(data, dict)
+
+    def format(self):
+        # Serialize dict to a compact string representation
+        return ";".join(
+            f"{k}={format_value(v)}" for k, v in self.data.items()
+        )
+
+
 class SetFormatter(FieldFormatter):
     @staticmethod
     def can_format(data):
@@ -44,6 +56,7 @@ class SetFormatter(FieldFormatter):
 
 FORMATTER_CLASSES = [
     EnumFormatter,
+    DictFormatter,
     ListFormatter,
     SetFormatter,
 ]

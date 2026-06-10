@@ -1,4 +1,5 @@
 import re
+from typing import Optional
 
 from lxml import html
 from lxml.html import HtmlComment
@@ -191,7 +192,7 @@ class PlayerSeasonGameLogRow(BasicBoxScoreRow):
         super().__init__(html=html)
 
     def __eq__(self, other):
-        if isinstance(other, PlayerBoxScoreRow):
+        if isinstance(other, PlayerSeasonGameLogRow):
             return self.html == other.html
         return False
 
@@ -927,7 +928,7 @@ class PlayerSeasonBoxScoresRow(PlayerSeasonGameLogRow):
         super().__init__(html)
 
     def __eq__(self, other):
-        if isinstance(other, PlayerSeasonBoxScoresRow):
+        if isinstance(other, PlayerSeasonGameLogRow):
             return self.html == other.html
         return False
 
@@ -1524,8 +1525,6 @@ class PlayerContractsRow:
 
         return None
 
-
-from typing import Optional
 
 
 class GenericTableRow:

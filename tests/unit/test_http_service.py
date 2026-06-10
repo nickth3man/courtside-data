@@ -1,17 +1,15 @@
 import os
 from unittest import TestCase, mock
 
-from requests import codes
+import httpx
 
 from courtside_data.errors import InvalidDate, InvalidPlayer, InvalidTeam
 from courtside_data.http_service import HTTPService
 
 
 class TestHTTPService(TestCase):
-    @mock.patch("requests.get")
-    def test_player_box_scores_raises_invalid_date_for_300_response(self, mocked_get):
-        response = mock.Mock(status_code=codes.multiple_choices)
-        mocked_get.return_value = response
+    def test_player_box_scores_raises_invalid_date_for_300_response(self):
+        response = mock.Mock(status_code=httpx.codes.MULTIPLE_CHOICES)
         session = mock.MagicMock()
         session.get.return_value = response
         self.assertRaisesRegex(
@@ -37,10 +35,9 @@ class TestHTTPServiceBackwardCompatibility(TestCase):
 class TestHTTPServiceSessionReuse(TestCase):
     """Verify _get uses the provided/injected session."""
 
-    @mock.patch("requests.Session")
-    def test_default_session_is_requests_session(self, MockSession):
+    def test_default_session_is_httpx_client(self):
         service = HTTPService(parser=mock.MagicMock())
-        self.assertIsInstance(service._session, MockSession.return_value.__class__)
+        self.assertIsInstance(service._session, httpx.Client)
 
     def test_injected_session_is_used(self):
         mock_session = mock.MagicMock()
@@ -50,7 +47,7 @@ class TestHTTPServiceSessionReuse(TestCase):
         service = HTTPService(parser=mock.MagicMock(), session=mock_session, rate_limit_interval=0)
         result = service._get(url="https://example.com")
 
-        mock_session.get.assert_called_once_with(url="https://example.com", timeout=(10, 30))
+        mock_session.get.assert_called_once_with(url="https://example.com")
         self.assertIs(result, mock_response)
 
     def test_get_passes_kwargs_to_session(self):
@@ -59,13 +56,12 @@ class TestHTTPServiceSessionReuse(TestCase):
         mock_session.get.return_value = mock_response
 
         service = HTTPService(parser=mock.MagicMock(), session=mock_session, rate_limit_interval=0)
-        service._get(url="https://example.com", allow_redirects=False, params={"key": "val"})
+        service._get(url="https://example.com", follow_redirects=False, params={"key": "val"})
 
         mock_session.get.assert_called_once_with(
             url="https://example.com",
-            allow_redirects=False,
+            follow_redirects=False,
             params={"key": "val"},
-            timeout=(10, 30),
         )
 
 

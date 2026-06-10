@@ -7,7 +7,7 @@ using mocked HTTP responses via requests_mock and patched rate limiting.
 from unittest.mock import patch
 
 import pytest
-import requests_mock
+from tests import http_mock as requests_mock
 
 from courtside_data.client import (
     # League endpoints

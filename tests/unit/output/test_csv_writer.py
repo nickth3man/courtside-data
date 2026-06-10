@@ -52,7 +52,8 @@ class TestCSVWriter(TestCase):
                     output_type=OutputType.CSV,
                 ),
             )
-            mock_csv_dict_writer.assert_called_with(mock_file(), fieldnames=self.COLUMN_NAMES)
+            mock_csv_dict_writer.assert_called_with(mock_file(), fieldnames=self.COLUMN_NAMES, extrasaction='ignore',
+                                                    lineterminator='\n')
 
     @mock.patch("csv.DictWriter")
     def test_header_is_written(self, mock_csv_dict_writer):

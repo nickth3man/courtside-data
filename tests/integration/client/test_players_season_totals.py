@@ -3,7 +3,7 @@ import json
 import os
 from unittest import TestCase
 
-import requests_mock
+from tests import http_mock as requests_mock
 
 from courtside_data import client
 from courtside_data.data import Position, Team, OutputType

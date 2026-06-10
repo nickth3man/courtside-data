@@ -3,7 +3,7 @@ import json
 import os
 from unittest import TestCase
 
-import requests_mock
+from tests import http_mock as requests_mock
 
 from courtside_data import client
 from courtside_data.data import OutputType, OutputWriteOption
@@ -52,7 +52,8 @@ class TestJa(TestCase):
     def test_length(self, m):
         m.get("https://www.basketball-reference.com/search/search.fcgi?search=ja",
               text=self._html,
-              status_code=200)
+              status_code=200,
+              complete_qs=True)  # Exact match: prevents subset fallback to this mock from later pagination requests
         m.get("https://www.basketball-reference.com/search/search.fcgi?search=ja&i=players&offset=100",
               text=self._1_html,
               status_code=200)
@@ -78,6 +79,8 @@ class TestJa(TestCase):
               text=self._8_html,
               status_code=200)
         results = client.search(term="ja")
+        # 1 initial request + 8 paginated requests = 9 total
+        self.assertEqual(9, m.call_count)
         self.assertEqual(863, len(results["players"]))
         self.assertEqual({
             "name": "LeBron James",
@@ -242,13 +245,23 @@ class TestKobe(TestCase):
                     "leagues": set()
                 },
                 {
+                    "name": "Kobe Brown",
+                    "identifier": "brownko01",
+                    "leagues": set()
+                },
+                {
+                    "name": "Kobe Sanders",
+                    "identifier": "sandeko01",
+                    "leagues": set()
+                },
+                {
                     "name": "Kobe Bufkin",
                     "identifier": "bufkiko01",
                     "leagues": set()
                 },
                 {
-                    "name": "Kobe Brown",
-                    "identifier": "brownko01",
+                    "name": "Kobe Johnson",
+                    "identifier": "johnsko01",
                     "leagues": set()
                 },
                 {

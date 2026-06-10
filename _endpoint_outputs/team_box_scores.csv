@@ -1,0 +1,5 @@
+team,minutes_played,made_field_goals,attempted_field_goals,made_three_point_field_goals,attempted_three_point_field_goals,made_free_throws,attempted_free_throws,offensive_rebounds,defensive_rebounds,assists,steals,blocks,turnovers,personal_fouls,points,outcome
+SAN ANTONIO SPURS,240,39,84,12,34,25,32,6,31,28,7,7,8,21,115,WIN
+NEW YORK KNICKS,240,40,88,13,37,18,22,12,34,18,4,6,13,23,111,LOSS
+SAN ANTONIO SPURS,240,39,84,12,34,25,32,6,31,28,7,7,8,21,115,WIN
+NEW YORK KNICKS,240,40,88,13,37,18,22,12,34,18,4,6,13,23,111,LOSS

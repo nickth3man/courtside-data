@@ -4,7 +4,7 @@ import os
 import sys
 from unittest import TestCase
 
-import requests_mock
+from tests import http_mock as requests_mock
 
 from courtside_data.client import players_advanced_season_totals
 from courtside_data.data import OutputType, Team, Position

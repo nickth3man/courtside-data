@@ -4,7 +4,7 @@ import os
 from datetime import datetime
 from unittest import TestCase
 
-import requests_mock
+from tests import http_mock as requests_mock
 
 from courtside_data.client import playoff_player_box_scores
 from courtside_data.data import Team, Outcome, OutputType

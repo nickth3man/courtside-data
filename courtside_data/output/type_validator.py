@@ -1,0 +1,133 @@
+"""Type validation for basketball-reference scraper output.
+
+Validates that scraped data rows have the expected Python types after coercion.
+Handles columns that can be None (e.g., empty cells for age, combined-totals rows).
+"""
+
+from __future__ import annotations
+
+import warnings
+from typing import Any, Sequence
+
+from courtside_data.output.field_types import get_coercion
+
+
+# ─── Expected type extraction ─────────────────────────────────────────
+
+
+def _get_target_type(column_name: str) -> type | tuple[type, ...] | None:
+    """Infer the expected Python type for a column from its coercion function.
+
+    We use a naming convention: functions named coerce_<type> target <type>.
+    The coercion function's __name__ tells us what it produces.
+    """
+    fn = get_coercion(column_name)
+    name = fn.__name__
+
+    # coerce_int, coerce_float, coerce_int_or_none, coerce_float_or_none
+    if name == "coerce_int":
+        return int
+    elif name == "coerce_float":
+        return (int, float)  # int is acceptable for float columns
+    elif name == "coerce_int_or_none":
+        return (int, type(None))
+    elif name == "coerce_float_or_none":
+        return (int, float, type(None))
+    else:
+        # lambda v: v or other pass-through — expect str
+        return str
+
+
+# ─── Validation ────────────────────────────────────────────────────────
+
+
+class ValidationError:
+    """A single type-mismatch issue."""
+
+    def __init__(self, row_index: int, column: str, expected: str, actual: str, value: Any):
+        self.row_index = row_index
+        self.column = column
+        self.expected = expected
+        self.actual = actual
+        self.value = value
+
+    def __str__(self) -> str:
+        return (
+            f"row[{self.row_index}].{self.column}: "
+            f"expected {self.expected}, got {self.actual} ({self.value!r})"
+        )
+
+
+class ValidationReport:
+    """Report from a validation run."""
+
+    def __init__(self, errors: list[ValidationError]):
+        self.errors = errors
+        self.error_count = len(errors)
+
+    @property
+    def ok(self) -> bool:
+        return self.error_count == 0
+
+    def summary(self) -> str:
+        if self.ok:
+            return "Validation passed — no type mismatches."
+        return f"Validation found {self.error_count} type error(s)."
+
+    def __str__(self) -> str:
+        lines = [self.summary()]
+        for err in self.errors:
+            lines.append(f"  {err}")
+        return "\n".join(lines)
+
+
+def validate_rows(
+    rows: Sequence[dict[str, Any]],
+    expected_columns: Sequence[str] | None = None,
+    strict: bool = False,
+) -> ValidationReport:
+    """Validate that all rows have expected types for their columns.
+
+    Args:
+        rows: List of row dicts (should be coerced already).
+        expected_columns: If provided, only validate these columns.
+        strict: If True, raise ValueError on first error (for fail-fast).
+
+    Returns:
+        ValidationReport with any type mismatches found.
+    """
+    errors: list[ValidationError] = []
+
+    for i, row in enumerate(rows):
+        cols_to_check = expected_columns or list(row.keys())
+        for col in cols_to_check:
+            value = row.get(col)
+            target_type = _get_target_type(col)
+
+            if target_type is None:
+                continue  # no type expectation
+
+            # None is acceptable for any nullable target type
+            if value is None:
+                if type(None) in (target_type if isinstance(target_type, tuple) else (target_type,)):
+                    continue
+                # For strict int/float, None is also acceptable (empty cells)
+                if target_type in (int, float, (int, float)):
+                    continue
+
+            if not isinstance(value, target_type):
+                expected_name = _type_name(target_type)
+                actual_name = type(value).__name__
+                err = ValidationError(i, col, expected_name, actual_name, value)
+                if strict:
+                    raise ValueError(str(err))
+                errors.append(err)
+
+    return ValidationReport(errors)
+
+
+def _type_name(t: type | tuple[type, ...]) -> str:
+    """Human-readable type name."""
+    if isinstance(t, tuple):
+        return " | ".join(ty.__name__ for ty in t)
+    return t.__name__

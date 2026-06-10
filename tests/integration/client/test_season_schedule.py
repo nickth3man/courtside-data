@@ -1,11 +1,10 @@
 import filecmp
 import json
 import os
-from datetime import datetime
+from datetime import datetime, timezone
 from unittest import TestCase
 
-import pytz
-import requests_mock
+from tests import http_mock as requests_mock
 
 from courtside_data.client import season_schedule
 from courtside_data.data import OutputType, Team
@@ -34,7 +33,7 @@ class TestSeasonScheduleInMemoryOutput(TestCase):
                 "away_team_score": 99,
                 "home_team": Team.CLEVELAND_CAVALIERS,
                 "home_team_score": 102,
-                "start_time": datetime(2017, 10, 18, 0, 1, tzinfo=pytz.utc),
+                "start_time": datetime(2017, 10, 18, 0, 1, tzinfo=timezone.utc),
             },
         )
 
@@ -47,7 +46,7 @@ class TestSeasonScheduleInMemoryOutput(TestCase):
                 "away_team_score": 108,
                 "home_team": Team.CLEVELAND_CAVALIERS,
                 "home_team_score": 85,
-                "start_time": datetime(2018, 6, 9, 1, 0, tzinfo=pytz.utc)
+                "start_time": datetime(2018, 6, 9, 1, 0, tzinfo=timezone.utc)
             }
         )
 

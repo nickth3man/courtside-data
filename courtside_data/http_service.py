@@ -3,7 +3,9 @@ import random
 import re
 import time
 
-import requests
+import httpx
+import stamina
+from hishel.httpx import SyncCacheTransport
 from lxml import html
 from parsel import Selector
 
@@ -17,7 +19,20 @@ from courtside_data.html import DailyLeadersPage, PlayerSeasonBoxScoresPage, Pla
 
 _DEFAULT_RATE_LIMIT_INTERVAL = 3.5
 _DEFAULT_RATE_LIMIT_JITTER = 1.2
-_DEFAULT_TIMEOUT = (10, 30)  # (connect_timeout, read_timeout) in seconds
+_DEFAULT_TIMEOUT = httpx.Timeout(30.0, connect=10.0)
+_RETRY_ATTEMPTS = 3
+
+
+def build_client(cache=False, timeout=_DEFAULT_TIMEOUT):
+    """Build the httpx client used by HTTPService.
+
+    With cache=True, responses are cached per RFC 9111 via hishel's
+    SQLite-backed storage.
+    """
+    transport = httpx.HTTPTransport()
+    if cache:
+        transport = SyncCacheTransport(next_transport=transport)
+    return httpx.Client(transport=transport, follow_redirects=True, timeout=timeout)
 
 
 class HTTPService:
@@ -33,6 +48,7 @@ class HTTPService:
         sleep=None,
         random_func=None,
         timeout=None,
+        cache=False,
     ):
         self.parser = parser
         # Constructor param > env var > default
@@ -50,14 +66,14 @@ class HTTPService:
                 os.environ.get('BASKETBALL_REF_RATE_LIMIT_JITTER', _DEFAULT_RATE_LIMIT_JITTER)
             )
 
-        self._session = session if session is not None else requests.Session()
+        self._timeout = timeout if timeout is not None else _DEFAULT_TIMEOUT
+        self._session = session if session is not None else build_client(cache=cache, timeout=self._timeout)
         self._last_request_time = float('-inf')
 
         # Injectable dependencies for testing
         self._time = time_func if time_func is not None else time.time
         self._sleep = sleep if sleep is not None else time.sleep
         self._random = random_func if random_func is not None else random.uniform
-        self._timeout = timeout if timeout is not None else _DEFAULT_TIMEOUT
 
     def _apply_rate_limiting(self):
         current_time = self._time()
@@ -71,8 +87,11 @@ class HTTPService:
 
     def _get(self, url, **kwargs):
         self._apply_rate_limiting()
-        kwargs.setdefault("timeout", self._timeout)
-        return self._session.get(url=url, **kwargs)
+        response = None
+        for attempt in stamina.retry_context(on=httpx.TransportError, attempts=_RETRY_ATTEMPTS):
+            with attempt:
+                response = self._session.get(url=url, **kwargs)
+        return response
 
     @staticmethod
     def _clean_text(values):
@@ -116,7 +135,7 @@ class HTTPService:
             season_end_year=season_end_year,
         )
 
-        response = self._get(url=url, allow_redirects=False)
+        response = self._get(url=url, follow_redirects=False)
 
         response.raise_for_status()
 
@@ -132,11 +151,11 @@ class HTTPService:
             year=year
         )
 
-        response = self._get(url=url, allow_redirects=False)
+        response = self._get(url=url, follow_redirects=False)
 
         response.raise_for_status()
 
-        if response.status_code == requests.codes.ok:
+        if response.status_code == httpx.codes.OK:
             page = DailyLeadersPage(html=html.fromstring(response.content))
             if not page.daily_leaders:
                 raise InvalidDate(day=day, month=month, year=year)
@@ -156,7 +175,7 @@ class HTTPService:
             season_end_year=season_end_year,
         )
 
-        response = self._get(url=url, allow_redirects=False)
+        response = self._get(url=url, follow_redirects=False)
         response.raise_for_status()
 
         page = PlayerSeasonBoxScoresPage(html=html.fromstring(response.content))
@@ -177,7 +196,7 @@ class HTTPService:
             season_end_year=season_end_year,
         )
 
-        response = self._get(url=url, allow_redirects=False)
+        response = self._get(url=url, follow_redirects=False)
         response.raise_for_status()
 
         page = PlayerSeasonBoxScoresPage(html=html.fromstring(response.content))
@@ -187,11 +206,12 @@ class HTTPService:
         return self.parser.parse_player_season_box_scores(box_scores=page.playoff_box_scores_table.rows, include_inactive_games=include_inactive_games)
 
     def play_by_play(self, home_team, day, month, year):
-        add_0_if_needed = lambda s: "0" + s if len(s) == 1 else s
+        def _add_0_if_needed(s):
+            return "0" + s if len(s) == 1 else s
 
         # the hard-coded `0` in the url assumes we always take the first match of the given date and team.
         url = "{BASE_URL}/boxscores/pbp/{year}{month}{day}0{team_abbr}.html".format(
-            BASE_URL=HTTPService.BASE_URL, year=year, month=add_0_if_needed(str(month)), day=add_0_if_needed(str(day)),
+            BASE_URL=HTTPService.BASE_URL, year=year, month=_add_0_if_needed(str(month)), day=_add_0_if_needed(str(day)),
             team_abbr=TEAM_TO_TEAM_ABBREVIATION[home_team]
         )
         response = self._get(url=url)
@@ -260,7 +280,10 @@ class HTTPService:
         return season_schedule_values
 
     def team_box_score(self, game_url_path):
-        url = "{BASE_URL}/{game_url_path}".format(BASE_URL=HTTPService.BASE_URL, game_url_path=game_url_path)
+        url = "{BASE_URL}/{game_url_path}".format(
+            BASE_URL=HTTPService.BASE_URL,
+            game_url_path=game_url_path.lstrip("/"),
+        )
 
         response = self._get(url=url)
 
@@ -305,16 +328,25 @@ class HTTPService:
 
         player_results = []
 
-        if response.url.startswith("{BASE_URL}/search/search.fcgi".format(BASE_URL=HTTPService.BASE_URL)):
+        if str(response.url).startswith("{BASE_URL}/search/search.fcgi".format(BASE_URL=HTTPService.BASE_URL)):
             page = SearchPage(html=html.fromstring(response.content))
             parsed_results = self.parser.parse_player_search_results(nba_aba_baa_players=page.nba_aba_baa_players)
             player_results += parsed_results["players"]
 
+            # Guard against pagination loops where the next-page URL doesn't
+            # advance (e.g., when a page points back to itself). Without this,
+            # a malformed or stale "Next" link can cause an infinite loop.
+            seen_pagination_urls = set()
             while page.nba_aba_baa_players_pagination_url is not None:
+                pagination_url = page.nba_aba_baa_players_pagination_url
+                if pagination_url in seen_pagination_urls:
+                    break
+                seen_pagination_urls.add(pagination_url)
+
                 response = self._get(
                     url="{BASE_URL}/search/{pagination_url}".format(
                         BASE_URL=HTTPService.BASE_URL,
-                        pagination_url=page.nba_aba_baa_players_pagination_url
+                        pagination_url=pagination_url
                     )
                 )
 
@@ -325,7 +357,7 @@ class HTTPService:
                 parsed_results = self.parser.parse_player_search_results(nba_aba_baa_players=page.nba_aba_baa_players)
                 player_results += parsed_results["players"]
 
-        elif response.url.startswith("{BASE_URL}/players".format(BASE_URL=HTTPService.BASE_URL)):
+        elif str(response.url).startswith("{BASE_URL}/players".format(BASE_URL=HTTPService.BASE_URL)):
             page = PlayerPage(html=html.fromstring(response.content))
             if page.totals_table is None:
                 player_results += [self.parser.parse_player_data(player=PlayerData(
@@ -354,7 +386,7 @@ class HTTPService:
             BASE_URL=HTTPService.BASE_URL,
             season_end_year=season_end_year,
         )
-        response = self._get(url=url, allow_redirects=False)
+        response = self._get(url=url, follow_redirects=False)
         response.raise_for_status()
 
         selector = Selector(text=response.text)
@@ -370,7 +402,7 @@ class HTTPService:
             BASE_URL=HTTPService.BASE_URL,
             season_end_year=season_end_year,
         )
-        response = self._get(url=url, allow_redirects=False)
+        response = self._get(url=url, follow_redirects=False)
         response.raise_for_status()
 
         selector = Selector(text=response.text)
@@ -386,7 +418,7 @@ class HTTPService:
             BASE_URL=HTTPService.BASE_URL,
             season_end_year=season_end_year,
         )
-        response = self._get(url=url, allow_redirects=False)
+        response = self._get(url=url, follow_redirects=False)
         response.raise_for_status()
 
         selector = Selector(text=response.text)
@@ -402,7 +434,7 @@ class HTTPService:
             BASE_URL=HTTPService.BASE_URL,
             season_end_year=season_end_year,
         )
-        response = self._get(url=url, allow_redirects=False)
+        response = self._get(url=url, follow_redirects=False)
         response.raise_for_status()
 
         selector = Selector(text=response.text)
@@ -421,7 +453,7 @@ class HTTPService:
                 season_end_year=season_end_year,
                 conference=conference,
             )
-            response = self._get(url=url, allow_redirects=False)
+            response = self._get(url=url, follow_redirects=False)
             response.raise_for_status()
 
             selector = Selector(text=response.text)
@@ -436,7 +468,7 @@ class HTTPService:
             BASE_URL=HTTPService.BASE_URL,
             season_end_year=season_end_year,
         )
-        response = self._get(url=url, allow_redirects=False)
+        response = self._get(url=url, follow_redirects=False)
         response.raise_for_status()
 
         selector = Selector(text=response.text)
@@ -460,7 +492,7 @@ class HTTPService:
             BASE_URL=HTTPService.BASE_URL,
             season_end_year=season_end_year,
         )
-        response = self._get(url=url, allow_redirects=False)
+        response = self._get(url=url, follow_redirects=False)
         response.raise_for_status()
 
         selector = Selector(text=response.text)
@@ -476,7 +508,7 @@ class HTTPService:
             BASE_URL=HTTPService.BASE_URL,
             season_end_year=season_end_year,
         )
-        response = self._get(url=url, allow_redirects=False)
+        response = self._get(url=url, follow_redirects=False)
         response.raise_for_status()
 
         selector = Selector(text=response.text)
@@ -492,7 +524,7 @@ class HTTPService:
             BASE_URL=HTTPService.BASE_URL,
             season_end_year=season_end_year,
         )
-        response = self._get(url=url, allow_redirects=False)
+        response = self._get(url=url, follow_redirects=False)
         response.raise_for_status()
 
         selector = Selector(text=response.text)
@@ -508,7 +540,7 @@ class HTTPService:
             BASE_URL=HTTPService.BASE_URL,
             season_end_year=season_end_year,
         )
-        response = self._get(url=url, allow_redirects=False)
+        response = self._get(url=url, follow_redirects=False)
         response.raise_for_status()
 
         selector = Selector(text=response.text)
@@ -527,7 +559,7 @@ class HTTPService:
             BASE_URL=HTTPService.BASE_URL,
             season_end_year=season_end_year,
         )
-        response = self._get(url=url, allow_redirects=False)
+        response = self._get(url=url, follow_redirects=False)
         response.raise_for_status()
 
         selector = Selector(text=response.text)
@@ -547,16 +579,16 @@ class HTTPService:
             team_abbreviation=team_abbreviation,
             season_end_year=season_end_year,
         )
-        response = self._get(url=url, allow_redirects=False)
+        response = self._get(url=url, follow_redirects=False)
         response.raise_for_status()
 
-        from parsel import Selector
+
         selector = Selector(text=response.text)
         table_selector = selector.css('table#games')
         if not table_selector:
             return []
 
-        from courtside_data.html import GenericTable
+
         table = GenericTable(table_selector[0])
         return self.parser.parse_generic_table(table)
 
@@ -566,16 +598,16 @@ class HTTPService:
             team_abbreviation=team_abbreviation,
             season_end_year=season_end_year,
         )
-        response = self._get(url=url, allow_redirects=False)
+        response = self._get(url=url, follow_redirects=False)
         response.raise_for_status()
 
-        from parsel import Selector
+
         selector = Selector(text=response.text)
         table_selector = selector.css('table#transactions')
         if not table_selector:
             return self._parse_transaction_list(selector)
 
-        from courtside_data.html import GenericTable
+
         table = GenericTable(table_selector[0])
         return self.parser.parse_generic_table(table)
 
@@ -584,46 +616,46 @@ class HTTPService:
             BASE_URL=HTTPService.BASE_URL,
             season_end_year=season_end_year,
         )
-        response = self._get(url=url, allow_redirects=False)
+        response = self._get(url=url, follow_redirects=False)
         response.raise_for_status()
 
-        from parsel import Selector
+
         selector = Selector(text=response.text)
         table_selector = selector.css('table#stats')
         if not table_selector:
             return []
 
-        from courtside_data.html import GenericTable
+
         table = GenericTable(table_selector[0])
         return self.parser.parse_generic_table(table)
 
     def season_leaders(self):
         url = '{BASE_URL}/leaders/per_season.html'.format(BASE_URL=HTTPService.BASE_URL)
-        response = self._get(url=url, allow_redirects=False)
+        response = self._get(url=url, follow_redirects=False)
         response.raise_for_status()
 
-        from parsel import Selector
+
         selector = Selector(text=response.text)
         table_selector = selector.css('table#stats_TOT')
         if not table_selector:
             return []
 
-        from courtside_data.html import GenericTable
+
         table = GenericTable(table_selector[0], use_header_fallback=True)
         return self.parser.parse_generic_table(table)
 
     def career_leaders(self):
         url = '{BASE_URL}/leaders/'.format(BASE_URL=HTTPService.BASE_URL)
-        response = self._get(url=url, allow_redirects=False)
+        response = self._get(url=url, follow_redirects=False)
         response.raise_for_status()
 
-        from parsel import Selector
+
         selector = Selector(text=response.text)
         table_selector = selector.css('table#leaders_index')
         if not table_selector:
             return []
 
-        from courtside_data.html import GenericTable
+
         table = GenericTable(table_selector[0], use_header_fallback=True)
         return self.parser.parse_generic_table(table)
 
@@ -632,16 +664,16 @@ class HTTPService:
             BASE_URL=HTTPService.BASE_URL,
             season_end_year=season_end_year,
         )
-        response = self._get(url=url, allow_redirects=False)
+        response = self._get(url=url, follow_redirects=False)
         response.raise_for_status()
 
-        from parsel import Selector
+
         selector = Selector(text=response.text)
         table_selector = selector.css('table#all_playoffs')
         if not table_selector:
             return []
 
-        from courtside_data.html import GenericTable
+
         table = GenericTable(table_selector[0], use_header_fallback=True)
         return self.parser.parse_generic_table(table)
 
@@ -650,16 +682,16 @@ class HTTPService:
             BASE_URL=HTTPService.BASE_URL,
             season_end_year=season_end_year,
         )
-        response = self._get(url=url, allow_redirects=False)
+        response = self._get(url=url, follow_redirects=False)
         response.raise_for_status()
 
-        from parsel import Selector
+
         selector = Selector(text=response.text)
         table_selector = selector.css('table#mvp')
         if not table_selector:
             return []
 
-        from courtside_data.html import GenericTable
+
         table = GenericTable(table_selector[0])
         return self.parser.parse_generic_table(table)
 
@@ -669,16 +701,16 @@ class HTTPService:
             initial=player_identifier[0],
             player_identifier=player_identifier,
         )
-        response = self._get(url=url, allow_redirects=False)
+        response = self._get(url=url, follow_redirects=False)
         response.raise_for_status()
 
-        from parsel import Selector
+
         selector = Selector(text=response.text)
         table_selector = selector.css('table#per_game_stats')
         if not table_selector:
             return []
 
-        from courtside_data.html import GenericTable
+
         table = GenericTable(table_selector[0])
         return self.parser.parse_generic_table(table)
 
@@ -688,10 +720,10 @@ class HTTPService:
             initial=player_identifier[0],
             player_identifier=player_identifier,
         )
-        response = self._get(url=url, allow_redirects=False)
+        response = self._get(url=url, follow_redirects=False)
         response.raise_for_status()
 
-        from parsel import Selector
+
         selector = Selector(text=response.text)
         table_selector = extract_commented_table(selector, 'playoffs_series')
         if table_selector is None:
@@ -707,16 +739,16 @@ class HTTPService:
             player_identifier=player_identifier,
             season_end_year=season_end_year,
         )
-        response = self._get(url=url, allow_redirects=False)
+        response = self._get(url=url, follow_redirects=False)
         response.raise_for_status()
 
-        from parsel import Selector
+
         selector = Selector(text=response.text)
         table_selector = selector.css('table#splits')
         if not table_selector:
             return []
 
-        from courtside_data.html import GenericTable
+
         table = GenericTable(table_selector[0])
         return self.parser.parse_generic_table(table)
 
@@ -727,16 +759,16 @@ class HTTPService:
             player_identifier=player_identifier,
             season_end_year=season_end_year,
         )
-        response = self._get(url=url, allow_redirects=False)
+        response = self._get(url=url, follow_redirects=False)
         response.raise_for_status()
 
-        from parsel import Selector
+
         selector = Selector(text=response.text)
         table_selector = selector.css('table#on-off')
         if not table_selector:
             return []
 
-        from courtside_data.html import GenericTable
+
         table = GenericTable(table_selector[0])
         return self.parser.parse_generic_table(table)
 
@@ -748,16 +780,16 @@ class HTTPService:
             season_end_year=season_end_year,
         )
         # basketball-reference redirects .html for shooting pages, so no .html suffix
-        response = self._get(url=url, allow_redirects=False)
+        response = self._get(url=url, follow_redirects=False)
         response.raise_for_status()
 
-        from parsel import Selector
+
         selector = Selector(text=response.text)
         table_selector = selector.css('table#shooting')
         if not table_selector:
             return []
 
-        from courtside_data.html import GenericTable
+
         table = GenericTable(table_selector[0])
         return self.parser.parse_generic_table(table)
 
@@ -767,10 +799,10 @@ class HTTPService:
             initial=player_identifier[0],
             player_identifier=player_identifier,
         )
-        response = self._get(url=url, allow_redirects=False)
+        response = self._get(url=url, follow_redirects=False)
         response.raise_for_status()
 
-        from parsel import Selector
+
         selector = Selector(text=response.text)
         table_selector = extract_commented_table(selector, 'adj_shooting')
         if table_selector is None:
@@ -785,10 +817,10 @@ class HTTPService:
             initial=player_identifier[0],
             player_identifier=player_identifier,
         )
-        response = self._get(url=url, allow_redirects=False)
+        response = self._get(url=url, follow_redirects=False)
         response.raise_for_status()
 
-        from parsel import Selector
+
         selector = Selector(text=response.text)
         table_selector = extract_commented_table(selector, 'pbp_stats')
         if table_selector is None:
@@ -803,10 +835,10 @@ class HTTPService:
             initial=player_identifier[0],
             player_identifier=player_identifier,
         )
-        response = self._get(url=url, allow_redirects=False)
+        response = self._get(url=url, follow_redirects=False)
         response.raise_for_status()
 
-        from parsel import Selector
+
         selector = Selector(text=response.text)
         table_selector = extract_commented_table(selector, 'highs-reg-season')
         if table_selector is None:
@@ -821,10 +853,10 @@ class HTTPService:
             initial=player_identifier[0],
             player_identifier=player_identifier,
         )
-        response = self._get(url=url, allow_redirects=False)
+        response = self._get(url=url, follow_redirects=False)
         response.raise_for_status()
 
-        from parsel import Selector
+
         selector = Selector(text=response.text)
         table_selector = extract_commented_table(selector, 'all_star')
         if table_selector is None:
@@ -839,10 +871,10 @@ class HTTPService:
             initial=player_identifier[0],
             player_identifier=player_identifier,
         )
-        response = self._get(url=url, allow_redirects=False)
+        response = self._get(url=url, follow_redirects=False)
         response.raise_for_status()
 
-        from parsel import Selector
+
         selector = Selector(text=response.text)
         table_selector = extract_commented_table(selector, 'sims-career')
         if table_selector is None:
@@ -857,10 +889,10 @@ class HTTPService:
             initial=player_identifier[0],
             player_identifier=player_identifier,
         )
-        response = self._get(url=url, allow_redirects=False)
+        response = self._get(url=url, follow_redirects=False)
         response.raise_for_status()
 
-        from parsel import Selector
+
         selector = Selector(text=response.text)
         table_selector = extract_commented_table(selector, 'all_salaries')
         if table_selector is None:
@@ -875,16 +907,16 @@ class HTTPService:
             team_abbreviation=team_abbreviation,
             season_end_year=season_end_year,
         )
-        response = self._get(url=url, allow_redirects=False)
+        response = self._get(url=url, follow_redirects=False)
         response.raise_for_status()
 
-        from parsel import Selector
+
         selector = Selector(text=response.text)
         table_selector = selector.css('table#roster')
         if not table_selector:
             return []
 
-        from courtside_data.html import GenericTable
+
         table = GenericTable(table_selector[0])
         return self.parser.parse_generic_table(table)
 
@@ -892,16 +924,16 @@ class HTTPService:
         url = '{BASE_URL}/friv/injuries.fcgi'.format(
             BASE_URL=HTTPService.BASE_URL,
         )
-        response = self._get(url=url, allow_redirects=False)
+        response = self._get(url=url, follow_redirects=False)
         response.raise_for_status()
 
-        from parsel import Selector
+
         selector = Selector(text=response.text)
         table_selector = selector.css('table#injuries')
         if not table_selector:
             return []
 
-        from courtside_data.html import GenericTable
+
         table = GenericTable(table_selector[0])
         return self.parser.parse_generic_table(table)
 
@@ -911,10 +943,10 @@ class HTTPService:
             team_abbreviation=team_abbreviation,
             season_end_year=season_end_year,
         )
-        response = self._get(url=url, allow_redirects=False)
+        response = self._get(url=url, follow_redirects=False)
         response.raise_for_status()
 
-        from parsel import Selector
+
         selector = Selector(text=response.text)
         table_selector = extract_commented_table(selector, 'team_and_opponent')
         if table_selector is None:
@@ -929,10 +961,10 @@ class HTTPService:
             team_abbreviation=team_abbreviation,
             season_end_year=season_end_year,
         )
-        response = self._get(url=url, allow_redirects=False)
+        response = self._get(url=url, follow_redirects=False)
         response.raise_for_status()
 
-        from parsel import Selector
+
         selector = Selector(text=response.text)
         table_selector = extract_commented_table(selector, 'team_misc')
         if table_selector is None:
@@ -947,16 +979,16 @@ class HTTPService:
             team_abbreviation=team_abbreviation,
             season_end_year=season_end_year,
         )
-        response = self._get(url=url, allow_redirects=False)
+        response = self._get(url=url, follow_redirects=False)
         response.raise_for_status()
 
-        from parsel import Selector
+
         selector = Selector(text=response.text)
         table_selector = selector.css('table#team_splits')
         if not table_selector:
             return []
 
-        from courtside_data.html import GenericTable
+
         table = GenericTable(table_selector[0])
         return self.parser.parse_generic_table(table)
 
@@ -965,16 +997,16 @@ class HTTPService:
             BASE_URL=HTTPService.BASE_URL,
             team_abbreviation=team_abbreviation,
         )
-        response = self._get(url=url, allow_redirects=False)
+        response = self._get(url=url, follow_redirects=False)
         response.raise_for_status()
 
-        from parsel import Selector
+
         selector = Selector(text=response.text)
         table_selector = selector.css('table#contracts')
         if not table_selector:
             return []
 
-        from courtside_data.html import GenericTable
+
         table = GenericTable(table_selector[0])
         return self.parser.parse_generic_table(table)
 
@@ -984,10 +1016,10 @@ class HTTPService:
             team_abbreviation=team_abbreviation,
             season_end_year=season_end_year,
         )
-        response = self._get(url=url, allow_redirects=False)
+        response = self._get(url=url, follow_redirects=False)
         response.raise_for_status()
 
-        from parsel import Selector
+
         selector = Selector(text=response.text)
         table_selector = extract_commented_table(selector, 'lineups_5-man_')
         if table_selector is None:
@@ -1002,16 +1034,16 @@ class HTTPService:
             team_abbreviation=team_abbreviation,
             season_end_year=season_end_year,
         )
-        response = self._get(url=url, allow_redirects=False)
+        response = self._get(url=url, follow_redirects=False)
         response.raise_for_status()
 
-        from parsel import Selector
+
         selector = Selector(text=response.text)
         table_selector = selector.css('table#starting_lineups_po0')
         if not table_selector:
             return []
 
-        from courtside_data.html import GenericTable
+
         table = GenericTable(table_selector[0])
         return self.parser.parse_generic_table(table)
 
@@ -1021,16 +1053,16 @@ class HTTPService:
             team_abbreviation=team_abbreviation,
             season_end_year=season_end_year,
         )
-        response = self._get(url=url, allow_redirects=False)
+        response = self._get(url=url, follow_redirects=False)
         response.raise_for_status()
 
-        from parsel import Selector
+
         selector = Selector(text=response.text)
         table_selector = selector.css('table#on_off')
         if not table_selector:
             return []
 
-        from courtside_data.html import GenericTable
+
         table = GenericTable(table_selector[0])
         return self.parser.parse_generic_table(table)
 
@@ -1040,10 +1072,10 @@ class HTTPService:
             team_abbreviation=team_abbreviation,
             season_end_year=season_end_year,
         )
-        response = self._get(url=url, allow_redirects=False)
+        response = self._get(url=url, follow_redirects=False)
         response.raise_for_status()
 
-        from parsel import Selector
+
         selector = Selector(text=response.text)
         table_selector = extract_commented_table(selector, 'team_and_opponent')
         if table_selector is None:
@@ -1057,15 +1089,15 @@ class HTTPService:
             BASE_URL=HTTPService.BASE_URL,
             team_abbreviation=team_abbreviation,
         )
-        response = self._get(url=url, allow_redirects=False)
+        response = self._get(url=url, follow_redirects=False)
         response.raise_for_status()
 
-        from parsel import Selector
+
         selector = Selector(text=response.text)
         table_selector = selector.css(f'table#{team_abbreviation}')
         if not table_selector:
             return []
 
-        from courtside_data.html import GenericTable
+
         table = GenericTable(table_selector[0])
         return self.parser.parse_generic_table(table)

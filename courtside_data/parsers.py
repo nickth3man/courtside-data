@@ -1,7 +1,6 @@
 import re
-from datetime import datetime
-
-import pytz
+from datetime import datetime, timezone
+from zoneinfo import ZoneInfo
 
 from courtside_data.data import PeriodType, Outcome
 from courtside_data.utilities import str_to_int, str_to_float
@@ -43,7 +42,7 @@ class LocationAbbreviationParser:
     def from_abbreviation(self, abbreviation):
         location = self.abbreviations_to_locations.get(abbreviation)
         if location is None:
-            raise ValueError("Unknown symbol: {location}".format(location=location))
+            raise ValueError("Unknown symbol: {abbreviation}".format(abbreviation=abbreviation))
 
         return location
 
@@ -55,7 +54,7 @@ class OutcomeAbbreviationParser:
     def from_abbreviation(self, abbreviation):
         outcome = self.abbreviations_to_outcomes.get(abbreviation)
         if outcome is None:
-            raise ValueError("Unknown symbol: {outcome}".format(outcome=outcome))
+            raise ValueError("Unknown symbol: {abbreviation}".format(abbreviation=abbreviation))
 
         return outcome
 
@@ -95,8 +94,10 @@ class PlayerBoxScoreOutcomeParser:
         return re.search(self.formatted_outcome_regex, formatted_outcome)
 
     def parse_outcome_abbreviation(self, formatted_outcome):
-        return self.search_formatted_outcome(formatted_outcome=formatted_outcome) \
-            .group(self.outcome_abbreviation_regex_group_name)
+        match = self.search_formatted_outcome(formatted_outcome=formatted_outcome)
+        if match is None:
+            raise ValueError(f"Could not parse outcome from: {formatted_outcome}")
+        return match.group(self.outcome_abbreviation_regex_group_name)
 
     def parse_outcome(self, formatted_outcome):
         return self.outcome_abbreviation_parser.from_abbreviation(
@@ -116,6 +117,8 @@ class SecondsPlayedParser:
         # So have to parse time by splitting on ":" and assuming that
         # the first part is the minute part and the second part is the seconds part
         time_parts = formatted_playing_time.split(":")
+        if len(time_parts) != 2:
+            raise ValueError(f"Invalid playing time format: {formatted_playing_time}")
         minutes_played = time_parts[0]
         seconds_played = time_parts[1]
         return 60 * int(minutes_played) + int(seconds_played)
@@ -167,16 +170,16 @@ class ScoresParser:
         return re.search(self.scores_regex, formatted_scores)
 
     def parse_away_team_score(self, formatted_scores):
-        return int(
-            self.parse_scores(formatted_scores=formatted_scores)
-            .group(self.away_team_score_group_name)
-        )
+        match = self.parse_scores(formatted_scores=formatted_scores)
+        if match is None:
+            raise ValueError(f"Could not parse scores from: {formatted_scores}")
+        return int(match.group(self.away_team_score_group_name))
 
     def parse_home_team_score(self, formatted_scores):
-        return int(
-            self.parse_scores(formatted_scores=formatted_scores)
-            .group(self.home_team_score_group_name)
-        )
+        match = self.parse_scores(formatted_scores=formatted_scores)
+        if match is None:
+            raise ValueError(f"Could not parse scores from: {formatted_scores}")
+        return int(match.group(self.home_team_score_group_name))
 
 
 class TeamNameParser:
@@ -184,11 +187,14 @@ class TeamNameParser:
         self.team_names_to_teams = team_names_to_teams
 
     def parse_team_name(self, team_name):
-        return self.team_names_to_teams[team_name.strip().upper()]
+        result = self.team_names_to_teams.get(team_name.strip().upper())
+        if result is None:
+            raise ValueError(f"Unknown team name: {team_name}")
+        return result
 
 
 class ScheduledStartTimeParser:
-    def __init__(self, time_zone=pytz.utc):
+    def __init__(self, time_zone=timezone.utc):
         self.time_zone = time_zone
 
     def parse_start_time(self, formatted_date, formatted_time_of_day):
@@ -215,8 +221,7 @@ class ScheduledStartTimeParser:
             start_time = datetime.strptime(formatted_date, "%a, %b %d, %Y")
 
         # All basketball reference times seem to be in Eastern
-        est = pytz.timezone("US/Eastern")
-        localized_start_time = est.localize(start_time)
+        localized_start_time = start_time.replace(tzinfo=ZoneInfo("US/Eastern"))
         return localized_start_time.astimezone(self.time_zone)
 
 
@@ -226,9 +231,10 @@ class SearchResultNameParser:
         self.result_name_regex_group_name = result_name_regex_group_name
 
     def parse(self, search_result_name):
-        return re.search(self.search_result_name_regex, search_result_name) \
-            .group(self.result_name_regex_group_name) \
-            .strip()
+        match = re.search(self.search_result_name_regex, search_result_name)
+        if match is None:
+            raise ValueError(f"Could not parse search result name from: {search_result_name}")
+        return match.group(self.result_name_regex_group_name).strip()
 
 
 class ResourceLocationParser:
@@ -244,10 +250,16 @@ class ResourceLocationParser:
         return re.search(self.resource_location_regex, resource_location)
 
     def parse_resource_type(self, resource_location):
-        return self.search(resource_location=resource_location).group(self.resource_type_regex_group_name)
+        match = self.search(resource_location=resource_location)
+        if match is None:
+            raise ValueError(f"Could not parse resource location from: {resource_location}")
+        return match.group(self.resource_type_regex_group_name)
 
     def parse_resource_identifier(self, resource_location):
-        return self.search(resource_location=resource_location).group(self.resource_identifier_regex_group_name)
+        match = self.search(resource_location=resource_location)
+        if match is None:
+            raise ValueError(f"Could not parse resource location from: {resource_location}")
+        return match.group(self.resource_identifier_regex_group_name)
 
 
 class TeamStandingsParser:

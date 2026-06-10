@@ -2,7 +2,7 @@ import json
 import os
 from unittest import TestCase
 
-import requests_mock
+from tests import http_mock as requests_mock
 
 from courtside_data.client import play_by_play
 from courtside_data.data import OutputType, OutputWriteOption, PeriodType
