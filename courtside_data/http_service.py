@@ -3,10 +3,8 @@
 Legacy endpoints (standings, box scores, schedule, play-by-play, season
 totals, search) have bespoke methods using dedicated page classes from
 ``courtside_data.html``. Generic endpoints are declared in
-``courtside_data.endpoints`` and served by :meth:`HTTPService.fetch_table`;
-their named instance methods are dynamically generated in ``__init__`` for
-every non-custom ``ENDPOINTS`` entry, mapping positional arguments through
-``endpoint.params`` to preserve the old method signatures.
+``courtside_data.endpoints`` and served by :meth:`HTTPService.fetch_table`,
+which the generated client functions call directly.
 """
 
 from __future__ import annotations
@@ -100,31 +98,6 @@ class HTTPService:
         self._time = time_func if time_func is not None else time.time
         self._sleep = sleep if sleep is not None else time.sleep
         self._random = random_func if random_func is not None else random.uniform
-
-        # Dynamically generate delegate methods for non-custom ENDPOINTS entries,
-        # so callers get identical behavior to the previous one-liner delegates
-        # without ~40 copy-paste definitions. Positional arguments are mapped
-        # through endpoint.params to preserve the old method signatures.
-        for name, endpoint in ENDPOINTS.items():
-            if not endpoint.custom:
-                setattr(self, name, self._make_endpoint_delegate(name, endpoint))
-
-    def _make_endpoint_delegate(self, name: str, endpoint: TableEndpoint) -> Callable[..., list[dict[str, Any]]]:
-        def delegate(*args: Any, **params: Any) -> list[dict[str, Any]]:
-            if len(args) > len(endpoint.params):
-                raise TypeError(
-                    f"{name}() takes at most {len(endpoint.params)} positional arguments ({len(args)} given)"
-                )
-            for param_name, value in zip(endpoint.params, args, strict=False):
-                if param_name in params:
-                    raise TypeError(f"{name}() got multiple values for argument '{param_name}'")
-                params[param_name] = value
-            return self.fetch_table(endpoint, **params)
-
-        delegate.__name__ = name
-        delegate.__qualname__ = f"HTTPService.{name}"
-        delegate.__doc__ = f"Fetch the {name} table (beta endpoint; see courtside_data.endpoints)."
-        return delegate
 
     def _apply_rate_limiting(self) -> None:
         current_time = self._time()

@@ -326,13 +326,19 @@ def _make_beta_function(name: str, endpoint: TableEndpoint, param_names: list[st
         + [inspect.Parameter(p, kind, default=None) for p in _OUTPUT_PARAM_NAMES]
     )
 
+    def call_service(params: dict[str, Any]) -> Any:
+        service = HTTPService(parser=ParserService())
+        if endpoint.custom:
+            return getattr(service, name)(**params)
+        return service.fetch_table(endpoint, **params)
+
     def beta_function(*args: Any, **kwargs: Any) -> Any:
         bound = signature.bind(*args, **kwargs)
         bound.apply_defaults()
         params = {p: bound.arguments[p] for p in param_names}
         output_args = {p: bound.arguments[p] for p in _OUTPUT_PARAM_NAMES}
         return _execute(
-            service_call=lambda: getattr(HTTPService(parser=ParserService()), name)(**params),
+            service_call=lambda: call_service(params),
             csv_column_names=endpoint.csv_columns,
             error_mappings=endpoint.error_mappings(params),
             **output_args,
