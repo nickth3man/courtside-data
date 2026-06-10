@@ -363,7 +363,7 @@ def _make_beta_function(name: str, endpoint: TableEndpoint, param_names: list[st
     beta_function.__name__ = name
     beta_function.__qualname__ = name
     beta_function.__doc__ = _build_beta_docstring(name, endpoint, param_names)
-    beta_function.__signature__ = signature  # type: ignore[attr-defined]
+    beta_function.__signature__ = signature  # ty: ignore[unresolved-attribute]
     return beta_function
 
 
