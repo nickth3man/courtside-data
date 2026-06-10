@@ -50,7 +50,7 @@ class TestHTTPServiceSessionReuse(TestCase):
         service = HTTPService(parser=mock.MagicMock(), session=mock_session, rate_limit_interval=0)
         result = service._get(url="https://example.com")
 
-        mock_session.get.assert_called_once_with(url="https://example.com")
+        mock_session.get.assert_called_once_with(url="https://example.com", timeout=(10, 30))
         self.assertIs(result, mock_response)
 
     def test_get_passes_kwargs_to_session(self):
@@ -65,6 +65,7 @@ class TestHTTPServiceSessionReuse(TestCase):
             url="https://example.com",
             allow_redirects=False,
             params={"key": "val"},
+            timeout=(10, 30),
         )
 
 
@@ -181,12 +182,14 @@ class TestHTTPServiceEnvVarFallback(TestCase):
             self.assertEqual(service._rate_limit_jitter, 0.5)
 
     def test_default_interval_when_no_env_or_constructor(self):
-        service = HTTPService(parser=mock.MagicMock())
-        self.assertEqual(service._rate_limit_interval, 3.5)
+        with mock.patch.dict(os.environ, {}, clear=True):
+            service = HTTPService(parser=mock.MagicMock())
+            self.assertEqual(service._rate_limit_interval, 3.5)
 
     def test_default_jitter_when_no_env_or_constructor(self):
-        service = HTTPService(parser=mock.MagicMock())
-        self.assertEqual(service._rate_limit_jitter, 1.2)
+        with mock.patch.dict(os.environ, {}, clear=True):
+            service = HTTPService(parser=mock.MagicMock())
+            self.assertEqual(service._rate_limit_jitter, 1.2)
 
 
 class TestInvalidPlayer(TestCase):
