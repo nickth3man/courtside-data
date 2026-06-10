@@ -1,7 +1,7 @@
 from courtside_data.data import (
     DIVISIONS_TO_CONFERENCES,
     LEAGUE_ABBREVIATIONS_TO_LEAGUE,
-    LOCATION_ABBREVIATIONS_TO_POSITION,
+    LOCATION_ABBREVIATIONS_TO_LOCATION,
     OUTCOME_ABBREVIATIONS_TO_OUTCOME,
     POSITION_ABBREVIATIONS_TO_POSITION,
     TEAM_ABBREVIATIONS_TO_TEAM,
@@ -53,7 +53,7 @@ class ParserService:
             abbreviations_to_league=LEAGUE_ABBREVIATIONS_TO_LEAGUE
         )
         self.location_abbreviation_parser = LocationAbbreviationParser(
-            abbreviations_to_locations=LOCATION_ABBREVIATIONS_TO_POSITION,
+            abbreviations_to_locations=LOCATION_ABBREVIATIONS_TO_LOCATION,
         )
         self.outcome_abbreviation_parser = OutcomeAbbreviationParser(
             abbreviations_to_outcomes=OUTCOME_ABBREVIATIONS_TO_OUTCOME,
@@ -140,7 +140,7 @@ class ParserService:
             box_scores=box_scores, include_inactive_games=include_inactive_games
         )
 
-    def parse_player_advanced_season_totals_parser(self, totals):
+    def parse_player_advanced_season_totals(self, totals):
         return self.player_advanced_season_totals_parser.parse(totals=totals)
 
     def parse_player_season_totals(self, totals):

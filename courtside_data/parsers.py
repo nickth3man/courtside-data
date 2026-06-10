@@ -196,27 +196,23 @@ class ScheduledStartTimeParser:
         self.time_zone = time_zone
 
     def parse_start_time(self, formatted_date: str, formatted_time_of_day: str | None) -> datetime:
-        if formatted_time_of_day is not None and formatted_time_of_day not in ["", " "]:
+        if formatted_time_of_day is None or formatted_time_of_day in ["", " "]:
+            start_time = datetime.strptime(formatted_date, "%a, %b %d, %Y")
+        else:
             # Starting in 2018, the start times had a "p" or "a" appended to the end
             # Between 2001 and 2017, the start times had a "pm" or "am"
             #
             # https://www.basketball-reference.com/leagues/NBA_2018_games.html
             # vs.
             # https://www.basketball-reference.com/leagues/NBA_2001_games.html
-            is_prior_format = formatted_time_of_day[-2:] == "am" or formatted_time_of_day[-2:] == "pm"
-
-            # If format contains only "p" or "a" add an "m" so it can be parsed by datetime module
+            is_prior_format = formatted_time_of_day[-2:] in ("am", "pm")
             if is_prior_format:
-                combined_formatted_time = formatted_date + " " + formatted_time_of_day
-            else:
-                combined_formatted_time = formatted_date + " " + formatted_time_of_day + "m"
-
-            if is_prior_format:
+                combined_formatted_time = f"{formatted_date} {formatted_time_of_day}"
                 start_time = datetime.strptime(combined_formatted_time, "%a, %b %d, %Y %I:%M %p")
             else:
+                # Newer format has only "p" or "a"; add an "m" so strptime's %p can parse it
+                combined_formatted_time = f"{formatted_date} {formatted_time_of_day}m"
                 start_time = datetime.strptime(combined_formatted_time, "%a, %b %d, %Y %I:%M%p")
-        else:
-            start_time = datetime.strptime(formatted_date, "%a, %b %d, %Y")
 
         # All basketball reference times seem to be in Eastern
         localized_start_time = start_time.replace(tzinfo=ZoneInfo("US/Eastern"))

@@ -308,7 +308,7 @@ class HTTPService:
         response.raise_for_status()
 
         table = PlayerAdvancedSeasonTotalsTable(html=html.fromstring(response.content))
-        return self.parser.parse_player_advanced_season_totals_parser(totals=table.get_rows(include_combined_values))
+        return self.parser.parse_player_advanced_season_totals(totals=table.get_rows(include_combined_values))
 
     def players_season_totals(self, season_end_year: int) -> list[dict[str, Any]]:
         url = f"{HTTPService.BASE_URL}/leagues/NBA_{season_end_year}_totals.html"

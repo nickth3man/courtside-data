@@ -3,9 +3,9 @@
 Each :class:`TableEndpoint` captures everything that distinguishes one
 table-scraping endpoint from another: the URL path template, how to locate the
 table on the page, which CSV columns the output contract promises, and which
-domain error a failed lookup maps to. ``HTTPService.fetch_table`` and
-``client._call_endpoint`` consume these specs, so adding a new endpoint is a
-single registry entry plus a thin public wrapper.
+domain error a failed lookup maps to. ``HTTPService.fetch_table`` and the
+generated client functions consume these specs, so adding a new endpoint is a
+single registry entry.
 
 Path and table-id templates are ``str.format`` templates over the endpoint's
 call parameters, e.g. ``"/players/{player_identifier[0]}/{player_identifier}.html"``.
