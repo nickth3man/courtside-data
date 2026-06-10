@@ -6,7 +6,12 @@ dist/
 *egg-info/
 bin/
 lib/
-.vscode/
+# Share the project's VS Code config, but keep personal/local bits out
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+!.vscode/launch.json
+!.vscode/tasks.json
 
 # Don't commit generated test outputs (real path: tests/integration/client/output/)
 tests/integration/client/output/generated/*.csv

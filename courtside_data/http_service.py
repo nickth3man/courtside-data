@@ -1,7 +1,22 @@
+"""HTTP layer: rate-limited, retried requests plus per-endpoint fetch methods.
+
+Legacy endpoints (standings, box scores, schedule, play-by-play, season
+totals, search) have bespoke methods using dedicated page classes from
+``courtside_data.html``. Generic endpoints are declared in
+``courtside_data.endpoints`` and served by :meth:`HTTPService.fetch_table`;
+their named instance methods are dynamically generated in ``__init__`` for
+every non-custom ``ENDPOINTS`` entry, mapping positional arguments through
+``endpoint.params`` to preserve the old method signatures.
+"""
+
+from __future__ import annotations
+
 import os
 import random
 import re
 import time
+from collections.abc import Callable
+from typing import Any
 
 import httpx
 import stamina
@@ -9,7 +24,8 @@ from hishel.httpx import SyncCacheTransport
 from lxml import html
 from parsel import Selector
 
-from courtside_data.data import TEAM_TO_TEAM_ABBREVIATION, PlayerData, TeamTotal
+from courtside_data.data import TEAM_TO_TEAM_ABBREVIATION, PlayerData, Team, TeamTotal
+from courtside_data.endpoints import ENDPOINTS, TableEndpoint
 from courtside_data.errors import InvalidDate, InvalidPlayerAndSeason
 from courtside_data.html import (
     BoxScoresPage,
@@ -33,13 +49,13 @@ _DEFAULT_TIMEOUT = httpx.Timeout(30.0, connect=10.0)
 _RETRY_ATTEMPTS = 3
 
 
-def build_client(cache=False, timeout=_DEFAULT_TIMEOUT):
+def build_client(cache: bool = False, timeout: httpx.Timeout = _DEFAULT_TIMEOUT) -> httpx.Client:
     """Build the httpx client used by HTTPService.
 
     With cache=True, responses are cached per RFC 9111 via hishel's
     SQLite-backed storage.
     """
-    transport = httpx.HTTPTransport()
+    transport: httpx.BaseTransport = httpx.HTTPTransport()
     if cache:
         transport = SyncCacheTransport(next_transport=transport)
     return httpx.Client(transport=transport, follow_redirects=True, timeout=timeout)
@@ -50,16 +66,16 @@ class HTTPService:
 
     def __init__(
         self,
-        parser,
-        rate_limit_interval=None,
-        rate_limit_jitter=None,
-        session=None,
-        time_func=None,
-        sleep=None,
-        random_func=None,
-        timeout=None,
-        cache=False,
-    ):
+        parser: Any,
+        rate_limit_interval: float | None = None,
+        rate_limit_jitter: float | None = None,
+        session: httpx.Client | None = None,
+        time_func: Callable[[], float] | None = None,
+        sleep: Callable[[float], None] | None = None,
+        random_func: Callable[[float, float], float] | None = None,
+        timeout: httpx.Timeout | None = None,
+        cache: bool = False,
+    ) -> None:
         self.parser = parser
         # Constructor param > env var > default
         if rate_limit_interval is not None:
@@ -85,7 +101,32 @@ class HTTPService:
         self._sleep = sleep if sleep is not None else time.sleep
         self._random = random_func if random_func is not None else random.uniform
 
-    def _apply_rate_limiting(self):
+        # Dynamically generate delegate methods for non-custom ENDPOINTS entries,
+        # so callers get identical behavior to the previous one-liner delegates
+        # without ~40 copy-paste definitions. Positional arguments are mapped
+        # through endpoint.params to preserve the old method signatures.
+        for name, endpoint in ENDPOINTS.items():
+            if not endpoint.custom:
+                setattr(self, name, self._make_endpoint_delegate(name, endpoint))
+
+    def _make_endpoint_delegate(self, name: str, endpoint: TableEndpoint) -> Callable[..., list[dict[str, Any]]]:
+        def delegate(*args: Any, **params: Any) -> list[dict[str, Any]]:
+            if len(args) > len(endpoint.params):
+                raise TypeError(
+                    f"{name}() takes at most {len(endpoint.params)} positional arguments ({len(args)} given)"
+                )
+            for param_name, value in zip(endpoint.params, args, strict=False):
+                if param_name in params:
+                    raise TypeError(f"{name}() got multiple values for argument '{param_name}'")
+                params[param_name] = value
+            return self.fetch_table(endpoint, **params)
+
+        delegate.__name__ = name
+        delegate.__qualname__ = f"HTTPService.{name}"
+        delegate.__doc__ = f"Fetch the {name} table (beta endpoint; see courtside_data.endpoints)."
+        return delegate
+
+    def _apply_rate_limiting(self) -> None:
         current_time = self._time()
         time_since_last = current_time - self._last_request_time
 
@@ -95,20 +136,27 @@ class HTTPService:
 
         self._last_request_time = current_time
 
-    def _get(self, url, **kwargs):
+    def _get(self, url: str, **kwargs: Any) -> httpx.Response:
         self._apply_rate_limiting()
         response = None
         for attempt in stamina.retry_context(on=httpx.TransportError, attempts=_RETRY_ATTEMPTS):
             with attempt:
                 response = self._session.get(url=url, **kwargs)
+        assert response is not None  # retry_context either yields a response or raises
         return response
 
+    def _get_selector(self, url: str) -> Selector:
+        """Fetch a page (no redirects) and wrap the body in a parsel Selector."""
+        response = self._get(url=url, follow_redirects=False)
+        response.raise_for_status()
+        return Selector(text=response.text)
+
     @staticmethod
-    def _clean_text(values):
+    def _clean_text(values: list[str]) -> str:
         return re.sub(r"\s+", " ", " ".join(values)).strip()
 
     @classmethod
-    def _parse_transaction_list(cls, selector):
+    def _parse_transaction_list(cls, selector: Selector) -> list[dict[str, Any]]:
         transactions = []
         for day in selector.css("ul.page_index > li"):
             date = cls._clean_text(day.xpath("./span//text()").getall())
@@ -143,7 +191,38 @@ class HTTPService:
                 )
         return transactions
 
-    def standings(self, season_end_year):
+    # ── Generic endpoint plumbing ───────────────────────────────────────
+
+    def fetch_table(self, endpoint: TableEndpoint, **params: Any) -> list[dict[str, Any]]:
+        """Fetch and parse a generic table endpoint described by ``endpoint``.
+
+        Resolution order: CSS ``table#<table_id>``, then a comment-wrapped
+        table with ``commented_table_id``, then the transaction-list fallback,
+        then an empty list.
+        """
+        if endpoint.custom:
+            raise ValueError("Endpoint requires its bespoke HTTPService method, not fetch_table()")
+        selector = self._get_selector(url=f"{HTTPService.BASE_URL}{endpoint.path.format(**params)}")
+
+        table_selector: Selector | None = None
+        if endpoint.table_id is not None:
+            found = selector.css(f"table#{endpoint.table_id.format(**params)}")
+            if found:
+                table_selector = found[0]
+        if table_selector is None and endpoint.commented_table_id is not None:
+            table_selector = extract_commented_table(selector, endpoint.commented_table_id)
+
+        if table_selector is None:
+            if endpoint.transaction_list_fallback:
+                return self._parse_transaction_list(selector)
+            return []
+
+        table = GenericTable(table_selector, use_header_fallback=endpoint.use_header_fallback)
+        return self.parser.parse_generic_table(table)
+
+    # ── Legacy endpoints (dedicated page classes and parser chains) ─────
+
+    def standings(self, season_end_year: int) -> list[dict[str, Any]]:
         url = f"{HTTPService.BASE_URL}/leagues/NBA_{season_end_year}.html"
 
         response = self._get(url=url, follow_redirects=False)
@@ -155,7 +234,7 @@ class HTTPService:
             standings=page.division_standings.eastern_conference_table.rows
         ) + self.parser.parse_division_standings(standings=page.division_standings.western_conference_table.rows)
 
-    def player_box_scores(self, day, month, year):
+    def player_box_scores(self, day: int, month: int, year: int) -> list[dict[str, Any]]:
         url = f"{HTTPService.BASE_URL}/friv/dailyleaders.cgi?month={month}&day={day}&year={year}"
 
         response = self._get(url=url, follow_redirects=False)
@@ -170,7 +249,7 @@ class HTTPService:
 
         raise InvalidDate(day=day, month=month, year=year)
 
-    def regular_season_player_box_scores(self, player_identifier, season_end_year, include_inactive_games=False):
+    def _player_season_box_scores_page(self, player_identifier: str, season_end_year: int) -> PlayerSeasonBoxScoresPage:
         # Makes assumption that basketball reference pattern of breaking out player pathing using first character of
         # surname can be derived from the fact that basketball reference also has a pattern of player identifiers
         # starting with first few characters of player's surname
@@ -179,7 +258,12 @@ class HTTPService:
         response = self._get(url=url, follow_redirects=False)
         response.raise_for_status()
 
-        page = PlayerSeasonBoxScoresPage(html=html.fromstring(response.content))
+        return PlayerSeasonBoxScoresPage(html=html.fromstring(response.content))
+
+    def regular_season_player_box_scores(
+        self, player_identifier: str, season_end_year: int, include_inactive_games: bool = False
+    ) -> list[dict[str, Any]]:
+        page = self._player_season_box_scores_page(player_identifier, season_end_year)
         if page.regular_season_box_scores_table is None:
             raise InvalidPlayerAndSeason(player_identifier=player_identifier, season_end_year=season_end_year)
 
@@ -187,16 +271,10 @@ class HTTPService:
             box_scores=page.regular_season_box_scores_table.rows, include_inactive_games=include_inactive_games
         )
 
-    def playoff_player_box_scores(self, player_identifier, season_end_year, include_inactive_games=False):
-        # Makes assumption that basketball reference pattern of breaking out player pathing using first character of
-        # surname can be derived from the fact that basketball reference also has a pattern of player identifiers
-        # starting with first few characters of player's surname
-        url = f"{HTTPService.BASE_URL}/players/{player_identifier[0]}/{player_identifier}/gamelog/{season_end_year}"
-
-        response = self._get(url=url, follow_redirects=False)
-        response.raise_for_status()
-
-        page = PlayerSeasonBoxScoresPage(html=html.fromstring(response.content))
+    def playoff_player_box_scores(
+        self, player_identifier: str, season_end_year: int, include_inactive_games: bool = False
+    ) -> list[dict[str, Any]]:
+        page = self._player_season_box_scores_page(player_identifier, season_end_year)
         if page.playoff_box_scores_table is None:
             raise InvalidPlayerAndSeason(player_identifier=player_identifier, season_end_year=season_end_year)
 
@@ -204,11 +282,8 @@ class HTTPService:
             box_scores=page.playoff_box_scores_table.rows, include_inactive_games=include_inactive_games
         )
 
-    def play_by_play(self, home_team, day, month, year):
-        def _add_0_if_needed(s):
-            return "0" + s if len(s) == 1 else s
-
-        month_and_day = _add_0_if_needed(str(month)) + _add_0_if_needed(str(day))
+    def play_by_play(self, home_team: Team, day: int, month: int, year: int) -> list[dict[str, Any]]:
+        month_and_day = f"{month:02d}{day:02d}"
         # the hard-coded `0` in the url assumes we always take the first match of the given date and team.
         game_id = f"{year}{month_and_day}0{TEAM_TO_TEAM_ABBREVIATION[home_team]}"
         url = f"{HTTPService.BASE_URL}/boxscores/pbp/{game_id}.html"
@@ -223,7 +298,9 @@ class HTTPService:
             home_team_name=page.home_team_name,
         )
 
-    def players_advanced_season_totals(self, season_end_year, include_combined_values=False):
+    def players_advanced_season_totals(
+        self, season_end_year: int, include_combined_values: bool = False
+    ) -> list[dict[str, Any]]:
         url = f"{HTTPService.BASE_URL}/leagues/NBA_{season_end_year}_advanced.html"
 
         response = self._get(url=url)
@@ -233,7 +310,7 @@ class HTTPService:
         table = PlayerAdvancedSeasonTotalsTable(html=html.fromstring(response.content))
         return self.parser.parse_player_advanced_season_totals_parser(totals=table.get_rows(include_combined_values))
 
-    def players_season_totals(self, season_end_year):
+    def players_season_totals(self, season_end_year: int) -> list[dict[str, Any]]:
         url = f"{HTTPService.BASE_URL}/leagues/NBA_{season_end_year}_totals.html"
 
         response = self._get(url=url)
@@ -243,7 +320,7 @@ class HTTPService:
         table = PlayerSeasonTotalTable(html=html.fromstring(response.content))
         return self.parser.parse_player_season_totals(totals=table.rows)
 
-    def schedule_for_month(self, url):
+    def schedule_for_month(self, url: str) -> list[dict[str, Any]]:
         response = self._get(url=url)
 
         response.raise_for_status()
@@ -251,7 +328,7 @@ class HTTPService:
         page = SchedulePage(html=html.fromstring(html=response.content))
         return self.parser.parse_scheduled_games(games=page.rows)
 
-    def season_schedule(self, season_end_year):
+    def season_schedule(self, season_end_year: int) -> list[dict[str, Any]]:
         url = f"{HTTPService.BASE_URL}/leagues/NBA_{season_end_year}_games.html"
 
         response = self._get(url=url)
@@ -268,11 +345,8 @@ class HTTPService:
 
         return season_schedule_values
 
-    def team_box_score(self, game_url_path):
-        url = "{BASE_URL}/{game_url_path}".format(
-            BASE_URL=HTTPService.BASE_URL,
-            game_url_path=game_url_path.lstrip("/"),
-        )
+    def team_box_score(self, game_url_path: str) -> list[dict[str, Any]]:
+        url = f"{HTTPService.BASE_URL}/{game_url_path.lstrip('/')}"
 
         response = self._get(url=url)
 
@@ -289,7 +363,7 @@ class HTTPService:
             second_team_totals=combined_team_totals[1],
         )
 
-    def team_box_scores(self, day, month, year):
+    def team_box_scores(self, day: int, month: int, year: int) -> list[dict[str, Any]]:
         url = f"{HTTPService.BASE_URL}/boxscores/"
 
         response = self._get(url=url, params={"day": day, "month": month, "year": year})
@@ -307,12 +381,12 @@ class HTTPService:
             for box_score in self.team_box_score(game_url_path=game_url_path)
         ]
 
-    def search(self, term):
+    def search(self, term: str) -> dict[str, list[dict[str, Any]]]:
         response = self._get(url=f"{HTTPService.BASE_URL}/search/search.fcgi", params={"search": term})
 
         response.raise_for_status()
 
-        player_results = []
+        player_results: list[dict[str, Any]] = []
 
         if str(response.url).startswith(f"{HTTPService.BASE_URL}/search/search.fcgi"):
             page = SearchPage(html=html.fromstring(response.content))
@@ -322,7 +396,7 @@ class HTTPService:
             # Guard against pagination loops where the next-page URL doesn't
             # advance (e.g., when a page points back to itself). Without this,
             # a malformed or stale "Next" link can cause an infinite loop.
-            seen_pagination_urls = set()
+            seen_pagination_urls: set[str] = set()
             while page.nba_aba_baa_players_pagination_url is not None:
                 pagination_url = page.nba_aba_baa_players_pagination_url
                 if pagination_url in seen_pagination_urls:
@@ -339,106 +413,46 @@ class HTTPService:
                 player_results += parsed_results["players"]
 
         elif str(response.url).startswith(f"{HTTPService.BASE_URL}/players"):
-            page = PlayerPage(html=html.fromstring(response.content))
-            if page.totals_table is None:
-                player_results += [
-                    self.parser.parse_player_data(
-                        player=PlayerData(
-                            name=page.name,
-                            resource_location=response.url,
-                            league_abbreviations=set(),
-                        )
-                    )
-                ]
+            player_page = PlayerPage(html=html.fromstring(response.content))
+            if player_page.totals_table is None:
+                league_abbreviations: set[str] = set()
             else:
-                data = PlayerData(
-                    name=page.name,
-                    resource_location=response.url,
-                    league_abbreviations=set(
-                        [
-                            row.league_abbreviation
-                            for row in page.totals_table.rows
-                            if row.league_abbreviation is not None
-                        ]
-                    ),
-                )
-                player_results += [self.parser.parse_player_data(player=data)]
+                league_abbreviations = {
+                    row.league_abbreviation
+                    for row in player_page.totals_table.rows
+                    if row.league_abbreviation is not None
+                }
+            data = PlayerData(
+                name=player_page.name,
+                resource_location=str(response.url),
+                league_abbreviations=league_abbreviations,
+            )
+            player_results += [self.parser.parse_player_data(player=data)]
 
         return {"players": player_results}
 
-    def league_per_game_stats(self, season_end_year):
-        url = f"{HTTPService.BASE_URL}/leagues/NBA_{season_end_year}_per_game.html"
-        response = self._get(url=url, follow_redirects=False)
-        response.raise_for_status()
+    # ── Generic endpoints with bespoke behavior ─────────────────────────
 
-        selector = Selector(text=response.text)
-        table_selector = selector.css("table#per_game_stats")
-        if not table_selector:
-            return []
-
-        table = GenericTable(table_selector[0])
-        return self.parser.parse_generic_table(table)
-
-    def league_per_36_minutes(self, season_end_year):
-        url = f"{HTTPService.BASE_URL}/leagues/NBA_{season_end_year}_per_minute.html"
-        response = self._get(url=url, follow_redirects=False)
-        response.raise_for_status()
-
-        selector = Selector(text=response.text)
-        table_selector = selector.css("table#per_minute_stats")
-        if not table_selector:
-            return []
-
-        table = GenericTable(table_selector[0])
-        return self.parser.parse_generic_table(table)
-
-    def league_totals(self, season_end_year):
-        url = f"{HTTPService.BASE_URL}/leagues/NBA_{season_end_year}_totals.html"
-        response = self._get(url=url, follow_redirects=False)
-        response.raise_for_status()
-
-        selector = Selector(text=response.text)
-        table_selector = selector.css("table#totals_stats")
-        if not table_selector:
-            return []
-
-        table = GenericTable(table_selector[0])
-        return self.parser.parse_generic_table(table)
-
-    def rookie_stats(self, season_end_year):
-        url = f"{HTTPService.BASE_URL}/leagues/NBA_{season_end_year}_rookies.html"
-        response = self._get(url=url, follow_redirects=False)
-        response.raise_for_status()
-
-        selector = Selector(text=response.text)
-        table_selector = selector.css("table#rookies")
-        if not table_selector:
-            return []
-
-        table = GenericTable(table_selector[0])
-        return self.parser.parse_generic_table(table)
-
-    def standings_by_date(self, season_end_year):
-        standings = []
+    def standings_by_date(self, season_end_year: int) -> list[dict[str, Any]]:
+        endpoint = ENDPOINTS["standings_by_date"]
+        standings: list[dict[str, Any]] = []
         for conference in ["eastern_conference", "western_conference"]:
-            url = f"{HTTPService.BASE_URL}/leagues/NBA_{season_end_year}_standings_by_date_{conference}.html"
-            response = self._get(url=url, follow_redirects=False)
-            response.raise_for_status()
-
-            selector = Selector(text=response.text)
-            table_selector = selector.css("table#standings_by_date")
+            url = (
+                f"{HTTPService.BASE_URL}{endpoint.path.format(season_end_year=season_end_year, conference=conference)}"
+            )
+            selector = self._get_selector(url=url)
+            table_selector = selector.css(f"table#{endpoint.table_id}")
             if table_selector:
                 table = GenericTable(table_selector[0])
                 standings.extend(self.parser.parse_generic_table(table))
         return standings
 
-    def attendance(self, season_end_year):
-        url = f"{HTTPService.BASE_URL}/leagues/NBA_{season_end_year}.html"
-        response = self._get(url=url, follow_redirects=False)
-        response.raise_for_status()
-
-        selector = Selector(text=response.text)
-        table_selector = selector.css("table#advanced-team")
+    def attendance(self, season_end_year: int) -> list[dict[str, Any]]:
+        endpoint = ENDPOINTS["attendance"]
+        selector = self._get_selector(
+            url=f"{HTTPService.BASE_URL}{endpoint.path.format(season_end_year=season_end_year)}"
+        )
+        table_selector = selector.css(f"table#{endpoint.table_id}")
         if not table_selector:
             return []
 
@@ -452,452 +466,3 @@ class HTTPService:
             }
             for row in table.rows
         ]
-
-    def league_transactions(self, season_end_year):
-        url = f"{HTTPService.BASE_URL}/leagues/NBA_{season_end_year}_transactions.html"
-        response = self._get(url=url, follow_redirects=False)
-        response.raise_for_status()
-
-        selector = Selector(text=response.text)
-        table_selector = selector.css("table#transactions")
-        if not table_selector:
-            return self._parse_transaction_list(selector)
-
-        table = GenericTable(table_selector[0])
-        return self.parser.parse_generic_table(table)
-
-    def league_per_100_possessions(self, season_end_year):
-        url = f"{HTTPService.BASE_URL}/leagues/NBA_{season_end_year}_per_poss.html"
-        response = self._get(url=url, follow_redirects=False)
-        response.raise_for_status()
-
-        selector = Selector(text=response.text)
-        table_selector = selector.css("table#per_poss")
-        if not table_selector:
-            return []
-
-        table = GenericTable(table_selector[0])
-        return self.parser.parse_generic_table(table)
-
-    def league_shooting(self, season_end_year):
-        url = f"{HTTPService.BASE_URL}/leagues/NBA_{season_end_year}_shooting.html"
-        response = self._get(url=url, follow_redirects=False)
-        response.raise_for_status()
-
-        selector = Selector(text=response.text)
-        table_selector = selector.css("table#shooting")
-        if not table_selector:
-            return []
-
-        table = GenericTable(table_selector[0])
-        return self.parser.parse_generic_table(table)
-
-    def playoff_per_game(self, season_end_year):
-        url = f"{HTTPService.BASE_URL}/leagues/NBA_{season_end_year}_per_game.html"
-        response = self._get(url=url, follow_redirects=False)
-        response.raise_for_status()
-
-        selector = Selector(text=response.text)
-        table_selector = selector.css("table#per_game_stats_post")
-        if not table_selector:
-            table_selector = extract_commented_table(selector, "per_game_stats_post")
-            if table_selector is None:
-                return []
-            table = GenericTable(table_selector)
-        else:
-            table = GenericTable(table_selector[0])
-        return self.parser.parse_generic_table(table)
-
-    def playoff_totals(self, season_end_year):
-        url = f"{HTTPService.BASE_URL}/leagues/NBA_{season_end_year}_totals.html"
-        response = self._get(url=url, follow_redirects=False)
-        response.raise_for_status()
-
-        selector = Selector(text=response.text)
-        table_selector = selector.css("table#totals_stats_post")
-        if not table_selector:
-            table_selector = extract_commented_table(selector, "totals_stats_post")
-            if table_selector is None:
-                return []
-            table = GenericTable(table_selector)
-        else:
-            table = GenericTable(table_selector[0])
-        return self.parser.parse_generic_table(table)
-
-    def team_schedule(self, team_abbreviation, season_end_year):
-        url = f"{HTTPService.BASE_URL}/teams/{team_abbreviation}/{season_end_year}_games.html"
-        response = self._get(url=url, follow_redirects=False)
-        response.raise_for_status()
-
-        selector = Selector(text=response.text)
-        table_selector = selector.css("table#games")
-        if not table_selector:
-            return []
-
-        table = GenericTable(table_selector[0])
-        return self.parser.parse_generic_table(table)
-
-    def team_transactions(self, team_abbreviation, season_end_year):
-        url = f"{HTTPService.BASE_URL}/teams/{team_abbreviation}/{season_end_year}_transactions.html"
-        response = self._get(url=url, follow_redirects=False)
-        response.raise_for_status()
-
-        selector = Selector(text=response.text)
-        table_selector = selector.css("table#transactions")
-        if not table_selector:
-            return self._parse_transaction_list(selector)
-
-        table = GenericTable(table_selector[0])
-        return self.parser.parse_generic_table(table)
-
-    def draft_picks(self, season_end_year):
-        url = f"{HTTPService.BASE_URL}/draft/NBA_{season_end_year}.html"
-        response = self._get(url=url, follow_redirects=False)
-        response.raise_for_status()
-
-        selector = Selector(text=response.text)
-        table_selector = selector.css("table#stats")
-        if not table_selector:
-            return []
-
-        table = GenericTable(table_selector[0])
-        return self.parser.parse_generic_table(table)
-
-    def season_leaders(self):
-        url = f"{HTTPService.BASE_URL}/leaders/per_season.html"
-        response = self._get(url=url, follow_redirects=False)
-        response.raise_for_status()
-
-        selector = Selector(text=response.text)
-        table_selector = selector.css("table#stats_TOT")
-        if not table_selector:
-            return []
-
-        table = GenericTable(table_selector[0], use_header_fallback=True)
-        return self.parser.parse_generic_table(table)
-
-    def career_leaders(self):
-        url = f"{HTTPService.BASE_URL}/leaders/"
-        response = self._get(url=url, follow_redirects=False)
-        response.raise_for_status()
-
-        selector = Selector(text=response.text)
-        table_selector = selector.css("table#leaders_index")
-        if not table_selector:
-            return []
-
-        table = GenericTable(table_selector[0], use_header_fallback=True)
-        return self.parser.parse_generic_table(table)
-
-    def playoff_bracket(self, season_end_year):
-        url = f"{HTTPService.BASE_URL}/playoffs/NBA_{season_end_year}.html"
-        response = self._get(url=url, follow_redirects=False)
-        response.raise_for_status()
-
-        selector = Selector(text=response.text)
-        table_selector = selector.css("table#all_playoffs")
-        if not table_selector:
-            return []
-
-        table = GenericTable(table_selector[0], use_header_fallback=True)
-        return self.parser.parse_generic_table(table)
-
-    def season_awards(self, season_end_year):
-        url = f"{HTTPService.BASE_URL}/awards/awards_{season_end_year}.html"
-        response = self._get(url=url, follow_redirects=False)
-        response.raise_for_status()
-
-        selector = Selector(text=response.text)
-        table_selector = selector.css("table#mvp")
-        if not table_selector:
-            return []
-
-        table = GenericTable(table_selector[0])
-        return self.parser.parse_generic_table(table)
-
-    def player_career_stats(self, player_identifier):
-        url = f"{HTTPService.BASE_URL}/players/{player_identifier[0]}/{player_identifier}.html"
-        response = self._get(url=url, follow_redirects=False)
-        response.raise_for_status()
-
-        selector = Selector(text=response.text)
-        table_selector = selector.css("table#per_game_stats")
-        if not table_selector:
-            return []
-
-        table = GenericTable(table_selector[0])
-        return self.parser.parse_generic_table(table)
-
-    def player_playoff_series(self, player_identifier):
-        url = f"{HTTPService.BASE_URL}/players/{player_identifier[0]}/{player_identifier}.html"
-        response = self._get(url=url, follow_redirects=False)
-        response.raise_for_status()
-
-        selector = Selector(text=response.text)
-        table_selector = extract_commented_table(selector, "playoffs_series")
-        if table_selector is None:
-            return []
-
-        table = GenericTable(table_selector)
-        return self.parser.parse_generic_table(table)
-
-    def player_splits(self, player_identifier, season_end_year):
-        url = f"{HTTPService.BASE_URL}/players/{player_identifier[0]}/{player_identifier}/splits/{season_end_year}"
-        response = self._get(url=url, follow_redirects=False)
-        response.raise_for_status()
-
-        selector = Selector(text=response.text)
-        table_selector = selector.css("table#splits")
-        if not table_selector:
-            return []
-
-        table = GenericTable(table_selector[0])
-        return self.parser.parse_generic_table(table)
-
-    def player_on_off(self, player_identifier, season_end_year):
-        url = f"{HTTPService.BASE_URL}/players/{player_identifier[0]}/{player_identifier}/on-off/{season_end_year}"
-        response = self._get(url=url, follow_redirects=False)
-        response.raise_for_status()
-
-        selector = Selector(text=response.text)
-        table_selector = selector.css("table#on-off")
-        if not table_selector:
-            return []
-
-        table = GenericTable(table_selector[0])
-        return self.parser.parse_generic_table(table)
-
-    def player_shot_charts(self, player_identifier, season_end_year):
-        url = f"{HTTPService.BASE_URL}/players/{player_identifier[0]}/{player_identifier}/shooting/{season_end_year}"
-        # basketball-reference redirects .html for shooting pages, so no .html suffix
-        response = self._get(url=url, follow_redirects=False)
-        response.raise_for_status()
-
-        selector = Selector(text=response.text)
-        table_selector = selector.css("table#shooting")
-        if not table_selector:
-            return []
-
-        table = GenericTable(table_selector[0])
-        return self.parser.parse_generic_table(table)
-
-    def player_adjusted_shooting(self, player_identifier):
-        url = f"{HTTPService.BASE_URL}/players/{player_identifier[0]}/{player_identifier}.html"
-        response = self._get(url=url, follow_redirects=False)
-        response.raise_for_status()
-
-        selector = Selector(text=response.text)
-        table_selector = extract_commented_table(selector, "adj_shooting")
-        if table_selector is None:
-            return []
-
-        table = GenericTable(table_selector)
-        return self.parser.parse_generic_table(table)
-
-    def player_play_by_play(self, player_identifier):
-        url = f"{HTTPService.BASE_URL}/players/{player_identifier[0]}/{player_identifier}.html"
-        response = self._get(url=url, follow_redirects=False)
-        response.raise_for_status()
-
-        selector = Selector(text=response.text)
-        table_selector = extract_commented_table(selector, "pbp_stats")
-        if table_selector is None:
-            return []
-
-        table = GenericTable(table_selector)
-        return self.parser.parse_generic_table(table)
-
-    def player_game_highs(self, player_identifier):
-        url = f"{HTTPService.BASE_URL}/players/{player_identifier[0]}/{player_identifier}.html"
-        response = self._get(url=url, follow_redirects=False)
-        response.raise_for_status()
-
-        selector = Selector(text=response.text)
-        table_selector = extract_commented_table(selector, "highs-reg-season")
-        if table_selector is None:
-            return []
-
-        table = GenericTable(table_selector)
-        return self.parser.parse_generic_table(table)
-
-    def player_all_star(self, player_identifier):
-        url = f"{HTTPService.BASE_URL}/players/{player_identifier[0]}/{player_identifier}.html"
-        response = self._get(url=url, follow_redirects=False)
-        response.raise_for_status()
-
-        selector = Selector(text=response.text)
-        table_selector = extract_commented_table(selector, "all_star")
-        if table_selector is None:
-            return []
-
-        table = GenericTable(table_selector)
-        return self.parser.parse_generic_table(table)
-
-    def player_similarity_scores(self, player_identifier):
-        url = f"{HTTPService.BASE_URL}/players/{player_identifier[0]}/{player_identifier}.html"
-        response = self._get(url=url, follow_redirects=False)
-        response.raise_for_status()
-
-        selector = Selector(text=response.text)
-        table_selector = extract_commented_table(selector, "sims-career")
-        if table_selector is None:
-            return []
-
-        table = GenericTable(table_selector)
-        return self.parser.parse_generic_table(table)
-
-    def player_salaries(self, player_identifier):
-        url = f"{HTTPService.BASE_URL}/players/{player_identifier[0]}/{player_identifier}.html"
-        response = self._get(url=url, follow_redirects=False)
-        response.raise_for_status()
-
-        selector = Selector(text=response.text)
-        table_selector = extract_commented_table(selector, "all_salaries")
-        if table_selector is None:
-            return []
-
-        table = GenericTable(table_selector)
-        return self.parser.parse_generic_table(table)
-
-    def team_roster(self, team_abbreviation, season_end_year):
-        url = f"{HTTPService.BASE_URL}/teams/{team_abbreviation}/{season_end_year}.html"
-        response = self._get(url=url, follow_redirects=False)
-        response.raise_for_status()
-
-        selector = Selector(text=response.text)
-        table_selector = selector.css("table#roster")
-        if not table_selector:
-            return []
-
-        table = GenericTable(table_selector[0])
-        return self.parser.parse_generic_table(table)
-
-    def team_injury_report(self, team_abbreviation=None, season_end_year=None):
-        url = f"{HTTPService.BASE_URL}/friv/injuries.fcgi"
-        response = self._get(url=url, follow_redirects=False)
-        response.raise_for_status()
-
-        selector = Selector(text=response.text)
-        table_selector = selector.css("table#injuries")
-        if not table_selector:
-            return []
-
-        table = GenericTable(table_selector[0])
-        return self.parser.parse_generic_table(table)
-
-    def team_and_opponent(self, team_abbreviation, season_end_year):
-        url = f"{HTTPService.BASE_URL}/teams/{team_abbreviation}/{season_end_year}.html"
-        response = self._get(url=url, follow_redirects=False)
-        response.raise_for_status()
-
-        selector = Selector(text=response.text)
-        table_selector = extract_commented_table(selector, "team_and_opponent")
-        if table_selector is None:
-            return []
-
-        table = GenericTable(table_selector)
-        return self.parser.parse_generic_table(table)
-
-    def team_misc_four_factors(self, team_abbreviation, season_end_year):
-        url = f"{HTTPService.BASE_URL}/teams/{team_abbreviation}/{season_end_year}.html"
-        response = self._get(url=url, follow_redirects=False)
-        response.raise_for_status()
-
-        selector = Selector(text=response.text)
-        table_selector = extract_commented_table(selector, "team_misc")
-        if table_selector is None:
-            return []
-
-        table = GenericTable(table_selector)
-        return self.parser.parse_generic_table(table)
-
-    def team_splits(self, team_abbreviation, season_end_year):
-        url = f"{HTTPService.BASE_URL}/teams/{team_abbreviation}/{season_end_year}/splits/"
-        response = self._get(url=url, follow_redirects=False)
-        response.raise_for_status()
-
-        selector = Selector(text=response.text)
-        table_selector = selector.css("table#team_splits")
-        if not table_selector:
-            return []
-
-        table = GenericTable(table_selector[0])
-        return self.parser.parse_generic_table(table)
-
-    def team_contracts(self, team_abbreviation):
-        url = f"{HTTPService.BASE_URL}/contracts/{team_abbreviation}.html"
-        response = self._get(url=url, follow_redirects=False)
-        response.raise_for_status()
-
-        selector = Selector(text=response.text)
-        table_selector = selector.css("table#contracts")
-        if not table_selector:
-            return []
-
-        table = GenericTable(table_selector[0])
-        return self.parser.parse_generic_table(table)
-
-    def team_lineups(self, team_abbreviation, season_end_year):
-        url = f"{HTTPService.BASE_URL}/teams/{team_abbreviation}/{season_end_year}/lineups/"
-        response = self._get(url=url, follow_redirects=False)
-        response.raise_for_status()
-
-        selector = Selector(text=response.text)
-        table_selector = extract_commented_table(selector, "lineups_5-man_")
-        if table_selector is None:
-            return []
-
-        table = GenericTable(table_selector)
-        return self.parser.parse_generic_table(table)
-
-    def team_starting_lineups(self, team_abbreviation, season_end_year):
-        url = f"{HTTPService.BASE_URL}/teams/{team_abbreviation}/{season_end_year}_start.html"
-        response = self._get(url=url, follow_redirects=False)
-        response.raise_for_status()
-
-        selector = Selector(text=response.text)
-        table_selector = selector.css("table#starting_lineups_po0")
-        if not table_selector:
-            return []
-
-        table = GenericTable(table_selector[0])
-        return self.parser.parse_generic_table(table)
-
-    def team_on_off(self, team_abbreviation, season_end_year):
-        url = f"{HTTPService.BASE_URL}/teams/{team_abbreviation}/{season_end_year}/on-off/"
-        response = self._get(url=url, follow_redirects=False)
-        response.raise_for_status()
-
-        selector = Selector(text=response.text)
-        table_selector = selector.css("table#on_off")
-        if not table_selector:
-            return []
-
-        table = GenericTable(table_selector[0])
-        return self.parser.parse_generic_table(table)
-
-    def team_opponent_stats(self, team_abbreviation, season_end_year):
-        url = f"{HTTPService.BASE_URL}/teams/{team_abbreviation}/{season_end_year}.html"
-        response = self._get(url=url, follow_redirects=False)
-        response.raise_for_status()
-
-        selector = Selector(text=response.text)
-        table_selector = extract_commented_table(selector, "team_and_opponent")
-        if table_selector is None:
-            return []
-
-        table = GenericTable(table_selector)
-        return self.parser.parse_generic_table(table)
-
-    def franchise_history(self, team_abbreviation):
-        url = f"{HTTPService.BASE_URL}/teams/{team_abbreviation}/"
-        response = self._get(url=url, follow_redirects=False)
-        response.raise_for_status()
-
-        selector = Selector(text=response.text)
-        table_selector = selector.css(f"table#{team_abbreviation}")
-        if not table_selector:
-            return []
-
-        table = GenericTable(table_selector[0])
-        return self.parser.parse_generic_table(table)

@@ -1,0 +1,395 @@
+"""Declarative registry for generic ("beta") Basketball Reference endpoints.
+
+Each :class:`TableEndpoint` captures everything that distinguishes one
+table-scraping endpoint from another: the URL path template, how to locate the
+table on the page, which CSV columns the output contract promises, and which
+domain error a failed lookup maps to. ``HTTPService.fetch_table`` and
+``client._call_endpoint`` consume these specs, so adding a new endpoint is a
+single registry entry plus a thin public wrapper.
+
+Path and table-id templates are ``str.format`` templates over the endpoint's
+call parameters, e.g. ``"/players/{player_identifier[0]}/{player_identifier}.html"``.
+"""
+
+from __future__ import annotations
+
+from collections.abc import Callable, Sequence
+from dataclasses import dataclass
+from typing import Any
+
+import httpx
+
+from courtside_data.errors import InvalidPlayer, InvalidSeason, InvalidTeam
+from courtside_data.output.columns import (
+    ATTENDANCE_COLUMN_NAMES,
+    CAREER_LEADERS_COLUMN_NAMES,
+    DRAFT_PICKS_COLUMN_NAMES,
+    FRANCHISE_HISTORY_COLUMN_NAMES,
+    LEAGUE_PER_36_COLUMN_NAMES,
+    LEAGUE_PER_100_POSSESSIONS_COLUMN_NAMES,
+    LEAGUE_PER_GAME_COLUMN_NAMES,
+    LEAGUE_SHOOTING_COLUMN_NAMES,
+    LEAGUE_TOTALS_COLUMN_NAMES,
+    LEAGUE_TRANSACTIONS_COLUMN_NAMES,
+    PLAYER_ADJUSTED_SHOOTING_COLUMN_NAMES,
+    PLAYER_ALL_STAR_COLUMN_NAMES,
+    PLAYER_CAREER_STATS_COLUMN_NAMES,
+    PLAYER_GAME_HIGHS_COLUMN_NAMES,
+    PLAYER_ON_OFF_COLUMN_NAMES,
+    PLAYER_PLAY_BY_PLAY_COLUMN_NAMES,
+    PLAYER_PLAYOFF_SERIES_COLUMN_NAMES,
+    PLAYER_SALARIES_COLUMN_NAMES,
+    PLAYER_SHOT_CHARTS_COLUMN_NAMES,
+    PLAYER_SIMILARITY_SCORES_COLUMN_NAMES,
+    PLAYER_SPLITS_COLUMN_NAMES,
+    PLAYOFF_BRACKET_COLUMN_NAMES,
+    PLAYOFF_PER_GAME_COLUMN_NAMES,
+    PLAYOFF_TOTALS_COLUMN_NAMES,
+    ROOKIE_STATS_COLUMN_NAMES,
+    SEASON_AWARDS_COLUMN_NAMES,
+    SEASON_LEADERS_COLUMN_NAMES,
+    STANDINGS_BY_DATE_COLUMN_NAMES,
+    TEAM_AND_OPPONENT_COLUMN_NAMES,
+    TEAM_CONTRACTS_COLUMN_NAMES,
+    TEAM_INJURY_REPORT_COLUMN_NAMES,
+    TEAM_LINEUPS_COLUMN_NAMES,
+    TEAM_MISC_FOUR_FACTORS_COLUMN_NAMES,
+    TEAM_ON_OFF_COLUMN_NAMES,
+    TEAM_OPPONENT_STATS_COLUMN_NAMES,
+    TEAM_ROSTER_COLUMN_NAMES,
+    TEAM_SCHEDULE_COLUMN_NAMES,
+    TEAM_SPLITS_COLUMN_NAMES,
+    TEAM_STARTING_LINEUPS_COLUMN_NAMES,
+    TEAM_TRANSACTIONS_COLUMN_NAMES,
+)
+
+NOT_FOUND = (int(httpx.codes.NOT_FOUND),)
+
+
+@dataclass(frozen=True, slots=True)
+class TableEndpoint:
+    """Spec for one generic table endpoint.
+
+    Table lookup order in ``HTTPService.fetch_table``:
+    1. ``table_id`` via a CSS ``table#<id>`` query (if set),
+    2. ``commented_table_id`` via :func:`extract_commented_table` (if set),
+    3. transaction-list fallback (if ``transaction_list_fallback``),
+    4. otherwise an empty result.
+    """
+
+    path: str
+    # Ordered call-parameter names; defines the positional argument order of
+    # the generated HTTPService delegates and client functions.
+    params: tuple[str, ...] = ()
+    table_id: str | None = None
+    commented_table_id: str | None = None
+    use_header_fallback: bool = False
+    transaction_list_fallback: bool = False
+    # True for endpoints with a bespoke HTTPService method (multi-request or
+    # projected output); fetch_table() must not be used for these.
+    custom: bool = False
+    csv_columns: Sequence[str] | None = None
+    error: type[Exception] | None = None
+    error_params: tuple[str, ...] = ()
+    error_status_codes: tuple[int, ...] = NOT_FOUND
+
+    def error_mappings(self, params: dict[str, object]) -> dict[int, Callable[[], Exception]] | None:
+        """Build the per-call ``{status_code: exception_factory}`` mapping."""
+        if self.error is None:
+            return None
+        error = self.error
+        bound = {name: params[name] for name in self.error_params}
+
+        def factory() -> Exception:
+            return error(**bound)
+
+        return dict.fromkeys(self.error_status_codes, factory)
+
+
+def _endpoint(
+    path: str,
+    *,
+    params: tuple[str, ...],
+    error: type[Exception] | None,
+    error_params: tuple[str, ...],
+    table_id: str | None = None,
+    commented_table_id: str | None = None,
+    use_header_fallback: bool = False,
+    transaction_list_fallback: bool = False,
+    custom: bool = False,
+    csv_columns: Sequence[str] | None = None,
+) -> TableEndpoint:
+    return TableEndpoint(
+        path=path,
+        params=params,
+        table_id=table_id,
+        commented_table_id=commented_table_id,
+        use_header_fallback=use_header_fallback,
+        transaction_list_fallback=transaction_list_fallback,
+        custom=custom,
+        csv_columns=csv_columns,
+        error=error,
+        error_params=error_params,
+    )
+
+
+def _season(path: str, **overrides: Any) -> TableEndpoint:
+    return _endpoint(
+        path,
+        params=("season_end_year",),
+        error=InvalidSeason,
+        error_params=("season_end_year",),
+        **overrides,
+    )
+
+
+def _team(
+    path: str, params: tuple[str, ...] = ("team_abbreviation", "season_end_year"), **overrides: Any
+) -> TableEndpoint:
+    return _endpoint(
+        path,
+        params=params,
+        error=InvalidTeam,
+        error_params=("team_abbreviation",),
+        **overrides,
+    )
+
+
+def _player(path: str, params: tuple[str, ...] = ("player_identifier",), **overrides: Any) -> TableEndpoint:
+    return _endpoint(
+        path,
+        params=params,
+        error=InvalidPlayer,
+        error_params=("player_identifier",),
+        **overrides,
+    )
+
+
+_PLAYER_PAGE = "/players/{player_identifier[0]}/{player_identifier}.html"
+
+ENDPOINTS: dict[str, TableEndpoint] = {
+    # ── League-wide season tables ──
+    "league_per_game_stats": _season(
+        "/leagues/NBA_{season_end_year}_per_game.html",
+        table_id="per_game_stats",
+        csv_columns=LEAGUE_PER_GAME_COLUMN_NAMES,
+    ),
+    "league_per_36_minutes": _season(
+        "/leagues/NBA_{season_end_year}_per_minute.html",
+        table_id="per_minute_stats",
+        csv_columns=LEAGUE_PER_36_COLUMN_NAMES,
+    ),
+    "league_totals": _season(
+        "/leagues/NBA_{season_end_year}_totals.html",
+        table_id="totals_stats",
+        csv_columns=LEAGUE_TOTALS_COLUMN_NAMES,
+    ),
+    "league_per_100_possessions": _season(
+        "/leagues/NBA_{season_end_year}_per_poss.html",
+        table_id="per_poss",
+        csv_columns=LEAGUE_PER_100_POSSESSIONS_COLUMN_NAMES,
+    ),
+    "league_shooting": _season(
+        "/leagues/NBA_{season_end_year}_shooting.html",
+        table_id="shooting",
+        csv_columns=LEAGUE_SHOOTING_COLUMN_NAMES,
+    ),
+    "league_transactions": _season(
+        "/leagues/NBA_{season_end_year}_transactions.html",
+        table_id="transactions",
+        transaction_list_fallback=True,
+        csv_columns=LEAGUE_TRANSACTIONS_COLUMN_NAMES,
+    ),
+    "rookie_stats": _season(
+        "/leagues/NBA_{season_end_year}_rookies.html",
+        table_id="rookies",
+        csv_columns=ROOKIE_STATS_COLUMN_NAMES,
+    ),
+    "standings_by_date": _season(
+        "/leagues/NBA_{season_end_year}_standings_by_date_{conference}.html",
+        table_id="standings_by_date",
+        custom=True,
+        csv_columns=STANDINGS_BY_DATE_COLUMN_NAMES,
+    ),
+    "attendance": _season(
+        "/leagues/NBA_{season_end_year}.html",
+        table_id="advanced-team",
+        custom=True,
+        csv_columns=ATTENDANCE_COLUMN_NAMES,
+    ),
+    # ── Playoffs ──
+    "playoff_per_game": _season(
+        "/leagues/NBA_{season_end_year}_per_game.html",
+        table_id="per_game_stats_post",
+        commented_table_id="per_game_stats_post",
+        csv_columns=PLAYOFF_PER_GAME_COLUMN_NAMES,
+    ),
+    "playoff_totals": _season(
+        "/leagues/NBA_{season_end_year}_totals.html",
+        table_id="totals_stats_post",
+        commented_table_id="totals_stats_post",
+        csv_columns=PLAYOFF_TOTALS_COLUMN_NAMES,
+    ),
+    "playoff_bracket": _season(
+        "/playoffs/NBA_{season_end_year}.html",
+        table_id="all_playoffs",
+        use_header_fallback=True,
+        csv_columns=PLAYOFF_BRACKET_COLUMN_NAMES,
+    ),
+    # ── Draft, awards, leaders ──
+    "draft_picks": _season(
+        "/draft/NBA_{season_end_year}.html",
+        table_id="stats",
+        csv_columns=DRAFT_PICKS_COLUMN_NAMES,
+    ),
+    "season_awards": _season(
+        "/awards/awards_{season_end_year}.html",
+        table_id="mvp",
+        csv_columns=SEASON_AWARDS_COLUMN_NAMES,
+    ),
+    "season_leaders": TableEndpoint(
+        path="/leaders/per_season.html",
+        table_id="stats_TOT",
+        use_header_fallback=True,
+        csv_columns=SEASON_LEADERS_COLUMN_NAMES,
+    ),
+    "career_leaders": TableEndpoint(
+        path="/leaders/",
+        table_id="leaders_index",
+        use_header_fallback=True,
+        csv_columns=CAREER_LEADERS_COLUMN_NAMES,
+    ),
+    # ── Player pages ──
+    "player_career_stats": _player(
+        _PLAYER_PAGE,
+        table_id="per_game_stats",
+        csv_columns=PLAYER_CAREER_STATS_COLUMN_NAMES,
+    ),
+    "player_playoff_series": _player(
+        _PLAYER_PAGE,
+        commented_table_id="playoffs_series",
+        csv_columns=PLAYER_PLAYOFF_SERIES_COLUMN_NAMES,
+    ),
+    "player_adjusted_shooting": _player(
+        _PLAYER_PAGE,
+        commented_table_id="adj_shooting",
+        csv_columns=PLAYER_ADJUSTED_SHOOTING_COLUMN_NAMES,
+    ),
+    "player_play_by_play": _player(
+        _PLAYER_PAGE,
+        commented_table_id="pbp_stats",
+        csv_columns=PLAYER_PLAY_BY_PLAY_COLUMN_NAMES,
+    ),
+    "player_game_highs": _player(
+        _PLAYER_PAGE,
+        commented_table_id="highs-reg-season",
+        csv_columns=PLAYER_GAME_HIGHS_COLUMN_NAMES,
+    ),
+    "player_all_star": _player(
+        _PLAYER_PAGE,
+        commented_table_id="all_star",
+        csv_columns=PLAYER_ALL_STAR_COLUMN_NAMES,
+    ),
+    "player_similarity_scores": _player(
+        _PLAYER_PAGE,
+        commented_table_id="sims-career",
+        csv_columns=PLAYER_SIMILARITY_SCORES_COLUMN_NAMES,
+    ),
+    "player_salaries": _player(
+        _PLAYER_PAGE,
+        commented_table_id="all_salaries",
+        csv_columns=PLAYER_SALARIES_COLUMN_NAMES,
+    ),
+    "player_splits": _player(
+        "/players/{player_identifier[0]}/{player_identifier}/splits/{season_end_year}",
+        params=("player_identifier", "season_end_year"),
+        table_id="splits",
+        csv_columns=PLAYER_SPLITS_COLUMN_NAMES,
+    ),
+    "player_on_off": _player(
+        "/players/{player_identifier[0]}/{player_identifier}/on-off/{season_end_year}",
+        params=("player_identifier", "season_end_year"),
+        table_id="on-off",
+        csv_columns=PLAYER_ON_OFF_COLUMN_NAMES,
+    ),
+    # basketball-reference redirects .html for shooting pages, so no .html suffix
+    "player_shot_charts": _player(
+        "/players/{player_identifier[0]}/{player_identifier}/shooting/{season_end_year}",
+        params=("player_identifier", "season_end_year"),
+        table_id="shooting",
+        csv_columns=PLAYER_SHOT_CHARTS_COLUMN_NAMES,
+    ),
+    # ── Team pages ──
+    "team_roster": _team(
+        "/teams/{team_abbreviation}/{season_end_year}.html",
+        table_id="roster",
+        csv_columns=TEAM_ROSTER_COLUMN_NAMES,
+    ),
+    # League-wide injury page; team/season parameters are accepted for API
+    # symmetry but do not affect the request.
+    "team_injury_report": _team(
+        "/friv/injuries.fcgi",
+        table_id="injuries",
+        csv_columns=TEAM_INJURY_REPORT_COLUMN_NAMES,
+    ),
+    "team_and_opponent": _team(
+        "/teams/{team_abbreviation}/{season_end_year}.html",
+        commented_table_id="team_and_opponent",
+        csv_columns=TEAM_AND_OPPONENT_COLUMN_NAMES,
+    ),
+    "team_misc_four_factors": _team(
+        "/teams/{team_abbreviation}/{season_end_year}.html",
+        commented_table_id="team_misc",
+        csv_columns=TEAM_MISC_FOUR_FACTORS_COLUMN_NAMES,
+    ),
+    # Scrapes the same #team_and_opponent table as team_and_opponent; kept as a
+    # separate endpoint for backwards compatibility with its own column set.
+    "team_opponent_stats": _team(
+        "/teams/{team_abbreviation}/{season_end_year}.html",
+        commented_table_id="team_and_opponent",
+        csv_columns=TEAM_OPPONENT_STATS_COLUMN_NAMES,
+    ),
+    "team_schedule": _team(
+        "/teams/{team_abbreviation}/{season_end_year}_games.html",
+        table_id="games",
+        csv_columns=TEAM_SCHEDULE_COLUMN_NAMES,
+    ),
+    "team_transactions": _team(
+        "/teams/{team_abbreviation}/{season_end_year}_transactions.html",
+        table_id="transactions",
+        transaction_list_fallback=True,
+        csv_columns=TEAM_TRANSACTIONS_COLUMN_NAMES,
+    ),
+    "team_splits": _team(
+        "/teams/{team_abbreviation}/{season_end_year}/splits/",
+        table_id="team_splits",
+        csv_columns=TEAM_SPLITS_COLUMN_NAMES,
+    ),
+    "team_contracts": _team(
+        "/contracts/{team_abbreviation}.html",
+        params=("team_abbreviation",),
+        table_id="contracts",
+        csv_columns=TEAM_CONTRACTS_COLUMN_NAMES,
+    ),
+    "team_lineups": _team(
+        "/teams/{team_abbreviation}/{season_end_year}/lineups/",
+        commented_table_id="lineups_5-man_",
+        csv_columns=TEAM_LINEUPS_COLUMN_NAMES,
+    ),
+    "team_starting_lineups": _team(
+        "/teams/{team_abbreviation}/{season_end_year}_start.html",
+        table_id="starting_lineups_po0",
+        csv_columns=TEAM_STARTING_LINEUPS_COLUMN_NAMES,
+    ),
+    "team_on_off": _team(
+        "/teams/{team_abbreviation}/{season_end_year}/on-off/",
+        table_id="on_off",
+        csv_columns=TEAM_ON_OFF_COLUMN_NAMES,
+    ),
+    "franchise_history": _team(
+        "/teams/{team_abbreviation}/",
+        params=("team_abbreviation",),
+        table_id="{team_abbreviation}",
+        csv_columns=FRANCHISE_HISTORY_COLUMN_NAMES,
+    ),
+}
