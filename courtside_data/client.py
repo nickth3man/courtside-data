@@ -78,7 +78,7 @@ def _execute(
     output_file_path: str | None = None,
     output_write_option: OutputWriteOption | None = None,
     json_options: dict[str, Any] | None = None,
-    validate_output: bool = False,
+    validate_output: bool = True,
 ) -> Any:
     values = _call_with_error_mapping(service_call, error_mappings)
     # Coerce raw string values to proper Python types (idempotent for legacy endpoints)

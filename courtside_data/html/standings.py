@@ -57,11 +57,11 @@ class ConferenceDivisionStandingsRow:
 
     @property
     def is_division_name_row(self):
-        return self.html.attrib["class"] == "thead"
+        return "thead" in self.html.attrib.get("class", "").split()
 
     @property
     def is_standings_row(self):
-        return self.html.attrib["class"] == "full_table"
+        return "full_table" in self.html.attrib.get("class", "").split()
 
     @property
     def division_name(self):

@@ -12,9 +12,10 @@ from __future__ import annotations
 import os
 import random
 import re
+import threading
 import time
 from collections.abc import Callable
-from typing import Any
+from typing import Any, ClassVar
 
 import httpx
 import stamina
@@ -47,6 +48,48 @@ _DEFAULT_TIMEOUT = httpx.Timeout(30.0, connect=10.0)
 _RETRY_ATTEMPTS = 3
 
 
+def _parse_retry_after(value: str) -> float:
+    """Parse Retry-After header value, returning seconds to wait.
+
+    Handles both integer seconds and HTTP-date formats per RFC 9110.
+    """
+    try:
+        return float(value)
+    except ValueError:
+        pass
+    # HTTP-date format: parse RFC 2822 date
+    import email.utils as eutils
+    from datetime import datetime, timezone
+
+    parsed = eutils.parsedate_tz(value)
+    if parsed is not None:
+        retry_time = datetime(*parsed[:6], tzinfo=timezone.utc)
+        now = datetime.now(timezone.utc)
+        wait = (retry_time - now).total_seconds()
+        return max(wait, 1.0)
+    return 5.0
+
+
+def _should_retry(exc: Exception) -> bool | float:
+    """Custom stamina retry predicate.
+
+    Returns True to retry with default backoff, a float to retry after
+    that many seconds (honors Retry-After), or False to abort.
+    """
+    if isinstance(exc, httpx.TransportError):
+        return True
+    if isinstance(exc, httpx.HTTPStatusError):
+        code = exc.response.status_code
+        if code in (429, 502, 503, 504):
+            retry_after = exc.response.headers.get("Retry-After")
+            if retry_after is not None:
+                return _parse_retry_after(retry_after)
+            return True
+        # Do NOT retry other 4xx (400, 401, 403, 404, etc.)
+        return False
+    return False
+
+
 def build_client(cache: bool = False, timeout: httpx.Timeout = _DEFAULT_TIMEOUT) -> httpx.Client:
     """Build the httpx client used by HTTPService.
 
@@ -61,6 +104,8 @@ def build_client(cache: bool = False, timeout: httpx.Timeout = _DEFAULT_TIMEOUT)
 
 class HTTPService:
     BASE_URL = "https://www.basketball-reference.com"
+    _last_request_time: ClassVar[float] = float("-inf")
+    _rate_limit_lock: ClassVar[threading.Lock] = threading.Lock()
 
     def __init__(
         self,
@@ -92,7 +137,6 @@ class HTTPService:
 
         self._timeout = timeout if timeout is not None else _DEFAULT_TIMEOUT
         self._session = session if session is not None else build_client(cache=cache, timeout=self._timeout)
-        self._last_request_time = float("-inf")
 
         # Injectable dependencies for testing
         self._time = time_func if time_func is not None else time.time
@@ -101,20 +145,26 @@ class HTTPService:
 
     def _apply_rate_limiting(self) -> None:
         current_time = self._time()
-        time_since_last = current_time - self._last_request_time
-
-        if self._rate_limit_interval > 0 and time_since_last < self._rate_limit_interval:
-            jitter = self._random(0.0, self._rate_limit_jitter)
-            self._sleep((self._rate_limit_interval - time_since_last) + jitter)
-
-        self._last_request_time = current_time
+        with self._rate_limit_lock:
+            time_since_last = current_time - self.__class__._last_request_time
+            if self._rate_limit_interval > 0 and time_since_last < self._rate_limit_interval:
+                jitter = self._random(0.0, self._rate_limit_jitter)
+                self._sleep((self._rate_limit_interval - time_since_last) + jitter)
+            self.__class__._last_request_time = self._time()
 
     def _get(self, url: str, **kwargs: Any) -> httpx.Response:
         self._apply_rate_limiting()
         response = None
-        for attempt in stamina.retry_context(on=httpx.TransportError, attempts=_RETRY_ATTEMPTS):
+        for attempt in stamina.retry_context(
+            on=_should_retry,
+            attempts=_RETRY_ATTEMPTS,
+            wait_initial=1.0,
+            wait_max=10.0,
+            wait_jitter=0.5,
+        ):
             with attempt:
                 response = self._session.get(url=url, **kwargs)
+                response.raise_for_status()
         assert response is not None  # retry_context either yields a response or raises
         return response
 
@@ -258,10 +308,23 @@ class HTTPService:
         )
 
     def play_by_play(self, home_team: Team, day: int, month: int, year: int) -> list[dict[str, Any]]:
-        month_and_day = f"{month:02d}{day:02d}"
-        # the hard-coded `0` in the url assumes we always take the first match of the given date and team.
-        game_id = f"{year}{month_and_day}0{TEAM_TO_TEAM_ABBREVIATION[home_team]}"
-        url = f"{HTTPService.BASE_URL}/boxscores/pbp/{game_id}.html"
+        # Look up the actual game URL from the daily boxscores page
+        # instead of hardcoding the game index (handles doubleheaders).
+        boxscores_page = DailyBoxScoresPage(
+            html=self._get_html(
+                url=f"{HTTPService.BASE_URL}/boxscores/",
+                params={"day": day, "month": month, "year": year},
+            )
+        )
+        abbr = TEAM_TO_TEAM_ABBREVIATION[home_team]
+        game_url_path = None
+        for path in boxscores_page.game_url_paths:
+            if path.endswith(f"0{abbr}.html") or path.endswith(f"1{abbr}.html"):
+                game_url_path = path
+                break
+        if game_url_path is None:
+            raise InvalidDate(day=day, month=month, year=year)
+        url = f"{HTTPService.BASE_URL}/boxscores/pbp/{game_url_path.split('/')[-1]}"
         page = PlayByPlayPage(html=self._get_html(url=url))
 
         return self.parser.parse_play_by_plays(
@@ -310,6 +373,10 @@ class HTTPService:
             for table in page.basic_statistics_tables
         ]
 
+        if len(combined_team_totals) < 2:
+            raise ValueError(
+                f"Expected 2 team totals in box score page, got {len(combined_team_totals)}"
+            )
         return self.parser.parse_team_totals(
             first_team_totals=combined_team_totals[0],
             second_team_totals=combined_team_totals[1],

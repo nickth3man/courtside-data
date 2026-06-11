@@ -33,8 +33,9 @@ def _get_target_type(column_name: str) -> type | tuple[type, ...] | None:
     elif name == "coerce_float_or_none":
         return (int, float, type(None))
     else:
-        # lambda v: v or other pass-through — expect str
-        return str
+        # lambda v: v or other pass-through — no type expectation (legacy
+        # endpoints may return typed values like Team enums)
+        return None
 
 
 # ─── Validation ────────────────────────────────────────────────────────

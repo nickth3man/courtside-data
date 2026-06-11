@@ -71,6 +71,10 @@ class TestHTTPServiceSessionReuse(TestCase):
 class TestHTTPServiceRateLimiting(TestCase):
     """Verify rate limiting behavior with injected time/sleep."""
 
+    def setUp(self):
+        # Reset class-level rate limiting state between tests
+        HTTPService._last_request_time = float("-inf")
+
     def test_first_request_does_not_sleep(self):
         mock_session = mock.MagicMock()
         mock_session.get.return_value = mock.Mock()
@@ -94,7 +98,8 @@ class TestHTTPServiceRateLimiting(TestCase):
         mock_session.get.return_value = mock.Mock()
         mock_sleep = mock.MagicMock()
         # Simulate time progression: first call at 0.0, second at 1.0 (less than 3.5s interval)
-        mock_time = mock.MagicMock(side_effect=[0.0, 1.0])
+        # _apply_rate_limiting calls _time() twice (current_time + last_request_time)
+        mock_time = mock.MagicMock(side_effect=[0.0, 0.0, 1.0, 1.0])
 
         service = HTTPService(
             parser=mock.MagicMock(),
@@ -116,7 +121,7 @@ class TestHTTPServiceRateLimiting(TestCase):
         mock_session = mock.MagicMock()
         mock_session.get.return_value = mock.Mock()
         mock_sleep = mock.MagicMock()
-        mock_time = mock.MagicMock(side_effect=[0.0, 0.5])
+        mock_time = mock.MagicMock(side_effect=[0.0, 0.0, 0.5, 0.5])
 
         service = HTTPService(
             parser=mock.MagicMock(),
@@ -137,7 +142,8 @@ class TestHTTPServiceRateLimiting(TestCase):
         mock_sleep = mock.MagicMock()
         mock_random = mock.MagicMock(return_value=0.5)
         # Simulate time: first at 0.0, second at 1.0
-        mock_time = mock.MagicMock(side_effect=[0.0, 1.0])
+        # _apply_rate_limiting calls _time() twice (current_time + last_request_time)
+        mock_time = mock.MagicMock(side_effect=[0.0, 0.0, 1.0, 1.0])
 
         service = HTTPService(
             parser=mock.MagicMock(),

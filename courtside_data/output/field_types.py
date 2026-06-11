@@ -10,6 +10,7 @@ Legacy endpoints already produce typed values — coercion is idempotent for the
 
 from __future__ import annotations
 
+import warnings
 from collections.abc import Callable, Sequence
 from typing import Any
 
@@ -34,6 +35,11 @@ def _make_coercion(name: str, target: Callable[[str], Any], empty_value: Any) ->
         try:
             return target(stripped)
         except ValueError:
+            warnings.warn(
+                f"Failed to coerce {stripped!r} via {target.__name__}, leaving as string",
+                UserWarning,
+                stacklevel=2,
+            )
             return value  # can't parse, leave as-is
 
     coerce.__name__ = name
