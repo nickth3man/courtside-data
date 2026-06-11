@@ -4,7 +4,7 @@ from unittest import TestCase, mock
 import httpx
 
 from courtside_data.errors import InvalidDate, InvalidPlayer, InvalidTeam
-from courtside_data.http_service import HTTPService
+from courtside_data.http_service import _MAX_RETRY_AFTER_WAIT, HTTPService, _should_retry
 
 
 class TestHTTPService(TestCase):
@@ -195,6 +195,32 @@ class TestHTTPServiceEnvVarFallback(TestCase):
         with mock.patch.dict(os.environ, {}, clear=True):
             service = HTTPService(parser=mock.MagicMock())
             self.assertEqual(service._rate_limit_jitter, 1.2)
+
+
+class TestShouldRetryRetryAfterCap(TestCase):
+    """The honored Retry-After wait must be capped: stamina uses a
+    hook-returned float verbatim, so an uncapped hour-plus Retry-After from a
+    jailed session would make a single request sleep that entire time."""
+
+    @staticmethod
+    def _status_error(status_code, headers=None):
+        request = httpx.Request("GET", "https://example.com")
+        response = httpx.Response(status_code, headers=headers, request=request)
+        return httpx.HTTPStatusError("error", request=request, response=response)
+
+    def test_small_retry_after_is_honored(self):
+        wait = _should_retry(self._status_error(429, headers={"Retry-After": "5"}))
+        self.assertEqual(wait, 5.0)
+
+    def test_huge_retry_after_is_capped(self):
+        wait = _should_retry(self._status_error(429, headers={"Retry-After": "3600"}))
+        self.assertEqual(wait, _MAX_RETRY_AFTER_WAIT)
+
+    def test_429_without_retry_after_retries_with_default_backoff(self):
+        self.assertIs(_should_retry(self._status_error(429)), True)
+
+    def test_client_errors_are_not_retried(self):
+        self.assertIs(_should_retry(self._status_error(404)), False)
 
 
 class TestInvalidPlayer(TestCase):

@@ -77,7 +77,7 @@ def case(name, fn):
     dur = record["duration_seconds"]
     if status == "PASS":
         s = record["result_summary"]
-        print(f"    PASS {dur}s - {s.get('type')} (len={s.get('length','')})")
+        print(f"    PASS {dur}s - {s.get('type')} (len={s.get('length', '')})")
     else:
         print(f"    FAIL {dur}s - {record['exception_type']}: {record['exception_message']}")
     return record
@@ -96,8 +96,14 @@ def main():
         ("season_schedule", lambda: client.season_schedule(season_end_year=SEASON)),
         ("players_season_totals", lambda: client.players_season_totals(season_end_year=SEASON)),
         ("players_advanced_season_totals", lambda: client.players_advanced_season_totals(season_end_year=SEASON)),
-        ("regular_season_player_box_scores", lambda: client.regular_season_player_box_scores(player_identifier=PLAYER, season_end_year=SEASON)),
-        ("playoff_player_box_scores", lambda: client.playoff_player_box_scores(player_identifier=PLAYER, season_end_year=SEASON)),
+        (
+            "regular_season_player_box_scores",
+            lambda: client.regular_season_player_box_scores(player_identifier=PLAYER, season_end_year=SEASON),
+        ),
+        (
+            "playoff_player_box_scores",
+            lambda: client.playoff_player_box_scores(player_identifier=PLAYER, season_end_year=SEASON),
+        ),
         ("play_by_play", lambda: client.play_by_play(home_team=PBP_TEAM, day=PBP_DAY, month=PBP_MONTH, year=PBP_YEAR)),
         # ── League-wide season endpoints ──
         ("league_per_game_stats", lambda: client.league_per_game_stats(season_end_year=SEASON)),
@@ -134,14 +140,23 @@ def main():
         ("team_roster", lambda: client.team_roster(team_abbreviation=TEAM_ABBR, season_end_year=SEASON)),
         ("team_injury_report", lambda: client.team_injury_report(team_abbreviation=TEAM_ABBR, season_end_year=SEASON)),
         ("team_and_opponent", lambda: client.team_and_opponent(team_abbreviation=TEAM_ABBR, season_end_year=SEASON)),
-        ("team_misc_four_factors", lambda: client.team_misc_four_factors(team_abbreviation=TEAM_ABBR, season_end_year=SEASON)),
-        ("team_opponent_stats", lambda: client.team_opponent_stats(team_abbreviation=TEAM_ABBR, season_end_year=SEASON)),
+        (
+            "team_misc_four_factors",
+            lambda: client.team_misc_four_factors(team_abbreviation=TEAM_ABBR, season_end_year=SEASON),
+        ),
+        (
+            "team_opponent_stats",
+            lambda: client.team_opponent_stats(team_abbreviation=TEAM_ABBR, season_end_year=SEASON),
+        ),
         ("team_schedule", lambda: client.team_schedule(team_abbreviation=TEAM_ABBR, season_end_year=SEASON)),
         ("team_transactions", lambda: client.team_transactions(team_abbreviation=TEAM_ABBR, season_end_year=SEASON)),
         ("team_splits", lambda: client.team_splits(team_abbreviation=TEAM_ABBR, season_end_year=SEASON)),
         ("team_contracts", lambda: client.team_contracts(team_abbreviation=TEAM_ABBR)),
         ("team_lineups", lambda: client.team_lineups(team_abbreviation=TEAM_ABBR, season_end_year=SEASON)),
-        ("team_starting_lineups", lambda: client.team_starting_lineups(team_abbreviation=TEAM_ABBR, season_end_year=SEASON)),
+        (
+            "team_starting_lineups",
+            lambda: client.team_starting_lineups(team_abbreviation=TEAM_ABBR, season_end_year=SEASON),
+        ),
         ("team_on_off", lambda: client.team_on_off(team_abbreviation=TEAM_ABBR, season_end_year=SEASON)),
         ("franchise_history", lambda: client.franchise_history(team_abbreviation=TEAM_ABBR)),
     ]
@@ -160,28 +175,33 @@ def main():
 
     # Write results
     with open(OUTPUT, "w", encoding="utf-8") as f:
-        json.dump({
-            "generated_at": datetime.now(UTC).isoformat(),
-            "parameters": {
-                "season_end_year": SEASON,
-                "player_identifier": PLAYER,
-                "team_abbreviation": TEAM_ABBR,
-                "search_term": SEARCH_TERM,
-                "box_date": f"{BOX_YEAR}-{BOX_MONTH:02d}-{BOX_DAY:02d}",
+        json.dump(
+            {
+                "generated_at": datetime.now(UTC).isoformat(),
+                "parameters": {
+                    "season_end_year": SEASON,
+                    "player_identifier": PLAYER,
+                    "team_abbreviation": TEAM_ABBR,
+                    "search_term": SEARCH_TERM,
+                    "box_date": f"{BOX_YEAR}-{BOX_MONTH:02d}-{BOX_DAY:02d}",
+                },
+                "total_endpoints": total,
+                "results": results,
             },
-            "total_endpoints": total,
-            "results": results,
-        }, f, indent=2, default=str)
+            f,
+            indent=2,
+            default=str,
+        )
     print(f"\n\nResults written to {OUTPUT}")
 
     # Summary
     passed = sum(1 for r in results if r["status"] == "PASS")
     failed = sum(1 for r in results if r["status"] == "FAIL")
     total_dur = sum(r["duration_seconds"] or 0 for r in results)
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print(f"Summary: {passed} PASSED, {failed} FAILED (of {total})")
-    print(f"Total wall time: ~{total_dur:.0f}s ({total_dur/60:.1f} min)")
-    print(f"{'='*60}")
+    print(f"Total wall time: ~{total_dur:.0f}s ({total_dur / 60:.1f} min)")
+    print(f"{'=' * 60}")
     return 0 if failed == 0 else 1
 
 

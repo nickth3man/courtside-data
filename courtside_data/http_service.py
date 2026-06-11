@@ -47,6 +47,11 @@ _DEFAULT_RATE_LIMIT_INTERVAL = 3.5
 _DEFAULT_RATE_LIMIT_JITTER = 1.2
 _DEFAULT_TIMEOUT = httpx.Timeout(30.0, connect=10.0)
 _RETRY_ATTEMPTS = 3
+# Basketball-Reference can send Retry-After values of an hour or more when a
+# session is jailed. stamina uses a hook-returned float verbatim (wait_max
+# does not apply to it), so cap it to keep a single request from sleeping
+# for the full jail duration.
+_MAX_RETRY_AFTER_WAIT = 60.0
 
 
 def _parse_retry_after(value: str) -> float:
@@ -84,7 +89,7 @@ def _should_retry(exc: Exception) -> bool | float:
         if code in (429, 502, 503, 504):
             retry_after = exc.response.headers.get("Retry-After")
             if retry_after is not None:
-                return _parse_retry_after(retry_after)
+                return min(_parse_retry_after(retry_after), _MAX_RETRY_AFTER_WAIT)
             return True
         # Do NOT retry other 4xx (400, 401, 403, 404, etc.)
         return False
@@ -140,7 +145,7 @@ class HTTPService:
         self._session = session if session is not None else build_client(cache=cache, timeout=self._timeout)
 
         # Injectable dependencies for testing
-        self._time = time_func if time_func is not None else time.time
+        self._time = time_func if time_func is not None else time.monotonic
         self._sleep = sleep if sleep is not None else time.sleep
         self._random = random_func if random_func is not None else random.uniform
 
@@ -375,9 +380,7 @@ class HTTPService:
         ]
 
         if len(combined_team_totals) < 2:
-            raise ValueError(
-                f"Expected 2 team totals in box score page, got {len(combined_team_totals)}"
-            )
+            raise ValueError(f"Expected 2 team totals in box score page, got {len(combined_team_totals)}")
         return self.parser.parse_team_totals(
             first_team_totals=combined_team_totals[0],
             second_team_totals=combined_team_totals[1],

@@ -22,7 +22,11 @@ class Test199911160ATLPlayByPlay(TestCase):
     @requests_mock.Mocker()
     def test_length(self, m):
         m.get("https://www.basketball-reference.com/boxscores/pbp/199111160ATL.html", text=self._html, status_code=200)
-        m.get("https://www.basketball-reference.com/boxscores/?day=16&month=11&year=1991", text='<html><body><td class="gamelink"><a href="/boxscores/199111160ATL.html">Final</a></td></body></html>', status_code=200)
+        m.get(
+            "https://www.basketball-reference.com/boxscores/?day=16&month=11&year=1991",
+            text='<html><body><td class="gamelink"><a href="/boxscores/199111160ATL.html">Final</a></td></body></html>',
+            status_code=200,
+        )
         plays = play_by_play(home_team=Team.ATLANTA_HAWKS, day=16, month=11, year=1991)
         self.assertEqual(len(plays), 420)
 
@@ -41,14 +45,22 @@ class Test201810270MILPlayByPlay(TestCase):
     @requests_mock.Mocker()
     def test_length(self, m):
         m.get("https://www.basketball-reference.com/boxscores/pbp/201810270MIL.html", text=self._html, status_code=200)
-        m.get("https://www.basketball-reference.com/boxscores/?day=27&month=10&year=2018", text='<html><body><td class="gamelink"><a href="/boxscores/201810270MIL.html">Final</a></td></body></html>', status_code=200)
+        m.get(
+            "https://www.basketball-reference.com/boxscores/?day=27&month=10&year=2018",
+            text='<html><body><td class="gamelink"><a href="/boxscores/201810270MIL.html">Final</a></td></body></html>',
+            status_code=200,
+        )
         plays = play_by_play(home_team=Team.MILWAUKEE_BUCKS, day=27, month=10, year=2018)
         self.assertEqual(len(plays), 465)
 
     @requests_mock.Mocker()
     def test_first_play(self, m):
         m.get("https://www.basketball-reference.com/boxscores/pbp/201810270MIL.html", text=self._html, status_code=200)
-        m.get("https://www.basketball-reference.com/boxscores/?day=27&month=10&year=2018", text='<html><body><td class="gamelink"><a href="/boxscores/201810270MIL.html">Final</a></td></body></html>', status_code=200)
+        m.get(
+            "https://www.basketball-reference.com/boxscores/?day=27&month=10&year=2018",
+            text='<html><body><td class="gamelink"><a href="/boxscores/201810270MIL.html">Final</a></td></body></html>',
+            status_code=200,
+        )
         plays = play_by_play(home_team=Team.MILWAUKEE_BUCKS, day=27, month=10, year=2018)
         self.assertEqual(
             plays[0],
@@ -68,7 +80,11 @@ class Test201810270MILPlayByPlay(TestCase):
     @requests_mock.Mocker()
     def test_last_play(self, m):
         m.get("https://www.basketball-reference.com/boxscores/pbp/201810290MIL.html", text=self._html, status_code=200)
-        m.get("https://www.basketball-reference.com/boxscores/?day=29&month=10&year=2018", text='<html><body><td class="gamelink"><a href="/boxscores/201810290MIL.html">Final</a></td></body></html>', status_code=200)
+        m.get(
+            "https://www.basketball-reference.com/boxscores/?day=29&month=10&year=2018",
+            text='<html><body><td class="gamelink"><a href="/boxscores/201810290MIL.html">Final</a></td></body></html>',
+            status_code=200,
+        )
         plays = play_by_play(home_team=Team.MILWAUKEE_BUCKS, day=29, month=10, year=2018)
         self.assertEqual(
             plays[464],
@@ -100,14 +116,22 @@ class Test201901010DEN(TestCase):
     @requests_mock.Mocker()
     def test_total_play_by_play_length_for_single_digit_month_and_day(self, m):
         m.get("https://www.basketball-reference.com/boxscores/pbp/201901010DEN.html", text=self._html, status_code=200)
-        m.get("https://www.basketball-reference.com/boxscores/?day=1&month=1&year=2019", text='<html><body><td class="gamelink"><a href="/boxscores/201901010DEN.html">Final</a></td></body></html>', status_code=200)
+        m.get(
+            "https://www.basketball-reference.com/boxscores/?day=1&month=1&year=2019",
+            text='<html><body><td class="gamelink"><a href="/boxscores/201901010DEN.html">Final</a></td></body></html>',
+            status_code=200,
+        )
         result = play_by_play(home_team=Team.DENVER_NUGGETS, day=1, month=1, year=2019)
         self.assertEqual(len(result), 464)
 
     @requests_mock.Mocker()
     def test_first_play_by_play_for_2019_01_01(self, m):
         m.get("https://www.basketball-reference.com/boxscores/pbp/201901010DEN.html", text=self._html, status_code=200)
-        m.get("https://www.basketball-reference.com/boxscores/?day=1&month=1&year=2019", text='<html><body><td class="gamelink"><a href="/boxscores/201901010DEN.html">Final</a></td></body></html>', status_code=200)
+        m.get(
+            "https://www.basketball-reference.com/boxscores/?day=1&month=1&year=2019",
+            text='<html><body><td class="gamelink"><a href="/boxscores/201901010DEN.html">Final</a></td></body></html>',
+            status_code=200,
+        )
         result = play_by_play(home_team=Team.DENVER_NUGGETS, day=1, month=1, year=2019)
         self.assertEqual(
             result[0],
@@ -127,7 +151,11 @@ class Test201901010DEN(TestCase):
     @requests_mock.Mocker()
     def test_last_play_by_play_for_2019_01_01(self, m):
         m.get("https://www.basketball-reference.com/boxscores/pbp/201901010DEN.html", text=self._html, status_code=200)
-        m.get("https://www.basketball-reference.com/boxscores/?day=1&month=1&year=2019", text='<html><body><td class="gamelink"><a href="/boxscores/201901010DEN.html">Final</a></td></body></html>', status_code=200)
+        m.get(
+            "https://www.basketball-reference.com/boxscores/?day=1&month=1&year=2019",
+            text='<html><body><td class="gamelink"><a href="/boxscores/201901010DEN.html">Final</a></td></body></html>',
+            status_code=200,
+        )
         result = play_by_play(home_team=Team.DENVER_NUGGETS, day=1, month=1, year=2019)
         self.assertEqual(
             result[463],
@@ -159,7 +187,11 @@ class Test201901010SAC(TestCase):
     @requests_mock.Mocker()
     def test_last_play_by_play_for_overtime_game(self, m):
         m.get("https://www.basketball-reference.com/boxscores/pbp/201901010SAC.html", text=self._html, status_code=200)
-        m.get("https://www.basketball-reference.com/boxscores/?day=1&month=1&year=2019", text='<html><body><td class="gamelink"><a href="/boxscores/201901010SAC.html">Final</a></td></body></html>', status_code=200)
+        m.get(
+            "https://www.basketball-reference.com/boxscores/?day=1&month=1&year=2019",
+            text='<html><body><td class="gamelink"><a href="/boxscores/201901010SAC.html">Final</a></td></body></html>',
+            status_code=200,
+        )
         result = play_by_play(home_team=Team.SACRAMENTO_KINGS, day=1, month=1, year=2019)
         self.assertEqual(
             result[507],
@@ -191,7 +223,11 @@ class Test201810160GSW(TestCase):
     @requests_mock.Mocker()
     def test_non_unicode_matches(self, m):
         m.get("https://www.basketball-reference.com/boxscores/pbp/201810160GSW.html", text=self._html, status_code=200)
-        m.get("https://www.basketball-reference.com/boxscores/?day=16&month=10&year=2018", text='<html><body><td class="gamelink"><a href="/boxscores/201810160GSW.html">Final</a></td></body></html>', status_code=200)
+        m.get(
+            "https://www.basketball-reference.com/boxscores/?day=16&month=10&year=2018",
+            text='<html><body><td class="gamelink"><a href="/boxscores/201810160GSW.html">Final</a></td></body></html>',
+            status_code=200,
+        )
         plays = play_by_play(home_team=Team.GOLDEN_STATE_WARRIORS, day=16, month=10, year=2018)
         self.assertIsNotNone(plays)
         self.assertEqual(len(plays), 509)
@@ -200,7 +236,11 @@ class Test201810160GSW(TestCase):
 class TestErrorCases(TestCase):
     @requests_mock.Mocker()
     def test_get_play_by_play_for_day_that_does_not_exist(self, m):
-        m.get("https://www.basketball-reference.com/boxscores/?day=-1&month=1&year=2018", text="<html><body></body></html>", status_code=200)
+        m.get(
+            "https://www.basketball-reference.com/boxscores/?day=-1&month=1&year=2018",
+            text="<html><body></body></html>",
+            status_code=200,
+        )
         self.assertRaisesRegex(
             InvalidDate,
             "Date with year set to 2018, month set to 1, and day set to -1 is invalid",
@@ -236,7 +276,11 @@ class TestPlayByPlayCSVOutput(TestCase):
     @requests_mock.Mocker()
     def test_play_by_play_output_for_200310290TOR(self, m):
         m.get("https://www.basketball-reference.com/boxscores/pbp/200310290TOR.html", text=self._html, status_code=200)
-        m.get("https://www.basketball-reference.com/boxscores/?day=29&month=10&year=2003", text='<html><body><td class="gamelink"><a href="/boxscores/200310290TOR.html">Final</a></td></body></html>', status_code=200)
+        m.get(
+            "https://www.basketball-reference.com/boxscores/?day=29&month=10&year=2003",
+            text='<html><body><td class="gamelink"><a href="/boxscores/200310290TOR.html">Final</a></td></body></html>',
+            status_code=200,
+        )
         play_by_play(
             home_team=Team.TORONTO_RAPTORS,
             day=29,
@@ -277,7 +321,11 @@ class TestPlayByPlayJSONOutput(TestCase):
     @requests_mock.Mocker()
     def test_get_box_scores_from_2003_json(self, m):
         m.get("https://www.basketball-reference.com/boxscores/pbp/200310290TOR.html", text=self._html, status_code=200)
-        m.get("https://www.basketball-reference.com/boxscores/?day=29&month=10&year=2003", text='<html><body><td class="gamelink"><a href="/boxscores/200310290TOR.html">Final</a></td></body></html>', status_code=200)
+        m.get(
+            "https://www.basketball-reference.com/boxscores/?day=29&month=10&year=2003",
+            text='<html><body><td class="gamelink"><a href="/boxscores/200310290TOR.html">Final</a></td></body></html>',
+            status_code=200,
+        )
         play_by_play(
             home_team=Team.TORONTO_RAPTORS,
             day=29,

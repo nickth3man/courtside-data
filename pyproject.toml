@@ -31,6 +31,7 @@ dev = [
     "pytest>=8.0",
     "pytest-freezer>=0.4.2",
     "pytest-socket>=0.7.0",
+    "pytest-timeout>=2.4.0",
     "respx>=0.22.0",
     "coverage>=7.0",
     "ruff>=0.11.0",
@@ -56,7 +57,9 @@ packages = ["courtside_data"]
 [tool.pytest.ini_options]
 pythonpath = ["."]
 testpaths = "tests"
-addopts = ["-p", "no:freezegun", "--disable-socket"]
+# --timeout=300: backstop so no single test can hang indefinitely; sized above
+# the slowest legitimate live e2e test (season schedule: ~8 requests at 15s spacing)
+addopts = ["-p", "no:freezegun", "--disable-socket", "--timeout=300"]
 
 [dependency-groups]
 dev = [

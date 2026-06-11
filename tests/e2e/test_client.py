@@ -3,6 +3,8 @@ import filecmp
 import os
 from unittest import TestCase
 
+import pytest
+
 from courtside_data.client import (
     play_by_play,
     player_box_scores,
@@ -11,6 +13,10 @@ from courtside_data.client import (
     season_schedule,
 )
 from courtside_data.data import Location, Outcome, OutputType, OutputWriteOption, PeriodType, Team
+
+# Live tests need real network access; the repo-wide socket block
+# (--disable-socket plus tests/conftest.py) is lifted only for this marker.
+pytestmark = pytest.mark.enable_socket
 
 
 class BaseEndToEndTest(TestCase):

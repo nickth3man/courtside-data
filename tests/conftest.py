@@ -17,9 +17,11 @@ def disable_rate_limiting():
     yield
 
 
-def pytest_runtest_setup():
+def pytest_runtest_setup(item):
     """Block all network access in non-e2e tests.
 
     E2e tests can use @pytest.mark.enable_socket to opt back in.
     """
+    if item.get_closest_marker("enable_socket"):
+        return
     pytest_socket.disable_socket()
