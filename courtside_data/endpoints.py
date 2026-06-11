@@ -19,9 +19,17 @@ from typing import Any
 
 import httpx
 
-from courtside_data.errors import InvalidPlayer, InvalidSeason, InvalidTeam
+from courtside_data.errors import (
+    InvalidDate,
+    InvalidPlayer,
+    InvalidPlayerAndSeason,
+    InvalidSearch,
+    InvalidSeason,
+    InvalidTeam,
+)
 from courtside_data.output.columns import (
     ATTENDANCE_COLUMN_NAMES,
+    BOX_SCORE_COLUMN_NAMES,
     CAREER_LEADERS_COLUMN_NAMES,
     DRAFT_PICKS_COLUMN_NAMES,
     FRANCHISE_HISTORY_COLUMN_NAMES,
@@ -31,7 +39,9 @@ from courtside_data.output.columns import (
     LEAGUE_SHOOTING_COLUMN_NAMES,
     LEAGUE_TOTALS_COLUMN_NAMES,
     LEAGUE_TRANSACTIONS_COLUMN_NAMES,
+    PLAY_BY_PLAY_COLUMN_NAMES,
     PLAYER_ADJUSTED_SHOOTING_COLUMN_NAMES,
+    PLAYER_ADVANCED_SEASON_TOTALS_COLUMN_NAMES,
     PLAYER_ALL_STAR_COLUMN_NAMES,
     PLAYER_CAREER_STATS_COLUMN_NAMES,
     PLAYER_GAME_HIGHS_COLUMN_NAMES,
@@ -39,6 +49,8 @@ from courtside_data.output.columns import (
     PLAYER_PLAY_BY_PLAY_COLUMN_NAMES,
     PLAYER_PLAYOFF_SERIES_COLUMN_NAMES,
     PLAYER_SALARIES_COLUMN_NAMES,
+    PLAYER_SEASON_BOX_SCORE_COLUMN_NAMES,
+    PLAYER_SEASON_TOTALS_COLUMN_NAMES,
     PLAYER_SHOT_CHARTS_COLUMN_NAMES,
     PLAYER_SIMILARITY_SCORES_COLUMN_NAMES,
     PLAYER_SPLITS_COLUMN_NAMES,
@@ -46,10 +58,13 @@ from courtside_data.output.columns import (
     PLAYOFF_PER_GAME_COLUMN_NAMES,
     PLAYOFF_TOTALS_COLUMN_NAMES,
     ROOKIE_STATS_COLUMN_NAMES,
+    SCHEDULE_COLUMN_NAMES,
     SEASON_AWARDS_COLUMN_NAMES,
     SEASON_LEADERS_COLUMN_NAMES,
     STANDINGS_BY_DATE_COLUMN_NAMES,
+    STANDINGS_COLUMNS_NAMES,
     TEAM_AND_OPPONENT_COLUMN_NAMES,
+    TEAM_BOX_SCORES_COLUMN_NAMES,
     TEAM_CONTRACTS_COLUMN_NAMES,
     TEAM_INJURY_REPORT_COLUMN_NAMES,
     TEAM_LINEUPS_COLUMN_NAMES,
@@ -64,6 +79,7 @@ from courtside_data.output.columns import (
 )
 
 NOT_FOUND = (int(httpx.codes.NOT_FOUND),)
+NOT_FOUND_OR_SERVER_ERROR = (int(httpx.codes.NOT_FOUND), int(httpx.codes.INTERNAL_SERVER_ERROR))
 
 
 @dataclass(frozen=True, slots=True)
@@ -115,6 +131,7 @@ def _endpoint(
     params: tuple[str, ...],
     error: type[Exception] | None,
     error_params: tuple[str, ...],
+    error_status_codes: tuple[int, ...] = NOT_FOUND,
     table_id: str | None = None,
     commented_table_id: str | None = None,
     use_header_fallback: bool = False,
@@ -135,13 +152,14 @@ def _endpoint(
         csv_columns=csv_columns,
         error=error,
         error_params=error_params,
+        error_status_codes=error_status_codes,
     )
 
 
-def _season(path: str, **overrides: Any) -> TableEndpoint:
+def _season(path: str, params: tuple[str, ...] = ("season_end_year",), **overrides: Any) -> TableEndpoint:
     return _endpoint(
         path,
-        params=("season_end_year",),
+        params=params,
         error=InvalidSeason,
         error_params=("season_end_year",),
         **overrides,
@@ -209,6 +227,12 @@ ENDPOINTS: dict[str, TableEndpoint] = {
         "/leagues/NBA_{season_end_year}_rookies.html",
         table_id="rookies",
         csv_columns=ROOKIE_STATS_COLUMN_NAMES,
+    ),
+    # Backed by the bespoke HTTPService.standings (parses both conference tables).
+    "standings": _season(
+        "/leagues/NBA_{season_end_year}.html",
+        custom=True,
+        csv_columns=STANDINGS_COLUMNS_NAMES,
     ),
     "standings_by_date": _season(
         "/leagues/NBA_{season_end_year}_standings_by_date_{conference}.html",
@@ -396,5 +420,73 @@ ENDPOINTS: dict[str, TableEndpoint] = {
         params=("team_abbreviation",),
         table_id="{team_abbreviation}",
         csv_columns=FRANCHISE_HISTORY_COLUMN_NAMES,
+    ),
+    # ── Bespoke HTTPService endpoints (multi-step fetch/parse chains) ──
+    # All custom=True: each is backed by the same-named HTTPService method.
+    "player_box_scores": _endpoint(
+        "/friv/dailyleaders.cgi?month={month}&day={day}&year={year}",
+        params=("day", "month", "year"),
+        error=InvalidDate,
+        error_params=("day", "month", "year"),
+        custom=True,
+        csv_columns=BOX_SCORE_COLUMN_NAMES,
+    ),
+    "team_box_scores": _endpoint(
+        "/boxscores/?month={month}&day={day}&year={year}",
+        params=("day", "month", "year"),
+        error=InvalidDate,
+        error_params=("day", "month", "year"),
+        custom=True,
+        csv_columns=TEAM_BOX_SCORES_COLUMN_NAMES,
+    ),
+    "play_by_play": _endpoint(
+        "/boxscores/pbp/",
+        params=("home_team", "day", "month", "year"),
+        error=InvalidDate,
+        error_params=("day", "month", "year"),
+        custom=True,
+        csv_columns=PLAY_BY_PLAY_COLUMN_NAMES,
+    ),
+    "regular_season_player_box_scores": _endpoint(
+        "/players/{player_identifier[0]}/{player_identifier}/gamelog/{season_end_year}",
+        params=("player_identifier", "season_end_year", "include_inactive_games"),
+        error=InvalidPlayerAndSeason,
+        error_params=("player_identifier", "season_end_year"),
+        error_status_codes=NOT_FOUND_OR_SERVER_ERROR,
+        custom=True,
+        csv_columns=PLAYER_SEASON_BOX_SCORE_COLUMN_NAMES,
+    ),
+    "playoff_player_box_scores": _endpoint(
+        "/players/{player_identifier[0]}/{player_identifier}/gamelog/{season_end_year}",
+        params=("player_identifier", "season_end_year", "include_inactive_games"),
+        error=InvalidPlayerAndSeason,
+        error_params=("player_identifier", "season_end_year"),
+        error_status_codes=NOT_FOUND_OR_SERVER_ERROR,
+        custom=True,
+        csv_columns=PLAYER_SEASON_BOX_SCORE_COLUMN_NAMES,
+    ),
+    "season_schedule": _season(
+        "/leagues/NBA_{season_end_year}_games.html",
+        custom=True,
+        csv_columns=SCHEDULE_COLUMN_NAMES,
+    ),
+    "players_season_totals": _season(
+        "/leagues/NBA_{season_end_year}_totals.html",
+        custom=True,
+        csv_columns=PLAYER_SEASON_TOTALS_COLUMN_NAMES,
+    ),
+    "players_advanced_season_totals": _season(
+        "/leagues/NBA_{season_end_year}_advanced.html",
+        params=("season_end_year", "include_combined_values"),
+        custom=True,
+        csv_columns=PLAYER_ADVANCED_SEASON_TOTALS_COLUMN_NAMES,
+    ),
+    # csv_columns omitted — auto-detected from data so empty columns are stripped
+    "search": _endpoint(
+        "/search/search.fcgi?search={term}",
+        params=("term",),
+        error=InvalidSearch,
+        error_params=("term",),
+        custom=True,
     ),
 }

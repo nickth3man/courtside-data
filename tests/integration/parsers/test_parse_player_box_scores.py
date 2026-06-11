@@ -22,10 +22,11 @@ from courtside_data.parsers import (
 
 
 class BaseBoxScoresTestCase(TestCase):
-    _date: datetime.date = None
+    _date: datetime.date | None = None
 
     @classmethod
     def setUpClass(cls):
+        assert cls._date is not None, "subclasses must set _date"
         year, month, day = cls._date.year, cls._date.month, cls._date.day
         with open(
             os.path.join(

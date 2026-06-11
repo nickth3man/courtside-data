@@ -21,8 +21,8 @@ class TestPeriodDetailsParser(TestCase):
     def test_parse_period_number_is_period_count_in_regulation(self, mocked_is_overtime):
         mocked_is_overtime.return_value = False
         self.assertEqual(
-            PeriodDetailsParser(regulation_periods_count=4).parse_period_number(period_count="some period count"),
-            "some period count",
+            PeriodDetailsParser(regulation_periods_count=4).parse_period_number(period_count=3),
+            3,
         )
 
     @patch.object(PeriodDetailsParser, "is_overtime")
@@ -39,7 +39,7 @@ class TestPeriodDetailsParser(TestCase):
     def test_parse_period_type_is_overtime_when_in_overtime(self, mocked_is_overtime):
         mocked_is_overtime.return_value = True
         self.assertEqual(
-            PeriodDetailsParser(regulation_periods_count=4).parse_period_type(period_count="some period count"),
+            PeriodDetailsParser(regulation_periods_count=4).parse_period_type(period_count=5),
             PeriodType.OVERTIME,
         )
 
@@ -47,6 +47,6 @@ class TestPeriodDetailsParser(TestCase):
     def test_parse_period_type_is_quarter_when_in_regulation(self, mocked_is_overtime):
         mocked_is_overtime.return_value = False
         self.assertEqual(
-            PeriodDetailsParser(regulation_periods_count=4).parse_period_type(period_count="some period count"),
+            PeriodDetailsParser(regulation_periods_count=4).parse_period_type(period_count=4),
             PeriodType.QUARTER,
         )

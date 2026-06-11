@@ -14,7 +14,7 @@ def pytest_configure(config):
     def guarded_get(self, url, **kwargs):
         return policy.request(lambda **request_kwargs: original_get(self, **request_kwargs), url=url, **kwargs)
 
-    HTTPService._get = guarded_get
+    setattr(HTTPService, "_get", guarded_get)  # noqa: B010 — keep the patch visible to ty as a dynamic assignment
 
 
 @pytest.fixture(autouse=True)

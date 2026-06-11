@@ -14,7 +14,7 @@ from unittest import mock
 # Ensure the script module can be imported
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent / "scripts"))
 
-import regenerate_expected  # noqa: E402
+import regenerate_expected  # noqa: E402  # ty: ignore[unresolved-import] — resolved via the sys.path insert above
 
 
 class TestTripwireComparison(unittest.TestCase):

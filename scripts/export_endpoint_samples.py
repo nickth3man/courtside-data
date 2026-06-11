@@ -9,7 +9,7 @@ import json
 import sys
 from pathlib import Path
 
-import requests
+import httpx
 
 from courtside_data.data import Team
 from courtside_data.http_service import HTTPService
@@ -308,7 +308,7 @@ def _call_specs(service):
 def main():
     service = HTTPService(
         parser=ParserService(),
-        session=requests.Session(),
+        session=httpx.Client(),
         rate_limit_interval=RATE_LIMIT_INTERVAL,
         rate_limit_jitter=RATE_LIMIT_JITTER,
     )
@@ -340,10 +340,10 @@ def main():
             rows = []
             try:
                 rows = _normalize_result(call())
-            except requests.exceptions.HTTPError as exc:
+            except httpx.HTTPStatusError as exc:
                 status = "http_error"
                 error = str(exc)
-                if exc.response is not None and exc.response.status_code == 429:
+                if exc.response.status_code == 429:
                     writer.writerow(
                         {
                             "endpoint": endpoint,

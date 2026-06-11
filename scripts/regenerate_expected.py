@@ -16,6 +16,7 @@ is always run first to protect against silently capturing a parser regression.
 import argparse
 import difflib
 import filecmp
+import io
 import os
 import shutil
 import subprocess
@@ -24,12 +25,10 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
 
-# Ensure stdout can handle Unicode characters (e.g. accented player names)
-if sys.stdout.encoding and sys.stdout.encoding.upper() != "UTF-8":
-    try:
-        sys.stdout.reconfigure(encoding="utf-8")
-    except AttributeError:
-        pass  # Python < 3.7, fall back to default
+# Ensure stdout can handle Unicode characters (e.g. accented player names).
+# pytest and other harnesses may replace stdout with a non-reconfigurable stream.
+if sys.stdout.encoding and sys.stdout.encoding.upper() != "UTF-8" and isinstance(sys.stdout, io.TextIOWrapper):
+    sys.stdout.reconfigure(encoding="utf-8")
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 

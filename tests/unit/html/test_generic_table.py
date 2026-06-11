@@ -214,7 +214,7 @@ class TestExtractCommentedTextBox(TestCase):
     def test_finds_commented_table_by_id(self):
         selector = Selector(text=COMMENTED_TABLE_HTML)
         result = extract_commented_table(selector, "playoffs_totals")
-        self.assertIsNotNone(result)
+        assert result is not None
         # The returned Selector should find the table
         rows = GenericTable(result)
         self.assertEqual(len(rows.rows), 1)
@@ -228,7 +228,7 @@ class TestExtractCommentedTextBox(TestCase):
     def test_finds_table_with_single_quote_id(self):
         selector = Selector(text=COMMENTED_TABLE_SINGLE_QUOTE_HTML)
         result = extract_commented_table(selector, "per_poss")
-        self.assertIsNotNone(result)
+        assert result is not None
         rows = GenericTable(result)
         self.assertEqual(len(rows.rows), 1)
         self.assertEqual(rows.rows[0].get("player"), "Per Poss Player")

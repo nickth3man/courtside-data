@@ -36,7 +36,7 @@ def _make_coercion(name: str, target: Callable[[str], Any], empty_value: Any) ->
             return target(stripped)
         except ValueError:
             warnings.warn(
-                f"Failed to coerce {stripped!r} via {target.__name__}, leaving as string",
+                f"Failed to coerce {stripped!r} via {getattr(target, '__name__', repr(target))}, leaving as string",
                 UserWarning,
                 stacklevel=2,
             )

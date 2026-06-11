@@ -1,30 +1,24 @@
+"""Public client functions for every Basketball Reference endpoint.
+
+Each function is an explicit, typed ``def`` (so static typing, IDE
+auto-complete, and grep all work) whose body is a thin call into
+:func:`_run_endpoint`. All endpoint *metadata* — URL path, table location,
+CSV columns, and HTTP-status-to-domain-error mapping — lives in the
+:data:`courtside_data.endpoints.ENDPOINTS` registry, which is the single
+source of truth. A drift test asserts every function signature matches its
+registry entry.
+"""
+
 from __future__ import annotations
 
-import inspect
 from collections.abc import Callable, Sequence
 from typing import Any
 
 import httpx
 
-from courtside_data.data import OutputType, OutputWriteOption
-from courtside_data.endpoints import ENDPOINTS, TableEndpoint
-from courtside_data.errors import (
-    InvalidDate,
-    InvalidPlayerAndSeason,
-    InvalidSearch,
-    InvalidSeason,
-)
+from courtside_data.data import OutputType, OutputWriteOption, Team
+from courtside_data.endpoints import ENDPOINTS
 from courtside_data.http_service import HTTPService
-from courtside_data.output.columns import (
-    BOX_SCORE_COLUMN_NAMES,
-    PLAY_BY_PLAY_COLUMN_NAMES,
-    PLAYER_ADVANCED_SEASON_TOTALS_COLUMN_NAMES,
-    PLAYER_SEASON_BOX_SCORE_COLUMN_NAMES,
-    PLAYER_SEASON_TOTALS_COLUMN_NAMES,
-    SCHEDULE_COLUMN_NAMES,
-    STANDINGS_COLUMNS_NAMES,
-    TEAM_BOX_SCORES_COLUMN_NAMES,
-)
 from courtside_data.output.field_types import coerce_data
 from courtside_data.output.fields import BasketballReferenceJSONEncoder, format_value
 from courtside_data.output.service import OutputService
@@ -81,7 +75,8 @@ def _execute(
     validate_output: bool = True,
 ) -> Any:
     values = _call_with_error_mapping(service_call, error_mappings)
-    # Coerce raw string values to proper Python types (idempotent for legacy endpoints)
+    # Coerce raw string values to proper Python types (idempotent for endpoints
+    # whose parser chains already produce typed values)
     values = coerce_data(values)
 
     if output_type == OutputType.CSV and csv_column_names is None:
@@ -107,14 +102,32 @@ def _execute(
     return output_service.output(data=values, options=options)
 
 
-# ── Legacy / public API functions (kept exactly as-is) ────────────────────
+def _run_endpoint(
+    name: str,
+    params: dict[str, Any],
+    *,
+    output_type: OutputType | None = None,
+    output_file_path: str | None = None,
+    output_write_option: OutputWriteOption | None = None,
+    json_options: dict[str, Any] | None = None,
+) -> Any:
+    """Execute the registry-described endpoint ``name`` with bound call params.
 
+    The :data:`ENDPOINTS` entry supplies the metadata (service dispatch, CSV
+    columns, error mapping); the caller supplies an explicit, typed signature.
+    """
+    endpoint = ENDPOINTS[name]
 
-def standings(season_end_year, output_type=None, output_file_path=None, output_write_option=None, json_options=None):
+    def service_call() -> Any:
+        service = HTTPService(parser=ParserService())
+        if endpoint.custom:
+            return getattr(service, name)(**params)
+        return service.fetch_table(endpoint, **params)
+
     return _execute(
-        service_call=lambda: HTTPService(parser=ParserService()).standings(season_end_year=season_end_year),
-        csv_column_names=STANDINGS_COLUMNS_NAMES,
-        error_mappings={httpx.codes.NOT_FOUND: lambda: InvalidSeason(season_end_year=season_end_year)},
+        service_call=service_call,
+        csv_column_names=endpoint.csv_columns,
+        error_mappings=endpoint.error_mappings(params),
         output_type=output_type,
         output_file_path=output_file_path,
         output_write_option=output_write_option,
@@ -122,13 +135,963 @@ def standings(season_end_year, output_type=None, output_file_path=None, output_w
     )
 
 
+# ── League-wide season tables ──────────────────────────────────────────────
+
+
+def league_per_game_stats(
+    season_end_year: int,
+    output_type: OutputType | None = None,
+    output_file_path: str | None = None,
+    output_write_option: OutputWriteOption | None = None,
+    json_options: dict[str, Any] | None = None,
+) -> Any:
+    """League-wide per-game player statistics for a season.
+
+    URL: /leagues/NBA_{season_end_year}_per_game.html
+    """
+    return _run_endpoint(
+        "league_per_game_stats",
+        {"season_end_year": season_end_year},
+        output_type=output_type,
+        output_file_path=output_file_path,
+        output_write_option=output_write_option,
+        json_options=json_options,
+    )
+
+
+def league_per_36_minutes(
+    season_end_year: int,
+    output_type: OutputType | None = None,
+    output_file_path: str | None = None,
+    output_write_option: OutputWriteOption | None = None,
+    json_options: dict[str, Any] | None = None,
+) -> Any:
+    """League-wide per-36-minute player statistics for a season.
+
+    URL: /leagues/NBA_{season_end_year}_per_minute.html
+    """
+    return _run_endpoint(
+        "league_per_36_minutes",
+        {"season_end_year": season_end_year},
+        output_type=output_type,
+        output_file_path=output_file_path,
+        output_write_option=output_write_option,
+        json_options=json_options,
+    )
+
+
+def league_totals(
+    season_end_year: int,
+    output_type: OutputType | None = None,
+    output_file_path: str | None = None,
+    output_write_option: OutputWriteOption | None = None,
+    json_options: dict[str, Any] | None = None,
+) -> Any:
+    """League-wide total player statistics for a season.
+
+    URL: /leagues/NBA_{season_end_year}_totals.html
+    """
+    return _run_endpoint(
+        "league_totals",
+        {"season_end_year": season_end_year},
+        output_type=output_type,
+        output_file_path=output_file_path,
+        output_write_option=output_write_option,
+        json_options=json_options,
+    )
+
+
+def league_per_100_possessions(
+    season_end_year: int,
+    output_type: OutputType | None = None,
+    output_file_path: str | None = None,
+    output_write_option: OutputWriteOption | None = None,
+    json_options: dict[str, Any] | None = None,
+) -> Any:
+    """League-wide per-100-possessions player statistics for a season.
+
+    URL: /leagues/NBA_{season_end_year}_per_poss.html
+    """
+    return _run_endpoint(
+        "league_per_100_possessions",
+        {"season_end_year": season_end_year},
+        output_type=output_type,
+        output_file_path=output_file_path,
+        output_write_option=output_write_option,
+        json_options=json_options,
+    )
+
+
+def league_shooting(
+    season_end_year: int,
+    output_type: OutputType | None = None,
+    output_file_path: str | None = None,
+    output_write_option: OutputWriteOption | None = None,
+    json_options: dict[str, Any] | None = None,
+) -> Any:
+    """League-wide shooting statistics for a season.
+
+    URL: /leagues/NBA_{season_end_year}_shooting.html
+    """
+    return _run_endpoint(
+        "league_shooting",
+        {"season_end_year": season_end_year},
+        output_type=output_type,
+        output_file_path=output_file_path,
+        output_write_option=output_write_option,
+        json_options=json_options,
+    )
+
+
+def league_transactions(
+    season_end_year: int,
+    output_type: OutputType | None = None,
+    output_file_path: str | None = None,
+    output_write_option: OutputWriteOption | None = None,
+    json_options: dict[str, Any] | None = None,
+) -> Any:
+    """League-wide transactions for a season.
+
+    URL: /leagues/NBA_{season_end_year}_transactions.html
+    """
+    return _run_endpoint(
+        "league_transactions",
+        {"season_end_year": season_end_year},
+        output_type=output_type,
+        output_file_path=output_file_path,
+        output_write_option=output_write_option,
+        json_options=json_options,
+    )
+
+
+def rookie_stats(
+    season_end_year: int,
+    output_type: OutputType | None = None,
+    output_file_path: str | None = None,
+    output_write_option: OutputWriteOption | None = None,
+    json_options: dict[str, Any] | None = None,
+) -> Any:
+    """Rookie statistics for a season.
+
+    URL: /leagues/NBA_{season_end_year}_rookies.html
+    """
+    return _run_endpoint(
+        "rookie_stats",
+        {"season_end_year": season_end_year},
+        output_type=output_type,
+        output_file_path=output_file_path,
+        output_write_option=output_write_option,
+        json_options=json_options,
+    )
+
+
+def standings(
+    season_end_year: int,
+    output_type: OutputType | None = None,
+    output_file_path: str | None = None,
+    output_write_option: OutputWriteOption | None = None,
+    json_options: dict[str, Any] | None = None,
+) -> Any:
+    """Eastern and Western conference standings for a season.
+
+    URL: /leagues/NBA_{season_end_year}.html
+    """
+    return _run_endpoint(
+        "standings",
+        {"season_end_year": season_end_year},
+        output_type=output_type,
+        output_file_path=output_file_path,
+        output_write_option=output_write_option,
+        json_options=json_options,
+    )
+
+
+def standings_by_date(
+    season_end_year: int,
+    output_type: OutputType | None = None,
+    output_file_path: str | None = None,
+    output_write_option: OutputWriteOption | None = None,
+    json_options: dict[str, Any] | None = None,
+) -> Any:
+    """Day-by-day standings for both conferences for a season.
+
+    URL: /leagues/NBA_{season_end_year}_standings_by_date_{conference}.html
+    """
+    return _run_endpoint(
+        "standings_by_date",
+        {"season_end_year": season_end_year},
+        output_type=output_type,
+        output_file_path=output_file_path,
+        output_write_option=output_write_option,
+        json_options=json_options,
+    )
+
+
+def attendance(
+    season_end_year: int,
+    output_type: OutputType | None = None,
+    output_file_path: str | None = None,
+    output_write_option: OutputWriteOption | None = None,
+    json_options: dict[str, Any] | None = None,
+) -> Any:
+    """Per-team arena attendance for a season.
+
+    URL: /leagues/NBA_{season_end_year}.html
+    """
+    return _run_endpoint(
+        "attendance",
+        {"season_end_year": season_end_year},
+        output_type=output_type,
+        output_file_path=output_file_path,
+        output_write_option=output_write_option,
+        json_options=json_options,
+    )
+
+
+# ── Playoffs ───────────────────────────────────────────────────────────────
+
+
+def playoff_per_game(
+    season_end_year: int,
+    output_type: OutputType | None = None,
+    output_file_path: str | None = None,
+    output_write_option: OutputWriteOption | None = None,
+    json_options: dict[str, Any] | None = None,
+) -> Any:
+    """Playoff per-game player statistics for a season.
+
+    URL: /leagues/NBA_{season_end_year}_per_game.html
+    """
+    return _run_endpoint(
+        "playoff_per_game",
+        {"season_end_year": season_end_year},
+        output_type=output_type,
+        output_file_path=output_file_path,
+        output_write_option=output_write_option,
+        json_options=json_options,
+    )
+
+
+def playoff_totals(
+    season_end_year: int,
+    output_type: OutputType | None = None,
+    output_file_path: str | None = None,
+    output_write_option: OutputWriteOption | None = None,
+    json_options: dict[str, Any] | None = None,
+) -> Any:
+    """Playoff total player statistics for a season.
+
+    URL: /leagues/NBA_{season_end_year}_totals.html
+    """
+    return _run_endpoint(
+        "playoff_totals",
+        {"season_end_year": season_end_year},
+        output_type=output_type,
+        output_file_path=output_file_path,
+        output_write_option=output_write_option,
+        json_options=json_options,
+    )
+
+
+def playoff_bracket(
+    season_end_year: int,
+    output_type: OutputType | None = None,
+    output_file_path: str | None = None,
+    output_write_option: OutputWriteOption | None = None,
+    json_options: dict[str, Any] | None = None,
+) -> Any:
+    """Playoff bracket series results for a season.
+
+    URL: /playoffs/NBA_{season_end_year}.html
+    """
+    return _run_endpoint(
+        "playoff_bracket",
+        {"season_end_year": season_end_year},
+        output_type=output_type,
+        output_file_path=output_file_path,
+        output_write_option=output_write_option,
+        json_options=json_options,
+    )
+
+
+# ── Draft, awards, leaders ─────────────────────────────────────────────────
+
+
+def draft_picks(
+    season_end_year: int,
+    output_type: OutputType | None = None,
+    output_file_path: str | None = None,
+    output_write_option: OutputWriteOption | None = None,
+    json_options: dict[str, Any] | None = None,
+) -> Any:
+    """Draft picks for a draft year.
+
+    URL: /draft/NBA_{season_end_year}.html
+    """
+    return _run_endpoint(
+        "draft_picks",
+        {"season_end_year": season_end_year},
+        output_type=output_type,
+        output_file_path=output_file_path,
+        output_write_option=output_write_option,
+        json_options=json_options,
+    )
+
+
+def season_awards(
+    season_end_year: int,
+    output_type: OutputType | None = None,
+    output_file_path: str | None = None,
+    output_write_option: OutputWriteOption | None = None,
+    json_options: dict[str, Any] | None = None,
+) -> Any:
+    """Season award voting results (MVP table).
+
+    URL: /awards/awards_{season_end_year}.html
+    """
+    return _run_endpoint(
+        "season_awards",
+        {"season_end_year": season_end_year},
+        output_type=output_type,
+        output_file_path=output_file_path,
+        output_write_option=output_write_option,
+        json_options=json_options,
+    )
+
+
+def season_leaders(
+    output_type: OutputType | None = None,
+    output_file_path: str | None = None,
+    output_write_option: OutputWriteOption | None = None,
+    json_options: dict[str, Any] | None = None,
+) -> Any:
+    """Single-season statistical leaders across league history.
+
+    URL: /leaders/per_season.html
+    """
+    return _run_endpoint(
+        "season_leaders",
+        {},
+        output_type=output_type,
+        output_file_path=output_file_path,
+        output_write_option=output_write_option,
+        json_options=json_options,
+    )
+
+
+def career_leaders(
+    output_type: OutputType | None = None,
+    output_file_path: str | None = None,
+    output_write_option: OutputWriteOption | None = None,
+    json_options: dict[str, Any] | None = None,
+) -> Any:
+    """Career statistical leaders across league history.
+
+    URL: /leaders/
+    """
+    return _run_endpoint(
+        "career_leaders",
+        {},
+        output_type=output_type,
+        output_file_path=output_file_path,
+        output_write_option=output_write_option,
+        json_options=json_options,
+    )
+
+
+# ── Player pages ───────────────────────────────────────────────────────────
+
+
+def player_career_stats(
+    player_identifier: str,
+    output_type: OutputType | None = None,
+    output_file_path: str | None = None,
+    output_write_option: OutputWriteOption | None = None,
+    json_options: dict[str, Any] | None = None,
+) -> Any:
+    """Season-by-season per-game career statistics for a player.
+
+    URL: /players/{player_identifier[0]}/{player_identifier}.html
+    """
+    return _run_endpoint(
+        "player_career_stats",
+        {"player_identifier": player_identifier},
+        output_type=output_type,
+        output_file_path=output_file_path,
+        output_write_option=output_write_option,
+        json_options=json_options,
+    )
+
+
+def player_playoff_series(
+    player_identifier: str,
+    output_type: OutputType | None = None,
+    output_file_path: str | None = None,
+    output_write_option: OutputWriteOption | None = None,
+    json_options: dict[str, Any] | None = None,
+) -> Any:
+    """Playoff series results for a player.
+
+    URL: /players/{player_identifier[0]}/{player_identifier}.html
+    """
+    return _run_endpoint(
+        "player_playoff_series",
+        {"player_identifier": player_identifier},
+        output_type=output_type,
+        output_file_path=output_file_path,
+        output_write_option=output_write_option,
+        json_options=json_options,
+    )
+
+
+def player_adjusted_shooting(
+    player_identifier: str,
+    output_type: OutputType | None = None,
+    output_file_path: str | None = None,
+    output_write_option: OutputWriteOption | None = None,
+    json_options: dict[str, Any] | None = None,
+) -> Any:
+    """League-adjusted shooting statistics for a player.
+
+    URL: /players/{player_identifier[0]}/{player_identifier}.html
+    """
+    return _run_endpoint(
+        "player_adjusted_shooting",
+        {"player_identifier": player_identifier},
+        output_type=output_type,
+        output_file_path=output_file_path,
+        output_write_option=output_write_option,
+        json_options=json_options,
+    )
+
+
+def player_play_by_play(
+    player_identifier: str,
+    output_type: OutputType | None = None,
+    output_file_path: str | None = None,
+    output_write_option: OutputWriteOption | None = None,
+    json_options: dict[str, Any] | None = None,
+) -> Any:
+    """Play-by-play position and usage statistics for a player.
+
+    URL: /players/{player_identifier[0]}/{player_identifier}.html
+    """
+    return _run_endpoint(
+        "player_play_by_play",
+        {"player_identifier": player_identifier},
+        output_type=output_type,
+        output_file_path=output_file_path,
+        output_write_option=output_write_option,
+        json_options=json_options,
+    )
+
+
+def player_game_highs(
+    player_identifier: str,
+    output_type: OutputType | None = None,
+    output_file_path: str | None = None,
+    output_write_option: OutputWriteOption | None = None,
+    json_options: dict[str, Any] | None = None,
+) -> Any:
+    """Regular-season game highs for a player.
+
+    URL: /players/{player_identifier[0]}/{player_identifier}.html
+    """
+    return _run_endpoint(
+        "player_game_highs",
+        {"player_identifier": player_identifier},
+        output_type=output_type,
+        output_file_path=output_file_path,
+        output_write_option=output_write_option,
+        json_options=json_options,
+    )
+
+
+def player_all_star(
+    player_identifier: str,
+    output_type: OutputType | None = None,
+    output_file_path: str | None = None,
+    output_write_option: OutputWriteOption | None = None,
+    json_options: dict[str, Any] | None = None,
+) -> Any:
+    """All-Star game appearances for a player.
+
+    URL: /players/{player_identifier[0]}/{player_identifier}.html
+    """
+    return _run_endpoint(
+        "player_all_star",
+        {"player_identifier": player_identifier},
+        output_type=output_type,
+        output_file_path=output_file_path,
+        output_write_option=output_write_option,
+        json_options=json_options,
+    )
+
+
+def player_similarity_scores(
+    player_identifier: str,
+    output_type: OutputType | None = None,
+    output_file_path: str | None = None,
+    output_write_option: OutputWriteOption | None = None,
+    json_options: dict[str, Any] | None = None,
+) -> Any:
+    """Career similarity scores for a player.
+
+    URL: /players/{player_identifier[0]}/{player_identifier}.html
+    """
+    return _run_endpoint(
+        "player_similarity_scores",
+        {"player_identifier": player_identifier},
+        output_type=output_type,
+        output_file_path=output_file_path,
+        output_write_option=output_write_option,
+        json_options=json_options,
+    )
+
+
+def player_salaries(
+    player_identifier: str,
+    output_type: OutputType | None = None,
+    output_file_path: str | None = None,
+    output_write_option: OutputWriteOption | None = None,
+    json_options: dict[str, Any] | None = None,
+) -> Any:
+    """Year-by-year salaries for a player.
+
+    URL: /players/{player_identifier[0]}/{player_identifier}.html
+    """
+    return _run_endpoint(
+        "player_salaries",
+        {"player_identifier": player_identifier},
+        output_type=output_type,
+        output_file_path=output_file_path,
+        output_write_option=output_write_option,
+        json_options=json_options,
+    )
+
+
+def player_splits(
+    player_identifier: str,
+    season_end_year: int,
+    output_type: OutputType | None = None,
+    output_file_path: str | None = None,
+    output_write_option: OutputWriteOption | None = None,
+    json_options: dict[str, Any] | None = None,
+) -> Any:
+    """Statistical splits for a player in a season.
+
+    URL: /players/{player_identifier[0]}/{player_identifier}/splits/{season_end_year}
+    """
+    return _run_endpoint(
+        "player_splits",
+        {"player_identifier": player_identifier, "season_end_year": season_end_year},
+        output_type=output_type,
+        output_file_path=output_file_path,
+        output_write_option=output_write_option,
+        json_options=json_options,
+    )
+
+
+def player_on_off(
+    player_identifier: str,
+    season_end_year: int,
+    output_type: OutputType | None = None,
+    output_file_path: str | None = None,
+    output_write_option: OutputWriteOption | None = None,
+    json_options: dict[str, Any] | None = None,
+) -> Any:
+    """On/off court impact statistics for a player in a season.
+
+    URL: /players/{player_identifier[0]}/{player_identifier}/on-off/{season_end_year}
+    """
+    return _run_endpoint(
+        "player_on_off",
+        {"player_identifier": player_identifier, "season_end_year": season_end_year},
+        output_type=output_type,
+        output_file_path=output_file_path,
+        output_write_option=output_write_option,
+        json_options=json_options,
+    )
+
+
+def player_shot_charts(
+    player_identifier: str,
+    season_end_year: int,
+    output_type: OutputType | None = None,
+    output_file_path: str | None = None,
+    output_write_option: OutputWriteOption | None = None,
+    json_options: dict[str, Any] | None = None,
+) -> Any:
+    """Shooting distance/zone breakdown for a player in a season.
+
+    URL: /players/{player_identifier[0]}/{player_identifier}/shooting/{season_end_year}
+    """
+    return _run_endpoint(
+        "player_shot_charts",
+        {"player_identifier": player_identifier, "season_end_year": season_end_year},
+        output_type=output_type,
+        output_file_path=output_file_path,
+        output_write_option=output_write_option,
+        json_options=json_options,
+    )
+
+
+# ── Team pages ─────────────────────────────────────────────────────────────
+
+
+def team_roster(
+    team_abbreviation: str,
+    season_end_year: int,
+    output_type: OutputType | None = None,
+    output_file_path: str | None = None,
+    output_write_option: OutputWriteOption | None = None,
+    json_options: dict[str, Any] | None = None,
+) -> Any:
+    """Roster for a team in a season.
+
+    URL: /teams/{team_abbreviation}/{season_end_year}.html
+    """
+    return _run_endpoint(
+        "team_roster",
+        {"team_abbreviation": team_abbreviation, "season_end_year": season_end_year},
+        output_type=output_type,
+        output_file_path=output_file_path,
+        output_write_option=output_write_option,
+        json_options=json_options,
+    )
+
+
+def team_injury_report(
+    team_abbreviation: str,
+    season_end_year: int,
+    output_type: OutputType | None = None,
+    output_file_path: str | None = None,
+    output_write_option: OutputWriteOption | None = None,
+    json_options: dict[str, Any] | None = None,
+) -> Any:
+    """Current league-wide injury report.
+
+    Team/season parameters are accepted for API symmetry but do not affect
+    the request.
+
+    URL: /friv/injuries.fcgi
+    """
+    return _run_endpoint(
+        "team_injury_report",
+        {"team_abbreviation": team_abbreviation, "season_end_year": season_end_year},
+        output_type=output_type,
+        output_file_path=output_file_path,
+        output_write_option=output_write_option,
+        json_options=json_options,
+    )
+
+
+def team_and_opponent(
+    team_abbreviation: str,
+    season_end_year: int,
+    output_type: OutputType | None = None,
+    output_file_path: str | None = None,
+    output_write_option: OutputWriteOption | None = None,
+    json_options: dict[str, Any] | None = None,
+) -> Any:
+    """Team and opponent aggregate statistics for a season.
+
+    URL: /teams/{team_abbreviation}/{season_end_year}.html
+    """
+    return _run_endpoint(
+        "team_and_opponent",
+        {"team_abbreviation": team_abbreviation, "season_end_year": season_end_year},
+        output_type=output_type,
+        output_file_path=output_file_path,
+        output_write_option=output_write_option,
+        json_options=json_options,
+    )
+
+
+def team_misc_four_factors(
+    team_abbreviation: str,
+    season_end_year: int,
+    output_type: OutputType | None = None,
+    output_file_path: str | None = None,
+    output_write_option: OutputWriteOption | None = None,
+    json_options: dict[str, Any] | None = None,
+) -> Any:
+    """Miscellaneous team statistics including four factors for a season.
+
+    URL: /teams/{team_abbreviation}/{season_end_year}.html
+    """
+    return _run_endpoint(
+        "team_misc_four_factors",
+        {"team_abbreviation": team_abbreviation, "season_end_year": season_end_year},
+        output_type=output_type,
+        output_file_path=output_file_path,
+        output_write_option=output_write_option,
+        json_options=json_options,
+    )
+
+
+def team_opponent_stats(
+    team_abbreviation: str,
+    season_end_year: int,
+    output_type: OutputType | None = None,
+    output_file_path: str | None = None,
+    output_write_option: OutputWriteOption | None = None,
+    json_options: dict[str, Any] | None = None,
+) -> Any:
+    """Opponent statistics against a team for a season.
+
+    URL: /teams/{team_abbreviation}/{season_end_year}.html
+    """
+    return _run_endpoint(
+        "team_opponent_stats",
+        {"team_abbreviation": team_abbreviation, "season_end_year": season_end_year},
+        output_type=output_type,
+        output_file_path=output_file_path,
+        output_write_option=output_write_option,
+        json_options=json_options,
+    )
+
+
+def team_schedule(
+    team_abbreviation: str,
+    season_end_year: int,
+    output_type: OutputType | None = None,
+    output_file_path: str | None = None,
+    output_write_option: OutputWriteOption | None = None,
+    json_options: dict[str, Any] | None = None,
+) -> Any:
+    """Game-by-game schedule and results for a team in a season.
+
+    URL: /teams/{team_abbreviation}/{season_end_year}_games.html
+    """
+    return _run_endpoint(
+        "team_schedule",
+        {"team_abbreviation": team_abbreviation, "season_end_year": season_end_year},
+        output_type=output_type,
+        output_file_path=output_file_path,
+        output_write_option=output_write_option,
+        json_options=json_options,
+    )
+
+
+def team_transactions(
+    team_abbreviation: str,
+    season_end_year: int,
+    output_type: OutputType | None = None,
+    output_file_path: str | None = None,
+    output_write_option: OutputWriteOption | None = None,
+    json_options: dict[str, Any] | None = None,
+) -> Any:
+    """Transactions for a team in a season.
+
+    URL: /teams/{team_abbreviation}/{season_end_year}_transactions.html
+    """
+    return _run_endpoint(
+        "team_transactions",
+        {"team_abbreviation": team_abbreviation, "season_end_year": season_end_year},
+        output_type=output_type,
+        output_file_path=output_file_path,
+        output_write_option=output_write_option,
+        json_options=json_options,
+    )
+
+
+def team_splits(
+    team_abbreviation: str,
+    season_end_year: int,
+    output_type: OutputType | None = None,
+    output_file_path: str | None = None,
+    output_write_option: OutputWriteOption | None = None,
+    json_options: dict[str, Any] | None = None,
+) -> Any:
+    """Statistical splits for a team in a season.
+
+    URL: /teams/{team_abbreviation}/{season_end_year}/splits/
+    """
+    return _run_endpoint(
+        "team_splits",
+        {"team_abbreviation": team_abbreviation, "season_end_year": season_end_year},
+        output_type=output_type,
+        output_file_path=output_file_path,
+        output_write_option=output_write_option,
+        json_options=json_options,
+    )
+
+
+def team_contracts(
+    team_abbreviation: str,
+    output_type: OutputType | None = None,
+    output_file_path: str | None = None,
+    output_write_option: OutputWriteOption | None = None,
+    json_options: dict[str, Any] | None = None,
+) -> Any:
+    """Current player contracts for a team.
+
+    URL: /contracts/{team_abbreviation}.html
+    """
+    return _run_endpoint(
+        "team_contracts",
+        {"team_abbreviation": team_abbreviation},
+        output_type=output_type,
+        output_file_path=output_file_path,
+        output_write_option=output_write_option,
+        json_options=json_options,
+    )
+
+
+def team_lineups(
+    team_abbreviation: str,
+    season_end_year: int,
+    output_type: OutputType | None = None,
+    output_file_path: str | None = None,
+    output_write_option: OutputWriteOption | None = None,
+    json_options: dict[str, Any] | None = None,
+) -> Any:
+    """Five-man lineup statistics for a team in a season.
+
+    URL: /teams/{team_abbreviation}/{season_end_year}/lineups/
+    """
+    return _run_endpoint(
+        "team_lineups",
+        {"team_abbreviation": team_abbreviation, "season_end_year": season_end_year},
+        output_type=output_type,
+        output_file_path=output_file_path,
+        output_write_option=output_write_option,
+        json_options=json_options,
+    )
+
+
+def team_starting_lineups(
+    team_abbreviation: str,
+    season_end_year: int,
+    output_type: OutputType | None = None,
+    output_file_path: str | None = None,
+    output_write_option: OutputWriteOption | None = None,
+    json_options: dict[str, Any] | None = None,
+) -> Any:
+    """Game-by-game starting lineups for a team in a season.
+
+    URL: /teams/{team_abbreviation}/{season_end_year}_start.html
+    """
+    return _run_endpoint(
+        "team_starting_lineups",
+        {"team_abbreviation": team_abbreviation, "season_end_year": season_end_year},
+        output_type=output_type,
+        output_file_path=output_file_path,
+        output_write_option=output_write_option,
+        json_options=json_options,
+    )
+
+
+def team_on_off(
+    team_abbreviation: str,
+    season_end_year: int,
+    output_type: OutputType | None = None,
+    output_file_path: str | None = None,
+    output_write_option: OutputWriteOption | None = None,
+    json_options: dict[str, Any] | None = None,
+) -> Any:
+    """On/off court statistics for a team in a season.
+
+    URL: /teams/{team_abbreviation}/{season_end_year}/on-off/
+    """
+    return _run_endpoint(
+        "team_on_off",
+        {"team_abbreviation": team_abbreviation, "season_end_year": season_end_year},
+        output_type=output_type,
+        output_file_path=output_file_path,
+        output_write_option=output_write_option,
+        json_options=json_options,
+    )
+
+
+def franchise_history(
+    team_abbreviation: str,
+    output_type: OutputType | None = None,
+    output_file_path: str | None = None,
+    output_write_option: OutputWriteOption | None = None,
+    json_options: dict[str, Any] | None = None,
+) -> Any:
+    """Season-by-season franchise history for a team.
+
+    URL: /teams/{team_abbreviation}/
+    """
+    return _run_endpoint(
+        "franchise_history",
+        {"team_abbreviation": team_abbreviation},
+        output_type=output_type,
+        output_file_path=output_file_path,
+        output_write_option=output_write_option,
+        json_options=json_options,
+    )
+
+
+# ── Box scores, schedule, play-by-play, search ─────────────────────────────
+
+
 def player_box_scores(
-    day, month, year, output_type=None, output_file_path=None, output_write_option=None, json_options=None
-):
-    return _execute(
-        service_call=lambda: HTTPService(parser=ParserService()).player_box_scores(day=day, month=month, year=year),
-        csv_column_names=BOX_SCORE_COLUMN_NAMES,
-        error_mappings={httpx.codes.NOT_FOUND: lambda: InvalidDate(day=day, month=month, year=year)},
+    day: int,
+    month: int,
+    year: int,
+    output_type: OutputType | None = None,
+    output_file_path: str | None = None,
+    output_write_option: OutputWriteOption | None = None,
+    json_options: dict[str, Any] | None = None,
+) -> Any:
+    """Player box scores for all games on a date.
+
+    URL: /friv/dailyleaders.cgi?month={month}&day={day}&year={year}
+    """
+    return _run_endpoint(
+        "player_box_scores",
+        {"day": day, "month": month, "year": year},
+        output_type=output_type,
+        output_file_path=output_file_path,
+        output_write_option=output_write_option,
+        json_options=json_options,
+    )
+
+
+def team_box_scores(
+    day: int,
+    month: int,
+    year: int,
+    output_type: OutputType | None = None,
+    output_file_path: str | None = None,
+    output_write_option: OutputWriteOption | None = None,
+    json_options: dict[str, Any] | None = None,
+) -> Any:
+    """Team box scores for all games on a date.
+
+    URL: /boxscores/?month={month}&day={day}&year={year}
+    """
+    return _run_endpoint(
+        "team_box_scores",
+        {"day": day, "month": month, "year": year},
+        output_type=output_type,
+        output_file_path=output_file_path,
+        output_write_option=output_write_option,
+        json_options=json_options,
+    )
+
+
+def play_by_play(
+    home_team: Team,
+    day: int,
+    month: int,
+    year: int,
+    output_type: OutputType | None = None,
+    output_file_path: str | None = None,
+    output_write_option: OutputWriteOption | None = None,
+    json_options: dict[str, Any] | None = None,
+) -> Any:
+    """Play-by-play events for the game hosted by ``home_team`` on a date.
+
+    URL: /boxscores/pbp/
+    """
+    return _run_endpoint(
+        "play_by_play",
+        {"home_team": home_team, "day": day, "month": month, "year": year},
         output_type=output_type,
         output_file_path=output_file_path,
         output_write_option=output_write_option,
@@ -137,28 +1100,24 @@ def player_box_scores(
 
 
 def regular_season_player_box_scores(
-    player_identifier,
-    season_end_year,
-    output_type=None,
-    output_file_path=None,
-    output_write_option=None,
-    json_options=None,
-    include_inactive_games=False,
-):
-    return _execute(
-        service_call=lambda: HTTPService(parser=ParserService()).regular_season_player_box_scores(
-            player_identifier=player_identifier,
-            season_end_year=season_end_year,
-            include_inactive_games=include_inactive_games,
-        ),
-        csv_column_names=PLAYER_SEASON_BOX_SCORE_COLUMN_NAMES,
-        error_mappings={
-            httpx.codes.INTERNAL_SERVER_ERROR: lambda: InvalidPlayerAndSeason(
-                player_identifier=player_identifier, season_end_year=season_end_year
-            ),
-            httpx.codes.NOT_FOUND: lambda: InvalidPlayerAndSeason(
-                player_identifier=player_identifier, season_end_year=season_end_year
-            ),
+    player_identifier: str,
+    season_end_year: int,
+    include_inactive_games: bool = False,
+    output_type: OutputType | None = None,
+    output_file_path: str | None = None,
+    output_write_option: OutputWriteOption | None = None,
+    json_options: dict[str, Any] | None = None,
+) -> Any:
+    """Game-by-game regular season box scores for a player in a season.
+
+    URL: /players/{player_identifier[0]}/{player_identifier}/gamelog/{season_end_year}
+    """
+    return _run_endpoint(
+        "regular_season_player_box_scores",
+        {
+            "player_identifier": player_identifier,
+            "season_end_year": season_end_year,
+            "include_inactive_games": include_inactive_games,
         },
         output_type=output_type,
         output_file_path=output_file_path,
@@ -168,28 +1127,24 @@ def regular_season_player_box_scores(
 
 
 def playoff_player_box_scores(
-    player_identifier,
-    season_end_year,
-    output_type=None,
-    output_file_path=None,
-    output_write_option=None,
-    json_options=None,
-    include_inactive_games=False,
-):
-    return _execute(
-        service_call=lambda: HTTPService(parser=ParserService()).playoff_player_box_scores(
-            player_identifier=player_identifier,
-            season_end_year=season_end_year,
-            include_inactive_games=include_inactive_games,
-        ),
-        csv_column_names=PLAYER_SEASON_BOX_SCORE_COLUMN_NAMES,
-        error_mappings={
-            httpx.codes.INTERNAL_SERVER_ERROR: lambda: InvalidPlayerAndSeason(
-                player_identifier=player_identifier, season_end_year=season_end_year
-            ),
-            httpx.codes.NOT_FOUND: lambda: InvalidPlayerAndSeason(
-                player_identifier=player_identifier, season_end_year=season_end_year
-            ),
+    player_identifier: str,
+    season_end_year: int,
+    include_inactive_games: bool = False,
+    output_type: OutputType | None = None,
+    output_file_path: str | None = None,
+    output_write_option: OutputWriteOption | None = None,
+    json_options: dict[str, Any] | None = None,
+) -> Any:
+    """Game-by-game playoff box scores for a player in a season.
+
+    URL: /players/{player_identifier[0]}/{player_identifier}/gamelog/{season_end_year}
+    """
+    return _run_endpoint(
+        "playoff_player_box_scores",
+        {
+            "player_identifier": player_identifier,
+            "season_end_year": season_end_year,
+            "include_inactive_games": include_inactive_games,
         },
         output_type=output_type,
         output_file_path=output_file_path,
@@ -199,12 +1154,19 @@ def playoff_player_box_scores(
 
 
 def season_schedule(
-    season_end_year, output_type=None, output_file_path=None, output_write_option=None, json_options=None
-):
-    return _execute(
-        service_call=lambda: HTTPService(parser=ParserService()).season_schedule(season_end_year=season_end_year),
-        csv_column_names=SCHEDULE_COLUMN_NAMES,
-        error_mappings={httpx.codes.NOT_FOUND: lambda: InvalidSeason(season_end_year=season_end_year)},
+    season_end_year: int,
+    output_type: OutputType | None = None,
+    output_file_path: str | None = None,
+    output_write_option: OutputWriteOption | None = None,
+    json_options: dict[str, Any] | None = None,
+) -> Any:
+    """Full season schedule and results (all months).
+
+    URL: /leagues/NBA_{season_end_year}_games.html
+    """
+    return _run_endpoint(
+        "season_schedule",
+        {"season_end_year": season_end_year},
         output_type=output_type,
         output_file_path=output_file_path,
         output_write_option=output_write_option,
@@ -213,12 +1175,19 @@ def season_schedule(
 
 
 def players_season_totals(
-    season_end_year, output_type=None, output_file_path=None, output_write_option=None, json_options=None
-):
-    return _execute(
-        service_call=lambda: HTTPService(parser=ParserService()).players_season_totals(season_end_year=season_end_year),
-        csv_column_names=PLAYER_SEASON_TOTALS_COLUMN_NAMES,
-        error_mappings={httpx.codes.NOT_FOUND: lambda: InvalidSeason(season_end_year=season_end_year)},
+    season_end_year: int,
+    output_type: OutputType | None = None,
+    output_file_path: str | None = None,
+    output_write_option: OutputWriteOption | None = None,
+    json_options: dict[str, Any] | None = None,
+) -> Any:
+    """Season total statistics for all players (typed parser chain).
+
+    URL: /leagues/NBA_{season_end_year}_totals.html
+    """
+    return _run_endpoint(
+        "players_season_totals",
+        {"season_end_year": season_end_year},
         output_type=output_type,
         output_file_path=output_file_path,
         output_write_option=output_write_option,
@@ -227,149 +1196,43 @@ def players_season_totals(
 
 
 def players_advanced_season_totals(
-    season_end_year,
-    include_combined_values=False,
-    output_type=None,
-    output_file_path=None,
-    output_write_option=None,
-    json_options=None,
-):
-    return _execute(
-        service_call=lambda: HTTPService(parser=ParserService()).players_advanced_season_totals(
-            season_end_year, include_combined_values=include_combined_values
-        ),
-        csv_column_names=PLAYER_ADVANCED_SEASON_TOTALS_COLUMN_NAMES,
-        error_mappings={httpx.codes.NOT_FOUND: lambda: InvalidSeason(season_end_year=season_end_year)},
-        output_type=output_type,
-        output_file_path=output_file_path,
-        output_write_option=output_write_option,
-        json_options=json_options,
-    )
+    season_end_year: int,
+    include_combined_values: bool = False,
+    output_type: OutputType | None = None,
+    output_file_path: str | None = None,
+    output_write_option: OutputWriteOption | None = None,
+    json_options: dict[str, Any] | None = None,
+) -> Any:
+    """Advanced season statistics for all players.
 
-
-def team_box_scores(
-    day, month, year, output_type=None, output_file_path=None, output_write_option=None, json_options=None
-):
-    return _execute(
-        service_call=lambda: HTTPService(parser=ParserService()).team_box_scores(day=day, month=month, year=year),
-        csv_column_names=TEAM_BOX_SCORES_COLUMN_NAMES,
-        error_mappings={httpx.codes.NOT_FOUND: lambda: InvalidDate(day=day, month=month, year=year)},
-        output_type=output_type,
-        output_file_path=output_file_path,
-        output_write_option=output_write_option,
-        json_options=json_options,
-    )
-
-
-def play_by_play(
-    home_team, day, month, year, output_type=None, output_file_path=None, output_write_option=None, json_options=None
-):
-    return _execute(
-        service_call=lambda: HTTPService(parser=ParserService()).play_by_play(
-            home_team=home_team, day=day, month=month, year=year
-        ),
-        csv_column_names=PLAY_BY_PLAY_COLUMN_NAMES,
-        error_mappings={httpx.codes.NOT_FOUND: lambda: InvalidDate(day=day, month=month, year=year)},
-        output_type=output_type,
-        output_file_path=output_file_path,
-        output_write_option=output_write_option,
-        json_options=json_options,
-    )
-
-
-def search(term, output_type=None, output_file_path=None, output_write_option=None, json_options=None):
-    return _execute(
-        service_call=lambda: HTTPService(parser=ParserService()).search(term=term),
-        # csv_column_names omitted — auto-detected from data so empty columns are stripped
-        error_mappings={httpx.codes.NOT_FOUND: lambda: InvalidSearch(term=term)},
-        output_type=output_type,
-        output_file_path=output_file_path,
-        output_write_option=output_write_option,
-        json_options=json_options,
-    )
-
-
-# ── Beta endpoint function generation ─────────────────────────────────────
-
-
-def _compute_params(name: str, endpoint: TableEndpoint) -> list[str]:
-    """Return the ordered parameter names for the given endpoint.
-
-    Custom endpoints take theirs from the bespoke ``HTTPService`` method
-    signature; generic endpoints declare them in ``endpoint.params``.
+    URL: /leagues/NBA_{season_end_year}_advanced.html
     """
-    if endpoint.custom:
-        # Use the explicit method signature on HTTPService (skip ``self``).
-        sig = inspect.signature(getattr(HTTPService, name))
-        return [p for p in sig.parameters if p != "self"]
-    return list(endpoint.params)
-
-
-_OUTPUT_PARAM_NAMES = ("output_type", "output_file_path", "output_write_option", "json_options")
-
-
-def _build_beta_docstring(name: str, endpoint: TableEndpoint, param_names: list[str]) -> str:
-    table = endpoint.table_id or endpoint.commented_table_id or "(auto)"
-    doc_lines = [
-        f"Fetch {name.replace('_', ' ')} data from Basketball Reference.",
-        "",
-        "Status: Beta - This endpoint is under active development.",
-        f"URL: {endpoint.path}",
-        f"Table: #{table}",
-        "",
-        "Args:",
-        *(f"    {p}: Endpoint-specific parameter" for p in param_names),
-        "    output_type: Output format (None for dict, OutputType.CSV, OutputType.JSON)",
-        "    output_file_path: Path to write output file",
-        "    output_write_option: File write mode",
-        "    json_options: JSON formatting options",
-        "",
-    ]
-    return "\n    ".join(doc_lines)
-
-
-def _make_beta_function(name: str, endpoint: TableEndpoint, param_names: list[str]) -> Callable[..., Any]:
-    """Generate a beta endpoint client function with the proper signature.
-
-    The generated function accepts the endpoint-specific parameters plus the
-    standard output parameters, and calls ``_execute`` with a ``service_call``
-    that invokes the corresponding ``HTTPService`` method. The published
-    ``__signature__`` makes it introspect like a hand-written function.
-    """
-    kind = inspect.Parameter.POSITIONAL_OR_KEYWORD
-    signature = inspect.Signature(
-        [inspect.Parameter(p, kind) for p in param_names]
-        + [inspect.Parameter(p, kind, default=None) for p in _OUTPUT_PARAM_NAMES]
+    return _run_endpoint(
+        "players_advanced_season_totals",
+        {"season_end_year": season_end_year, "include_combined_values": include_combined_values},
+        output_type=output_type,
+        output_file_path=output_file_path,
+        output_write_option=output_write_option,
+        json_options=json_options,
     )
 
-    def call_service(params: dict[str, Any]) -> Any:
-        service = HTTPService(parser=ParserService())
-        if endpoint.custom:
-            return getattr(service, name)(**params)
-        return service.fetch_table(endpoint, **params)
 
-    def beta_function(*args: Any, **kwargs: Any) -> Any:
-        bound = signature.bind(*args, **kwargs)
-        bound.apply_defaults()
-        params = {p: bound.arguments[p] for p in param_names}
-        output_args = {p: bound.arguments[p] for p in _OUTPUT_PARAM_NAMES}
-        return _execute(
-            service_call=lambda: call_service(params),
-            csv_column_names=endpoint.csv_columns,
-            error_mappings=endpoint.error_mappings(params),
-            **output_args,
-        )
+def search(
+    term: str,
+    output_type: OutputType | None = None,
+    output_file_path: str | None = None,
+    output_write_option: OutputWriteOption | None = None,
+    json_options: dict[str, Any] | None = None,
+) -> Any:
+    """Search Basketball Reference for players matching a term.
 
-    beta_function.__name__ = name
-    beta_function.__qualname__ = name
-    beta_function.__doc__ = _build_beta_docstring(name, endpoint, param_names)
-    beta_function.__signature__ = signature  # ty: ignore[unresolved-attribute]
-    return beta_function
-
-
-# ── Register all beta endpoints at import time ─────────────────────────────
-
-for _name in ENDPOINTS:
-    _endpoint: TableEndpoint = ENDPOINTS[_name]
-    _param_names: list[str] = _compute_params(_name, _endpoint)
-    globals()[_name] = _make_beta_function(_name, _endpoint, _param_names)
+    URL: /search/search.fcgi?search={term}
+    """
+    return _run_endpoint(
+        "search",
+        {"term": term},
+        output_type=output_type,
+        output_file_path=output_file_path,
+        output_write_option=output_write_option,
+        json_options=json_options,
+    )

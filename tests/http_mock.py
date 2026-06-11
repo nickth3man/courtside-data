@@ -60,6 +60,8 @@ class Mocker:
 
     def __exit__(self, exc_type, exc, tb):
         router, self._router = self._router, None
+        if router is None:
+            return False
         return router.__exit__(exc_type, exc, tb)
 
     def __call__(self, obj):

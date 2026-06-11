@@ -1,13 +1,61 @@
-# ── Legacy endpoints (explicit imports) ──────────────────────────────────
+"""Package-level exports for every Basketball Reference endpoint.
+
+All client functions are explicit, typed definitions in
+:mod:`courtside_data.client`; endpoint metadata lives in the
+:data:`courtside_data.endpoints.ENDPOINTS` registry. ``players_season_totals``
+and ``players_advanced_season_totals`` are re-exported under their historical
+package-level aliases.
+"""
+
 from courtside_data.client import (
+    attendance,
+    career_leaders,
+    draft_picks,
+    franchise_history,
+    league_per_36_minutes,
+    league_per_100_possessions,
+    league_per_game_stats,
+    league_shooting,
+    league_totals,
+    league_transactions,
     play_by_play,
+    player_adjusted_shooting,
+    player_all_star,
     player_box_scores,
+    player_career_stats,
+    player_game_highs,
+    player_on_off,
+    player_play_by_play,
+    player_playoff_series,
+    player_salaries,
+    player_shot_charts,
+    player_similarity_scores,
+    player_splits,
+    playoff_bracket,
+    playoff_per_game,
     playoff_player_box_scores,
+    playoff_totals,
     regular_season_player_box_scores,
+    rookie_stats,
     search,
+    season_awards,
+    season_leaders,
     season_schedule,
     standings,
+    standings_by_date,
+    team_and_opponent,
     team_box_scores,
+    team_contracts,
+    team_injury_report,
+    team_lineups,
+    team_misc_four_factors,
+    team_on_off,
+    team_opponent_stats,
+    team_roster,
+    team_schedule,
+    team_splits,
+    team_starting_lineups,
+    team_transactions,
 )
 from courtside_data.client import (
     players_advanced_season_totals as player_advanced_season_totals,
@@ -16,27 +64,55 @@ from courtside_data.client import (
     players_season_totals as player_season_totals,
 )
 
-# ── Beta endpoints (generated from ENDPOINTS registry) ───────────────────
-from courtside_data.endpoints import ENDPOINTS
-from courtside_data import client as _client
-
-# Make beta functions reachable at package level
-for _name in ENDPOINTS:
-    globals()[_name] = getattr(_client, _name)
-
-# Export both tiers
 __all__ = [
-    # Legacy
-    "standings",
-    "player_box_scores",
-    "team_box_scores",
-    "season_schedule",
+    "attendance",
+    "career_leaders",
+    "draft_picks",
+    "franchise_history",
+    "league_per_36_minutes",
+    "league_per_100_possessions",
+    "league_per_game_stats",
+    "league_shooting",
+    "league_totals",
+    "league_transactions",
     "play_by_play",
-    "player_season_totals",
+    "player_adjusted_shooting",
     "player_advanced_season_totals",
-    "regular_season_player_box_scores",
+    "player_all_star",
+    "player_box_scores",
+    "player_career_stats",
+    "player_game_highs",
+    "player_on_off",
+    "player_play_by_play",
+    "player_playoff_series",
+    "player_salaries",
+    "player_season_totals",
+    "player_shot_charts",
+    "player_similarity_scores",
+    "player_splits",
+    "playoff_bracket",
+    "playoff_per_game",
     "playoff_player_box_scores",
+    "playoff_totals",
+    "regular_season_player_box_scores",
+    "rookie_stats",
     "search",
-    # Beta (auto-generated from ENDPOINTS)
-    *sorted(ENDPOINTS.keys()),
+    "season_awards",
+    "season_leaders",
+    "season_schedule",
+    "standings",
+    "standings_by_date",
+    "team_and_opponent",
+    "team_box_scores",
+    "team_contracts",
+    "team_injury_report",
+    "team_lineups",
+    "team_misc_four_factors",
+    "team_on_off",
+    "team_opponent_stats",
+    "team_roster",
+    "team_schedule",
+    "team_splits",
+    "team_starting_lineups",
+    "team_transactions",
 ]

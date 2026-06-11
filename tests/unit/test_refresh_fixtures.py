@@ -7,6 +7,7 @@ from unittest import TestCase
 def load_refresh_fixtures_module():
     module_path = Path(__file__).resolve().parents[2] / "scripts" / "refresh_fixtures.py"
     spec = importlib.util.spec_from_file_location("refresh_fixtures", module_path)
+    assert spec is not None and spec.loader is not None, f"could not load spec for {module_path}"
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module

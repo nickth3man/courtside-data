@@ -11,7 +11,7 @@ from courtside_data.parsers import ScheduledGamesParser, ScheduledStartTimeParse
 
 
 class BaseTest(TestCase):
-    _path_from_schedule_directory: str = None
+    _path_from_schedule_directory: str | None = None
 
     @classmethod
     def setUpClass(cls):
