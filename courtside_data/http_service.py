@@ -15,6 +15,7 @@ import re
 import threading
 import time
 from collections.abc import Callable
+from datetime import UTC
 from typing import Any, ClassVar
 
 import httpx
@@ -59,12 +60,12 @@ def _parse_retry_after(value: str) -> float:
         pass
     # HTTP-date format: parse RFC 2822 date
     import email.utils as eutils
-    from datetime import datetime, timezone
+    from datetime import datetime
 
     parsed = eutils.parsedate_tz(value)
     if parsed is not None:
-        retry_time = datetime(*parsed[:6], tzinfo=timezone.utc)
-        now = datetime.now(timezone.utc)
+        retry_time = datetime(*parsed[:6], tzinfo=UTC)
+        now = datetime.now(UTC)
         wait = (retry_time - now).total_seconds()
         return max(wait, 1.0)
     return 5.0
