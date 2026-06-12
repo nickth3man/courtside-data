@@ -15,9 +15,12 @@ from __future__ import annotations
 
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import httpx
+
+if TYPE_CHECKING:
+    from courtside_data.schemas._base import BRRow
 
 from courtside_data.errors import (
     InvalidDate,
@@ -104,6 +107,10 @@ class TableEndpoint:
     # True for endpoints with a bespoke HTTPService method (e.g. multi-request);
     # fetch_table() must not be used for these.
     custom: bool = False
+    # If set, the runner validates each extracted row with this BRRow subclass
+    # instead of the legacy coerce_data/validate_rows path. Endpoints with
+    # row_model=None keep the legacy pipeline (strangler-fig coexistence).
+    row_model: type[BRRow] | None = None
     # When set, fetch_table() projects each row down to exactly these keys
     # (missing keys become empty strings).
     projection: tuple[str, ...] | None = None

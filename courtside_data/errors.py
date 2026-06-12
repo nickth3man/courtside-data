@@ -58,3 +58,32 @@ class RateLimitJailed(CourtsideDataError):
             f"Back off and retry later."
         )
         super().__init__(message)
+
+
+def _extract_missing_field(pydantic_errors: list[dict]) -> str:
+    """Return the location of the first missing field/alias, or 'unknown'."""
+    for error in pydantic_errors:
+        if error.get("type") == "missing":
+            loc = error.get("loc")
+            if loc:
+                return ".".join(str(part) for part in loc)
+    return "unknown"
+
+
+class SchemaDriftError(CourtsideDataError):
+    """Raised when a generic endpoint row no longer matches the registered schema.
+
+    Carries the Pydantic validation errors so callers can inspect exactly which
+    fields/aliases are missing or malformed.
+    """
+
+    def __init__(self, endpoint_name: str, url: str, pydantic_errors: list[dict]) -> None:
+        self.endpoint_name = endpoint_name
+        self.url = url
+        self.pydantic_errors = pydantic_errors
+        field_or_alias = _extract_missing_field(pydantic_errors)
+        message = (
+            f"Schema drift detected for endpoint '{endpoint_name}' ({url}): "
+            f"missing field/alias: {field_or_alias}"
+        )
+        super().__init__(message)

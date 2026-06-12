@@ -1,0 +1,115 @@
+"""Row schemas for playoff-scoped Basketball-Reference endpoints.
+
+Covers the playoff per-game and totals stat tables (structurally identical to
+the league per-game and totals layouts) plus the playoff bracket results.
+The bracket endpoint uses ``use_header_fallback=True`` because the ``all_playoffs``
+table is a manually-laid-out bracket whose data cells often lack ``data-stat``
+attributes; :class:`PlayoffBracketRow` therefore uses the normalized header text
+the fallback layer produces (``series``, ``team``, ``result``) as its
+``validation_alias`` keys.
+"""
+
+from __future__ import annotations
+
+from typing import Annotated
+
+from pydantic import BeforeValidator, Field
+
+from courtside_data.data import Team
+from courtside_data.schemas import register
+from courtside_data.schemas._base import BRRow, PerGameStats, TotalStats
+from courtside_data.schemas._fields import (
+    BRIntOrNone,
+    BRPercentage,
+    PositionsField,
+    _is_empty,
+    _team_field,
+)
+
+# ---------------------------------------------------------------------------
+# Local field vocabulary
+# ---------------------------------------------------------------------------
+
+
+def _team_field_or_none(value: object) -> Team | None:
+    """``TeamField`` that maps empty / non-breaking-space cells to ``None``."""
+    if _is_empty(value):
+        return None
+    return _team_field(value)
+
+
+TeamFieldOrNone = Annotated[Team | None, BeforeValidator(_team_field_or_none)]
+
+
+# ---------------------------------------------------------------------------
+# Playoff per-game / totals
+# ---------------------------------------------------------------------------
+
+
+class PlayoffPerGameRow(BRRow, PerGameStats):
+    """Row from a playoff per-game table (``/leagues/NBA_{year}_per_game.html``).
+
+    Structurally identical to the league per-game table, so the
+    :data:`PerGameStats` mixin covers every stat column. The ``team`` field is
+    re-declared as :data:`TeamFieldOrNone` so the model tolerates empty
+    ``team_name_abbr`` cells (mid-series trades, multi-team playoff stints).
+    ``name_display`` is the only truly required column — without it the row
+    is unidentifiable.
+    """
+
+    name_display: str = Field(validation_alias="name_display")
+    team: TeamFieldOrNone = Field(default=None, validation_alias="team_name_abbr")
+
+
+register("playoff_per_game", PlayoffPerGameRow)
+
+
+class PlayoffTotalsRow(BRRow, TotalStats):
+    """Row from a playoff totals table (``/leagues/NBA_{year}_totals.html``).
+
+    Mirrors :class:`courtside_data.schemas.league.LeagueTotalsRow`: the
+    :data:`TotalStats` mixin covers the counting stat block, and the
+    two-point split, shooting percentages, position, and age columns are
+    re-declared explicitly because the BR table emits them as their own
+    columns rather than derived fields.
+    """
+
+    name_display: str = Field(validation_alias="name_display")
+    team: TeamFieldOrNone = Field(default=None, validation_alias="team_name_abbr")
+    positions: PositionsField = Field(default_factory=list, validation_alias="pos")
+    age: BRIntOrNone = Field(default=None, validation_alias="age")
+    made_two_point_field_goals: BRIntOrNone = Field(default=None, validation_alias="fg2")
+    attempted_two_point_field_goals: BRIntOrNone = Field(default=None, validation_alias="fg2a")
+    two_point_field_goal_percentage: BRPercentage = Field(default=None, validation_alias="fg2_pct")
+    field_goal_percentage: BRPercentage = Field(default=None, validation_alias="fg_pct")
+    three_point_field_goal_percentage: BRPercentage = Field(default=None, validation_alias="fg3_pct")
+    free_throw_percentage: BRPercentage = Field(default=None, validation_alias="ft_pct")
+    effective_field_goal_percentage: BRPercentage = Field(default=None, validation_alias="efg_pct")
+
+
+register("playoff_totals", PlayoffTotalsRow)
+
+
+# ---------------------------------------------------------------------------
+# Playoff bracket
+# ---------------------------------------------------------------------------
+
+
+class PlayoffBracketRow(BRRow):
+    """Row from a playoff bracket results table (``/playoffs/NBA_{year}.html``).
+
+    The ``all_playoffs`` table is a manually-laid-out bracket whose cells
+    often lack ``data-stat`` attributes. The generic-table fetcher falls back
+    to the normalized header text in that case, producing rows keyed by
+    ``series`` / ``team`` / ``result`` (the header text "Series", "Team",
+    "Result" normalized to lowercase snake case). All three columns are kept
+    as ``str`` to remain agnostic to playoff-specific team names and free-form
+    result strings such as "Won NBA Championship".
+    """
+
+    series: str = Field(validation_alias="series")
+    team: str = Field(validation_alias="team")
+    result: str = Field(validation_alias="result")
+
+
+register("playoff_bracket", PlayoffBracketRow)

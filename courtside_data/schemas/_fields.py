@@ -1,0 +1,314 @@
+from __future__ import annotations
+
+import re
+from datetime import UTC, date, datetime
+from decimal import Decimal
+from typing import Annotated
+from zoneinfo import ZoneInfo
+
+from pydantic import BeforeValidator
+
+from courtside_data.data import (
+    LEAGUE_ABBREVIATIONS_TO_LEAGUE,
+    LOCATION_ABBREVIATIONS_TO_LOCATION,
+    OUTCOME_ABBREVIATIONS_TO_OUTCOME,
+    POSITION_ABBREVIATIONS_TO_POSITION,
+    TEAM_ABBREVIATIONS_TO_TEAM,
+    TEAM_NAME_TO_TEAM,
+    Conference,
+    Division,
+    League,
+    Location,
+    Outcome,
+    Position,
+    Team,
+)
+
+_EMPTY_VALUES = frozenset({"", "\xa0"})
+
+
+def _is_empty(value: object) -> bool:
+    """Return True for empty strings, non-breaking spaces, and None."""
+    if value is None:
+        return True
+    s = str(value).strip()
+    return s in _EMPTY_VALUES or s == ""
+
+
+def _br_int(value: object) -> int:
+    if isinstance(value, int) and not isinstance(value, bool):
+        return value
+    s = str(value).strip()
+    if s in _EMPTY_VALUES:
+        raise ValueError(f"Invalid integer value: {value!r}")
+    try:
+        return int(s)
+    except ValueError as exc:
+        raise ValueError(f"Invalid integer value: {value!r}") from exc
+
+
+def _br_int_or_none(value: object) -> int | None:
+    if _is_empty(value):
+        return None
+    if isinstance(value, int) and not isinstance(value, bool):
+        return value
+    s = str(value).strip()
+    try:
+        return int(s)
+    except ValueError as exc:
+        raise ValueError(f"Invalid integer value: {value!r}") from exc
+
+
+def _br_float(value: object) -> float:
+    if isinstance(value, float):
+        return value
+    if isinstance(value, int) and not isinstance(value, bool):
+        return float(value)
+    s = str(value).strip()
+    if s in _EMPTY_VALUES:
+        raise ValueError(f"Invalid float value: {value!r}")
+    try:
+        return float(s)
+    except ValueError as exc:
+        raise ValueError(f"Invalid float value: {value!r}") from exc
+
+
+def _br_float_or_none(value: object) -> float | None:
+    if _is_empty(value):
+        return None
+    if isinstance(value, float):
+        return value
+    if isinstance(value, int) and not isinstance(value, bool):
+        return float(value)
+    s = str(value).strip()
+    try:
+        return float(s)
+    except ValueError as exc:
+        raise ValueError(f"Invalid float value: {value!r}") from exc
+
+
+def _seconds_played(value: object) -> int:
+    if value is None:
+        return 0
+    s = str(value).strip()
+    if s in _EMPTY_VALUES:
+        return 0
+    parts = s.split(":")
+    if len(parts) != 2:
+        raise ValueError(f"Invalid playing time format: {value!r}")
+    try:
+        minutes = int(parts[0])
+        seconds = int(parts[1])
+    except ValueError as exc:
+        raise ValueError(f"Invalid playing time format: {value!r}") from exc
+    return 60 * minutes + seconds
+
+
+def _team_field(value: object) -> Team:
+    if isinstance(value, Team):
+        return value
+    s = str(value).strip()
+    team = TEAM_ABBREVIATIONS_TO_TEAM.get(s)
+    if team is None:
+        raise ValueError(f"Unknown team abbreviation: {value!r}")
+    return team
+
+
+def _team_name_field(value: object) -> Team:
+    if isinstance(value, Team):
+        return value
+    s = str(value).strip().upper()
+    team = TEAM_NAME_TO_TEAM.get(s)
+    if team is None:
+        raise ValueError(f"Unknown team name: {value!r}")
+    return team
+
+
+def _location_field(value: object) -> Location:
+    if isinstance(value, Location):
+        return value
+    s = str(value).strip()
+    location = LOCATION_ABBREVIATIONS_TO_LOCATION.get(s)
+    if location is None:
+        raise ValueError(f"Unknown location symbol: {value!r}")
+    return location
+
+
+_OUTCOME_REGEX = re.compile(r"^(W|L)")
+
+
+def _outcome_field(value: object) -> Outcome:
+    if isinstance(value, Outcome):
+        return value
+    s = str(value).strip()
+    match = _OUTCOME_REGEX.match(s)
+    if match is None:
+        raise ValueError(f"Unknown outcome symbol: {value!r}")
+    outcome = OUTCOME_ABBREVIATIONS_TO_OUTCOME.get(match.group(1))
+    if outcome is None:
+        raise ValueError(f"Unknown outcome symbol: {value!r}")
+    return outcome
+
+
+def _positions_field(value: object) -> list[Position]:
+    if value is None:
+        return []
+    s = str(value).strip()
+    if s in _EMPTY_VALUES:
+        return []
+    parsed: list[Position] = []
+    for abbreviation in s.split("-"):
+        position = POSITION_ABBREVIATIONS_TO_POSITION.get(abbreviation.strip())
+        if position is None:
+            raise ValueError(f"Unknown position abbreviation: {value!r}")
+        parsed.append(position)
+    return parsed
+
+
+def _division_field(value: object) -> Division:
+    if isinstance(value, Division):
+        return value
+    s = str(value).strip().upper()
+    if s.endswith(" DIVISION"):
+        s = s[:-9].strip()
+    for division in Division:
+        if division.value == s:
+            return division
+    raise ValueError(f"Unknown division: {value!r}")
+
+
+def _conference_field(value: object) -> Conference:
+    if isinstance(value, Conference):
+        return value
+    s = str(value).strip().upper()
+    if s.endswith(" CONFERENCE"):
+        s = s[:-11].strip()
+    for conference in Conference:
+        if conference.value == s:
+            return conference
+    raise ValueError(f"Unknown conference: {value!r}")
+
+
+def _league_field(value: object) -> League:
+    if isinstance(value, League):
+        return value
+    s = str(value).strip()
+    league = LEAGUE_ABBREVIATIONS_TO_LEAGUE.get(s)
+    if league is None:
+        raise ValueError(f"Unknown league abbreviation: {value!r}")
+    return league
+
+
+def _br_date(value: object) -> date:
+    if isinstance(value, date) and not isinstance(value, datetime):
+        return value
+    if isinstance(value, datetime):
+        return value.date()
+    s = str(value).strip()
+    try:
+        return datetime.strptime(s, "%a, %b %d, %Y").date()
+    except ValueError:
+        pass
+    try:
+        return datetime.strptime(s, "%Y-%m-%d").date()
+    except ValueError as exc:
+        raise ValueError(f"Invalid date value: {value!r}") from exc
+
+
+def _br_datetime(value: object) -> datetime:
+    if isinstance(value, datetime):
+        return value.astimezone(UTC)
+
+    # Accept a tuple/list of (date_string, time_string) so callers can combine
+    # separate BR columns (date + start_time) into one UTC datetime.
+    if isinstance(value, tuple | list):
+        if len(value) != 2:
+            raise ValueError(f"Invalid datetime value: {value!r}")
+        formatted_date, formatted_time_of_day = value
+    else:
+        formatted_date = value
+        formatted_time_of_day = None
+
+    date_s = str(formatted_date).strip()
+    if formatted_time_of_day is None:
+        time_s = ""
+    else:
+        time_s = str(formatted_time_of_day).strip()
+
+    try:
+        base_date = datetime.strptime(date_s, "%a, %b %d, %Y")
+    except ValueError as exc:
+        raise ValueError(f"Invalid date value: {value!r}") from exc
+
+    if time_s in ("", " "):
+        dt = base_date
+    elif time_s[-2:].lower() in ("am", "pm"):
+        dt = datetime.strptime(f"{date_s} {time_s}", "%a, %b %d, %Y %I:%M %p")
+    else:
+        # Newer BR format uses "p" or "a" suffix; add "m" for strptime's %p.
+        dt = datetime.strptime(f"{date_s} {time_s}m", "%a, %b %d, %Y %I:%M%p")
+
+    return dt.replace(tzinfo=ZoneInfo("US/Eastern")).astimezone(UTC)
+
+
+def _br_salary(value: object) -> int | None:
+    if value is None:
+        return None
+    s = str(value).strip()
+    if s in _EMPTY_VALUES:
+        return None
+    cleaned = s.replace("$", "").replace(",", "").replace(" ", "")
+    try:
+        return int(cleaned)
+    except ValueError as exc:
+        raise ValueError(f"Invalid salary value: {value!r}") from exc
+
+
+def _br_percentage(value: object) -> float | None:
+    if value is None:
+        return None
+    s = str(value).strip()
+    if s in _EMPTY_VALUES:
+        return None
+    is_percentage = s.endswith("%")
+    if is_percentage:
+        s = s[:-1].strip()
+    try:
+        parsed = float(s)
+    except ValueError as exc:
+        raise ValueError(f"Invalid percentage value: {value!r}") from exc
+    if is_percentage:
+        parsed = parsed / 100.0
+    return parsed
+
+
+def _br_decimal(value: object) -> Decimal:
+    if isinstance(value, Decimal):
+        return value
+    s = str(value).strip()
+    if s in _EMPTY_VALUES:
+        raise ValueError(f"Invalid decimal value: {value!r}")
+    try:
+        return Decimal(s)
+    except Exception as exc:
+        raise ValueError(f"Invalid decimal value: {value!r}") from exc
+
+
+BRInt = Annotated[int, BeforeValidator(_br_int)]
+BRIntOrNone = Annotated[int | None, BeforeValidator(_br_int_or_none)]
+BRFloat = Annotated[float, BeforeValidator(_br_float)]
+BRFloatOrNone = Annotated[float | None, BeforeValidator(_br_float_or_none)]
+SecondsPlayed = Annotated[int, BeforeValidator(_seconds_played)]
+TeamField = Annotated[Team, BeforeValidator(_team_field)]
+TeamNameField = Annotated[Team, BeforeValidator(_team_name_field)]
+LocationField = Annotated[Location, BeforeValidator(_location_field)]
+OutcomeField = Annotated[Outcome, BeforeValidator(_outcome_field)]
+PositionsField = Annotated[list[Position], BeforeValidator(_positions_field)]
+DivisionField = Annotated[Division, BeforeValidator(_division_field)]
+ConferenceField = Annotated[Conference, BeforeValidator(_conference_field)]
+LeagueField = Annotated[League, BeforeValidator(_league_field)]
+BRDate = Annotated[date, BeforeValidator(_br_date)]
+BRDatetime = Annotated[datetime, BeforeValidator(_br_datetime)]
+BRSalary = Annotated[int | None, BeforeValidator(_br_salary)]
+BRPercentage = Annotated[float | None, BeforeValidator(_br_percentage)]
+BRDecimal = Annotated[Decimal, BeforeValidator(_br_decimal)]

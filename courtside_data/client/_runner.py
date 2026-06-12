@@ -18,12 +18,14 @@ from __future__ import annotations
 import threading
 from collections.abc import Callable, Sequence
 from contextvars import ContextVar
-from typing import Any
+from typing import Any, cast
 
 import httpx
+from pydantic import ValidationError
 
 from courtside_data.data import OutputType, OutputWriteOption
 from courtside_data.endpoints import ENDPOINTS
+from courtside_data.errors import SchemaDriftError
 from courtside_data.http_service import HTTPService
 from courtside_data.output.field_types import coerce_data
 from courtside_data.output.fields import BasketballReferenceJSONEncoder, format_value
@@ -31,6 +33,7 @@ from courtside_data.output.service import OutputService
 from courtside_data.output.type_validator import validate_rows
 from courtside_data.output.writers import CSVWriter, FileOptions, JSONWriter, OutputOptions
 from courtside_data.parser_service import ParserService
+from courtside_data.schemas import ROW_ADAPTERS
 
 _shared_service_lock = threading.Lock()
 _shared_service: HTTPService | None = None
@@ -104,11 +107,40 @@ def _execute(
     output_write_option: OutputWriteOption | None = None,
     json_options: dict[str, Any] | None = None,
     validate_output: bool = True,
+    *,
+    endpoint: Any = None,
+    endpoint_name: str | None = None,
 ) -> Any:
     values = _call_with_error_mapping(service_call, error_mappings)
     # Coerce raw string values to proper Python types (idempotent for endpoints
     # whose parser chains already produce typed values)
     values = coerce_data(values)
+
+    # If the endpoint declares a Pydantic row model, validate each row.
+    # Replaces the legacy validate_rows soft-check with a strict, typed
+    # transformation. Pydantic ValidationError is wrapped into
+    # SchemaDriftError so a BR column rename reads as a domain error.
+    if endpoint is not None and endpoint.row_model is not None:
+        adapter = ROW_ADAPTERS.get(endpoint_name)
+        # endpoint_name is the registry name; if not in ROW_ADAPTERS the
+        # endpoint was registered with a different name or model — raise loudly.
+        if adapter is None:
+            raise RuntimeError(
+                f"Endpoint {endpoint_name!r} declares row_model "
+                f"{endpoint.row_model.__name__!r} but no adapter is registered."
+            )
+        try:
+            validated = adapter.validate_python(values)
+        except ValidationError as exc:
+            raise SchemaDriftError(
+                endpoint_name=endpoint_name or "<unknown>",
+                url=getattr(service_call, "__name__", "<unknown>"),
+                # exc.errors() yields Pydantic ErrorDetails TypedDicts;
+                # SchemaDriftError is typed list[dict] (plan-mandated signature),
+                # and the values are dicts at runtime, so cast the type.
+                pydantic_errors=cast("list[dict[str, Any]]", exc.errors()),
+            ) from exc
+        values = [m.model_dump(mode="json") for m in validated]
 
     if output_type in (OutputType.CSV, OutputType.DATAFRAME) and csv_column_names is None:
         rows = _extract_rows(values)
@@ -163,4 +195,6 @@ def _run_endpoint(
         output_file_path=output_file_path,
         output_write_option=output_write_option,
         json_options=json_options,
+        endpoint=endpoint,
+        endpoint_name=name,
     )
