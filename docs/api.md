@@ -6,6 +6,54 @@ The `import`ed `client` contains the API methods that will access **Basketball R
 
 ```python
 from courtside_data import client
+
+client.team_roster(team_abbreviation="BOS", season_end_year=2024)
+```
+
+These module-level functions share one HTTP session per process (TCP/TLS
+connection reuse and one response cache).
+
+!!! note
+    Only a handful of endpoints are shown on this page. The full set of 50+
+    endpoints — with parameters, URL patterns, and CSV columns — is in the
+    [Endpoint Reference](reference.md).
+
+### `CourtsideClient`
+
+To control session behavior, construct a `CourtsideClient`. It exposes every
+endpoint as a same-named method bound to its own HTTP session:
+
+```python
+from courtside_data import CourtsideClient
+
+client = CourtsideClient(cache=False)
+roster = client.team_roster(team_abbreviation="BOS", season_end_year=2024)
+```
+
+The constructor accepts:
+
+| Argument      | Default       | Purpose                                              |
+| ------------- | ------------- | ---------------------------------------------------- |
+| `cache`       | `True`        | RFC 9111 response caching (SQLite-backed)            |
+| `headers`     | `None`        | Override or extend the browser-like default headers  |
+| `impersonate` | `"chrome124"` | TLS fingerprint impersonation; `None` for plain TLS  |
+| `timeout`     | `None`        | An `httpx.Timeout`; defaults to 30s (10s connect)    |
+
+!!! warning
+    Rate limiting is **not** configurable. Requests are paced at a 6-second
+    minimum interval (~9 requests/minute) process-wide, across all sessions
+    and threads, because **Basketball Reference** bans clients that exceed
+    ~20 requests/minute.
+
+### Command line
+
+Every endpoint is also available as a CLI subcommand:
+
+```bash
+courtside-data list
+courtside-data league_per_game_stats --season-end-year 2024
+courtside-data team_roster --team-abbreviation BOS --season-end-year 2024 \
+    --output-type csv --output-file roster.csv
 ```
 
 ## Enums
@@ -53,7 +101,8 @@ They are `import`ed from the `data` path.
     !!! note
         Represents the type of data output.
         
-        The two possible values are `OutputType.JSON` and `OutputType.CSV`
+        The three possible values are `OutputType.JSON`, `OutputType.CSV`, and
+        `OutputType.DATAFRAME`
 
 === "OutputWriteOption"
     ```python
@@ -98,16 +147,22 @@ The default data returned by API methods are Python objects (e.g. a `list` of `d
 All API methods come with `output_type`, `output_file_path`, `output_write_option`, and `json_options` arguments that are
 **_optional_**, and by default, are `None`.
 
-These arguments can be used to specify `JSON` / `CSV` output that may be written to a file.
+These arguments can be used to specify `JSON` / `CSV` / `DataFrame` output; `JSON` and `CSV` output may be written to a file.
 
-Use the `OutputType` `enum` as the `output_type` value to specify `CSV` or `JSON` output.
+Use the `OutputType` `enum` as the `output_type` value to specify `CSV`, `JSON`, or `DATAFRAME` output.
 
 The `output_file_path` argument takes a string and specifies where the result output should be written.
 
 !!! warning
-    Currently, specifying an `output_type` of `OutputType.CSV` **requires** an `output_file_path` value.
+    Specifying an `output_type` of `OutputType.CSV` **requires** an `output_file_path` value.
     
     `JSON` output can be returned by API methods without having to be written to a file.
+
+!!! note
+    `OutputType.DATAFRAME` returns a `pandas.DataFrame` and requires the
+    `pandas` extra (`pip install "courtside-data[pandas]"`). It does **not**
+    support `output_file_path` — use the returned DataFrame's own `to_csv` /
+    `to_parquet` methods instead.
 
 Use the `OutputWriteOption` `enum` as the `output_write_option` value to specify if the result output should be written,
 or appended to the specified file path (or any of other the Python file mode options).
@@ -116,11 +171,40 @@ or appended to the specified file path (or any of other the Python file mode opt
     The default `OutputWriteOption` if it is **_not_** specified (but an `output_file_path` value **_is_** specified) is 
     `OutputWriteOption.WRITE`.
 
+## Errors
+
+All domain errors inherit from `CourtsideDataError`, so library-specific
+failures can be caught without swallowing `httpx` transport errors:
+
+```python
+from courtside_data import client
+from courtside_data.errors import CourtsideDataError, InvalidSeason, RateLimitJailed
+
+try:
+    client.league_per_game_stats(season_end_year=2024)
+except RateLimitJailed as error:
+    print(f"Jailed by Basketball Reference; retry in {error.retry_after:.0f}s")
+except CourtsideDataError as error:
+    print(error)
+```
+
+The concrete errors are `InvalidDate`, `InvalidSeason`, `InvalidPlayer`,
+`InvalidTeam`, `InvalidPlayerAndSeason`, `InvalidSearch`, and
+`RateLimitJailed`. Per-endpoint mappings (which HTTP status raises which
+error) are listed in the [Endpoint Reference](reference.md).
+
+!!! warning
+    `RateLimitJailed` means **Basketball Reference** has jailed the session
+    (a `Retry-After` longer than 5 minutes). Further calls fail fast until
+    the jail expires; the state is persisted to `.cache/courtside/jail.json`
+    so restarted processes honor it too. Back off — do not retry in a loop.
+
 ## Methods
 
-### Player Box Scores For A Given Day
+A representative sample is shown below — see the
+[Endpoint Reference](reference.md) for all 50+ endpoints.
 
-* [`repl.it` Examples](https://repl.it/@jaebradley/PlayerBoxScoresByDate#main.py)
+### Player Box Scores For A Given Day
 
 === "Python Data Structures"
     ```python
@@ -161,9 +245,15 @@ or appended to the specified file path (or any of other the Python file mode opt
     )
     ```
 
-### Team Box Scores For A Given Day
+=== "DataFrame"
+    ```python
+    from courtside_data import client
+    from courtside_data.data import OutputType
 
-* [`repl.it` Examples](https://repl.it/@jaebradley/TeamBoxScoresByDate#main.py)
+    frame = client.player_box_scores(day=1, month=1, year=2017, output_type=OutputType.DATAFRAME)
+    ```
+
+### Team Box Scores For A Given Day
 
 === "Python Data Structures"
     ```python
@@ -206,8 +296,6 @@ or appended to the specified file path (or any of other the Python file mode opt
     
 ### Get Season Schedule
 
-* [`repl.it` Examples](https://repl.it/@jaebradley/SeasonSchedule#main.py)
-
 === "Python Data Structures"
     ```python
     from courtside_data import client
@@ -248,8 +336,6 @@ or appended to the specified file path (or any of other the Python file mode opt
     ```
 
 ### Player Season Totals (Basic Statistics)
-
-* [`repl.it` Examples](https://repl.it/@jaebradley/PlayerSeasonTotals#main.py)
 
 === "Python Data Structures"
     ```python
@@ -292,8 +378,6 @@ or appended to the specified file path (or any of other the Python file mode opt
 
 ### Player Season Totals (Advanced Statistics)
 
-* [`repl.it` Examples](https://repl.it/@jaebradley/PlayerAdvancedSeasonTotals#main.py)
-
 === "Python Data Structures"
     ```python
     from courtside_data import client
@@ -334,8 +418,6 @@ or appended to the specified file path (or any of other the Python file mode opt
     ```
 
 ### Play-By-Play
-
-* [`repl.it` Examples](https://repl.it/@jaebradley/PlayByPlay#main.py)
 
 !!! note
     The structure of the API is due to the unique URL pattern that **Basketball Reference** has for getting play-by-play 
@@ -395,9 +477,6 @@ or appended to the specified file path (or any of other the Python file mode opt
     In the case of Russell Westbrook, their `player_identifier` is **`westbru01`**.
     
     You can see this from their player page URL: https://www.basketball-reference.com/players/w/westbru01/gamelog/2020.
-    
-
-* [`repl.it` Examples](https://repl.it/@jaebradley/RegularSeasonPlayerBoxScores#main.py)
 
 === "Python Data Structures"
     ```python
@@ -456,9 +535,6 @@ or appended to the specified file path (or any of other the Python file mode opt
     In the case of Russell Westbrook, their `player_identifier` is **`westbru01`**.
     
     You can see this from their player page URL: https://www.basketball-reference.com/players/w/westbru01/gamelog/2020.
-    
-
-* [`repl.it` Examples](https://repl.it/@jaebradley/PlayoffPlayerBoxScores#main.py)
 
 === "Python Data Structures"
     ```python
@@ -510,8 +586,6 @@ or appended to the specified file path (or any of other the Python file mode opt
     
 ### Search
 
-* [`repl.it` Examples](https://repl.it/@jaebradley/Search#main.py)
-
 === "Python Data Structures"
     ```python
     from courtside_data import client
@@ -535,7 +609,7 @@ or appended to the specified file path (or any of other the Python file mode opt
     client.search(
         term="Ko",
         output_type=OutputType.JSON, 
-        output_file_path="./1_1_2017_box_scores.json"
+        output_file_path="./ko_search_results.json"
     )
     ```
        
@@ -547,13 +621,11 @@ or appended to the specified file path (or any of other the Python file mode opt
     client.search(
         term="Ko",
         output_type=OutputType.CSV, 
-        output_file_path="./1_1_2017_box_scores.csv"
+        output_file_path="./ko_search_results.csv"
     )
     ```
 
 ### Standings
-
-* [`repl.it` Examples](https://repl.it/@jaebradley/Standings#main.py)
 
 === "Python Data Structures"
     ```python
@@ -593,4 +665,3 @@ or appended to the specified file path (or any of other the Python file mode opt
         output_file_path="./2019_standings.csv"
     )
     ```
-
