@@ -1,0 +1,27 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "lsp": {
+    "ruff": {
+      "command": ["ruff", "server"],
+      "extensions": [".py", ".pyi"]
+    },
+    "marksman": {
+      "command": ["marksman", "server"],
+      "extensions": [".md"]
+    },
+    "yaml-ls": {
+      "command": ["yaml-language-server", "--stdio"],
+      "extensions": [".yaml", ".yml"],
+      "initialization": {
+        "yaml": {
+          "schemas": {
+            "https://json.schemastore.org/github-workflow.json": [".github/workflows/*"]
+          }
+        }
+      }
+    }
+  },
+  "tools": {
+    "lsp": true
+  }
+}

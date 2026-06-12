@@ -1,6 +1,6 @@
 from unittest import TestCase
 
-from courtside_data.parsers import SearchResultNameParser
+from courtside_data.legacy.parsers import SearchResultNameParser
 
 
 class TestSearchResultNameParser(TestCase):

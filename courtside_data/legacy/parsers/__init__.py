@@ -1,17 +1,17 @@
 """Parser classes for Basketball Reference data, organized in three tiers.
 
-- :mod:`courtside_data.parsers.mappers` — low-level mappers translating
+- :mod:`courtside_data.legacy.parsers.mappers` — low-level mappers translating
   abbreviations and names to domain enums.
-- :mod:`courtside_data.parsers.extractors` — mid-level extractors parsing
+- :mod:`courtside_data.legacy.parsers.extractors` — mid-level extractors parsing
   formatted strings into structured values.
-- :mod:`courtside_data.parsers.compositors` — domain compositors combining
+- :mod:`courtside_data.legacy.parsers.compositors` — domain compositors combining
   mappers and extractors into complete records.
 
-All names are re-exported here, so ``from courtside_data.parsers import X``
+All names are re-exported here, so ``from courtside_data.legacy.parsers import X``
 keeps working regardless of which module defines ``X``.
 """
 
-from courtside_data.parsers.compositors import (
+from courtside_data.legacy.parsers.compositors import (
     ConferenceDivisionStandingsParser,
     PlayByPlaysParser,
     PlayerAdvancedSeasonTotalsParser,
@@ -23,7 +23,7 @@ from courtside_data.parsers.compositors import (
     SearchResultsParser,
     TeamTotalsParser,
 )
-from courtside_data.parsers.extractors import (
+from courtside_data.legacy.parsers.extractors import (
     PLAYER_SEASON_BOX_SCORES_GAME_DATE_FORMAT,
     PLAYER_SEASON_BOX_SCORES_OUTCOME_REGEX,
     SEARCH_RESULT_NAME_REGEX,
@@ -36,7 +36,7 @@ from courtside_data.parsers.extractors import (
     SearchResultNameParser,
     SecondsPlayedParser,
 )
-from courtside_data.parsers.mappers import (
+from courtside_data.legacy.parsers.mappers import (
     DivisionNameParser,
     LeagueAbbreviationParser,
     LocationAbbreviationParser,

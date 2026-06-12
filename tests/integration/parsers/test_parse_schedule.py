@@ -6,8 +6,8 @@ from zoneinfo import ZoneInfo
 from lxml import html
 
 from courtside_data.data import TEAM_NAME_TO_TEAM, Team
-from courtside_data.html import SchedulePage
-from courtside_data.parsers import ScheduledGamesParser, ScheduledStartTimeParser, TeamNameParser
+from courtside_data.legacy.html import SchedulePage
+from courtside_data.legacy.parsers import ScheduledGamesParser, ScheduledStartTimeParser, TeamNameParser
 
 
 class BaseTest(TestCase):

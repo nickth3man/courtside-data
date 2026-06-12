@@ -71,7 +71,7 @@ jobs:
         with:
           python-version: '3.12'
       - name: End-to-end tests
-        run: bash ./scripts/end\ to\ end\ tests.sh "$(pwd)/dependencies"
+        run: bash ./scripts/e2e_tests.sh "$(pwd)/dependencies"
 
   documentation:
     runs-on: ubuntu-latest

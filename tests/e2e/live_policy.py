@@ -20,11 +20,12 @@ def live_tests_enabled(environ=None):
 
 
 class LiveRequestPolicy:
-    # The full e2e suite needs ~27 requests (season_schedule alone fetches
-    # the main page plus every month). 30 leaves slack without allowing a
-    # runaway loop. Spacing of 15s stays far under Basketball-Reference's
-    # published 20-requests-per-minute limit.
-    def __init__(self, max_requests=30, min_delay_seconds=15, clock=None, sleep=None):
+    # The full e2e suite needs ~31 requests (season_schedule alone fetches
+    # the main page plus every month). 35 leaves slack without allowing a
+    # runaway loop. Spacing of 8s (7.5 req/min) stays well under
+    # Basketball-Reference's published 20-requests-per-minute limit and
+    # the library's own 10 req/min safe default.
+    def __init__(self, max_requests=35, min_delay_seconds=8, clock=None, sleep=None):
         self.max_requests = max_requests
         self.min_delay_seconds = min_delay_seconds
         self.clock = clock or time.monotonic

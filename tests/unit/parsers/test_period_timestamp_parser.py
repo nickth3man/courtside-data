@@ -1,7 +1,7 @@
 from unittest import TestCase
 
+from courtside_data.legacy.parsers import PeriodTimestampParser
 from courtside_data.parser_service import ParserService
-from courtside_data.parsers import PeriodTimestampParser
 
 
 class TestPeriodTimestampParser(TestCase):

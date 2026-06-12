@@ -6,7 +6,7 @@ repo_url: https://github.com/nickth3man/courtside-data
 nav:
   - Home: index.md
   - API: api.md
-  - Development: development.md
+  - Endpoint Reference: reference.md
 theme: material
 markdown_extensions:
   - admonition

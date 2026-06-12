@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+from typing import Any
 
 from parsel import Selector
 
@@ -120,3 +121,49 @@ def extract_commented_table(selector: Selector, table_id: str) -> Selector | Non
             if table:
                 return table[0]
     return None
+
+
+def _clean_text(values: list[str]) -> str:
+    return re.sub(r"\s+", " ", " ".join(values)).strip()
+
+
+def parse_transaction_list(selector: Selector) -> list[dict[str, Any]]:
+    """Parse a Basketball Reference transaction-list page into dict rows.
+
+    Transaction pages (league and team) are date-grouped ``<ul>`` lists
+    rather than tables; this is the fallback used by ``fetch_table`` when an
+    endpoint declares ``transaction_list_fallback``.
+    """
+    transactions = []
+    for day in selector.css("ul.page_index > li"):
+        date = _clean_text(day.xpath("./span//text()").getall())
+        for transaction in day.xpath("./p[normalize-space()]"):
+            linked_resources = []
+            from_team_abbreviations = []
+            to_team_abbreviations = []
+            for link in transaction.css("a"):
+                from_team = link.attrib.get("data-attr-from")
+                to_team = link.attrib.get("data-attr-to")
+                if from_team:
+                    from_team_abbreviations.append(from_team)
+                if to_team:
+                    to_team_abbreviations.append(to_team)
+                linked_resources.append(
+                    {
+                        "text": _clean_text(link.css("::text").getall()),
+                        "href": link.attrib.get("href", ""),
+                        "from_team_abbreviation": from_team or "",
+                        "to_team_abbreviation": to_team or "",
+                    }
+                )
+
+            transactions.append(
+                {
+                    "date": date,
+                    "transaction": _clean_text(transaction.css("::text").getall()),
+                    "from_team_abbreviations": from_team_abbreviations,
+                    "to_team_abbreviations": to_team_abbreviations,
+                    "linked_resources": linked_resources,
+                }
+            )
+    return transactions

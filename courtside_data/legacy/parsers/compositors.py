@@ -6,7 +6,7 @@ from datetime import datetime
 from typing import Any
 
 from courtside_data.data import Conference, Division, Outcome, Team
-from courtside_data.parsers.extractors import (
+from courtside_data.legacy.parsers.extractors import (
     PeriodDetailsParser,
     PeriodTimestampParser,
     PlayerBoxScoreOutcomeParser,
@@ -16,7 +16,7 @@ from courtside_data.parsers.extractors import (
     SearchResultNameParser,
     SecondsPlayedParser,
 )
-from courtside_data.parsers.mappers import (
+from courtside_data.legacy.parsers.mappers import (
     DivisionNameParser,
     LeagueAbbreviationParser,
     LocationAbbreviationParser,

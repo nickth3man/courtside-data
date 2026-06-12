@@ -6,6 +6,9 @@ A comprehensive Python client for [Basketball Reference](https://www.basketball-
 
 ```bash
 pip install courtside-data
+
+# with pandas DataFrame support
+pip install "courtside-data[pandas]"
 ```
 
 ## Quick Start
@@ -23,11 +26,38 @@ roster = client.team_roster(season_end_year=2024, team_abbreviation="BOS")
 career = client.player_career_stats(player_identifier="jamesle01")
 
 # Save to CSV
+from courtside_data.data import OutputType
+
 client.league_per_game_stats(
     season_end_year=2024,
-    output_type="csv",
+    output_type=OutputType.CSV,
     output_file_path="stats.csv",
 )
+
+# Or get a pandas DataFrame (requires the pandas extra)
+frame = client.league_per_game_stats(season_end_year=2024, output_type=OutputType.DATAFRAME)
+```
+
+The module-level functions share one HTTP session per process (connection
+reuse, one response cache). To control session behavior, use
+`CourtsideClient`:
+
+```python
+from courtside_data import CourtsideClient
+
+client = CourtsideClient(cache=False)  # also: headers=..., impersonate=..., timeout=...
+roster = client.team_roster(team_abbreviation="BOS", season_end_year=2024)
+```
+
+## Command line
+
+Every endpoint is also a CLI subcommand:
+
+```bash
+courtside-data list
+courtside-data league_per_game_stats --season-end-year 2024
+courtside-data team_roster --team-abbreviation BOS --season-end-year 2024 \
+    --output-type csv --output-file roster.csv
 ```
 
 ## Endpoints
@@ -79,31 +109,33 @@ See [REFERENCE.md](REFERENCE.md) for detailed endpoint documentation including U
 
 ## Rate Limiting
 
-Courtside Data includes built-in rate limiting to be respectful to Basketball Reference:
+Basketball Reference bans clients that exceed ~20 requests per minute, so
+rate limiting is built in and **not configurable**:
 
-- **Default:** 3.5 second interval with 1.2 second jitter
-- **Configure via constructor:**
-  ```python
-  http_service = HTTPService(parser=ParserService(), rate_limit_interval=5.0)
-  ```
-- **Configure via environment variables:**
-  ```bash
-  export BASKETBALL_REF_RATE_LIMIT_INTERVAL=3.5
-  export BASKETBALL_REF_RATE_LIMIT_JITTER=1.2
-  ```
+- Requests are paced at a 6-second minimum interval (plus jitter, ~9 req/min),
+  enforced process-wide across all sessions and threads.
+- `Retry-After` headers are honored on retries.
+- If Basketball Reference jails the session (a `Retry-After` longer than
+  5 minutes), a circuit breaker makes further calls fail fast with
+  `RateLimitJailed` instead of burning requests against the ban. The jail
+  state is persisted to `.cache/courtside/jail.json` so restarted processes
+  honor it too.
 
 ## Development
 
 ```bash
 # Install with dev dependencies
-pip install -e ".[dev]"
+uv sync --extra dev
 
 # Run tests
-pytest
+uv run pytest
 
 # Run tests with coverage
-coverage run -m pytest
-coverage report
+uv run coverage run -m pytest
+uv run coverage report
+
+# Regenerate REFERENCE.md after changing the endpoint registry
+uv run python scripts/generate_reference.py
 ```
 
 ## Lineage and Attribution

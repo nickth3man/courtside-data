@@ -3,7 +3,7 @@ from unittest import TestCase
 
 from lxml import html
 
-from courtside_data.html import PlayByPlayPage
+from courtside_data.legacy.html import PlayByPlayPage
 
 
 class TestPlayByPlayPage(TestCase):

@@ -6,6 +6,9 @@ dist/
 *egg-info/
 bin/
 lib/
+
+# Environment variables (non-sensitive defaults documented in .env.example)
+.env
 # Share the project's VS Code config, but keep personal/local bits out
 .vscode/*
 !.vscode/settings.json

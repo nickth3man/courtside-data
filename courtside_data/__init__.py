@@ -8,6 +8,7 @@ package-level aliases.
 """
 
 from courtside_data.client import (
+    CourtsideClient,
     attendance,
     career_leaders,
     draft_picks,
@@ -65,6 +66,7 @@ from courtside_data.client import (
 )
 
 __all__ = [
+    "CourtsideClient",
     "attendance",
     "career_leaders",
     "draft_picks",

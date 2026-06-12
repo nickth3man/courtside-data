@@ -19,6 +19,7 @@ classifiers = [
 requires-python = ">=3.12"
 dependencies = [
     "httpx>=0.28.0",
+    "httpx-curl-cffi>=0.1.0",
     "hishel>=1.1.0",
     "stamina>=24.3.0",
     "lxml>=5.1.0",
@@ -27,7 +28,11 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+pandas = [
+    "pandas>=2.0",
+]
 dev = [
+    "pandas>=2.0",
     "pytest>=8.0",
     "pytest-freezer>=0.4.2",
     "pytest-socket>=0.7.0",
@@ -40,6 +45,9 @@ dev = [
     "mkdocs-material>=9.0",
     "pymdown-extensions>=10.0",
 ]
+
+[project.scripts]
+courtside-data = "courtside_data.cli:main"
 
 [project.urls]
 Repository = "https://github.com/nickth3man/courtside-data"
@@ -60,11 +68,6 @@ testpaths = "tests"
 # --timeout=300: backstop so no single test can hang indefinitely; sized above
 # the slowest legitimate live e2e test (season schedule: ~8 requests at 15s spacing)
 addopts = ["-p", "no:freezegun", "--disable-socket", "--timeout=300"]
-
-[dependency-groups]
-dev = [
-    "pytest-timeout>=2.4.0",
-]
 
 [tool.ruff]
 target-version = "py312"
@@ -87,3 +90,7 @@ select = [
 
 [tool.ty.environment]
 python-version = "3.12"
+extra-paths = ["courtside_data"]
+
+[tool.ty.src]
+exclude = [".venv", "tests/fixtures", "tests/integration/files", "dist", ".slim"]

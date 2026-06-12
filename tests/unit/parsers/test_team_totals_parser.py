@@ -2,7 +2,7 @@ from unittest import TestCase
 from unittest.mock import MagicMock
 
 from courtside_data.data import TEAM_ABBREVIATIONS_TO_TEAM, TeamTotal
-from courtside_data.parsers import TeamAbbreviationParser, TeamTotalsParser
+from courtside_data.legacy.parsers import TeamAbbreviationParser, TeamTotalsParser
 
 
 class TestTeamTotalsParser(TestCase):

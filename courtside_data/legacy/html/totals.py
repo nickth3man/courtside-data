@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from lxml.html import HtmlElement
 
-from courtside_data.html._helpers import cell_text
-from courtside_data.html.boxscores import PlayerIdentificationRow
+from courtside_data.legacy.html._helpers import cell_text
+from courtside_data.legacy.html.boxscores import PlayerIdentificationRow
 
 
 class PlayerAdvancedSeasonTotalsTable:

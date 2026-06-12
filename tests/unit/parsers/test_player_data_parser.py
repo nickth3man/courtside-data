@@ -1,8 +1,8 @@
 from unittest import TestCase
 
 from courtside_data.data import LEAGUE_ABBREVIATIONS_TO_LEAGUE, League, PlayerData
+from courtside_data.legacy.parsers import LeagueAbbreviationParser, PlayerDataParser, ResourceLocationParser
 from courtside_data.parser_service import ParserService
-from courtside_data.parsers import LeagueAbbreviationParser, PlayerDataParser, ResourceLocationParser
 
 
 class TestPlayerDataParser(TestCase):

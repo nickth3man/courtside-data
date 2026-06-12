@@ -1,4 +1,3 @@
-import datetime
 import filecmp
 import os
 from unittest import TestCase
@@ -24,10 +23,10 @@ class BaseEndToEndTest(TestCase):
 
 
 class TestPlayerBoxScores(BaseEndToEndTest):
-    def setUp(self):
-        super().setUp()
-
-        self.box_scores = player_box_scores(day=11, month=3, year=2024)
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.box_scores = player_box_scores(day=11, month=3, year=2024)
 
     def test_first_entry(self):
         self.assertIsNotNone(self.box_scores)
@@ -61,8 +60,6 @@ class TestPlayerBoxScores(BaseEndToEndTest):
             self.box_scores[0],
         )
 
-
-class TestCsvPlayerBoxScores(BaseEndToEndTest):
     def test_csv_output(self):
         output_file_path = os.path.join(
             os.path.dirname(__file__),
@@ -87,8 +84,6 @@ class TestCsvPlayerBoxScores(BaseEndToEndTest):
             )
         )
 
-
-class TestJsonPlayerBoxScores(BaseEndToEndTest):
     def test_json_output(self):
         output_file_path = os.path.join(
             os.path.dirname(__file__),
@@ -119,8 +114,8 @@ class TestSeasonSchedule(BaseEndToEndTest):
         schedule = season_schedule(season_end_year=2001)
         self.assertIsNotNone(schedule)
 
-    def test_current_year_season_schedule(self):
-        schedule = season_schedule(season_end_year=datetime.datetime.now().year)
+    def test_2024_season_schedule(self):
+        schedule = season_schedule(season_end_year=2024)
         self.assertIsNotNone(schedule)
 
 

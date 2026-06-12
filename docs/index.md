@@ -15,22 +15,17 @@ and translated into a usable API.
 
 ## Installation
 
-[This project is published to `PyPi`](https://pypi.org/project/basketball-reference-web-scraper/).
-
 It can be installed via `pip`.
 
 ```bash
 pip install courtside-data
+
+# with pandas DataFrame support
+pip install "courtside-data[pandas]"
 ```
 
 !!! note
-    This library requires `Python 3.7+` 
-
-!!! note
-    Currently, only data from seasons after the `1999-2000` season is supported
-
-!!! note
-    There are currently two supported major versions - `3+` and `4+`.
+    This library requires `Python 3.12+`
 
 ## Contributors
 

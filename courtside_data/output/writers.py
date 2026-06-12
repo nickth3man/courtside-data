@@ -42,7 +42,8 @@ class OutputOptions:
                 formatting_options = DEFAULT_JSON_OPTIONS
             else:
                 formatting_options = {**DEFAULT_JSON_OPTIONS, **json_options}
-        elif output_type == OutputType.CSV:
+        elif output_type in (OutputType.CSV, OutputType.DATAFRAME):
+            # DataFrames reuse the CSV column contract for column order
             formatting_options = csv_options
         elif output_type is None:
             return OutputOptions(file_options=None, formatting_options={}, output_type=None)
@@ -157,3 +158,36 @@ class CSVWriter(Writer):
             )
             writer.writeheader()
             writer.writerows(self.rows(data=data))
+
+
+class DataFrameWriter(Writer):
+    """Materializes rows as a pandas DataFrame.
+
+    Requires the ``pandas`` extra (``pip install "courtside-data[pandas]"``).
+    Values keep the Python types produced by coercion — no string formatting
+    is applied.
+    """
+
+    def __init__(self):
+        super().__init__(value_formatter=None)
+
+    def write(self, data, options):
+        try:
+            import pandas
+        except ImportError as error:
+            raise ImportError(
+                "DataFrame output requires pandas. Install it with: pip install 'courtside-data[pandas]'"
+            ) from error
+
+        if options.file_options is not None and options.file_options.should_write_to_file:
+            raise ValueError(
+                "output_file_path is not supported with OutputType.DATAFRAME; "
+                "use the returned DataFrame's own to_csv/to_parquet methods"
+            )
+
+        rows = CSVWriter._extract_rows(data)
+        frame = pandas.DataFrame(rows)
+        column_names = (options.formatting_options or {}).get("column_names")
+        if column_names:
+            frame = frame.reindex(columns=list(column_names))
+        return frame

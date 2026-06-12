@@ -2,7 +2,7 @@ from unittest import TestCase
 from unittest.mock import patch
 
 from courtside_data.data import PeriodType
-from courtside_data.parsers import PeriodDetailsParser
+from courtside_data.legacy.parsers import PeriodDetailsParser
 
 
 class TestPeriodDetailsParser(TestCase):

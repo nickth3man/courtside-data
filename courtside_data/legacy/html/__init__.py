@@ -1,13 +1,13 @@
-"""Page-object models for Basketball Reference HTML.
+"""Page-object models for the legacy Basketball Reference endpoints.
 
-Legacy endpoints use lxml-backed page/row classes grouped by domain
-(boxscores, totals, play_by_play, schedule, search, standings, contracts).
-Generic (beta) endpoints use the parsel-backed ``GenericTable`` machinery in
-``generic``. Everything is re-exported here, so ``from courtside_data.html
-import X`` keeps working regardless of which submodule defines ``X``.
+lxml-backed page/row classes grouped by domain (boxscores, totals,
+play_by_play, schedule, search, standings, contracts). Generic endpoints do
+not use these — they go through ``courtside_data.tables.GenericTable``.
+Everything is re-exported here, so ``from courtside_data.legacy.html import
+X`` keeps working regardless of which submodule defines ``X``.
 """
 
-from courtside_data.html.boxscores import (
+from courtside_data.legacy.html.boxscores import (
     BasicBoxScoreRow,
     BoxScoresPage,
     DailyBoxScoresPage,
@@ -21,19 +21,14 @@ from courtside_data.html.boxscores import (
     PlayerSeasonGameLogRow,
     StatisticsTable,
 )
-from courtside_data.html.contracts import PlayerContractsRow
-from courtside_data.html.generic import (
-    GenericTable,
-    GenericTableRow,
-    extract_commented_table,
-)
-from courtside_data.html.play_by_play import (
+from courtside_data.legacy.html.contracts import PlayerContractsRow
+from courtside_data.legacy.html.play_by_play import (
     PlayByPlayPage,
     PlayByPlayRow,
     PlayByPlayTable,
 )
-from courtside_data.html.schedule import SchedulePage, ScheduleRow
-from courtside_data.html.search import (
+from courtside_data.legacy.html.schedule import SchedulePage, ScheduleRow
+from courtside_data.legacy.html.search import (
     PlayerPage,
     PlayerPageTotalsRow,
     PlayerPageTotalsTable,
@@ -41,13 +36,13 @@ from courtside_data.html.search import (
     SearchPage,
     SearchResult,
 )
-from courtside_data.html.standings import (
+from courtside_data.legacy.html.standings import (
     ConferenceDivisionStandingsRow,
     ConferenceDivisionStandingsTable,
     DivisionStandings,
     StandingsPage,
 )
-from courtside_data.html.totals import (
+from courtside_data.legacy.html.totals import (
     PlayerAdvancedSeasonTotalsRow,
     PlayerAdvancedSeasonTotalsTable,
     PlayerSeasonTotalsRow,
@@ -62,8 +57,6 @@ __all__ = [
     "DailyBoxScoresPage",
     "DailyLeadersPage",
     "DivisionStandings",
-    "GenericTable",
-    "GenericTableRow",
     "PlayByPlayPage",
     "PlayByPlayRow",
     "PlayByPlayTable",
@@ -89,5 +82,4 @@ __all__ = [
     "SearchResult",
     "StandingsPage",
     "StatisticsTable",
-    "extract_commented_table",
 ]

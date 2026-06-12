@@ -11,8 +11,8 @@ from courtside_data.data import (
     Outcome,
     Team,
 )
-from courtside_data.html import DailyLeadersPage
-from courtside_data.parsers import (
+from courtside_data.legacy.html import DailyLeadersPage
+from courtside_data.legacy.parsers import (
     LocationAbbreviationParser,
     OutcomeAbbreviationParser,
     PlayerBoxScoresParser,

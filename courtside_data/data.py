@@ -74,6 +74,7 @@ class Team(Enum):
 class OutputType(Enum):
     JSON = "JSON"
     CSV = "CSV"
+    DATAFRAME = "DATAFRAME"
 
 
 class OutputWriteOption(Enum):

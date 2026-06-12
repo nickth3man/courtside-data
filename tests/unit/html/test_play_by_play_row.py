@@ -1,7 +1,7 @@
 from unittest import TestCase
 from unittest.mock import MagicMock, PropertyMock, patch
 
-from courtside_data.html import PlayByPlayRow
+from courtside_data.legacy.html import PlayByPlayRow
 
 
 class TestPlayByPlayRow(TestCase):

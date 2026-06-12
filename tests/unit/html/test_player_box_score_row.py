@@ -1,7 +1,7 @@
 from unittest import TestCase
 from unittest.mock import MagicMock
 
-from courtside_data.html import PlayerBoxScoreRow
+from courtside_data.legacy.html import PlayerBoxScoreRow
 
 
 class TestPlayerBoxScoreRow(TestCase):

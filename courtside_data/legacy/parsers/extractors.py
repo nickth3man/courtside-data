@@ -7,7 +7,7 @@ from datetime import UTC, datetime, tzinfo
 from zoneinfo import ZoneInfo
 
 from courtside_data.data import Outcome, PeriodType
-from courtside_data.parsers.mappers import OutcomeAbbreviationParser
+from courtside_data.legacy.parsers.mappers import OutcomeAbbreviationParser
 
 PLAYER_SEASON_BOX_SCORES_GAME_DATE_FORMAT: str = "%Y-%m-%d"
 PLAYER_SEASON_BOX_SCORES_OUTCOME_REGEX: str = "(?P<outcome_abbreviation>W|L),"

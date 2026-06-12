@@ -2,7 +2,7 @@ from datetime import UTC, datetime, timedelta
 from unittest import TestCase
 from zoneinfo import ZoneInfo
 
-from courtside_data.parsers import ScheduledStartTimeParser
+from courtside_data.legacy.parsers import ScheduledStartTimeParser
 
 
 class TestScheduledStartTimeParser(TestCase):

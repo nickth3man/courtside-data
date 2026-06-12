@@ -4,8 +4,8 @@ from unittest import TestCase
 from lxml import html
 
 from courtside_data.data import TEAM_ABBREVIATIONS_TO_TEAM, Outcome, Team, TeamTotal
-from courtside_data.html import BoxScoresPage
-from courtside_data.parsers import TeamAbbreviationParser, TeamTotalsParser
+from courtside_data.legacy.html import BoxScoresPage
+from courtside_data.legacy.parsers import TeamAbbreviationParser, TeamTotalsParser
 
 
 class TestParseTeams(TestCase):

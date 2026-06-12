@@ -2,13 +2,13 @@ from unittest import TestCase
 from unittest.mock import MagicMock
 
 from courtside_data.data import LEAGUE_ABBREVIATIONS_TO_LEAGUE, League
-from courtside_data.parser_service import ParserService
-from courtside_data.parsers import (
+from courtside_data.legacy.parsers import (
     LeagueAbbreviationParser,
     ResourceLocationParser,
     SearchResultNameParser,
     SearchResultsParser,
 )
+from courtside_data.parser_service import ParserService
 
 
 class TestSearchResultsParser(TestCase):

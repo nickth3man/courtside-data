@@ -9,8 +9,7 @@ from courtside_data.data import (
     Division,
     Team,
 )
-from courtside_data.html import GenericTable
-from courtside_data.parsers import (
+from courtside_data.legacy.parsers import (
     ConferenceDivisionStandingsParser,
     DivisionNameParser,
     LeagueAbbreviationParser,
@@ -38,6 +37,7 @@ from courtside_data.parsers import (
     TeamStandingsParser,
     TeamTotalsParser,
 )
+from courtside_data.tables import GenericTable
 
 
 class ParserService:

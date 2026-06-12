@@ -2,20 +2,22 @@
 
 Legacy endpoints (standings, box scores, schedule, play-by-play, season
 totals, search) have bespoke methods using dedicated page classes from
-``courtside_data.html``. Generic endpoints are declared in
+``courtside_data.legacy.html``. Generic endpoints are declared in
 ``courtside_data.endpoints`` and served by :meth:`HTTPService.fetch_table`,
 which the generated client functions call directly.
 """
 
 from __future__ import annotations
 
+import json
+import logging
 import os
 import random
-import re
 import threading
 import time
 from collections.abc import Callable
 from datetime import UTC
+from pathlib import Path
 from typing import Any, ClassVar
 
 import httpx
@@ -26,12 +28,11 @@ from parsel import Selector
 
 from courtside_data.data import TEAM_TO_TEAM_ABBREVIATION, PlayerData, Team, TeamTotal
 from courtside_data.endpoints import ENDPOINTS, TableEndpoint
-from courtside_data.errors import InvalidDate, InvalidPlayerAndSeason
-from courtside_data.html import (
+from courtside_data.errors import InvalidDate, InvalidPlayerAndSeason, RateLimitJailed
+from courtside_data.legacy.html import (
     BoxScoresPage,
     DailyBoxScoresPage,
     DailyLeadersPage,
-    GenericTable,
     PlayByPlayPage,
     PlayerAdvancedSeasonTotalsTable,
     PlayerPage,
@@ -40,18 +41,49 @@ from courtside_data.html import (
     SchedulePage,
     SearchPage,
     StandingsPage,
-    extract_commented_table,
 )
+from courtside_data.tables import GenericTable, extract_commented_table, parse_transaction_list
 
-_DEFAULT_RATE_LIMIT_INTERVAL = 3.5
-_DEFAULT_RATE_LIMIT_JITTER = 1.2
+logger = logging.getLogger(__name__)
+
+_DEFAULT_RATE_LIMIT_INTERVAL = 6.0  # 10 req/min ceiling — matches pybaseball's proven safe rate
+_DEFAULT_RATE_LIMIT_JITTER = 1.0  # uniform(0, 1.0) — average ~8.6 req/min with comfortable headroom
 _DEFAULT_TIMEOUT = httpx.Timeout(30.0, connect=10.0)
 _RETRY_ATTEMPTS = 3
 # Basketball-Reference can send Retry-After values of an hour or more when a
 # session is jailed. stamina uses a hook-returned float verbatim (wait_max
 # does not apply to it), so cap it to keep a single request from sleeping
 # for the full jail duration.
-_MAX_RETRY_AFTER_WAIT = 60.0
+_MAX_RETRY_AFTER_WAIT = float(os.environ.get("BASKETBALL_REF_MAX_RETRY_AFTER", "60.0"))
+
+# If Retry-After exceeds this threshold, the session is considered jailed
+# and further retries are suppressed to avoid wasting requests.
+_JAIL_THRESHOLD_SECONDS = 300.0  # 5 minutes
+
+# Jail state is persisted to disk so a process that crashes (or is restarted)
+# while jailed does not immediately re-offend — Basketball-Reference
+# escalates bans for repeat offenders. Set the env var to an empty string to
+# disable persistence (the test suite does this to stay hermetic).
+_JAIL_STATE_PATH_ENV = "BASKETBALL_REF_JAIL_STATE_PATH"
+_DEFAULT_JAIL_STATE_PATH = Path(".cache") / "courtside" / "jail.json"
+
+# Browser-like headers proven to avoid bot-flagging.
+# Tells Cloudflare this looks like a real browser navigation event.
+_DEFAULT_HEADERS: dict[str, str] = {
+    "User-Agent": (
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+        "AppleWebKit/537.36 (KHTML, like Gecko) "
+        "Chrome/124.0.0.0 Safari/537.36"
+    ),
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+    "Accept-Language": "en-US,en;q=0.5",
+    "Sec-Fetch-Dest": "document",
+    "Sec-Fetch-Mode": "navigate",
+    "Sec-Fetch-Site": "none",
+    "Sec-Fetch-User": "?1",
+    "Upgrade-Insecure-Requests": "1",
+    "DNT": "1",
+}
 
 
 def _parse_retry_after(value: str) -> float:
@@ -80,38 +112,108 @@ def _should_retry(exc: Exception) -> bool | float:
     """Custom stamina retry predicate.
 
     Returns True to retry with default backoff, a float to retry after
-    that many seconds (honors Retry-After), or False to abort.
+    that many seconds (honors Retry-After, capped at _MAX_RETRY_AFTER_WAIT),
+    or False to abort. If the Retry-After value exceeds the jail threshold
+    (5 minutes), returns False to skip retries — the caller handles jail
+    detection.
     """
     if isinstance(exc, httpx.TransportError):
+        logger.debug("Retrying after transport error: %s", exc)
         return True
     if isinstance(exc, httpx.HTTPStatusError):
         code = exc.response.status_code
         if code in (429, 502, 503, 504):
             retry_after = exc.response.headers.get("Retry-After")
             if retry_after is not None:
-                return min(_parse_retry_after(retry_after), _MAX_RETRY_AFTER_WAIT)
+                parsed = _parse_retry_after(retry_after)
+                if parsed > _JAIL_THRESHOLD_SECONDS:
+                    logger.warning("Retry-After of %.0fs exceeds jail threshold; not retrying", parsed)
+                    return False  # We're jailed — don't burn retries
+                wait = min(parsed, _MAX_RETRY_AFTER_WAIT)
+                logger.debug("HTTP %d with Retry-After %s; retrying in %.1fs", code, retry_after, wait)
+                return wait
+            logger.debug("HTTP %d; retrying with default backoff", code)
             return True
         # Do NOT retry other 4xx (400, 401, 403, 404, etc.)
         return False
     return False
 
 
-def build_client(cache: bool = False, timeout: httpx.Timeout = _DEFAULT_TIMEOUT) -> httpx.Client:
+def _jail_state_path() -> Path | None:
+    value = os.environ.get(_JAIL_STATE_PATH_ENV)
+    if value is None:
+        return _DEFAULT_JAIL_STATE_PATH
+    return Path(value) if value else None
+
+
+def _read_persisted_jail() -> float | None:
+    """Return the persisted jailed-until UNIX timestamp if it is still active.
+
+    Stale or unreadable state files are removed/ignored (best effort).
+    """
+    path = _jail_state_path()
+    if path is None:
+        return None
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        jailed_until_epoch = float(payload["jailed_until_epoch"])
+    except (OSError, ValueError, KeyError, TypeError):
+        return None
+    if jailed_until_epoch <= time.time():
+        try:
+            path.unlink()
+        except OSError:
+            pass
+        return None
+    return jailed_until_epoch
+
+
+def _persist_jail(jailed_until_epoch: float) -> None:
+    path = _jail_state_path()
+    if path is None:
+        return
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps({"jailed_until_epoch": jailed_until_epoch}), encoding="utf-8")
+    except OSError:
+        logger.warning("Could not persist rate-limit jail state to %s", path)
+
+
+def build_client(
+    cache: bool = False,
+    timeout: httpx.Timeout = _DEFAULT_TIMEOUT,
+    headers: dict[str, str] | None = None,
+    impersonate: str | None = "chrome124",
+) -> httpx.Client:
     """Build the httpx client used by HTTPService.
 
     With cache=True, responses are cached per RFC 9111 via hishel's
-    SQLite-backed storage.
+    SQLite-backed storage. Headers default to browser-like values that
+    reduce bot-flagging; pass ``headers`` to override or extend.
+
+    TLS impersonation is enabled by default (``impersonate="chrome124"``)
+    via the ``httpx-curl-cffi`` package. Set ``impersonate=None`` to use
+    standard httpx TLS instead.
     """
+    merged = {**_DEFAULT_HEADERS, **(headers or {})}
     transport: httpx.BaseTransport = httpx.HTTPTransport()
+
+    if impersonate is not None:
+        from httpx_curl_cffi import CurlTransport  # type: ignore[import-untyped]
+
+        transport = CurlTransport(impersonate=impersonate)  # ty: ignore[invalid-argument-type] — accepts any str
+
     if cache:
         transport = SyncCacheTransport(next_transport=transport)
-    return httpx.Client(transport=transport, follow_redirects=True, timeout=timeout)
+    return httpx.Client(transport=transport, follow_redirects=True, timeout=timeout, headers=merged)
 
 
 class HTTPService:
     BASE_URL = "https://www.basketball-reference.com"
     _last_request_time: ClassVar[float] = float("-inf")
-    _rate_limit_lock: ClassVar[threading.Lock] = threading.Lock()
+    _jailed_until: ClassVar[float] = 0.0  # monotonic timestamp; 0 = not jailed
+    _jail_state_loaded: ClassVar[bool] = False  # persisted jail state is read at most once per process
+    _rate_limit_lock: ClassVar[threading.RLock] = threading.RLock()
 
     def __init__(
         self,
@@ -123,7 +225,9 @@ class HTTPService:
         sleep: Callable[[float], None] | None = None,
         random_func: Callable[[float, float], float] | None = None,
         timeout: httpx.Timeout | None = None,
-        cache: bool = False,
+        cache: bool = True,
+        headers: dict[str, str] | None = None,
+        impersonate: str | None = "chrome124",
     ) -> None:
         self.parser = parser
         # Constructor param > env var > default
@@ -142,7 +246,16 @@ class HTTPService:
             )
 
         self._timeout = timeout if timeout is not None else _DEFAULT_TIMEOUT
-        self._session = session if session is not None else build_client(cache=cache, timeout=self._timeout)
+        self._session = (
+            session
+            if session is not None
+            else build_client(
+                cache=cache,
+                timeout=self._timeout,
+                headers=headers,
+                impersonate=impersonate,
+            )
+        )
 
         # Injectable dependencies for testing
         self._time = time_func if time_func is not None else time.monotonic
@@ -150,28 +263,62 @@ class HTTPService:
         self._random = random_func if random_func is not None else random.uniform
 
     def _apply_rate_limiting(self) -> None:
-        current_time = self._time()
         with self._rate_limit_lock:
+            # A jail set by a previous process (persisted to disk) carries over
+            if not self.__class__._jail_state_loaded:
+                self.__class__._jail_state_loaded = True
+                jailed_until_epoch = _read_persisted_jail()
+                if jailed_until_epoch is not None:
+                    remaining = jailed_until_epoch - time.time()
+                    self.__class__._jailed_until = self._time() + remaining
+                    logger.warning("Loaded persisted jail state: %.0fs remaining", remaining)
+
+            # Circuit breaker: if jailed, refuse all requests immediately
+            current_time = self._time()
+            if current_time < self.__class__._jailed_until:
+                remaining = self.__class__._jailed_until - current_time
+                raise RateLimitJailed(retry_after=remaining)
+
             time_since_last = current_time - self.__class__._last_request_time
             if self._rate_limit_interval > 0 and time_since_last < self._rate_limit_interval:
                 jitter = self._random(0.0, self._rate_limit_jitter)
-                self._sleep((self._rate_limit_interval - time_since_last) + jitter)
+                wait = (self._rate_limit_interval - time_since_last) + jitter
+                logger.debug("Rate-limit pacing: sleeping %.2fs", wait)
+                self._sleep(wait)
             self.__class__._last_request_time = self._time()
 
     def _get(self, url: str, **kwargs: Any) -> httpx.Response:
         self._apply_rate_limiting()
         response = None
-        for attempt in stamina.retry_context(
-            on=_should_retry,
-            attempts=_RETRY_ATTEMPTS,
-            wait_initial=1.0,
-            wait_max=10.0,
-            wait_jitter=0.5,
-        ):
-            with attempt:
-                response = self._session.get(url=url, **kwargs)
-                response.raise_for_status()
-        assert response is not None  # retry_context either yields a response or raises
+        try:
+            for attempt in stamina.retry_context(
+                on=_should_retry,
+                attempts=_RETRY_ATTEMPTS,
+                wait_initial=1.0,
+                wait_max=10.0,
+                wait_jitter=0.5,
+            ):
+                with attempt:
+                    response = self._session.get(url=url, **kwargs)
+                    response.raise_for_status()
+            assert response is not None  # retry_context either yields a response or raises
+        except httpx.HTTPStatusError as e:
+            if e.response.status_code == 429:
+                retry_after = e.response.headers.get("Retry-After")
+                if retry_after is not None:
+                    parsed = _parse_retry_after(retry_after)
+                    if parsed > _JAIL_THRESHOLD_SECONDS:
+                        # Set the circuit breaker so future calls fail fast,
+                        # and persist it so restarted processes honor it too
+                        self.__class__._jailed_until = self._time() + parsed
+                        _persist_jail(time.time() + parsed)
+                        logger.warning("Session jailed by Basketball-Reference for %.0fs", parsed)
+                        raise RateLimitJailed(retry_after=parsed) from e
+            raise
+        else:
+            # Reset pacing — retries consumed time, so measure from now
+            with self._rate_limit_lock:
+                self.__class__._last_request_time = self._time()
         return response
 
     def _get_selector(self, url: str) -> Selector:
@@ -185,46 +332,6 @@ class HTTPService:
         response = self._get(url=url, **kwargs)
         response.raise_for_status()
         return html.fromstring(response.content)
-
-    @staticmethod
-    def _clean_text(values: list[str]) -> str:
-        return re.sub(r"\s+", " ", " ".join(values)).strip()
-
-    @classmethod
-    def _parse_transaction_list(cls, selector: Selector) -> list[dict[str, Any]]:
-        transactions = []
-        for day in selector.css("ul.page_index > li"):
-            date = cls._clean_text(day.xpath("./span//text()").getall())
-            for transaction in day.xpath("./p[normalize-space()]"):
-                linked_resources = []
-                from_team_abbreviations = []
-                to_team_abbreviations = []
-                for link in transaction.css("a"):
-                    from_team = link.attrib.get("data-attr-from")
-                    to_team = link.attrib.get("data-attr-to")
-                    if from_team:
-                        from_team_abbreviations.append(from_team)
-                    if to_team:
-                        to_team_abbreviations.append(to_team)
-                    linked_resources.append(
-                        {
-                            "text": cls._clean_text(link.css("::text").getall()),
-                            "href": link.attrib.get("href", ""),
-                            "from_team_abbreviation": from_team or "",
-                            "to_team_abbreviation": to_team or "",
-                        }
-                    )
-
-                transactions.append(
-                    {
-                        "date": date,
-                        "transaction": cls._clean_text(transaction.css("::text").getall()),
-                        "from_team_abbreviations": from_team_abbreviations,
-                        "to_team_abbreviations": to_team_abbreviations,
-                        "linked_resources": linked_resources,
-                    }
-                )
-        return transactions
 
     # ── Generic endpoint plumbing ───────────────────────────────────────
 
@@ -249,7 +356,7 @@ class HTTPService:
 
         if table_selector is None:
             if endpoint.transaction_list_fallback:
-                return self._parse_transaction_list(selector)
+                return parse_transaction_list(selector)
             return []
 
         table = GenericTable(table_selector, use_header_fallback=endpoint.use_header_fallback)

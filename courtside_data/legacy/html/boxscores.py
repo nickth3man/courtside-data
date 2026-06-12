@@ -6,7 +6,7 @@ import re
 
 from lxml.html import HtmlElement
 
-from courtside_data.html._helpers import cell_text
+from courtside_data.legacy.html._helpers import cell_text
 
 
 class BasicBoxScoreRow:

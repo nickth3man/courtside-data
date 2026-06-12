@@ -4,8 +4,8 @@ from unittest import TestCase
 from lxml import html
 
 from courtside_data.data import POSITION_ABBREVIATIONS_TO_POSITION, TEAM_ABBREVIATIONS_TO_TEAM, Position, Team
-from courtside_data.html import PlayerSeasonTotalTable
-from courtside_data.parsers import PlayerSeasonTotalsParser, PositionAbbreviationParser, TeamAbbreviationParser
+from courtside_data.legacy.html import PlayerSeasonTotalTable
+from courtside_data.legacy.parsers import PlayerSeasonTotalsParser, PositionAbbreviationParser, TeamAbbreviationParser
 
 
 class BasePlayerSeasonTotalsTestCase(TestCase):
