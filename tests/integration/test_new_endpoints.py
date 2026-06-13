@@ -141,7 +141,7 @@ class TestLeagueEndpoints:
         with patch("time.sleep"):
             with requests_mock.Mocker() as m:
                 _mock_url(m, LEAGUE_URL.format(year=2024), html)
-                result = league_per_game_stats(2024)
+                result = league_per_game_stats(2024, raw=True)
                 assert isinstance(result, list)
 
     def test_league_per_36_minutes(self):
@@ -149,7 +149,7 @@ class TestLeagueEndpoints:
         with patch("time.sleep"):
             with requests_mock.Mocker() as m:
                 _mock_url(m, PER_MINUTE_URL.format(year=2024), html)
-                result = league_per_36_minutes(2024)
+                result = league_per_36_minutes(2024, raw=True)
                 assert isinstance(result, list)
 
     def test_league_totals(self):
@@ -157,7 +157,7 @@ class TestLeagueEndpoints:
         with patch("time.sleep"):
             with requests_mock.Mocker() as m:
                 _mock_url(m, TOTALS_URL.format(year=2024), html)
-                result = league_totals(2024)
+                result = league_totals(2024, raw=True)
                 assert isinstance(result, list)
 
     def test_rookie_stats(self):
@@ -165,7 +165,7 @@ class TestLeagueEndpoints:
         with patch("time.sleep"):
             with requests_mock.Mocker() as m:
                 _mock_url(m, ROOKIES_URL.format(year=2024), html)
-                result = rookie_stats(2024)
+                result = rookie_stats(2024, raw=True)
                 assert isinstance(result, list)
 
     def test_standings_by_date(self):
@@ -174,7 +174,7 @@ class TestLeagueEndpoints:
             with requests_mock.Mocker() as m:
                 _mock_url(m, STANDINGS_BY_DATE_URL.format(year=2024, conference="eastern_conference"), html)
                 _mock_url(m, STANDINGS_BY_DATE_URL.format(year=2024, conference="western_conference"), html)
-                result = standings_by_date(2024)
+                result = standings_by_date(2024, raw=True)
                 assert isinstance(result, list)
 
     def test_attendance(self):
@@ -182,7 +182,7 @@ class TestLeagueEndpoints:
         with patch("time.sleep"):
             with requests_mock.Mocker() as m:
                 _mock_url(m, ATTENDANCE_URL.format(year=2024), html)
-                result = attendance(2024)
+                result = attendance(2024, raw=True)
                 assert isinstance(result, list)
 
     def test_league_transactions(self):
@@ -190,7 +190,7 @@ class TestLeagueEndpoints:
         with patch("time.sleep"):
             with requests_mock.Mocker() as m:
                 _mock_url(m, TRANSACTIONS_URL.format(year=2024), html)
-                result = league_transactions(2024)
+                result = league_transactions(2024, raw=True)
                 assert isinstance(result, list)
 
     def test_league_per_100_possessions(self):
@@ -199,7 +199,7 @@ class TestLeagueEndpoints:
         with patch("time.sleep"):
             with requests_mock.Mocker() as m:
                 _mock_url(m, PER_POSS_URL.format(year=2024), html)
-                result = league_per_100_possessions(2024)
+                result = league_per_100_possessions(2024, raw=True)
                 assert isinstance(result, list)
 
     def test_league_shooting(self):
@@ -208,7 +208,7 @@ class TestLeagueEndpoints:
         with patch("time.sleep"):
             with requests_mock.Mocker() as m:
                 _mock_url(m, SHOOTING_URL.format(year=2024), html)
-                result = league_shooting(2024)
+                result = league_shooting(2024, raw=True)
                 assert isinstance(result, list)
 
 
@@ -226,7 +226,7 @@ class TestPlayoffEndpoints:
         with patch("time.sleep"):
             with requests_mock.Mocker() as m:
                 _mock_url(m, LEAGUE_URL.format(year=2024), html)
-                result = playoff_per_game(2024)
+                result = playoff_per_game(2024, raw=True)
                 assert isinstance(result, list)
 
     def test_playoff_totals(self):
@@ -235,7 +235,7 @@ class TestPlayoffEndpoints:
         with patch("time.sleep"):
             with requests_mock.Mocker() as m:
                 _mock_url(m, TOTALS_URL.format(year=2024), html)
-                result = playoff_totals(2024)
+                result = playoff_totals(2024, raw=True)
                 assert isinstance(result, list)
 
 
@@ -252,7 +252,7 @@ class TestDraftAndAwards:
         with patch("time.sleep"):
             with requests_mock.Mocker() as m:
                 _mock_url(m, DRAFT_URL.format(year=2024), html)
-                result = draft_picks(2024)
+                result = draft_picks(2024, raw=True)
                 assert isinstance(result, list)
 
     def test_season_leaders(self):
@@ -260,7 +260,7 @@ class TestDraftAndAwards:
         with patch("time.sleep"):
             with requests_mock.Mocker() as m:
                 _mock_url(m, SEASON_LEADERS_URL, html)
-                result = season_leaders()
+                result = season_leaders(raw=True)
                 assert isinstance(result, list)
 
     def test_career_leaders(self):
@@ -268,7 +268,7 @@ class TestDraftAndAwards:
         with patch("time.sleep"):
             with requests_mock.Mocker() as m:
                 _mock_url(m, CAREER_LEADERS_URL, html)
-                result = career_leaders()
+                result = career_leaders(raw=True)
                 assert isinstance(result, list)
 
     def test_playoff_bracket(self):
@@ -276,7 +276,7 @@ class TestDraftAndAwards:
         with patch("time.sleep"):
             with requests_mock.Mocker() as m:
                 _mock_url(m, PLAYOFF_BRACKET_URL.format(year=2024), html)
-                result = playoff_bracket(2024)
+                result = playoff_bracket(2024, raw=True)
                 assert isinstance(result, list)
 
     def test_season_awards(self):
@@ -284,7 +284,7 @@ class TestDraftAndAwards:
         with patch("time.sleep"):
             with requests_mock.Mocker() as m:
                 _mock_url(m, AWARDS_URL.format(year=2024), html)
-                result = season_awards(2024)
+                result = season_awards(2024, raw=True)
                 assert isinstance(result, list)
 
 
@@ -301,7 +301,7 @@ class TestPlayerEndpoints:
         with patch("time.sleep"):
             with requests_mock.Mocker() as m:
                 _mock_url(m, PLAYER_BASE_URL, html)
-                result = player_career_stats("jamesle01")
+                result = player_career_stats("jamesle01", raw=True)
                 assert isinstance(result, list)
 
     def test_player_playoff_series(self):
@@ -309,7 +309,7 @@ class TestPlayerEndpoints:
         with patch("time.sleep"):
             with requests_mock.Mocker() as m:
                 _mock_url(m, PLAYER_BASE_URL, html)
-                result = player_playoff_series("jamesle01")
+                result = player_playoff_series("jamesle01", raw=True)
                 assert isinstance(result, list)
 
     def test_player_splits(self):
@@ -317,7 +317,7 @@ class TestPlayerEndpoints:
         with patch("time.sleep"):
             with requests_mock.Mocker() as m:
                 _mock_url(m, PLAYER_SPLITS_URL.format(year=2024), html)
-                result = player_splits("jamesle01", 2024)
+                result = player_splits("jamesle01", 2024, raw=True)
                 assert isinstance(result, list)
 
     def test_player_on_off(self):
@@ -325,7 +325,7 @@ class TestPlayerEndpoints:
         with patch("time.sleep"):
             with requests_mock.Mocker() as m:
                 _mock_url(m, PLAYER_ON_OFF_URL.format(year=2024), html)
-                result = player_on_off("jamesle01", 2024)
+                result = player_on_off("jamesle01", 2024, raw=True)
                 assert isinstance(result, list)
 
     def test_player_shot_charts(self):
@@ -333,7 +333,7 @@ class TestPlayerEndpoints:
         with patch("time.sleep"):
             with requests_mock.Mocker() as m:
                 _mock_url(m, PLAYER_SHOT_CHARTS_URL.format(year=2024), html)
-                result = player_shot_charts("jamesle01", 2024)
+                result = player_shot_charts("jamesle01", 2024, raw=True)
                 assert isinstance(result, list)
 
     def test_player_adjusted_shooting(self):
@@ -342,7 +342,7 @@ class TestPlayerEndpoints:
         with patch("time.sleep"):
             with requests_mock.Mocker() as m:
                 _mock_url(m, PLAYER_BASE_URL, html)
-                result = player_adjusted_shooting("jamesle01")
+                result = player_adjusted_shooting("jamesle01", raw=True)
                 assert isinstance(result, list)
 
     def test_player_play_by_play(self):
@@ -351,7 +351,7 @@ class TestPlayerEndpoints:
         with patch("time.sleep"):
             with requests_mock.Mocker() as m:
                 _mock_url(m, PLAYER_BASE_URL, html)
-                result = player_play_by_play("jamesle01")
+                result = player_play_by_play("jamesle01", raw=True)
                 assert isinstance(result, list)
 
     def test_player_game_highs(self):
@@ -360,7 +360,7 @@ class TestPlayerEndpoints:
         with patch("time.sleep"):
             with requests_mock.Mocker() as m:
                 _mock_url(m, PLAYER_BASE_URL, html)
-                result = player_game_highs("jamesle01")
+                result = player_game_highs("jamesle01", raw=True)
                 assert isinstance(result, list)
 
     def test_player_all_star(self):
@@ -369,7 +369,7 @@ class TestPlayerEndpoints:
         with patch("time.sleep"):
             with requests_mock.Mocker() as m:
                 _mock_url(m, PLAYER_BASE_URL, html)
-                result = player_all_star("jamesle01")
+                result = player_all_star("jamesle01", raw=True)
                 assert isinstance(result, list)
 
     def test_player_similarity_scores(self):
@@ -378,7 +378,7 @@ class TestPlayerEndpoints:
         with patch("time.sleep"):
             with requests_mock.Mocker() as m:
                 _mock_url(m, PLAYER_BASE_URL, html)
-                result = player_similarity_scores("jamesle01")
+                result = player_similarity_scores("jamesle01", raw=True)
                 assert isinstance(result, list)
 
     def test_player_salaries(self):
@@ -387,7 +387,7 @@ class TestPlayerEndpoints:
         with patch("time.sleep"):
             with requests_mock.Mocker() as m:
                 _mock_url(m, PLAYER_BASE_URL, html)
-                result = player_salaries("jamesle01")
+                result = player_salaries("jamesle01", raw=True)
                 assert isinstance(result, list)
 
 
@@ -404,7 +404,7 @@ class TestTeamEndpoints:
         with patch("time.sleep"):
             with requests_mock.Mocker() as m:
                 _mock_url(m, TEAM_URL.format(year=2024), html)
-                result = team_roster("LAL", 2024)
+                result = team_roster("LAL", 2024, raw=True)
                 assert isinstance(result, list)
 
     def test_team_injury_report(self):
@@ -412,7 +412,7 @@ class TestTeamEndpoints:
         with patch("time.sleep"):
             with requests_mock.Mocker() as m:
                 _mock_url(m, INJURY_URL, html)
-                result = team_injury_report("LAL", 2024)
+                result = team_injury_report("LAL", 2024, raw=True)
                 assert isinstance(result, list)
 
     def test_team_and_opponent(self):
@@ -421,7 +421,7 @@ class TestTeamEndpoints:
         with patch("time.sleep"):
             with requests_mock.Mocker() as m:
                 _mock_url(m, TEAM_URL.format(year=2024), html)
-                result = team_and_opponent("LAL", 2024)
+                result = team_and_opponent("LAL", 2024, raw=True)
                 assert isinstance(result, list)
 
     def test_team_misc_four_factors(self):
@@ -430,7 +430,7 @@ class TestTeamEndpoints:
         with patch("time.sleep"):
             with requests_mock.Mocker() as m:
                 _mock_url(m, TEAM_URL.format(year=2024), html)
-                result = team_misc_four_factors("LAL", 2024)
+                result = team_misc_four_factors("LAL", 2024, raw=True)
                 assert isinstance(result, list)
 
     def test_team_schedule(self):
@@ -438,7 +438,7 @@ class TestTeamEndpoints:
         with patch("time.sleep"):
             with requests_mock.Mocker() as m:
                 _mock_url(m, TEAM_GAMES_URL.format(year=2024), html)
-                result = team_schedule("LAL", 2024)
+                result = team_schedule("LAL", 2024, raw=True)
                 assert isinstance(result, list)
 
     def test_team_transactions(self):
@@ -446,7 +446,7 @@ class TestTeamEndpoints:
         with patch("time.sleep"):
             with requests_mock.Mocker() as m:
                 _mock_url(m, TEAM_TRANSACTIONS_URL.format(year=2024), html)
-                result = team_transactions("LAL", 2024)
+                result = team_transactions("LAL", 2024, raw=True)
                 assert isinstance(result, list)
 
     def test_team_splits(self):
@@ -454,7 +454,7 @@ class TestTeamEndpoints:
         with patch("time.sleep"):
             with requests_mock.Mocker() as m:
                 _mock_url(m, TEAM_SPLITS_URL.format(year=2024), html)
-                result = team_splits("LAL", 2024)
+                result = team_splits("LAL", 2024, raw=True)
                 assert isinstance(result, list)
 
     def test_team_contracts(self):
@@ -463,7 +463,7 @@ class TestTeamEndpoints:
         with patch("time.sleep"):
             with requests_mock.Mocker() as m:
                 _mock_url(m, TEAM_CONTRACTS_URL, html)
-                result = team_contracts("LAL")
+                result = team_contracts("LAL", raw=True)
                 assert isinstance(result, list)
 
     def test_team_lineups(self):
@@ -471,7 +471,7 @@ class TestTeamEndpoints:
         with patch("time.sleep"):
             with requests_mock.Mocker() as m:
                 _mock_url(m, TEAM_LINEUPS_URL.format(year=2024), html)
-                result = team_lineups("LAL", 2024)
+                result = team_lineups("LAL", 2024, raw=True)
                 assert isinstance(result, list)
 
     def test_team_starting_lineups(self):
@@ -479,7 +479,7 @@ class TestTeamEndpoints:
         with patch("time.sleep"):
             with requests_mock.Mocker() as m:
                 _mock_url(m, TEAM_STARTING_LINEUPS_URL.format(year=2024), html)
-                result = team_starting_lineups("LAL", 2024)
+                result = team_starting_lineups("LAL", 2024, raw=True)
                 assert isinstance(result, list)
 
     def test_team_on_off(self):
@@ -487,7 +487,7 @@ class TestTeamEndpoints:
         with patch("time.sleep"):
             with requests_mock.Mocker() as m:
                 _mock_url(m, TEAM_ON_OFF_URL.format(year=2024), html)
-                result = team_on_off("LAL", 2024)
+                result = team_on_off("LAL", 2024, raw=True)
                 assert isinstance(result, list)
 
     def test_team_opponent_stats(self):
@@ -495,7 +495,7 @@ class TestTeamEndpoints:
         with patch("time.sleep"):
             with requests_mock.Mocker() as m:
                 _mock_url(m, TEAM_OPPONENT_URL.format(year=2024), html)
-                result = team_opponent_stats("LAL", 2024)
+                result = team_opponent_stats("LAL", 2024, raw=True)
                 assert isinstance(result, list)
 
     def test_franchise_history(self):
@@ -504,5 +504,5 @@ class TestTeamEndpoints:
         with patch("time.sleep"):
             with requests_mock.Mocker() as m:
                 _mock_url(m, FRANCHISE_HISTORY_URL, html)
-                result = franchise_history("LAL")
+                result = franchise_history("LAL", raw=True)
                 assert isinstance(result, list)

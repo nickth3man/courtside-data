@@ -17,6 +17,7 @@ def player_box_scores(
     output_file_path: str | None = None,
     output_write_option: OutputWriteOption | None = None,
     json_options: dict[str, Any] | None = None,
+    raw: bool = False,
 ) -> Any:
     """Player box scores for all games on a date.
 
@@ -29,6 +30,7 @@ def player_box_scores(
         output_file_path=output_file_path,
         output_write_option=output_write_option,
         json_options=json_options,
+        raw=raw,
     )
 
 
@@ -40,6 +42,7 @@ def team_box_scores(
     output_file_path: str | None = None,
     output_write_option: OutputWriteOption | None = None,
     json_options: dict[str, Any] | None = None,
+    raw: bool = False,
 ) -> Any:
     """Team box scores for all games on a date.
 
@@ -52,6 +55,7 @@ def team_box_scores(
         output_file_path=output_file_path,
         output_write_option=output_write_option,
         json_options=json_options,
+        raw=raw,
     )
 
 
@@ -64,6 +68,7 @@ def play_by_play(
     output_file_path: str | None = None,
     output_write_option: OutputWriteOption | None = None,
     json_options: dict[str, Any] | None = None,
+    raw: bool = False,
 ) -> Any:
     """Play-by-play events for the game hosted by ``home_team`` on a date.
 
@@ -76,6 +81,7 @@ def play_by_play(
         output_file_path=output_file_path,
         output_write_option=output_write_option,
         json_options=json_options,
+        raw=raw,
     )
 
 
@@ -87,6 +93,7 @@ def regular_season_player_box_scores(
     output_file_path: str | None = None,
     output_write_option: OutputWriteOption | None = None,
     json_options: dict[str, Any] | None = None,
+    raw: bool = False,
 ) -> Any:
     """Game-by-game regular season box scores for a player in a season.
 
@@ -103,6 +110,7 @@ def regular_season_player_box_scores(
         output_file_path=output_file_path,
         output_write_option=output_write_option,
         json_options=json_options,
+        raw=raw,
     )
 
 
@@ -114,6 +122,7 @@ def playoff_player_box_scores(
     output_file_path: str | None = None,
     output_write_option: OutputWriteOption | None = None,
     json_options: dict[str, Any] | None = None,
+    raw: bool = False,
 ) -> Any:
     """Game-by-game playoff box scores for a player in a season.
 
@@ -130,6 +139,7 @@ def playoff_player_box_scores(
         output_file_path=output_file_path,
         output_write_option=output_write_option,
         json_options=json_options,
+        raw=raw,
     )
 
 
@@ -139,6 +149,7 @@ def season_schedule(
     output_file_path: str | None = None,
     output_write_option: OutputWriteOption | None = None,
     json_options: dict[str, Any] | None = None,
+    raw: bool = False,
 ) -> Any:
     """Full season schedule and results (all months).
 
@@ -151,6 +162,7 @@ def season_schedule(
         output_file_path=output_file_path,
         output_write_option=output_write_option,
         json_options=json_options,
+        raw=raw,
     )
 
 
@@ -160,6 +172,7 @@ def players_season_totals(
     output_file_path: str | None = None,
     output_write_option: OutputWriteOption | None = None,
     json_options: dict[str, Any] | None = None,
+    raw: bool = False,
 ) -> Any:
     """Season total statistics for all players (typed parser chain).
 
@@ -172,6 +185,7 @@ def players_season_totals(
         output_file_path=output_file_path,
         output_write_option=output_write_option,
         json_options=json_options,
+        raw=raw,
     )
 
 
@@ -182,6 +196,7 @@ def players_advanced_season_totals(
     output_file_path: str | None = None,
     output_write_option: OutputWriteOption | None = None,
     json_options: dict[str, Any] | None = None,
+    raw: bool = False,
 ) -> Any:
     """Advanced season statistics for all players.
 
@@ -194,6 +209,7 @@ def players_advanced_season_totals(
         output_file_path=output_file_path,
         output_write_option=output_write_option,
         json_options=json_options,
+        raw=raw,
     )
 
 
@@ -203,6 +219,7 @@ def search(
     output_file_path: str | None = None,
     output_write_option: OutputWriteOption | None = None,
     json_options: dict[str, Any] | None = None,
+    raw: bool = False,
 ) -> Any:
     """Search Basketball Reference for players matching a term.
 
@@ -215,4 +232,5 @@ def search(
         output_file_path=output_file_path,
         output_write_option=output_write_option,
         json_options=json_options,
+        raw=raw,
     )

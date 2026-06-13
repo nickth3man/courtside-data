@@ -2,6 +2,8 @@ import csv
 import json
 from typing import Any
 
+from pydantic import BaseModel
+
 from courtside_data.data import OutputType, OutputWriteOption
 
 DEFAULT_JSON_SORT_KEYS = True
@@ -80,22 +82,45 @@ class Writer:
         raise NotImplementedError()
 
 
+def _is_row_model(value: Any) -> bool:
+    return isinstance(value, BaseModel)
+
+
+def _serialize_row_model(value: BaseModel) -> dict[str, Any]:
+    return value.model_dump(mode="json")
+
+
+def _serialize_row_models(data):
+    """Convert Pydantic row models to JSON-ready dicts, preserving other shapes."""
+    if isinstance(data, list):
+        return [_serialize_row_model(row) if _is_row_model(row) else row for row in data]
+    if isinstance(data, dict):
+        return {
+            key: [_serialize_row_model(row) if _is_row_model(row) else row for row in value]
+            if isinstance(value, list)
+            else value
+            for key, value in data.items()
+        }
+    return data
+
+
 class JSONWriter(Writer):
     def write(self, data, options):
+        serialized_data = _serialize_row_models(data)
         output_options: dict[str, Any] = {**DEFAULT_JSON_OPTIONS, **options.formatting_options}
         if options.file_options.should_write_to_file:
             with open(
                 options.file_options.path, options.file_options.mode.value, newline="", encoding="utf8"
             ) as json_file:
                 return json.dump(
-                    data,
+                    serialized_data,
                     json_file,
                     cls=self.value_formatter,
                     **output_options,
                 )
 
         return json.dumps(
-            data,
+            serialized_data,
             cls=self.value_formatter,
             **output_options,
         )
@@ -105,6 +130,7 @@ class CSVWriter(Writer):
     @staticmethod
     def _extract_rows(data):
         """Extract a list of dict rows from data that may be a list or a dict."""
+        data = _serialize_row_models(data)
         if isinstance(data, list):
             return data
         if isinstance(data, dict):

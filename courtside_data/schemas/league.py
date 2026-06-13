@@ -15,14 +15,13 @@ from pydantic import BeforeValidator, Field
 
 from courtside_data.data import Team
 from courtside_data.schemas import register
-from courtside_data.schemas._base import BRRow, PerGameStats, TotalStats
+from courtside_data.schemas._base import BRRow
 from courtside_data.schemas._fields import (
     BRFloatOrNone,
     BRInt,
     BRIntOrNone,
     BRPercentage,
     PositionsField,
-    TeamField,
     _is_empty,
     _team_field,
 )
@@ -32,14 +31,79 @@ from courtside_data.schemas._fields import (
 # ---------------------------------------------------------------------------
 
 
-def _team_field_or_none(value: object) -> Team | None:
-    """``TeamField`` that maps empty / non-breaking-space cells to ``None``."""
+_AGGREGATE_TEAM_ABBREVIATIONS = frozenset({"TOT", "2TM", "3TM"})
+
+
+def _team_or_aggregate_field_or_none(value: object) -> Team | str | None:
+    """Team abbreviation parser that also accepts BR multi-team aggregate rows."""
     if _is_empty(value):
         return None
+    if isinstance(value, Team):
+        return value
+    s = str(value).strip()
+    if s in _AGGREGATE_TEAM_ABBREVIATIONS:
+        return s
     return _team_field(value)
 
 
-TeamFieldOrNone = Annotated[Team | None, BeforeValidator(_team_field_or_none)]
+TeamOrAggregateFieldOrNone = Annotated[Team | str | None, BeforeValidator(_team_or_aggregate_field_or_none)]
+
+
+class LeaguePerGameStats:
+    """Per-game stat block for league/player aggregate tables."""
+
+    name_display: str = Field(validation_alias="name_display")
+    positions: PositionsField = Field(default_factory=list, validation_alias="pos")
+    age: BRIntOrNone = Field(default=None, validation_alias="age")
+    team: TeamOrAggregateFieldOrNone = Field(default=None, validation_alias="team_name_abbr")
+    games_played: BRIntOrNone = Field(default=None, validation_alias="games")
+    games_started: BRIntOrNone = Field(default=None, validation_alias="games_started")
+    minutes_played_per_game: BRFloatOrNone = Field(default=None, validation_alias="mp_per_g")
+    made_field_goals_per_game: BRFloatOrNone = Field(default=None, validation_alias="fg_per_g")
+    attempted_field_goals_per_game: BRFloatOrNone = Field(default=None, validation_alias="fga_per_g")
+    field_goal_percentage: BRPercentage = Field(default=None, validation_alias="fg_pct")
+    made_three_point_field_goals_per_game: BRFloatOrNone = Field(default=None, validation_alias="fg3_per_g")
+    attempted_three_point_field_goals_per_game: BRFloatOrNone = Field(default=None, validation_alias="fg3a_per_g")
+    three_point_field_goal_percentage: BRPercentage = Field(default=None, validation_alias="fg3_pct")
+    made_two_point_field_goals_per_game: BRFloatOrNone = Field(default=None, validation_alias="fg2_per_g")
+    attempted_two_point_field_goals_per_game: BRFloatOrNone = Field(default=None, validation_alias="fg2a_per_g")
+    two_point_field_goal_percentage: BRPercentage = Field(default=None, validation_alias="fg2_pct")
+    effective_field_goal_percentage: BRPercentage = Field(default=None, validation_alias="efg_pct")
+    made_free_throws_per_game: BRFloatOrNone = Field(default=None, validation_alias="ft_per_g")
+    attempted_free_throws_per_game: BRFloatOrNone = Field(default=None, validation_alias="fta_per_g")
+    free_throw_percentage: BRPercentage = Field(default=None, validation_alias="ft_pct")
+    offensive_rebounds_per_game: BRFloatOrNone = Field(default=None, validation_alias="orb_per_g")
+    defensive_rebounds_per_game: BRFloatOrNone = Field(default=None, validation_alias="drb_per_g")
+    total_rebounds_per_game: BRFloatOrNone = Field(default=None, validation_alias="trb_per_g")
+    assists_per_game: BRFloatOrNone = Field(default=None, validation_alias="ast_per_g")
+    steals_per_game: BRFloatOrNone = Field(default=None, validation_alias="stl_per_g")
+    blocks_per_game: BRFloatOrNone = Field(default=None, validation_alias="blk_per_g")
+    turnovers_per_game: BRFloatOrNone = Field(default=None, validation_alias="tov_per_g")
+    personal_fouls_per_game: BRFloatOrNone = Field(default=None, validation_alias="pf_per_g")
+    points_per_game: BRFloatOrNone = Field(default=None, validation_alias="pts_per_g")
+
+
+class LeagueTotalStats:
+    """Totals stat block for league/player aggregate tables."""
+
+    games_played: BRIntOrNone = Field(default=None, validation_alias="games")
+    games_started: BRIntOrNone = Field(default=None, validation_alias="games_started")
+    minutes_played: BRIntOrNone = Field(default=None, validation_alias="mp")
+    made_field_goals: BRIntOrNone = Field(default=None, validation_alias="fg")
+    attempted_field_goals: BRIntOrNone = Field(default=None, validation_alias="fga")
+    made_three_point_field_goals: BRIntOrNone = Field(default=None, validation_alias="fg3")
+    attempted_three_point_field_goals: BRIntOrNone = Field(default=None, validation_alias="fg3a")
+    made_free_throws: BRIntOrNone = Field(default=None, validation_alias="ft")
+    attempted_free_throws: BRIntOrNone = Field(default=None, validation_alias="fta")
+    offensive_rebounds: BRIntOrNone = Field(default=None, validation_alias="orb")
+    defensive_rebounds: BRIntOrNone = Field(default=None, validation_alias="drb")
+    total_rebounds: BRIntOrNone = Field(default=None, validation_alias="trb")
+    assists: BRIntOrNone = Field(default=None, validation_alias="ast")
+    steals: BRIntOrNone = Field(default=None, validation_alias="stl")
+    blocks: BRIntOrNone = Field(default=None, validation_alias="blk")
+    turnovers: BRIntOrNone = Field(default=None, validation_alias="tov")
+    personal_fouls: BRIntOrNone = Field(default=None, validation_alias="pf")
+    points: BRIntOrNone = Field(default=None, validation_alias="pts")
 
 
 # ---------------------------------------------------------------------------
@@ -47,7 +111,7 @@ TeamFieldOrNone = Annotated[Team | None, BeforeValidator(_team_field_or_none)]
 # ---------------------------------------------------------------------------
 
 
-class LeaguePerGameStatsRow(BRRow, PerGameStats):
+class LeaguePerGameStatsRow(BRRow, LeaguePerGameStats):
     """Row from a league per-game table (``/leagues/NBA_{year}_per_game.html``).
 
     The per-game layout (counting stats normalised to per-game values plus an
@@ -58,14 +122,11 @@ class LeaguePerGameStatsRow(BRRow, PerGameStats):
     column — without it the row is unidentifiable.
     """
 
-    name_display: str = Field(validation_alias="name_display")
-    team: TeamFieldOrNone = Field(default=None, validation_alias="team_name_abbr")
-
 
 register("league_per_game_stats", LeaguePerGameStatsRow)
 
 
-class LeagueTotalsRow(BRRow, TotalStats):
+class LeagueTotalsRow(BRRow, LeagueTotalStats):
     """Row from a league totals table (``/leagues/NBA_{year}_totals.html``).
 
     The :data:`TotalStats` mixin covers the counting stat block; the player
@@ -75,7 +136,7 @@ class LeagueTotalsRow(BRRow, TotalStats):
     """
 
     name_display: str = Field(validation_alias="name_display")
-    team: TeamFieldOrNone = Field(default=None, validation_alias="team_name_abbr")
+    team: TeamOrAggregateFieldOrNone = Field(default=None, validation_alias="team_name_abbr")
     positions: PositionsField = Field(default_factory=list, validation_alias="pos")
     age: BRIntOrNone = Field(default=None, validation_alias="age")
     made_two_point_field_goals: BRIntOrNone = Field(default=None, validation_alias="fg2")
@@ -90,16 +151,13 @@ class LeagueTotalsRow(BRRow, TotalStats):
 register("league_totals", LeagueTotalsRow)
 
 
-class RookieStatsRow(BRRow, PerGameStats):
+class RookieStatsRow(BRRow, LeaguePerGameStats):
     """Row from a league rookies table (``/leagues/NBA_{year}_rookies.html``).
 
     The rookies table is structurally identical to the per-game table, so we
     reuse the :data:`PerGameStats` mixin and apply the same ``team``
     override.
     """
-
-    name_display: str = Field(validation_alias="name_display")
-    team: TeamFieldOrNone = Field(default=None, validation_alias="team_name_abbr")
 
 
 register("rookie_stats", RookieStatsRow)
@@ -119,7 +177,7 @@ class LeaguePer36MinutesRow(BRRow):
     """
 
     name_display: str = Field(validation_alias="name_display")
-    team: TeamFieldOrNone = Field(default=None, validation_alias="team_name_abbr")
+    team: TeamOrAggregateFieldOrNone = Field(default=None, validation_alias="team_name_abbr")
     positions: PositionsField = Field(default_factory=list, validation_alias="pos")
     age: BRIntOrNone = Field(default=None, validation_alias="age")
     games_played: BRIntOrNone = Field(default=None, validation_alias="games")
@@ -161,7 +219,7 @@ class LeaguePer100PossessionsRow(BRRow):
     """
 
     name_display: str = Field(validation_alias="name_display")
-    team: TeamFieldOrNone = Field(default=None, validation_alias="team_name_abbr")
+    team: TeamOrAggregateFieldOrNone = Field(default=None, validation_alias="team_name_abbr")
     positions: PositionsField = Field(default_factory=list, validation_alias="pos")
     age: BRIntOrNone = Field(default=None, validation_alias="age")
     games_played: BRIntOrNone = Field(default=None, validation_alias="games")
@@ -211,7 +269,7 @@ class LeagueShootingRow(BRRow):
     """
 
     name_display: str = Field(validation_alias="name_display")
-    team: TeamFieldOrNone = Field(default=None, validation_alias="team_name_abbr")
+    team: TeamOrAggregateFieldOrNone = Field(default=None, validation_alias="team_name_abbr")
     positions: PositionsField = Field(default_factory=list, validation_alias="pos")
     age: BRIntOrNone = Field(default=None, validation_alias="age")
     games_played: BRIntOrNone = Field(default=None, validation_alias="games")
@@ -296,7 +354,7 @@ class AttendanceRow(BRRow):
     intentionally not modelled here.
     """
 
-    team: TeamField = Field(validation_alias="team")
+    team: Annotated[Team, BeforeValidator(_team_field)] = Field(validation_alias="team")
     arena_name: str = Field(validation_alias="arena_name")
     attendance: BRIntOrNone = Field(default=None, validation_alias="attendance")
     attendance_per_game: BRIntOrNone = Field(default=None, validation_alias="attendance_per_g")

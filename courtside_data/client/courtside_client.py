@@ -9,7 +9,6 @@ import httpx
 
 from courtside_data.client import _runner
 from courtside_data.http_service import HTTPService
-from courtside_data.parser_service import ParserService
 
 
 class CourtsideClient:
@@ -38,7 +37,6 @@ class CourtsideClient:
         timeout: httpx.Timeout | None = None,
     ) -> None:
         self._service = HTTPService(
-            parser=ParserService(),
             cache=cache,
             headers=headers,
             impersonate=impersonate,

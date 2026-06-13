@@ -35,6 +35,9 @@ class TestBRInt:
     def test_accepts_int_string(self):
         assert TypeAdapter(BRInt).validate_python("42") == 42
 
+    def test_accepts_comma_separated_int_string(self):
+        assert TypeAdapter(BRInt).validate_python("610,329") == 610329
+
     def test_rejects_empty_string(self):
         with pytest.raises(ValidationError):
             TypeAdapter(BRInt).validate_python("")
@@ -57,6 +60,9 @@ class TestBRIntOrNone:
 
     def test_valid_int_parses(self):
         assert TypeAdapter(BRIntOrNone).validate_python("42") == 42
+
+    def test_comma_separated_int_parses(self):
+        assert TypeAdapter(BRIntOrNone).validate_python("610,329") == 610329
 
     def test_garbage_raises(self):
         with pytest.raises(ValidationError):
@@ -179,6 +185,9 @@ class TestPositionsField:
     def test_empty_string_is_empty_list(self):
         assert TypeAdapter(PositionsField).validate_python("") == []
 
+    def test_position_list_is_idempotent(self):
+        assert TypeAdapter(PositionsField).validate_python([Position.POINT_GUARD]) == [Position.POINT_GUARD]
+
     def test_unknown_position_raises(self):
         with pytest.raises(ValidationError):
             TypeAdapter(PositionsField).validate_python("XX")
@@ -237,11 +246,7 @@ class TestBRDate:
 
 class TestBRDatetime:
     def _expected(self, hour: int, minute: int) -> datetime:
-        return (
-            datetime(2017, 10, 17, hour, minute)
-            .replace(tzinfo=ZoneInfo("US/Eastern"))
-            .astimezone(UTC)
-        )
+        return datetime(2017, 10, 17, hour, minute).replace(tzinfo=ZoneInfo("US/Eastern")).astimezone(UTC)
 
     def test_current_pm_formatting(self):
         parsed = TypeAdapter(BRDatetime).validate_python(("Tue, Oct 17, 2017", "8:01p"))

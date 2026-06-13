@@ -80,11 +80,28 @@ class TestLeaguePerGameStatsRow:
         assert row.games_started is None
         assert row.free_throw_percentage is None
 
+    @pytest.mark.parametrize("team_name_abbr", ["TOT", "2TM", "3TM"])
+    def test_aggregate_team_rows_are_supported(self, team_name_abbr):
+        raw = _full_per_game_row()
+        raw["team_name_abbr"] = team_name_abbr
+        row = LeaguePerGameStatsRow.model_validate(raw)
+        assert row.team == team_name_abbr
+
+    def test_unknown_team_abbreviation_raises(self):
+        raw = _full_per_game_row()
+        raw["team_name_abbr"] = "XXX"
+        with pytest.raises(ValidationError):
+            LeaguePerGameStatsRow.model_validate(raw)
+
     def test_missing_required_data_stat_raises(self):
         raw = _full_per_game_row()
         del raw["name_display"]
         with pytest.raises(ValidationError):
             LeaguePerGameStatsRow.model_validate(raw)
+
+    def test_aliases_remain_data_stat_keys(self):
+        assert LeaguePerGameStatsRow.model_fields["name_display"].validation_alias == "name_display"
+        assert LeaguePerGameStatsRow.model_fields["team"].validation_alias == "team_name_abbr"
 
 
 class TestLeagueTotalsRow:
@@ -137,6 +154,18 @@ class TestLeagueTotalsRow:
         assert row.games_played is None
         assert row.points is None
 
+    @pytest.mark.parametrize("team_name_abbr", ["TOT", "2TM", "3TM"])
+    def test_aggregate_team_rows_are_supported(self, team_name_abbr):
+        raw = {
+            "name_display": "Joel Embiid",
+            "pos": "C",
+            "age": "29",
+            "team_name_abbr": team_name_abbr,
+            "pts": "1707",
+        }
+        row = LeagueTotalsRow.model_validate(raw)
+        assert row.team == team_name_abbr
+
     def test_missing_required_data_stat_raises(self):
         raw = {
             "name_display": "Joel Embiid",
@@ -164,6 +193,12 @@ class TestRookieStatsRow:
         row = RookieStatsRow.model_validate(raw)
         assert row.positions == []
         assert row.team is None
+
+    def test_aggregate_team_row_is_supported(self):
+        raw = _full_per_game_row()
+        raw["team_name_abbr"] = "2TM"
+        row = RookieStatsRow.model_validate(raw)
+        assert row.team == "2TM"
 
     def test_missing_required_data_stat_raises(self):
         raw = _full_per_game_row()
@@ -227,6 +262,12 @@ class TestLeaguePer36MinutesRow:
         assert row.games_started is None
         assert row.field_goal_percentage is None
 
+    def test_aggregate_team_row_is_supported(self):
+        raw = _full_per_36_row()
+        raw["team_name_abbr"] = "3TM"
+        row = LeaguePer36MinutesRow.model_validate(raw)
+        assert row.team == "3TM"
+
     def test_missing_required_data_stat_raises(self):
         raw = _full_per_36_row()
         del raw["name_display"]
@@ -281,6 +322,12 @@ class TestLeaguePer100PossessionsRow:
         row = LeaguePer100PossessionsRow.model_validate(raw)
         assert row.team is None
         assert row.free_throw_percentage is None
+
+    def test_aggregate_team_row_is_supported(self):
+        raw = _full_per_100_row()
+        raw["team_name_abbr"] = "TOT"
+        row = LeaguePer100PossessionsRow.model_validate(raw)
+        assert row.team == "TOT"
 
     def test_missing_required_data_stat_raises(self):
         raw = _full_per_100_row()
@@ -337,6 +384,12 @@ class TestLeagueShootingRow:
         row = LeagueShootingRow.model_validate(raw)
         assert row.games_played is None
         assert row.field_goal_percentage_from_zero_to_three_feet is None
+
+    def test_aggregate_team_row_is_supported(self):
+        raw = _full_shooting_row()
+        raw["team_name_abbr"] = "2TM"
+        row = LeagueShootingRow.model_validate(raw)
+        assert row.team == "2TM"
 
     def test_missing_required_data_stat_raises(self):
         raw = _full_shooting_row()
@@ -433,9 +486,7 @@ class TestSeasonAwardsRow:
 
     def test_alias_keys_match_validation_alias(self):
         # The fetcher emits raw dicts keyed by the data-stat names.
-        row = SeasonAwardsRow.model_validate(
-            {"award": "Defensive Player of the Year", "player": "Jaren Jackson Jr."}
-        )
+        row = SeasonAwardsRow.model_validate({"award": "Defensive Player of the Year", "player": "Jaren Jackson Jr."})
         assert row.award == "Defensive Player of the Year"
         assert row.player == "Jaren Jackson Jr."
 
@@ -478,15 +529,11 @@ class TestSeasonLeadersRow:
 
     def test_missing_required_rank_raises(self):
         with pytest.raises(ValidationError):
-            SeasonLeadersRow.model_validate(
-                {"player": "LeBron James", "value": "40474", "season": "2023-24"}
-            )
+            SeasonLeadersRow.model_validate({"player": "LeBron James", "value": "40474", "season": "2023-24"})
 
     def test_missing_required_player_raises(self):
         with pytest.raises(ValidationError):
-            SeasonLeadersRow.model_validate(
-                {"rank": "1", "value": "40474", "season": "2023-24"}
-            )
+            SeasonLeadersRow.model_validate({"rank": "1", "value": "40474", "season": "2023-24"})
 
     def test_strict_rank_rejects_garbage(self):
         with pytest.raises(ValidationError):
@@ -502,17 +549,13 @@ class TestSeasonLeadersRow:
 
 class TestCareerLeadersRow:
     def test_happy_path(self):
-        row = CareerLeadersRow.model_validate(
-            {"rank": "1", "player": "LeBron James", "value": "40474"}
-        )
+        row = CareerLeadersRow.model_validate({"rank": "1", "player": "LeBron James", "value": "40474"})
         assert row.rank == 1
         assert row.player == "LeBron James"
         assert row.value == "40474"
 
     def test_alias_keys_match_validation_alias(self):
-        row = CareerLeadersRow.model_validate(
-            {"rank": "2", "player": "Kareem Abdul-Jabbar", "value": "38387"}
-        )
+        row = CareerLeadersRow.model_validate({"rank": "2", "player": "Kareem Abdul-Jabbar", "value": "38387"})
         assert row.rank == 2
         assert row.player == "Kareem Abdul-Jabbar"
         assert row.value == "38387"
@@ -523,6 +566,4 @@ class TestCareerLeadersRow:
 
     def test_strict_rank_rejects_garbage(self):
         with pytest.raises(ValidationError):
-            CareerLeadersRow.model_validate(
-                {"rank": "abc", "player": "LeBron James", "value": "40474"}
-            )
+            CareerLeadersRow.model_validate({"rank": "abc", "player": "LeBron James", "value": "40474"})

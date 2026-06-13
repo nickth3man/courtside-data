@@ -13,13 +13,27 @@ DNP-friendly property the new pipeline preserves.
 
 from __future__ import annotations
 
+import inspect
 from typing import cast
 
 import pytest
 from pydantic import TypeAdapter, ValidationError
 
 from courtside_data.errors import CourtsideDataError, SchemaDriftError
-from courtside_data.schemas import ROW_ADAPTERS
+from courtside_data.schemas import (
+    ROW_ADAPTERS,
+    BRRow,
+    boxscores,
+    draft,
+    league,
+    playbyplay,
+    players,
+    playoffs,
+    schedule,
+    search,
+    standings,
+    teams,
+)
 from courtside_data.schemas.players import PlayerCareerStatsRow
 
 # Endpoint with the most required fields, used as the drift canary throughout.
@@ -139,20 +153,30 @@ def test_drift_error_wraps_missing_field_name() -> None:
     assert "season" in message
 
 
-def test_optional_field_absence_does_not_drift() -> None:
-    """Removing an *optional* stat cell (the DNP case) must NOT raise.
+def test_empty_required_stat_cell_does_not_drift() -> None:
+    """An empty required stat cell is data absence, not schema drift.
 
     BR still emits the ``<td data-stat="...">`` element with empty text for
-    unplayed games, but for true optional columns the key may simply be absent.
-    The pipeline must keep validating cleanly — drift detection is reserved for
-    required fields.
+    unplayed games. The key's presence proves the schema still matches, while
+    the field parser maps the empty string to ``None`` for downstream code.
     """
-    minimal_row = _career_row()
-    del minimal_row["fg3_per_g"]  # optional per-game stat column
+    minimal_row = _career_row(fg3_per_g="")
 
     rows = _adapter().validate_python([minimal_row])  # must not raise
     assert len(rows) == 1
     assert rows[0].made_three_point_field_goals_per_game is None
+
+
+def test_missing_required_stat_alias_raises_schema_drift() -> None:
+    """A missing required stat alias must drift even if empty values are allowed."""
+    drifted_row = _career_row()
+    del drifted_row["fg3_per_g"]
+
+    with pytest.raises(ValidationError) as excinfo:
+        _adapter().validate_python([drifted_row])
+
+    errors = excinfo.value.errors()
+    assert any(err.get("type") == "missing" and err.get("loc") == (0, "fg3_per_g") for err in errors)
 
 
 def test_full_row_with_renamed_key_in_full_pipeline_raises_schema_drift_error() -> None:
@@ -209,9 +233,40 @@ def test_drift_simulation_via_validate_python_with_list_input() -> None:
 
     # The drift is on the middle row (index 1); the missing alias is the
     # original BR data-stat, not the field name or the renamed key.
-    middle_row_missing = [
-        err for err in missing if err.get("loc") == (1, "team_name_abbr")
+    middle_row_missing = [err for err in missing if err.get("loc") == (1, "team_name_abbr")]
+    assert middle_row_missing, f"Expected loc=(1, 'team_name_abbr') in errors, got: {missing!r}"
+
+
+def test_every_public_row_class_is_registered() -> None:
+    """Every public concrete ``*Row`` model exposed by schema modules has an adapter."""
+    modules = [
+        boxscores,
+        draft,
+        league,
+        playbyplay,
+        players,
+        playoffs,
+        schedule,
+        search,
+        standings,
+        teams,
     ]
-    assert middle_row_missing, (
-        f"Expected loc=(1, 'team_name_abbr') in errors, got: {missing!r}"
-    )
+    public_row_names = {
+        name
+        for module in modules
+        for name, value in inspect.getmembers(module, inspect.isclass)
+        if name.endswith("Row")
+        and not name.startswith("_")
+        and issubclass(value, BRRow)
+        and value.__module__ == module.__name__
+    }
+    registered_row_names: set[str] = set()
+    for adapter in ROW_ADAPTERS.values():
+        schema = adapter.json_schema()
+        items = schema.get("items", {})
+        if title := items.get("title"):
+            registered_row_names.add(title)
+        elif ref := items.get("$ref"):
+            registered_row_names.add(ref.rsplit("/", 1)[-1])
+
+    assert public_row_names <= registered_row_names

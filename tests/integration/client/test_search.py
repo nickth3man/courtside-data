@@ -8,6 +8,10 @@ from courtside_data.data import OutputType, OutputWriteOption
 from tests import http_mock as requests_mock
 
 
+def _dump_results(results):
+    return [result.model_dump(mode="python") for result in results]
+
+
 @requests_mock.Mocker()
 class TestJa(TestCase):
     def setUp(self):
@@ -80,8 +84,10 @@ class TestJa(TestCase):
         results = client.search(term="ja")
         # 1 initial request + 8 paginated requests = 9 total
         self.assertEqual(9, m.call_count)
-        self.assertEqual(863, len(results["players"]))
-        self.assertEqual({"name": "LeBron James", "identifier": "jamesle01", "leagues": set()}, results["players"][0])
+        self.assertEqual(863, len(results))
+        self.assertEqual(
+            {"name": "LeBron James", "identifier": "jamesle01", "leagues": set()}, results[0].model_dump(mode="python")
+        )
 
 
 @requests_mock.Mocker()
@@ -108,7 +114,7 @@ class TestAlonzoMourning(TestCase):
                     "leagues": set(),
                 }
             ],
-            results["players"],
+            _dump_results(results),
         )
 
 
@@ -128,7 +134,7 @@ class TestDominiqueWilkins(TestCase):
         )
         results = client.search(term="Dominique Wilkins")
         self.assertEqual(
-            [{"name": "Dominique Wilkins", "identifier": "wilkido01", "leagues": set()}], results["players"]
+            [{"name": "Dominique Wilkins", "identifier": "wilkido01", "leagues": set()}], _dump_results(results)
         )
 
 
@@ -147,7 +153,7 @@ class TestRickBarry(TestCase):
             status_code=200,
         )
         results = client.search(term="Rick Barry")
-        self.assertEqual([{"name": "Rick Barry", "identifier": "barryri01", "leagues": set()}], results["players"])
+        self.assertEqual([{"name": "Rick Barry", "identifier": "barryri01", "leagues": set()}], _dump_results(results))
 
 
 @requests_mock.Mocker()
@@ -163,7 +169,7 @@ class TestJaebaebae(TestCase):
             "https://www.basketball-reference.com/search/search.fcgi?search=jaebaebae", text=self._html, status_code=200
         )
         results = client.search(term="jaebaebae")
-        self.assertEqual([], results["players"])
+        self.assertEqual([], results)
 
 
 @requests_mock.Mocker()
@@ -181,7 +187,7 @@ class TestKobeBryant(TestCase):
             status_code=200,
         )
         results = client.search(term="kobe bryant")
-        self.assertEqual([{"name": "Kobe Bryant", "identifier": "bryanko01", "leagues": set()}], results["players"])
+        self.assertEqual([{"name": "Kobe Bryant", "identifier": "bryanko01", "leagues": set()}], _dump_results(results))
 
 
 @requests_mock.Mocker()
@@ -205,7 +211,7 @@ class TestKobe(TestCase):
                 {"name": "Kobe Johnson", "identifier": "johnsko01", "leagues": set()},
                 {"name": "Oleksandr Kobets", "identifier": "kobetol01", "leagues": set()},
             ],
-            results["players"],
+            _dump_results(results),
         )
 
 

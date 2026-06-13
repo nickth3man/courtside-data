@@ -32,7 +32,6 @@ from courtside_data.output.fields import BasketballReferenceJSONEncoder, format_
 from courtside_data.output.service import OutputService
 from courtside_data.output.type_validator import validate_rows
 from courtside_data.output.writers import CSVWriter, FileOptions, JSONWriter, OutputOptions
-from courtside_data.parser_service import ParserService
 from courtside_data.schemas import ROW_ADAPTERS
 
 _shared_service_lock = threading.Lock()
@@ -47,7 +46,7 @@ def _default_service() -> HTTPService:
     global _shared_service
     with _shared_service_lock:
         if _shared_service is None:
-            _shared_service = HTTPService(parser=ParserService())
+            _shared_service = HTTPService()
         return _shared_service
 
 
@@ -87,6 +86,19 @@ def _extract_rows(values: Any) -> list[dict[str, Any]] | None:
     return None
 
 
+def _extract_raw_rows(values: Any) -> list[dict[str, Any]]:
+    """Pull raw rows out of row-model endpoint output, preserving empty results."""
+    if isinstance(values, list):
+        if all(isinstance(row, dict) for row in values):
+            return values
+        return []
+    if isinstance(values, dict):
+        for v in values.values():
+            if isinstance(v, list) and all(isinstance(row, dict) for row in v):
+                return v
+    return []
+
+
 def _detect_csv_columns(rows: list[dict[str, Any]]) -> Sequence[str]:
     """Auto-detect CSV column names from row keys, stripping all-empty columns.
 
@@ -96,6 +108,20 @@ def _detect_csv_columns(rows: list[dict[str, Any]]) -> Sequence[str]:
     column_names = list(rows[0].keys())
     non_empty = [k for k in column_names if any(row.get(k) not in (None, "", set(), []) for row in rows)]
     return non_empty or column_names
+
+
+def _endpoint_url_context(endpoint: Any, params: dict[str, Any] | None) -> str:
+    if endpoint is None:
+        return "<unknown>"
+    path = getattr(endpoint, "path", "<unknown>")
+    if params:
+        try:
+            path = path.format(**params)
+        except (IndexError, KeyError, TypeError, ValueError):
+            pass
+    if isinstance(path, str) and path.startswith("/"):
+        return f"https://www.basketball-reference.com{path}"
+    return str(path)
 
 
 def _execute(
@@ -110,37 +136,54 @@ def _execute(
     *,
     endpoint: Any = None,
     endpoint_name: str | None = None,
+    endpoint_params: dict[str, Any] | None = None,
+    raw: bool = False,
 ) -> Any:
     values = _call_with_error_mapping(service_call, error_mappings)
-    # Coerce raw string values to proper Python types (idempotent for endpoints
-    # whose parser chains already produce typed values)
-    values = coerce_data(values)
 
-    # If the endpoint declares a Pydantic row model, validate each row.
-    # Replaces the legacy validate_rows soft-check with a strict, typed
-    # transformation. Pydantic ValidationError is wrapped into
-    # SchemaDriftError so a BR column rename reads as a domain error.
-    if endpoint is not None and endpoint.row_model is not None:
+    # Row-model endpoints validate the raw Basketball-Reference rows directly.
+    # That intentionally bypasses the legacy coerce_data/validate_rows path.
+    row_model = getattr(endpoint, "row_model", None)
+    if row_model is not None:
+        raw_rows = _extract_raw_rows(values)
+        if raw:
+            return raw_rows
+
         adapter = ROW_ADAPTERS.get(endpoint_name)
-        # endpoint_name is the registry name; if not in ROW_ADAPTERS the
-        # endpoint was registered with a different name or model — raise loudly.
         if adapter is None:
             raise RuntimeError(
-                f"Endpoint {endpoint_name!r} declares row_model "
-                f"{endpoint.row_model.__name__!r} but no adapter is registered."
+                f"Endpoint {endpoint_name!r} declares row_model {row_model.__name__!r} but no adapter is registered."
             )
         try:
-            validated = adapter.validate_python(values)
+            values = adapter.validate_python(raw_rows)
         except ValidationError as exc:
             raise SchemaDriftError(
                 endpoint_name=endpoint_name or "<unknown>",
-                url=getattr(service_call, "__name__", "<unknown>"),
+                url=_endpoint_url_context(endpoint, endpoint_params),
                 # exc.errors() yields Pydantic ErrorDetails TypedDicts;
                 # SchemaDriftError is typed list[dict] (plan-mandated signature),
                 # and the values are dicts at runtime, so cast the type.
                 pydantic_errors=cast("list[dict[str, Any]]", exc.errors()),
             ) from exc
-        values = [m.model_dump(mode="json") for m in validated]
+
+        if output_type in (OutputType.CSV, OutputType.DATAFRAME):
+            csv_column_names = tuple(row_model.model_fields)
+
+        options = OutputOptions.of(
+            file_options=FileOptions.of(path=output_file_path, mode=output_write_option),
+            output_type=output_type,
+            json_options=json_options,
+            csv_options={"column_names": csv_column_names},
+        )
+        output_service = OutputService(
+            json_writer=JSONWriter(value_formatter=BasketballReferenceJSONEncoder),
+            csv_writer=CSVWriter(value_formatter=format_value),
+        )
+        return output_service.output(data=values, options=options)
+
+    # Coerce raw string values to proper Python types (idempotent for endpoints
+    # whose parser chains already produce typed values)
+    values = coerce_data(values)
 
     if output_type in (OutputType.CSV, OutputType.DATAFRAME) and csv_column_names is None:
         rows = _extract_rows(values)
@@ -173,6 +216,7 @@ def _run_endpoint(
     output_file_path: str | None = None,
     output_write_option: OutputWriteOption | None = None,
     json_options: dict[str, Any] | None = None,
+    raw: bool = False,
 ) -> Any:
     """Execute the registry-described endpoint ``name`` with bound call params.
 
@@ -197,4 +241,6 @@ def _run_endpoint(
         json_options=json_options,
         endpoint=endpoint,
         endpoint_name=name,
+        endpoint_params=params,
+        raw=raw,
     )

@@ -45,7 +45,7 @@ class TestCourtsideClientServiceBinding(TestCase):
         instance = _client_with_mock_service()
         instance._service.fetch_table.return_value = [{"player": "Jayson Tatum"}]
 
-        result = instance.team_roster(team_abbreviation="BOS", season_end_year=2024)
+        result = instance.team_roster(team_abbreviation="BOS", season_end_year=2024, raw=True)
 
         instance._service.fetch_table.assert_called_once()
         self.assertEqual(result, [{"player": "Jayson Tatum"}])
@@ -54,7 +54,7 @@ class TestCourtsideClientServiceBinding(TestCase):
         instance = _client_with_mock_service()
         instance._service.standings.return_value = [{"team": "BOSTON CELTICS"}]
 
-        result = instance.standings(season_end_year=2024)
+        result = instance.standings(season_end_year=2024, raw=True)
 
         instance._service.standings.assert_called_once_with(season_end_year=2024)
         self.assertEqual(result, [{"team": "BOSTON CELTICS"}])
@@ -62,7 +62,7 @@ class TestCourtsideClientServiceBinding(TestCase):
     def test_override_is_cleared_after_the_call(self):
         instance = _client_with_mock_service()
         instance._service.fetch_table.return_value = [{"player": "X"}]
-        instance.team_roster(team_abbreviation="BOS", season_end_year=2024)
+        instance.team_roster(team_abbreviation="BOS", season_end_year=2024, raw=True)
         self.assertIsNone(_runner._service_override.get())
 
 
@@ -79,5 +79,5 @@ class TestSharedDefaultService(TestCase):
         shared = mock.MagicMock()
         shared.fetch_table.return_value = [{"player": "X"}]
         with mock.patch.object(_runner, "_shared_service", shared):
-            client.team_roster(team_abbreviation="BOS", season_end_year=2024)
+            client.team_roster(team_abbreviation="BOS", season_end_year=2024, raw=True)
         shared.fetch_table.assert_called_once()

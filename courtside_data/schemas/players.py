@@ -26,6 +26,7 @@ from courtside_data.schemas._fields import (
     TeamField,
     TeamNameField,
 )
+from courtside_data.schemas.league import TeamOrAggregateFieldOrNone
 
 # ── Private stat-block mixins (player-scoped) ────────────────────────────
 
@@ -135,9 +136,7 @@ class PlayerAdjustedShootingRow(BRRow, _PlayerGBasedCountingStats, _PlayerSeason
     field_goals_per_36_minutes: BRFloatOrNone = Field(default=None, validation_alias="fg_per_36_min")
     attempted_field_goals_per_36_minutes: BRFloatOrNone = Field(default=None, validation_alias="fga_per_36_min")
     adjusted_field_goal_percentage: BRPercentage = Field(default=None, validation_alias="adjusted_fg_pct")
-    adjusted_three_point_field_goal_percentage: BRPercentage = Field(
-        default=None, validation_alias="adjusted_fg3_pct"
-    )
+    adjusted_three_point_field_goal_percentage: BRPercentage = Field(default=None, validation_alias="adjusted_fg3_pct")
     adjusted_free_throw_percentage: BRPercentage = Field(default=None, validation_alias="adjusted_ft_pct")
 
 
@@ -156,9 +155,7 @@ class PlayerPlayByPlayStatsRow(BRRow, _PlayerSeasonContext):
     percentage_of_two_point_field_goals: BRPercentage = Field(default=None, validation_alias="pct_fg_2pt")
     percentage_of_three_point_field_goals: BRPercentage = Field(default=None, validation_alias="pct_fg_3pt")
     percentage_assisted_two_point_field_goals: BRPercentage = Field(default=None, validation_alias="pct_ast_2pt")
-    percentage_assisted_three_point_field_goals: BRPercentage = Field(
-        default=None, validation_alias="pct_ast_3pt"
-    )
+    percentage_assisted_three_point_field_goals: BRPercentage = Field(default=None, validation_alias="pct_ast_3pt")
     percentage_dunks: BRPercentage = Field(default=None, validation_alias="pct_dunks")
     percentage_corner_threes: BRPercentage = Field(default=None, validation_alias="pct_corner_3s")
     percentage_heaves: BRPercentage = Field(default=None, validation_alias="pct_heaves")
@@ -317,7 +314,7 @@ class PlayerAdvancedSeasonTotalsRow(BRRow):
     name: str = Field(validation_alias="name_display")
     positions: PositionsField = Field(default_factory=list, validation_alias="pos")
     age: BRIntOrNone = Field(default=None, validation_alias="age")
-    team: TeamField = Field(validation_alias="team_name_abbr")
+    team: TeamOrAggregateFieldOrNone = Field(validation_alias="team_name_abbr")
     games_played: BRIntOrNone = Field(default=None, validation_alias="games")
     minutes_played: BRIntOrNone = Field(default=None, validation_alias="mp")
     player_efficiency_rating: BRFloatOrNone = Field(default=None, validation_alias="per")

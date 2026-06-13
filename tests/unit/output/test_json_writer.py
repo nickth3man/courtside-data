@@ -1,7 +1,15 @@
+from datetime import date
 from unittest import TestCase, mock
+
+from pydantic import BaseModel
 
 from courtside_data.data import OutputWriteOption
 from courtside_data.output.writers import JSONWriter
+
+
+class PlayerRow(BaseModel):
+    name: str
+    game_date: date
 
 
 class TestJSONWriter(TestCase):
@@ -100,3 +108,26 @@ class TestJSONWriter(TestCase):
                 jae="baebae",
                 bae="jadley",
             )
+
+    @mock.patch("json.dumps")
+    def test_base_model_rows_are_dumped_in_json_mode(self, json_dumps):
+        options = mock.Mock(
+            formatting_options={},
+            file_options=mock.Mock(
+                path="some path",
+                mode=OutputWriteOption.WRITE,
+                should_write_to_file=False,
+            ),
+        )
+
+        self.writer.write(
+            data=[PlayerRow(name="Jayson Tatum", game_date=date(2024, 6, 17))],
+            options=options,
+        )
+
+        json_dumps.assert_called_once_with(
+            [{"name": "Jayson Tatum", "game_date": "2024-06-17"}],
+            cls=self.mock_encoder,
+            sort_keys=True,
+            indent=4,
+        )

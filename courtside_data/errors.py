@@ -82,8 +82,5 @@ class SchemaDriftError(CourtsideDataError):
         self.url = url
         self.pydantic_errors = pydantic_errors
         field_or_alias = _extract_missing_field(pydantic_errors)
-        message = (
-            f"Schema drift detected for endpoint '{endpoint_name}' ({url}): "
-            f"missing field/alias: {field_or_alias}"
-        )
+        message = f"Schema drift detected for endpoint '{endpoint_name}' ({url}): missing field/alias: {field_or_alias}"
         super().__init__(message)

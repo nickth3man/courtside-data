@@ -8,6 +8,8 @@ expectation.
 
 from __future__ import annotations
 
+from datetime import date
+
 import pytest
 from pydantic import ValidationError
 
@@ -145,9 +147,21 @@ class TestPlayerBoxScoreRow:
             "opp_id": "MIA",
             "game_result": "W",
             "mp": "1:00",
-            "fg": "0", "fga": "0", "fg3": "0", "fg3a": "0",
-            "ft": "0", "fta": "0", "orb": "0", "drb": "0", "trb": "0",
-            "ast": "0", "stl": "0", "blk": "0", "tov": "0", "pf": "0", "pts": "0",
+            "fg": "0",
+            "fga": "0",
+            "fg3": "0",
+            "fg3a": "0",
+            "ft": "0",
+            "fta": "0",
+            "orb": "0",
+            "drb": "0",
+            "trb": "0",
+            "ast": "0",
+            "stl": "0",
+            "blk": "0",
+            "tov": "0",
+            "pf": "0",
+            "pts": "0",
         }
         with pytest.raises(ValidationError):
             PlayerBoxScoreRow.model_validate(raw)
@@ -187,7 +201,7 @@ class TestRegularSeasonPlayerBoxScoreRow:
             }
         )
         assert row.active is True
-        assert row.date == "2018-10-17"
+        assert row.date == date(2018, 10, 17)
         assert row.points_scored == 8
         assert row.plus_minus == -9
         assert row.team == Team.LOS_ANGELES_CLIPPERS
@@ -208,17 +222,29 @@ class TestRegularSeasonPlayerBoxScoreRow:
                 "opp_name_abbr": "OKC",
                 "game_result": "W",
                 "mp": "",
-                "fg": "", "fga": "", "fg_pct": "",
-                "fg3": "", "fg3a": "", "fg3_pct": "",
-                "ft": "", "fta": "", "ft_pct": "",
-                "orb": "", "drb": "", "trb": "",
-                "ast": "", "stl": "", "blk": "", "tov": "", "pf": "",
+                "fg": "",
+                "fga": "",
+                "fg_pct": "",
+                "fg3": "",
+                "fg3a": "",
+                "fg3_pct": "",
+                "ft": "",
+                "fta": "",
+                "ft_pct": "",
+                "orb": "",
+                "drb": "",
+                "trb": "",
+                "ast": "",
+                "stl": "",
+                "blk": "",
+                "tov": "",
+                "pf": "",
                 "game_score": "",
             }
         )
         assert row.active is False
         assert row.points_scored is None
-        assert row.seconds_played == 0
+        assert row.seconds_played is None
         assert row.made_field_goals is None
 
     def test_missing_required_date_raises(self):
@@ -252,16 +278,29 @@ class TestPlayoffPlayerBoxScoreRow:
                 "opp_id": "MIA",  # alternate alias
                 "game_result": "W",
                 "mp": "36:00",
-                "fg": "11", "fga": "20", "fg_pct": ".550",
-                "fg3": "3", "fg3a": "7", "fg3_pct": ".429",
-                "ft": "5", "fta": "6", "ft_pct": ".833",
-                "orb": "1", "drb": "6", "trb": "7",
-                "ast": "4", "stl": "2", "blk": "1", "tov": "2", "pf": "2",
-                "pts": "30", "game_score": "26.1",
+                "fg": "11",
+                "fga": "20",
+                "fg_pct": ".550",
+                "fg3": "3",
+                "fg3a": "7",
+                "fg3_pct": ".429",
+                "ft": "5",
+                "fta": "6",
+                "ft_pct": ".833",
+                "orb": "1",
+                "drb": "6",
+                "trb": "7",
+                "ast": "4",
+                "stl": "2",
+                "blk": "1",
+                "tov": "2",
+                "pf": "2",
+                "pts": "30",
+                "game_score": "26.1",
             }
         )
         assert row.active is True
-        assert row.date == "2024-04-20"
+        assert row.date == date(2024, 4, 20)
         assert row.points_scored == 30
         assert row.team == Team.BOSTON_CELTICS
         assert row.opponent == Team.MIAMI_HEAT
@@ -354,9 +393,21 @@ class TestTeamBoxScoreRow:
             {
                 "team_id": "Boston Celtics",
                 "mp": "240",
-                "fg": "0", "fga": "0", "fg3": "0", "fg3a": "0",
-                "ft": "0", "fta": "0", "orb": "0", "drb": "0", "trb": "0",
-                "ast": "0", "stl": "0", "blk": "0", "tov": "0", "pf": "0", "pts": "0",
+                "fg": "0",
+                "fga": "0",
+                "fg3": "0",
+                "fg3a": "0",
+                "ft": "0",
+                "fta": "0",
+                "orb": "0",
+                "drb": "0",
+                "trb": "0",
+                "ast": "0",
+                "stl": "0",
+                "blk": "0",
+                "tov": "0",
+                "pf": "0",
+                "pts": "0",
             }
         )
         assert row.team == Team.BOSTON_CELTICS
@@ -366,9 +417,21 @@ class TestTeamBoxScoreRow:
             TeamBoxScoreRow.model_validate(
                 {
                     "mp": "240",
-                    "fg": "0", "fga": "0", "fg3": "0", "fg3a": "0",
-                    "ft": "0", "fta": "0", "orb": "0", "drb": "0", "trb": "0",
-                    "ast": "0", "stl": "0", "blk": "0", "tov": "0", "pf": "0", "pts": "0",
+                    "fg": "0",
+                    "fga": "0",
+                    "fg3": "0",
+                    "fg3a": "0",
+                    "ft": "0",
+                    "fta": "0",
+                    "orb": "0",
+                    "drb": "0",
+                    "trb": "0",
+                    "ast": "0",
+                    "stl": "0",
+                    "blk": "0",
+                    "tov": "0",
+                    "pf": "0",
+                    "pts": "0",
                 }
             )
 
@@ -377,8 +440,20 @@ class TestTeamBoxScoreRow:
             TeamBoxScoreRow.model_validate(
                 {
                     "team_name_abbr": "Orlando Magic",
-                    "fg": "0", "fga": "0", "fg3": "0", "fg3a": "0",
-                    "ft": "0", "fta": "0", "orb": "0", "drb": "0", "trb": "0",
-                    "ast": "0", "stl": "0", "blk": "0", "tov": "0", "pf": "0", "pts": "0",
+                    "fg": "0",
+                    "fga": "0",
+                    "fg3": "0",
+                    "fg3a": "0",
+                    "ft": "0",
+                    "fta": "0",
+                    "orb": "0",
+                    "drb": "0",
+                    "trb": "0",
+                    "ast": "0",
+                    "stl": "0",
+                    "blk": "0",
+                    "tov": "0",
+                    "pf": "0",
+                    "pts": "0",
                 }
             )

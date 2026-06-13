@@ -16,13 +16,14 @@ from pydantic import AliasChoices, Field
 from courtside_data.schemas import register
 from courtside_data.schemas._base import BRRow
 from courtside_data.schemas._fields import (
+    BRDate,
     BRFloatOrNone,
     BRInt,
     BRIntOrNone,
     BRPercentage,
     LocationField,
     OutcomeField,
-    SecondsPlayed,
+    SecondsPlayedOrNone,
     TeamField,
     TeamNameField,
 )
@@ -41,7 +42,7 @@ class _BoxScoreCountingStats:
     accept a bare integer total instead.
     """
 
-    seconds_played: SecondsPlayed = Field(default=0, validation_alias="mp")
+    seconds_played: SecondsPlayedOrNone = Field(default=None, validation_alias="mp")
     made_field_goals: BRIntOrNone = Field(default=None, validation_alias="fg")
     attempted_field_goals: BRIntOrNone = Field(default=None, validation_alias="fga")
     made_three_point_field_goals: BRIntOrNone = Field(default=None, validation_alias="fg3")
@@ -131,7 +132,7 @@ class _PlayerSeasonBoxScoreRow(BRRow, _BoxScoreCountingStats, _BoxScorePctStats)
     """
 
     active: bool = Field(validation_alias="active")
-    date: str = Field(validation_alias=AliasChoices("date_game", "date"))
+    date: BRDate = Field(validation_alias=AliasChoices("date_game", "date"))
     points_scored: BRIntOrNone = Field(default=None, validation_alias=AliasChoices("pts", "points_scored"))
     team: TeamField = Field(validation_alias=AliasChoices("team_name_abbr", "team_id"))
     location: LocationField = Field(validation_alias="game_location")

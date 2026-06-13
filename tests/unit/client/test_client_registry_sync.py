@@ -10,8 +10,9 @@ import inspect
 
 from courtside_data import client
 from courtside_data.endpoints import ENDPOINTS
+from courtside_data.schemas import ROW_ADAPTERS
 
-OUTPUT_PARAMS = ["output_type", "output_file_path", "output_write_option", "json_options"]
+OUTPUT_PARAMS = ["output_type", "output_file_path", "output_write_option", "json_options", "raw"]
 
 
 def expected_params(name):
@@ -29,6 +30,9 @@ class TestClientRegistrySync:
         for name in ENDPOINTS:
             assert callable(getattr(client, name)), f"missing client function: {name}"
 
+    def test_every_endpoint_has_matching_row_adapter(self):
+        assert ENDPOINTS.keys() == ROW_ADAPTERS.keys()
+
     def test_function_metadata(self):
         for name in ENDPOINTS:
             func = getattr(client, name)
@@ -41,8 +45,9 @@ class TestClientRegistrySync:
             params = list(sig.parameters.values())
             domain = expected_params(name)
             assert [p.name for p in params] == domain + OUTPUT_PARAMS, name
-            for p in params[len(domain) :]:
+            for p in params[len(domain) : -1]:
                 assert p.default is None, f"{name}.{p.name} should default to None"
+            assert params[-1].default is False, f"{name}.raw should default to False"
 
     def test_docstring_mentions_endpoint_path(self):
         for name, endpoint in ENDPOINTS.items():
@@ -56,4 +61,5 @@ class TestClientRegistrySync:
         sig = inspect.signature(client.team_roster)
         sig.bind("BOS", 2024)
         sig.bind(team_abbreviation="BOS", season_end_year=2024, output_type=None)
+        sig.bind(team_abbreviation="BOS", season_end_year=2024, raw=True)
         sig.bind("BOS", season_end_year=2024)

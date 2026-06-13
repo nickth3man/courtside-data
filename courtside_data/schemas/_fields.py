@@ -41,6 +41,7 @@ def _br_int(value: object) -> int:
     s = str(value).strip()
     if s in _EMPTY_VALUES:
         raise ValueError(f"Invalid integer value: {value!r}")
+    s = s.replace(",", "")
     try:
         return int(s)
     except ValueError as exc:
@@ -53,6 +54,7 @@ def _br_int_or_none(value: object) -> int | None:
     if isinstance(value, int) and not isinstance(value, bool):
         return value
     s = str(value).strip()
+    s = s.replace(",", "")
     try:
         return int(s)
     except ValueError as exc:
@@ -104,6 +106,12 @@ def _seconds_played(value: object) -> int:
     return 60 * minutes + seconds
 
 
+def _seconds_played_or_none(value: object) -> int | None:
+    if _is_empty(value):
+        return None
+    return _seconds_played(value)
+
+
 def _team_field(value: object) -> Team:
     if isinstance(value, Team):
         return value
@@ -153,6 +161,14 @@ def _outcome_field(value: object) -> Outcome:
 def _positions_field(value: object) -> list[Position]:
     if value is None:
         return []
+    if isinstance(value, list):
+        parsed_values: list[Position] = []
+        for item in value:
+            if isinstance(item, Position):
+                parsed_values.append(item)
+            else:
+                parsed_values.extend(_positions_field(item))
+        return parsed_values
     s = str(value).strip()
     if s in _EMPTY_VALUES:
         return []
@@ -299,6 +315,7 @@ BRIntOrNone = Annotated[int | None, BeforeValidator(_br_int_or_none)]
 BRFloat = Annotated[float, BeforeValidator(_br_float)]
 BRFloatOrNone = Annotated[float | None, BeforeValidator(_br_float_or_none)]
 SecondsPlayed = Annotated[int, BeforeValidator(_seconds_played)]
+SecondsPlayedOrNone = Annotated[int | None, BeforeValidator(_seconds_played_or_none)]
 TeamField = Annotated[Team, BeforeValidator(_team_field)]
 TeamNameField = Annotated[Team, BeforeValidator(_team_name_field)]
 LocationField = Annotated[Location, BeforeValidator(_location_field)]

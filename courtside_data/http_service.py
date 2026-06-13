@@ -2,7 +2,7 @@
 
 Legacy endpoints (standings, box scores, schedule, play-by-play, season
 totals, search) have bespoke methods using dedicated page classes from
-``courtside_data.legacy.html``. Generic endpoints are declared in
+raw table extraction. Generic endpoints are declared in
 ``courtside_data.endpoints`` and served by :meth:`HTTPService.fetch_table`,
 which the generated client functions call directly.
 """
@@ -13,6 +13,7 @@ import json
 import logging
 import os
 import random
+import re
 import threading
 import time
 from collections.abc import Callable
@@ -22,26 +23,21 @@ from typing import Any, ClassVar
 
 import httpx
 import stamina
+from curl_cffi.const import CurlOpt  # type: ignore[import-untyped]
 from hishel.httpx import SyncCacheTransport
 from lxml import html
 from parsel import Selector
 
-from courtside_data.data import TEAM_TO_TEAM_ABBREVIATION, PlayerData, Team, TeamTotal
+from courtside_data.data import (
+    DIVISIONS_TO_CONFERENCES,
+    TEAM_ABBREVIATIONS_TO_TEAM,
+    TEAM_NAME_TO_TEAM,
+    TEAM_TO_TEAM_ABBREVIATION,
+    Division,
+    Team,
+)
 from courtside_data.endpoints import ENDPOINTS, TableEndpoint
 from courtside_data.errors import InvalidDate, InvalidPlayerAndSeason, RateLimitJailed
-from courtside_data.legacy.html import (
-    BoxScoresPage,
-    DailyBoxScoresPage,
-    DailyLeadersPage,
-    PlayByPlayPage,
-    PlayerAdvancedSeasonTotalsTable,
-    PlayerPage,
-    PlayerSeasonBoxScoresPage,
-    PlayerSeasonTotalTable,
-    SchedulePage,
-    SearchPage,
-    StandingsPage,
-)
 from courtside_data.tables import GenericTable, extract_commented_table, parse_transaction_list
 
 logger = logging.getLogger(__name__)
@@ -84,6 +80,48 @@ _DEFAULT_HEADERS: dict[str, str] = {
     "Upgrade-Insecure-Requests": "1",
     "DNT": "1",
 }
+
+
+class _SafeCurlTransport(httpx.BaseTransport):
+    """Wraps :class:`httpx_curl_cffi.CurlTransport` with two workarounds for
+    correct caching behavior with hishel:
+
+    1. **Timeout extension**: A hishel 1.x regression drops the ``timeout``
+       extension when revalidating cached responses, causing
+       ``CurlTransport._create_request_params`` to fail with an
+       ``AssertionError``. The ``handle_request`` method ensures every
+       request has a ``timeout`` extension before handing off to the real
+       transport.
+
+    2. **Content decoding**: ``curl-cffi`` decompresses gzip responses by
+       default but leaves the ``Content-Encoding: gzip`` header in place.
+       When hishel stores/retrieves the response, ``httpx`` sees the header
+       and tries to decompress already-plaintext content, raising
+       ``httpx.DecodingError``. Passing
+       ``curl_options={CurlOpt.HTTP_CONTENT_DECODING: 0}`` tells libcurl
+       not to decode content, so ``httpx`` handles decompression
+       consistently.
+    """
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        from httpx_curl_cffi import CurlTransport  # type: ignore[import-untyped]
+
+        curl_options = kwargs.pop("curl_options", {})
+        curl_options = {CurlOpt.HTTP_CONTENT_DECODING: 0, **curl_options}
+        self._impl = CurlTransport(*args, curl_options=curl_options, **kwargs)
+
+    def handle_request(self, request: httpx.Request) -> httpx.Response:
+        if "timeout" not in request.extensions:
+            request.extensions["timeout"] = {
+                "connect": _DEFAULT_TIMEOUT.connect,
+                "read": _DEFAULT_TIMEOUT.read,
+                "write": _DEFAULT_TIMEOUT.write,
+                "pool": _DEFAULT_TIMEOUT.pool,
+            }
+        return self._impl.handle_request(request)
+
+    def close(self) -> None:
+        self._impl.close()
 
 
 def _parse_retry_after(value: str) -> float:
@@ -199,9 +237,7 @@ def build_client(
     transport: httpx.BaseTransport = httpx.HTTPTransport()
 
     if impersonate is not None:
-        from httpx_curl_cffi import CurlTransport  # type: ignore[import-untyped]
-
-        transport = CurlTransport(impersonate=impersonate)  # ty: ignore[invalid-argument-type] — accepts any str
+        transport = _SafeCurlTransport(impersonate=impersonate)
 
     if cache:
         transport = SyncCacheTransport(next_transport=transport)
@@ -217,7 +253,7 @@ class HTTPService:
 
     def __init__(
         self,
-        parser: Any,
+        parser: Any = None,
         rate_limit_interval: float | None = None,
         rate_limit_jitter: float | None = None,
         session: httpx.Client | None = None,
@@ -360,20 +396,209 @@ class HTTPService:
             return []
 
         table = GenericTable(table_selector, use_header_fallback=endpoint.use_header_fallback)
-        rows = self.parser.parse_generic_table(table)
-        if endpoint.projection is not None:
-            rows = [{key: row.get(key, "") for key in endpoint.projection} for row in rows]
-        return rows
+        return [row.to_dict() for row in table.rows]
 
     # ── Legacy endpoints (dedicated page classes and parser chains) ─────
+
+    @staticmethod
+    def _find_table(selector: Selector, table_id: str) -> Selector | None:
+        table = selector.css(f"table#{table_id}")
+        if table:
+            return table[0]
+        return extract_commented_table(selector, table_id)
+
+    @staticmethod
+    def _raw_rows_from_table(
+        table_selector: Selector,
+        *,
+        use_header_fallback: bool = False,
+    ) -> list[tuple[dict[str, Any], dict[str, dict[str, str]]]]:
+        table = GenericTable(table_selector, use_header_fallback=use_header_fallback)
+        return [(row.to_dict(), row.metadata) for row in table.rows]
+
+    @staticmethod
+    def _cell_text(selector: Any) -> str:
+        text = (
+            " ".join(value.strip() for value in selector.css("::text").getall() if value.strip())
+            .replace("*", "")
+            .strip()
+        )
+        return re.sub(r"\s+([),.;:])", r"\1", text)
+
+    @staticmethod
+    def _slug_from_metadata(metadata: dict[str, dict[str, str]], stat_name: str) -> str:
+        return metadata.get(stat_name, {}).get("data-append-csv", "")
+
+    @staticmethod
+    def _is_combined_team(row: dict[str, Any]) -> bool:
+        return str(row.get("team_name_abbr", "")).endswith("TM")
+
+    @staticmethod
+    def _team_abbreviation_from_name(team_name: str) -> str:
+        team = TEAM_NAME_TO_TEAM[team_name.strip().upper()]
+        return TEAM_TO_TEAM_ABBREVIATION[team]
+
+    @staticmethod
+    def _team_name_from_abbreviation(team_abbreviation: str) -> str:
+        return TEAM_ABBREVIATIONS_TO_TEAM[team_abbreviation].value.title()
+
+    @staticmethod
+    def _score_outcome(points: str, opponent_points: str) -> str | None:
+        team_points = int(points)
+        opposing_points = int(opponent_points)
+        if team_points > opposing_points:
+            return "W"
+        if team_points < opposing_points:
+            return "L"
+        return None
+
+    @staticmethod
+    def _period_number(period_count: int) -> int:
+        return period_count if period_count <= 4 else period_count - 4
+
+    @staticmethod
+    def _period_type(period_count: int) -> str:
+        return "QUARTER" if period_count <= 4 else "OVERTIME"
+
+    @staticmethod
+    def _remaining_seconds(timestamp: str) -> float:
+        minutes, seconds = timestamp.split(":", maxsplit=1)
+        return (int(minutes) * 60) + float(seconds)
+
+    @classmethod
+    def _standings_team_value(cls, formatted_name: str) -> str:
+        cleaned = formatted_name.upper().strip()
+        for team in Team:
+            if cleaned.startswith(team.value):
+                return team.value
+        return cleaned
+
+    @staticmethod
+    def _division_value(formatted_name: str) -> str | None:
+        cleaned = formatted_name.upper().strip()
+        for division in Division:
+            if cleaned == f"{division.value} DIVISION":
+                return division.value
+        return None
+
+    @staticmethod
+    def _resource_identifier(resource_location: str | None) -> str:
+        if not resource_location:
+            return ""
+        return resource_location.rstrip("/").rsplit("/", maxsplit=1)[-1].removesuffix(".html")
+
+    @staticmethod
+    def _search_result_name(resource_name: str | None) -> str:
+        if resource_name is None:
+            return ""
+        return resource_name.split("(", maxsplit=1)[0].strip()
+
+    def _generic_table_rows(self, selector: Selector, table_id: str) -> list[dict[str, Any]]:
+        table_selector = self._find_table(selector, table_id)
+        if table_selector is None:
+            return []
+        return [row for row, _ in self._raw_rows_from_table(table_selector)]
+
+    def _player_totals_rows(self, selector: Selector, table_id: str, *, include_combined: bool) -> list[dict[str, Any]]:
+        table_selector = self._find_table(selector, table_id)
+        if table_selector is None:
+            return []
+
+        rows: list[dict[str, Any]] = []
+        for row, metadata in self._raw_rows_from_table(table_selector):
+            if not row.get("name_display") or not row.get("team_name_abbr"):
+                continue
+            if not include_combined and self._is_combined_team(row):
+                continue
+            row["slug"] = self._slug_from_metadata(metadata, "name_display")
+            if table_id == "advanced":
+                row["is_combined_totals"] = self._is_combined_team(row)
+            rows.append(row)
+        return rows
+
+    def _player_season_box_score_rows(
+        self,
+        table_selector: Selector,
+        *,
+        include_inactive_games: bool,
+    ) -> list[dict[str, Any]]:
+        rows: list[dict[str, Any]] = []
+        for row, metadata in self._raw_rows_from_table(table_selector):
+            if not row.get("date") and not row.get("date_game"):
+                continue
+
+            active = "colspan" not in metadata.get("is_starter", {})
+            if not active and not include_inactive_games:
+                continue
+
+            row["active"] = active
+            rows.append(row)
+        return rows
+
+    def _schedule_rows(self, selector: Selector) -> list[dict[str, Any]]:
+        return [
+            row
+            for row in self._generic_table_rows(selector, "schedule")
+            if row.get("visitor_team_name") and row.get("home_team_name")
+        ]
+
+    def _search_rows(self, selector: Selector) -> list[dict[str, Any]]:
+        rows: list[dict[str, Any]] = []
+        for result in selector.css("div#searches div#players div.search-item"):
+            link = result.css("div.search-item-name a")
+            if not link:
+                continue
+            rows.append(
+                {
+                    "name": self._search_result_name(self._cell_text(link[0])),
+                    "identifier": self._resource_identifier(link[0].attrib.get("href")),
+                    "leagues": self._cell_text(result.css("div.search-item-league")),
+                }
+            )
+        return rows
+
+    def _search_pagination_url(self, selector: Selector) -> str | None:
+        links = selector.css("div#searches div#players div.search-pagination a")
+        if not links:
+            return None
+        if len(links) == 1:
+            if self._cell_text(links[0]) == "Previous 100 Results":
+                return None
+            return links[0].attrib["href"]
+        return links[1].attrib["href"]
 
     def standings(self, season_end_year: int) -> list[dict[str, Any]]:
         url = f"{HTTPService.BASE_URL}/leagues/NBA_{season_end_year}.html"
 
-        page = StandingsPage(html=self._get_html(url=url, follow_redirects=False))
-        return self.parser.parse_division_standings(
-            standings=page.division_standings.eastern_conference_table.rows
-        ) + self.parser.parse_division_standings(standings=page.division_standings.western_conference_table.rows)
+        selector = self._get_selector(url=url)
+        standings: list[dict[str, Any]] = []
+        for table_id in ("divs_standings_E", "divs_standings_W"):
+            current_division: Division | None = None
+            table = selector.css(f"table#{table_id}")
+            if not table:
+                continue
+            for row in table[0].css("tbody tr"):
+                classes = row.attrib.get("class", "").split()
+                if "thead" in classes:
+                    division_value = self._division_value(self._cell_text(row.css("th")))
+                    current_division = Division(division_value) if division_value is not None else None
+                    continue
+                team = self._cell_text(row.css('[data-stat="team_name"]'))
+                if not team:
+                    continue
+                standings.append(
+                    {
+                        "team": self._standings_team_value(team),
+                        "wins": self._cell_text(row.css('[data-stat="wins"]')),
+                        "losses": self._cell_text(row.css('[data-stat="losses"]')),
+                        "division": current_division.value if current_division is not None else None,
+                        "conference": (
+                            DIVISIONS_TO_CONFERENCES[current_division].value if current_division is not None else None
+                        ),
+                    }
+                )
+
+        return standings
 
     def player_box_scores(self, day: int, month: int, year: int) -> list[dict[str, Any]]:
         url = f"{HTTPService.BASE_URL}/friv/dailyleaders.cgi?month={month}&day={day}&year={year}"
@@ -383,94 +608,131 @@ class HTTPService:
         response.raise_for_status()
 
         if response.status_code == httpx.codes.OK:
-            page = DailyLeadersPage(html=html.fromstring(response.content))
-            if not page.daily_leaders:
+            selector = Selector(text=response.text)
+            table = self._find_table(selector, "stats")
+            if table is None:
                 raise InvalidDate(day=day, month=month, year=year)
-            return self.parser.parse_player_box_scores(box_scores=page.daily_leaders)
+            rows = []
+            for row, metadata in self._raw_rows_from_table(table):
+                row["slug"] = self._slug_from_metadata(metadata, "player")
+                rows.append(row)
+            if not rows:
+                raise InvalidDate(day=day, month=month, year=year)
+            return rows
 
         raise InvalidDate(day=day, month=month, year=year)
 
-    def _player_season_box_scores_page(self, player_identifier: str, season_end_year: int) -> PlayerSeasonBoxScoresPage:
+    def _player_season_box_scores_selector(self, player_identifier: str, season_end_year: int) -> Selector:
         # Makes assumption that basketball reference pattern of breaking out player pathing using first character of
         # surname can be derived from the fact that basketball reference also has a pattern of player identifiers
         # starting with first few characters of player's surname
         url = f"{HTTPService.BASE_URL}/players/{player_identifier[0]}/{player_identifier}/gamelog/{season_end_year}"
 
-        return PlayerSeasonBoxScoresPage(html=self._get_html(url=url, follow_redirects=False))
+        return self._get_selector(url=url)
 
     def regular_season_player_box_scores(
         self, player_identifier: str, season_end_year: int, include_inactive_games: bool = False
     ) -> list[dict[str, Any]]:
-        page = self._player_season_box_scores_page(player_identifier, season_end_year)
-        if page.regular_season_box_scores_table is None:
+        selector = self._player_season_box_scores_selector(player_identifier, season_end_year)
+        table = self._find_table(selector, "player_game_log_reg")
+        if table is None:
             raise InvalidPlayerAndSeason(player_identifier=player_identifier, season_end_year=season_end_year)
 
-        return self.parser.parse_player_season_box_scores(
-            box_scores=page.regular_season_box_scores_table.rows, include_inactive_games=include_inactive_games
-        )
+        return self._player_season_box_score_rows(table, include_inactive_games=include_inactive_games)
 
     def playoff_player_box_scores(
         self, player_identifier: str, season_end_year: int, include_inactive_games: bool = False
     ) -> list[dict[str, Any]]:
-        page = self._player_season_box_scores_page(player_identifier, season_end_year)
-        if page.playoff_box_scores_table is None:
+        selector = self._player_season_box_scores_selector(player_identifier, season_end_year)
+        table = self._find_table(selector, "player_game_log_post")
+        if table is None:
             raise InvalidPlayerAndSeason(player_identifier=player_identifier, season_end_year=season_end_year)
 
-        return self.parser.parse_player_season_box_scores(
-            box_scores=page.playoff_box_scores_table.rows, include_inactive_games=include_inactive_games
-        )
+        return self._player_season_box_score_rows(table, include_inactive_games=include_inactive_games)
 
     def play_by_play(self, home_team: Team, day: int, month: int, year: int) -> list[dict[str, Any]]:
         # Look up the actual game URL from the daily boxscores page
         # instead of hardcoding the game index (handles doubleheaders).
-        boxscores_page = DailyBoxScoresPage(
-            html=self._get_html(
-                url=f"{HTTPService.BASE_URL}/boxscores/",
-                params={"day": day, "month": month, "year": year},
-            )
+        boxscores_selector = self._get_selector(
+            url=f"{HTTPService.BASE_URL}/boxscores/?day={day}&month={month}&year={year}",
         )
         abbr = TEAM_TO_TEAM_ABBREVIATION[home_team]
         game_url_path = None
-        for path in boxscores_page.game_url_paths:
+        for path in [link.attrib["href"] for link in boxscores_selector.css("td.gamelink a")]:
             if path.endswith(f"0{abbr}.html") or path.endswith(f"1{abbr}.html"):
                 game_url_path = path
                 break
         if game_url_path is None:
             raise InvalidDate(day=day, month=month, year=year)
         url = f"{HTTPService.BASE_URL}/boxscores/pbp/{game_url_path.split('/')[-1]}"
-        page = PlayByPlayPage(html=self._get_html(url=url))
+        selector = self._get_selector(url=url)
+        team_names = [self._cell_text(team_name) for team_name in selector.css("#content div.scorebox strong a")]
+        away_team = self._team_abbreviation_from_name(team_names[0])
+        home_team_abbreviation = self._team_abbreviation_from_name(team_names[1])
 
-        return self.parser.parse_play_by_plays(
-            play_by_plays=page.play_by_play_table.rows,
-            away_team_name=page.away_team_name,
-            home_team_name=page.home_team_name,
-        )
+        current_period = 0
+        rows: list[dict[str, Any]] = []
+        for row in selector.css("table#pbp tr"):
+            cells = row.css("td, th")
+            if not cells:
+                continue
+            timestamp_cell = cells[0]
+            if timestamp_cell.attrib.get("colspan") == "6":
+                current_period += 1
+                continue
+            if (
+                len(cells) < 2
+                or cells[1].attrib.get("colspan") == "5"
+                or timestamp_cell.attrib.get("aria-label") == "Time"
+            ):
+                continue
+
+            timestamp = self._cell_text(timestamp_cell)
+            away_description = self._cell_text(cells[1]) if len(cells) == 6 else ""
+            home_description = self._cell_text(cells[5]) if len(cells) == 6 else ""
+            scores = self._cell_text(cells[3]) if len(cells) == 6 else ""
+            is_away_play = away_description != ""
+            rows.append(
+                {
+                    "period": self._period_number(current_period),
+                    "period_type": self._period_type(current_period),
+                    "remaining_seconds_in_period": self._remaining_seconds(timestamp),
+                    "relevant_team": away_team if is_away_play else home_team_abbreviation,
+                    "away_team": away_team,
+                    "home_team": home_team_abbreviation,
+                    "away_score": scores,
+                    "home_score": scores,
+                    "description": away_description if is_away_play else home_description,
+                }
+            )
+        return rows
 
     def players_advanced_season_totals(
         self, season_end_year: int, include_combined_values: bool = False
     ) -> list[dict[str, Any]]:
         url = f"{HTTPService.BASE_URL}/leagues/NBA_{season_end_year}_advanced.html"
 
-        table = PlayerAdvancedSeasonTotalsTable(html=self._get_html(url=url))
-        return self.parser.parse_player_advanced_season_totals(totals=table.get_rows(include_combined_values))
+        selector = self._get_selector(url=url)
+        return self._player_totals_rows(selector, "advanced", include_combined=include_combined_values)
 
     def players_season_totals(self, season_end_year: int) -> list[dict[str, Any]]:
         url = f"{HTTPService.BASE_URL}/leagues/NBA_{season_end_year}_totals.html"
 
-        table = PlayerSeasonTotalTable(html=self._get_html(url=url))
-        return self.parser.parse_player_season_totals(totals=table.rows)
+        selector = self._get_selector(url=url)
+        return self._player_totals_rows(selector, "totals_stats", include_combined=False)
 
     def schedule_for_month(self, url: str) -> list[dict[str, Any]]:
-        page = SchedulePage(html=self._get_html(url=url))
-        return self.parser.parse_scheduled_games(games=page.rows)
+        return self._schedule_rows(self._get_selector(url=url))
 
     def season_schedule(self, season_end_year: int) -> list[dict[str, Any]]:
         url = f"{HTTPService.BASE_URL}/leagues/NBA_{season_end_year}_games.html"
 
-        page = SchedulePage(html=self._get_html(url=url))
-        season_schedule_values = self.parser.parse_scheduled_games(games=page.rows)
+        selector = self._get_selector(url=url)
+        season_schedule_values = self._schedule_rows(selector)
 
-        for month_url_path in page.other_months_schedule_urls:
+        for month_url_path in [
+            link.attrib["href"] for link in selector.css('div#content div.filter div:not([class*="current"]) a')
+        ]:
             url = f"{HTTPService.BASE_URL}{month_url_path}"
             monthly_schedule = self.schedule_for_month(url=url)
             season_schedule_values.extend(monthly_schedule)
@@ -480,30 +742,42 @@ class HTTPService:
     def team_box_score(self, game_url_path: str) -> list[dict[str, Any]]:
         url = f"{HTTPService.BASE_URL}/{game_url_path.lstrip('/')}"
 
-        page = BoxScoresPage(self._get_html(url=url))
-        combined_team_totals = [
-            TeamTotal(team_abbreviation=table.team_abbreviation, totals=table.team_totals)
-            for table in page.basic_statistics_tables
-        ]
+        selector = self._get_selector(url=url)
+        combined_team_totals: list[dict[str, Any]] = []
+        for table in selector.css('table.stats_table[id$="-game-basic"]'):
+            table_id = table.attrib.get("id", "")
+            if not table_id.startswith("box-"):
+                continue
+            team_abbreviation = table_id.removeprefix("box-").removesuffix("-game-basic")
+            footer = table.css("tfoot")
+            if not footer:
+                continue
+            rows = self._raw_rows_from_table(footer[0])
+            if not rows:
+                continue
+            row = rows[0][0]
+            row["team_name_abbr"] = self._team_name_from_abbreviation(team_abbreviation)
+            combined_team_totals.append(row)
 
         if len(combined_team_totals) < 2:
             raise ValueError(f"Expected 2 team totals in box score page, got {len(combined_team_totals)}")
-        return self.parser.parse_team_totals(
-            first_team_totals=combined_team_totals[0],
-            second_team_totals=combined_team_totals[1],
-        )
+
+        first_team_totals, second_team_totals = combined_team_totals[:2]
+        first_team_totals["outcome"] = self._score_outcome(first_team_totals["pts"], second_team_totals["pts"])
+        second_team_totals["outcome"] = self._score_outcome(second_team_totals["pts"], first_team_totals["pts"])
+        return [first_team_totals, second_team_totals]
 
     def team_box_scores(self, day: int, month: int, year: int) -> list[dict[str, Any]]:
-        url = f"{HTTPService.BASE_URL}/boxscores/"
+        url = f"{HTTPService.BASE_URL}/boxscores/?day={day}&month={month}&year={year}"
 
-        page = DailyBoxScoresPage(html=self._get_html(url=url, params={"day": day, "month": month, "year": year}))
-
-        if not page.game_url_paths:
+        selector = self._get_selector(url=url)
+        game_url_paths = [link.attrib["href"] for link in selector.css("td.gamelink a")]
+        if not game_url_paths:
             raise InvalidDate(day=day, month=month, year=year)
 
         return [
             box_score
-            for game_url_path in page.game_url_paths
+            for game_url_path in game_url_paths
             for box_score in self.team_box_score(game_url_path=game_url_path)
         ]
 
@@ -515,16 +789,16 @@ class HTTPService:
         player_results: list[dict[str, Any]] = []
 
         if str(response.url).startswith(f"{HTTPService.BASE_URL}/search/search.fcgi"):
-            page = SearchPage(html=html.fromstring(response.content))
-            parsed_results = self.parser.parse_player_search_results(nba_aba_baa_players=page.nba_aba_baa_players)
-            player_results += parsed_results["players"]
+            selector = Selector(text=response.text)
+            player_results += self._search_rows(selector)
 
             # Guard against pagination loops where the next-page URL doesn't
             # advance (e.g., when a page points back to itself). Without this,
             # a malformed or stale "Next" link can cause an infinite loop.
             seen_pagination_urls: set[str] = set()
-            while page.nba_aba_baa_players_pagination_url is not None:
-                pagination_url = page.nba_aba_baa_players_pagination_url
+            while self._search_pagination_url(selector) is not None:
+                pagination_url = self._search_pagination_url(selector)
+                assert pagination_url is not None
                 if pagination_url in seen_pagination_urls:
                     break
                 seen_pagination_urls.add(pagination_url)
@@ -533,27 +807,23 @@ class HTTPService:
 
                 response.raise_for_status()
 
-                page = SearchPage(html=html.fromstring(response.content))
-
-                parsed_results = self.parser.parse_player_search_results(nba_aba_baa_players=page.nba_aba_baa_players)
-                player_results += parsed_results["players"]
+                selector = Selector(text=response.text)
+                player_results += self._search_rows(selector)
 
         elif str(response.url).startswith(f"{HTTPService.BASE_URL}/players"):
-            player_page = PlayerPage(html=html.fromstring(response.content))
-            if player_page.totals_table is None:
-                league_abbreviations: set[str] = set()
-            else:
-                league_abbreviations = {
-                    row.league_abbreviation
-                    for row in player_page.totals_table.rows
-                    if row.league_abbreviation is not None
+            selector = Selector(text=response.text)
+            league_abbreviations = {
+                self._cell_text(league)
+                for league in selector.css('table#per_game tbody tr td[data-stat="lg_id"]')
+                if self._cell_text(league)
+            }
+            player_results += [
+                {
+                    "name": self._cell_text(selector.css('h1[itemprop="name"]')),
+                    "identifier": self._resource_identifier(str(response.url)),
+                    "leagues": league_abbreviations,
                 }
-            data = PlayerData(
-                name=player_page.name,
-                resource_location=str(response.url),
-                league_abbreviations=league_abbreviations,
-            )
-            player_results += [self.parser.parse_player_data(player=data)]
+            ]
 
         return {"players": player_results}
 
@@ -570,5 +840,5 @@ class HTTPService:
             table_selector = selector.css(f"table#{endpoint.table_id}")
             if table_selector:
                 table = GenericTable(table_selector[0])
-                standings.extend(self.parser.parse_generic_table(table))
+                standings.extend(row.to_dict() for row in table.rows)
         return standings

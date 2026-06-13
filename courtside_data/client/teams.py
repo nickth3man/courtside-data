@@ -15,6 +15,7 @@ def team_roster(
     output_file_path: str | None = None,
     output_write_option: OutputWriteOption | None = None,
     json_options: dict[str, Any] | None = None,
+    raw: bool = False,
 ) -> Any:
     """Roster for a team in a season.
 
@@ -27,6 +28,7 @@ def team_roster(
         output_file_path=output_file_path,
         output_write_option=output_write_option,
         json_options=json_options,
+        raw=raw,
     )
 
 
@@ -37,6 +39,7 @@ def team_injury_report(
     output_file_path: str | None = None,
     output_write_option: OutputWriteOption | None = None,
     json_options: dict[str, Any] | None = None,
+    raw: bool = False,
 ) -> Any:
     """Current league-wide injury report.
 
@@ -52,6 +55,7 @@ def team_injury_report(
         output_file_path=output_file_path,
         output_write_option=output_write_option,
         json_options=json_options,
+        raw=raw,
     )
 
 
@@ -62,6 +66,7 @@ def team_and_opponent(
     output_file_path: str | None = None,
     output_write_option: OutputWriteOption | None = None,
     json_options: dict[str, Any] | None = None,
+    raw: bool = False,
 ) -> Any:
     """Team and opponent aggregate statistics for a season.
 
@@ -74,6 +79,7 @@ def team_and_opponent(
         output_file_path=output_file_path,
         output_write_option=output_write_option,
         json_options=json_options,
+        raw=raw,
     )
 
 
@@ -84,6 +90,7 @@ def team_misc_four_factors(
     output_file_path: str | None = None,
     output_write_option: OutputWriteOption | None = None,
     json_options: dict[str, Any] | None = None,
+    raw: bool = False,
 ) -> Any:
     """Miscellaneous team statistics including four factors for a season.
 
@@ -96,6 +103,7 @@ def team_misc_four_factors(
         output_file_path=output_file_path,
         output_write_option=output_write_option,
         json_options=json_options,
+        raw=raw,
     )
 
 
@@ -106,6 +114,7 @@ def team_opponent_stats(
     output_file_path: str | None = None,
     output_write_option: OutputWriteOption | None = None,
     json_options: dict[str, Any] | None = None,
+    raw: bool = False,
 ) -> Any:
     """Opponent statistics against a team for a season.
 
@@ -118,6 +127,7 @@ def team_opponent_stats(
         output_file_path=output_file_path,
         output_write_option=output_write_option,
         json_options=json_options,
+        raw=raw,
     )
 
 
@@ -128,6 +138,7 @@ def team_schedule(
     output_file_path: str | None = None,
     output_write_option: OutputWriteOption | None = None,
     json_options: dict[str, Any] | None = None,
+    raw: bool = False,
 ) -> Any:
     """Game-by-game schedule and results for a team in a season.
 
@@ -140,6 +151,7 @@ def team_schedule(
         output_file_path=output_file_path,
         output_write_option=output_write_option,
         json_options=json_options,
+        raw=raw,
     )
 
 
@@ -150,6 +162,7 @@ def team_transactions(
     output_file_path: str | None = None,
     output_write_option: OutputWriteOption | None = None,
     json_options: dict[str, Any] | None = None,
+    raw: bool = False,
 ) -> Any:
     """Transactions for a team in a season.
 
@@ -162,6 +175,7 @@ def team_transactions(
         output_file_path=output_file_path,
         output_write_option=output_write_option,
         json_options=json_options,
+        raw=raw,
     )
 
 
@@ -172,6 +186,7 @@ def team_splits(
     output_file_path: str | None = None,
     output_write_option: OutputWriteOption | None = None,
     json_options: dict[str, Any] | None = None,
+    raw: bool = False,
 ) -> Any:
     """Statistical splits for a team in a season.
 
@@ -184,6 +199,7 @@ def team_splits(
         output_file_path=output_file_path,
         output_write_option=output_write_option,
         json_options=json_options,
+        raw=raw,
     )
 
 
@@ -193,6 +209,7 @@ def team_contracts(
     output_file_path: str | None = None,
     output_write_option: OutputWriteOption | None = None,
     json_options: dict[str, Any] | None = None,
+    raw: bool = False,
 ) -> Any:
     """Current player contracts for a team.
 
@@ -205,6 +222,7 @@ def team_contracts(
         output_file_path=output_file_path,
         output_write_option=output_write_option,
         json_options=json_options,
+        raw=raw,
     )
 
 
@@ -215,6 +233,7 @@ def team_lineups(
     output_file_path: str | None = None,
     output_write_option: OutputWriteOption | None = None,
     json_options: dict[str, Any] | None = None,
+    raw: bool = False,
 ) -> Any:
     """Five-man lineup statistics for a team in a season.
 
@@ -227,6 +246,7 @@ def team_lineups(
         output_file_path=output_file_path,
         output_write_option=output_write_option,
         json_options=json_options,
+        raw=raw,
     )
 
 
@@ -237,6 +257,7 @@ def team_starting_lineups(
     output_file_path: str | None = None,
     output_write_option: OutputWriteOption | None = None,
     json_options: dict[str, Any] | None = None,
+    raw: bool = False,
 ) -> Any:
     """Game-by-game starting lineups for a team in a season.
 
@@ -249,6 +270,7 @@ def team_starting_lineups(
         output_file_path=output_file_path,
         output_write_option=output_write_option,
         json_options=json_options,
+        raw=raw,
     )
 
 
@@ -259,6 +281,7 @@ def team_on_off(
     output_file_path: str | None = None,
     output_write_option: OutputWriteOption | None = None,
     json_options: dict[str, Any] | None = None,
+    raw: bool = False,
 ) -> Any:
     """On/off court statistics for a team in a season.
 
@@ -271,6 +294,7 @@ def team_on_off(
         output_file_path=output_file_path,
         output_write_option=output_write_option,
         json_options=json_options,
+        raw=raw,
     )
 
 
@@ -280,6 +304,7 @@ def franchise_history(
     output_file_path: str | None = None,
     output_write_option: OutputWriteOption | None = None,
     json_options: dict[str, Any] | None = None,
+    raw: bool = False,
 ) -> Any:
     """Season-by-season franchise history for a team.
 
@@ -292,4 +317,5 @@ def franchise_history(
         output_file_path=output_file_path,
         output_write_option=output_write_option,
         json_options=json_options,
+        raw=raw,
     )

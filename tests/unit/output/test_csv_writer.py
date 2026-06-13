@@ -1,7 +1,15 @@
+from datetime import date
 from unittest import TestCase, mock
+
+from pydantic import BaseModel
 
 from courtside_data.data import OutputWriteOption
 from courtside_data.output.writers import CSVWriter, FileOptions, OutputOptions, OutputType
+
+
+class PlayerRow(BaseModel):
+    name: str
+    game_date: date
 
 
 class TestCSVWriter(TestCase):
@@ -82,4 +90,42 @@ class TestCSVWriter(TestCase):
             )
             self.csv_dict_writer.writerows.assert_called_once_with(
                 [{"value": "some"}, {"value": "row"}, {"value": "data"}]
+            )
+
+    @mock.patch("csv.DictWriter")
+    def test_base_model_rows_are_dumped_in_json_mode(self, mock_csv_dict_writer):
+        with mock.patch("builtins.open", mock.mock_open()):
+            mock_csv_dict_writer.return_value = self.csv_dict_writer
+            self.writer.write(
+                data=[PlayerRow(name="Jayson Tatum", game_date=date(2024, 6, 17))],
+                options=OutputOptions(
+                    file_options=FileOptions(
+                        path="some file path",
+                        mode=OutputWriteOption.WRITE,
+                    ),
+                    formatting_options={"column_names": ["name", "game_date"]},
+                    output_type=OutputType.CSV,
+                ),
+            )
+            self.csv_dict_writer.writerows.assert_called_once_with(
+                [{"name": "Jayson Tatum", "game_date": "2024-06-17"}]
+            )
+
+    @mock.patch("csv.DictWriter")
+    def test_base_model_field_order_is_detected_without_explicit_columns(self, mock_csv_dict_writer):
+        with mock.patch("builtins.open", mock.mock_open()) as mock_file:
+            mock_csv_dict_writer.return_value = self.csv_dict_writer
+            self.writer.write(
+                data=[PlayerRow(name="Jayson Tatum", game_date=date(2024, 6, 17))],
+                options=OutputOptions(
+                    file_options=FileOptions(
+                        path="some file path",
+                        mode=OutputWriteOption.WRITE,
+                    ),
+                    formatting_options={},
+                    output_type=OutputType.CSV,
+                ),
+            )
+            mock_csv_dict_writer.assert_called_with(
+                mock_file(), fieldnames=["name", "game_date"], extrasaction="ignore", lineterminator="\n"
             )

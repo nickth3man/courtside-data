@@ -87,9 +87,7 @@ class TestPlayerCareerStatsRow:
 
     def test_optional_empty_cells_parse_to_none(self):
         # A DNP-only season has empty stat cells; required identifiers remain.
-        row = PlayerCareerStatsRow.model_validate(
-            _career_row(games="0", games_started="", mp_per_g="", pts_per_g="")
-        )
+        row = PlayerCareerStatsRow.model_validate(_career_row(games="0", games_started="", mp_per_g="", pts_per_g=""))
         assert row.games_played == 0
         assert row.games_started is None
         assert row.minutes_played_per_game is None
@@ -120,9 +118,7 @@ class TestPlayerAllStarRow:
     def test_happy_path(self):
         # All-Star rows lack the two-point columns but the per-game mixin
         # accepts them as optional and leaves them None.
-        row = PlayerAllStarRow.model_validate(
-            _career_row(fg2_per_g="", fg2a_per_g="", fg2_pct="", efg_pct="")
-        )
+        row = PlayerAllStarRow.model_validate(_career_row(fg2_per_g="", fg2a_per_g="", fg2_pct="", efg_pct=""))
         assert row.season == "2023-24"
         assert row.team == Team.LOS_ANGELES_LAKERS
         assert row.made_two_point_field_goals_per_game is None
@@ -286,9 +282,7 @@ class TestPlayerSimilarityScoresRow:
 
     def test_missing_required_player_raises(self):
         with pytest.raises(ValidationError):
-            PlayerSimilarityScoresRow.model_validate(
-                {"rank": "1", "similarity_score": "98.5"}
-            )
+            PlayerSimilarityScoresRow.model_validate({"rank": "1", "similarity_score": "98.5"})
 
 
 class TestPlayerSalariesRow:
@@ -347,18 +341,14 @@ class TestPlayerShotChartsRow:
         assert row.field_goal_percentage == pytest.approx(0.96)
 
     def test_optional_shot_count_cells_parse_to_none(self):
-        row = PlayerShotChartsRow.model_validate(
-            {"shot_type": "Heave", "made": "", "attempted": "", "fg_pct": ""}
-        )
+        row = PlayerShotChartsRow.model_validate({"shot_type": "Heave", "made": "", "attempted": "", "fg_pct": ""})
         assert row.made is None
         assert row.attempted is None
         assert row.field_goal_percentage is None
 
     def test_missing_required_shot_type_raises(self):
         with pytest.raises(ValidationError):
-            PlayerShotChartsRow.model_validate(
-                {"made": "10", "attempted": "20", "fg_pct": ".500"}
-            )
+            PlayerShotChartsRow.model_validate({"made": "10", "attempted": "20", "fg_pct": ".500"})
 
 
 class TestPlayerSplitsRow:
@@ -396,18 +386,14 @@ class TestPlayerSplitsRow:
         assert row.field_goal_percentage == pytest.approx(0.515)
 
     def test_optional_stat_block_cells_parse_to_none(self):
-        row = PlayerSplitsRow.model_validate(
-            {"split_type": "Location", "value": "Home"}
-        )
+        row = PlayerSplitsRow.model_validate({"split_type": "Location", "value": "Home"})
         assert row.games_played is None
         assert row.points is None
         assert row.field_goal_percentage is None
 
     def test_missing_required_split_type_raises(self):
         with pytest.raises(ValidationError):
-            PlayerSplitsRow.model_validate(
-                {"value": "Home", "g": "35", "pts": "900"}
-            )
+            PlayerSplitsRow.model_validate({"value": "Home", "g": "35", "pts": "900"})
 
 
 class TestPlayerOnOffRow:
@@ -659,15 +645,11 @@ class TestPlayerAdvancedSeasonTotalsRow:
 
     def test_invalid_team_raises(self):
         with pytest.raises(ValidationError):
-            PlayerAdvancedSeasonTotalsRow.model_validate(
-                _advanced_season_totals_row(team_name_abbr="XXX")
-            )
+            PlayerAdvancedSeasonTotalsRow.model_validate(_advanced_season_totals_row(team_name_abbr="XXX"))
 
     def test_invalid_garbage_value_raises(self):
         with pytest.raises(ValidationError):
-            PlayerAdvancedSeasonTotalsRow.model_validate(
-                _advanced_season_totals_row(per="not-a-number")
-            )
+            PlayerAdvancedSeasonTotalsRow.model_validate(_advanced_season_totals_row(per="not-a-number"))
 
     def test_missing_required_team_raises(self):
         raw = _advanced_season_totals_row()
@@ -676,24 +658,17 @@ class TestPlayerAdvancedSeasonTotalsRow:
             PlayerAdvancedSeasonTotalsRow.model_validate(raw)
 
     def test_field_count_matches_column_constant(self):
-        assert (
-            len(PlayerAdvancedSeasonTotalsRow.model_fields)
-            == len(PLAYER_ADVANCED_SEASON_TOTALS_COLUMN_NAMES)
-        )
+        assert len(PlayerAdvancedSeasonTotalsRow.model_fields) == len(PLAYER_ADVANCED_SEASON_TOTALS_COLUMN_NAMES)
 
     def test_field_names_match_column_constant(self):
         # The Python attribute names on the model (used as CSV/JSON keys by
         # downstream writers) must match the legacy column constant.
-        assert set(PlayerAdvancedSeasonTotalsRow.model_fields.keys()) == set(
-            PLAYER_ADVANCED_SEASON_TOTALS_COLUMN_NAMES
-        )
+        assert set(PlayerAdvancedSeasonTotalsRow.model_fields.keys()) == set(PLAYER_ADVANCED_SEASON_TOTALS_COLUMN_NAMES)
 
     def test_is_combined_totals_string_coercion(self):
         # Pydantic v2's bool accepts "True"/"true"/"1" (case-insensitive) as
         # True; the legacy parser may emit a string for this field.
-        row_true = PlayerAdvancedSeasonTotalsRow.model_validate(
-            _advanced_season_totals_row(is_combined_totals="True")
-        )
+        row_true = PlayerAdvancedSeasonTotalsRow.model_validate(_advanced_season_totals_row(is_combined_totals="True"))
         assert row_true.is_combined_totals is True
         row_false = PlayerAdvancedSeasonTotalsRow.model_validate(
             _advanced_season_totals_row(is_combined_totals="False")

@@ -14,6 +14,7 @@ def draft_picks(
     output_file_path: str | None = None,
     output_write_option: OutputWriteOption | None = None,
     json_options: dict[str, Any] | None = None,
+    raw: bool = False,
 ) -> Any:
     """Draft picks for a draft year.
 
@@ -26,6 +27,7 @@ def draft_picks(
         output_file_path=output_file_path,
         output_write_option=output_write_option,
         json_options=json_options,
+        raw=raw,
     )
 
 
@@ -35,6 +37,7 @@ def season_awards(
     output_file_path: str | None = None,
     output_write_option: OutputWriteOption | None = None,
     json_options: dict[str, Any] | None = None,
+    raw: bool = False,
 ) -> Any:
     """Season award voting results (MVP table).
 
@@ -47,6 +50,7 @@ def season_awards(
         output_file_path=output_file_path,
         output_write_option=output_write_option,
         json_options=json_options,
+        raw=raw,
     )
 
 
@@ -55,6 +59,7 @@ def season_leaders(
     output_file_path: str | None = None,
     output_write_option: OutputWriteOption | None = None,
     json_options: dict[str, Any] | None = None,
+    raw: bool = False,
 ) -> Any:
     """Single-season statistical leaders across league history.
 
@@ -67,6 +72,7 @@ def season_leaders(
         output_file_path=output_file_path,
         output_write_option=output_write_option,
         json_options=json_options,
+        raw=raw,
     )
 
 
@@ -75,6 +81,7 @@ def career_leaders(
     output_file_path: str | None = None,
     output_write_option: OutputWriteOption | None = None,
     json_options: dict[str, Any] | None = None,
+    raw: bool = False,
 ) -> Any:
     """Career statistical leaders across league history.
 
@@ -87,4 +94,5 @@ def career_leaders(
         output_file_path=output_file_path,
         output_write_option=output_write_option,
         json_options=json_options,
+        raw=raw,
     )

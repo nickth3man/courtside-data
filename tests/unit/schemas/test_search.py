@@ -9,9 +9,7 @@ from courtside_data.schemas.search import SearchResultRow
 
 class TestSearchResultRow:
     def test_happy_path(self):
-        row = SearchResultRow.model_validate(
-            {"name": "Kobe Bryant", "identifier": "bryanko01", "leagues": "NBA/ABA"}
-        )
+        row = SearchResultRow.model_validate({"name": "Kobe Bryant", "identifier": "bryanko01", "leagues": "NBA/ABA"})
         assert row.name == "Kobe Bryant"
         assert row.identifier == "bryanko01"
         assert row.leagues == {
@@ -30,9 +28,7 @@ class TestSearchResultRow:
         }
 
     def test_empty_leagues_becomes_empty_set(self):
-        row = SearchResultRow.model_validate(
-            {"name": "Kobe Bryant", "identifier": "bryanko01", "leagues": ""}
-        )
+        row = SearchResultRow.model_validate({"name": "Kobe Bryant", "identifier": "bryanko01", "leagues": ""})
         assert row.leagues == set()
 
     def test_missing_required_field_raises(self):

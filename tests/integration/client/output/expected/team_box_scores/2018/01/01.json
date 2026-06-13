@@ -6,6 +6,8 @@
         "attempted_three_point_field_goals": 31,
         "blocks": 5,
         "defensive_rebounds": 33,
+        "field_goal_percentage": 0.365,
+        "free_throw_percentage": 0.76,
         "made_field_goals": 35,
         "made_free_throws": 19,
         "made_three_point_field_goals": 6,
@@ -16,6 +18,7 @@
         "points": 95,
         "steals": 5,
         "team": "ORLANDO MAGIC",
+        "three_point_field_goal_percentage": 0.194,
         "turnovers": 12
     },
     {
@@ -25,6 +28,8 @@
         "attempted_three_point_field_goals": 25,
         "blocks": 10,
         "defensive_rebounds": 42,
+        "field_goal_percentage": 0.439,
+        "free_throw_percentage": 0.739,
         "made_field_goals": 36,
         "made_free_throws": 17,
         "made_three_point_field_goals": 9,
@@ -35,6 +40,7 @@
         "points": 98,
         "steals": 7,
         "team": "BROOKLYN NETS",
+        "three_point_field_goal_percentage": 0.36,
         "turnovers": 13
     },
     {
@@ -44,6 +50,8 @@
         "attempted_three_point_field_goals": 33,
         "blocks": 5,
         "defensive_rebounds": 38,
+        "field_goal_percentage": 0.435,
+        "free_throw_percentage": 0.889,
         "made_field_goals": 47,
         "made_free_throws": 16,
         "made_three_point_field_goals": 14,
@@ -54,6 +62,7 @@
         "points": 124,
         "steals": 7,
         "team": "PORTLAND TRAIL BLAZERS",
+        "three_point_field_goal_percentage": 0.424,
         "turnovers": 8
     },
     {
@@ -63,6 +72,8 @@
         "attempted_three_point_field_goals": 27,
         "blocks": 7,
         "defensive_rebounds": 43,
+        "field_goal_percentage": 0.433,
+        "free_throw_percentage": 0.826,
         "made_field_goals": 45,
         "made_free_throws": 19,
         "made_three_point_field_goals": 11,
@@ -73,6 +84,7 @@
         "points": 120,
         "steals": 5,
         "team": "CHICAGO BULLS",
+        "three_point_field_goal_percentage": 0.407,
         "turnovers": 12
     },
     {
@@ -82,6 +94,8 @@
         "attempted_three_point_field_goals": 26,
         "blocks": 4,
         "defensive_rebounds": 28,
+        "field_goal_percentage": 0.447,
+        "free_throw_percentage": 0.69,
         "made_field_goals": 34,
         "made_free_throws": 20,
         "made_three_point_field_goals": 8,
@@ -92,6 +106,7 @@
         "points": 96,
         "steals": 12,
         "team": "LOS ANGELES LAKERS",
+        "three_point_field_goal_percentage": 0.308,
         "turnovers": 24
     },
     {
@@ -101,6 +116,8 @@
         "attempted_three_point_field_goals": 20,
         "blocks": 5,
         "defensive_rebounds": 34,
+        "field_goal_percentage": 0.494,
+        "free_throw_percentage": 0.9,
         "made_field_goals": 40,
         "made_free_throws": 27,
         "made_three_point_field_goals": 7,
@@ -111,6 +128,7 @@
         "points": 114,
         "steals": 14,
         "team": "MINNESOTA TIMBERWOLVES",
+        "three_point_field_goal_percentage": 0.35,
         "turnovers": 17
     },
     {
@@ -120,6 +138,8 @@
         "attempted_three_point_field_goals": 27,
         "blocks": 3,
         "defensive_rebounds": 33,
+        "field_goal_percentage": 0.473,
+        "free_throw_percentage": 0.929,
         "made_field_goals": 44,
         "made_free_throws": 26,
         "made_three_point_field_goals": 13,
@@ -130,6 +150,7 @@
         "points": 127,
         "steals": 9,
         "team": "MILWAUKEE BUCKS",
+        "three_point_field_goal_percentage": 0.481,
         "turnovers": 15
     },
     {
@@ -139,6 +160,8 @@
         "attempted_three_point_field_goals": 33,
         "blocks": 8,
         "defensive_rebounds": 34,
+        "field_goal_percentage": 0.495,
+        "free_throw_percentage": 0.818,
         "made_field_goals": 45,
         "made_free_throws": 27,
         "made_three_point_field_goals": 14,
@@ -149,6 +172,7 @@
         "points": 131,
         "steals": 8,
         "team": "TORONTO RAPTORS",
+        "three_point_field_goal_percentage": 0.424,
         "turnovers": 13
     }
 ]

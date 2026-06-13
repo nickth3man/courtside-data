@@ -75,6 +75,19 @@ class TestPlayoffPerGameRow:
         assert row.games_started is None
         assert row.free_throw_percentage is None
 
+    @pytest.mark.parametrize("team_name_abbr", ["TOT", "2TM", "3TM"])
+    def test_aggregate_team_rows_are_supported(self, team_name_abbr):
+        raw = _full_playoff_per_game_row()
+        raw["team_name_abbr"] = team_name_abbr
+        row = PlayoffPerGameRow.model_validate(raw)
+        assert row.team == team_name_abbr
+
+    def test_unknown_team_abbreviation_raises(self):
+        raw = _full_playoff_per_game_row()
+        raw["team_name_abbr"] = "XXX"
+        with pytest.raises(ValidationError):
+            PlayoffPerGameRow.model_validate(raw)
+
     def test_missing_required_data_stat_raises(self):
         raw = _full_playoff_per_game_row()
         del raw["name_display"]
@@ -83,6 +96,10 @@ class TestPlayoffPerGameRow:
 
     def test_field_count_matches_column_constant(self):
         assert len(PlayoffPerGameRow.model_fields) == len(PLAYOFF_PER_GAME_COLUMN_NAMES)
+
+    def test_aliases_remain_data_stat_keys(self):
+        assert PlayoffPerGameRow.model_fields["name_display"].validation_alias == "name_display"
+        assert PlayoffPerGameRow.model_fields["team"].validation_alias == "team_name_abbr"
 
 
 def _full_playoff_totals_row() -> dict[str, str]:
@@ -139,6 +156,13 @@ class TestPlayoffTotalsRow:
         assert row.games_played is None
         assert row.points is None
         assert row.field_goal_percentage is None
+
+    @pytest.mark.parametrize("team_name_abbr", ["TOT", "2TM", "3TM"])
+    def test_aggregate_team_rows_are_supported(self, team_name_abbr):
+        raw = _full_playoff_totals_row()
+        raw["team_name_abbr"] = team_name_abbr
+        row = PlayoffTotalsRow.model_validate(raw)
+        assert row.team == team_name_abbr
 
     def test_missing_required_data_stat_raises(self):
         raw = _full_playoff_totals_row()

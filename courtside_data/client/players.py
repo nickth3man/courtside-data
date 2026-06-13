@@ -14,6 +14,7 @@ def player_career_stats(
     output_file_path: str | None = None,
     output_write_option: OutputWriteOption | None = None,
     json_options: dict[str, Any] | None = None,
+    raw: bool = False,
 ) -> Any:
     """Season-by-season per-game career statistics for a player.
 
@@ -26,6 +27,7 @@ def player_career_stats(
         output_file_path=output_file_path,
         output_write_option=output_write_option,
         json_options=json_options,
+        raw=raw,
     )
 
 
@@ -35,6 +37,7 @@ def player_playoff_series(
     output_file_path: str | None = None,
     output_write_option: OutputWriteOption | None = None,
     json_options: dict[str, Any] | None = None,
+    raw: bool = False,
 ) -> Any:
     """Playoff series results for a player.
 
@@ -47,6 +50,7 @@ def player_playoff_series(
         output_file_path=output_file_path,
         output_write_option=output_write_option,
         json_options=json_options,
+        raw=raw,
     )
 
 
@@ -56,6 +60,7 @@ def player_adjusted_shooting(
     output_file_path: str | None = None,
     output_write_option: OutputWriteOption | None = None,
     json_options: dict[str, Any] | None = None,
+    raw: bool = False,
 ) -> Any:
     """League-adjusted shooting statistics for a player.
 
@@ -68,6 +73,7 @@ def player_adjusted_shooting(
         output_file_path=output_file_path,
         output_write_option=output_write_option,
         json_options=json_options,
+        raw=raw,
     )
 
 
@@ -77,6 +83,7 @@ def player_play_by_play(
     output_file_path: str | None = None,
     output_write_option: OutputWriteOption | None = None,
     json_options: dict[str, Any] | None = None,
+    raw: bool = False,
 ) -> Any:
     """Play-by-play position and usage statistics for a player.
 
@@ -89,6 +96,7 @@ def player_play_by_play(
         output_file_path=output_file_path,
         output_write_option=output_write_option,
         json_options=json_options,
+        raw=raw,
     )
 
 
@@ -98,6 +106,7 @@ def player_game_highs(
     output_file_path: str | None = None,
     output_write_option: OutputWriteOption | None = None,
     json_options: dict[str, Any] | None = None,
+    raw: bool = False,
 ) -> Any:
     """Regular-season game highs for a player.
 
@@ -110,6 +119,7 @@ def player_game_highs(
         output_file_path=output_file_path,
         output_write_option=output_write_option,
         json_options=json_options,
+        raw=raw,
     )
 
 
@@ -119,6 +129,7 @@ def player_all_star(
     output_file_path: str | None = None,
     output_write_option: OutputWriteOption | None = None,
     json_options: dict[str, Any] | None = None,
+    raw: bool = False,
 ) -> Any:
     """All-Star game appearances for a player.
 
@@ -131,6 +142,7 @@ def player_all_star(
         output_file_path=output_file_path,
         output_write_option=output_write_option,
         json_options=json_options,
+        raw=raw,
     )
 
 
@@ -140,6 +152,7 @@ def player_similarity_scores(
     output_file_path: str | None = None,
     output_write_option: OutputWriteOption | None = None,
     json_options: dict[str, Any] | None = None,
+    raw: bool = False,
 ) -> Any:
     """Career similarity scores for a player.
 
@@ -152,6 +165,7 @@ def player_similarity_scores(
         output_file_path=output_file_path,
         output_write_option=output_write_option,
         json_options=json_options,
+        raw=raw,
     )
 
 
@@ -161,6 +175,7 @@ def player_salaries(
     output_file_path: str | None = None,
     output_write_option: OutputWriteOption | None = None,
     json_options: dict[str, Any] | None = None,
+    raw: bool = False,
 ) -> Any:
     """Year-by-year salaries for a player.
 
@@ -173,6 +188,7 @@ def player_salaries(
         output_file_path=output_file_path,
         output_write_option=output_write_option,
         json_options=json_options,
+        raw=raw,
     )
 
 
@@ -183,6 +199,7 @@ def player_splits(
     output_file_path: str | None = None,
     output_write_option: OutputWriteOption | None = None,
     json_options: dict[str, Any] | None = None,
+    raw: bool = False,
 ) -> Any:
     """Statistical splits for a player in a season.
 
@@ -195,6 +212,7 @@ def player_splits(
         output_file_path=output_file_path,
         output_write_option=output_write_option,
         json_options=json_options,
+        raw=raw,
     )
 
 
@@ -205,6 +223,7 @@ def player_on_off(
     output_file_path: str | None = None,
     output_write_option: OutputWriteOption | None = None,
     json_options: dict[str, Any] | None = None,
+    raw: bool = False,
 ) -> Any:
     """On/off court impact statistics for a player in a season.
 
@@ -217,6 +236,7 @@ def player_on_off(
         output_file_path=output_file_path,
         output_write_option=output_write_option,
         json_options=json_options,
+        raw=raw,
     )
 
 
@@ -227,6 +247,7 @@ def player_shot_charts(
     output_file_path: str | None = None,
     output_write_option: OutputWriteOption | None = None,
     json_options: dict[str, Any] | None = None,
+    raw: bool = False,
 ) -> Any:
     """Shooting distance/zone breakdown for a player in a season.
 
@@ -239,4 +260,5 @@ def player_shot_charts(
         output_file_path=output_file_path,
         output_write_option=output_write_option,
         json_options=json_options,
+        raw=raw,
     )
