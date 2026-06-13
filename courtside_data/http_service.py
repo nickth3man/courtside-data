@@ -487,6 +487,23 @@ class HTTPService:
             if found:
                 table_selector = found[0]
                 table_source = "table_id"
+        if table_selector is None and endpoint.fallback_table_ids:
+            for fallback_id in endpoint.fallback_table_ids:
+                rendered_fallback_id = fallback_id.format(**params)
+                found = selector.css(f"table#{rendered_fallback_id}")
+                if trace is not None:
+                    trace.record(
+                        "table_resolution",
+                        "fallback_table_id_lookup",
+                        selector=f"table#{rendered_fallback_id}",
+                        fallback_id=fallback_id,
+                        matched=bool(found),
+                        match_count=len(found),
+                    )
+                if found:
+                    table_selector = found[0]
+                    table_source = "fallback_table_id"
+                    break
         if table_selector is None and endpoint.commented_table_id is not None:
             table_selector = extract_commented_table(selector, endpoint.commented_table_id)
             if trace is not None:

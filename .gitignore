@@ -47,6 +47,12 @@ coverage.xml
 scripts/test_endpoints/*.json
 scripts/test_endpoints/*.log
 
+# Ignore chrome-devtools ad-hoc capture scripts and their downloaded HTML.
+# Used to grab HTML from arbitrary BR URLs (e.g. for verifying schema drift
+# against live columns). The script files in this folder are tooling, not
+# product code, and the HTML payloads are large and replaceable.
+scripts/chrome-dev-tools/
+
 dependencies/*
 
 # virtualenv's
@@ -74,3 +80,9 @@ courtside_data/output/codemap.md
 endpoint_samples.csv
 missing_datapoints.md
 .plans/
+
+# Debug trace logs (debug=True writes one JSON per call; override dir with COURTSIDE_DEBUG_LOG_DIR)
+logs/
+
+# Raw downloaded HTML corpus (regenerable via scripts/raw_download.py)
+raw/

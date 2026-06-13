@@ -1,3 +1,4 @@
+import json
 from types import SimpleNamespace
 from unittest import mock
 
@@ -51,7 +52,8 @@ def test_row_model_endpoint_raw_returns_extracted_rows_before_validation():
     assert result == raw_rows
 
 
-def test_row_model_endpoint_debug_returns_data_and_trace():
+def test_row_model_endpoint_debug_returns_data_and_trace(tmp_path, monkeypatch):
+    monkeypatch.setenv("COURTSIDE_DEBUG_LOG_DIR", str(tmp_path))
     adapter = TypeAdapter(list[ExampleRow])
     trace = DebugTrace(endpoint="example_endpoint", params={"season_end_year": 2024})
 
@@ -64,6 +66,13 @@ def test_row_model_endpoint_debug_returns_data_and_trace():
             debug=True,
             trace=trace,
         )
+
+    log_files = list(tmp_path.glob("*.json"))
+    assert len(log_files) == 1
+    assert log_files[0].name.endswith(f"_example_endpoint_{trace.trace_id.replace('-', '')[:8]}.json")
+    logged = json.loads(log_files[0].read_text(encoding="utf8"))
+    assert logged["data"] == [{"player": "Jayson Tatum", "games": 74}]
+    assert logged["debug"]["endpoint"] == "example_endpoint"
 
     assert result["data"] == [ExampleRow(player="Jayson Tatum", games=74)]
     assert result["debug"]["schema_version"] == 3

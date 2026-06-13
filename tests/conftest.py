@@ -35,6 +35,19 @@ def disable_rate_limiting_and_tls():
         yield
 
 
+@pytest.fixture(autouse=True)
+def isolate_debug_logs(tmp_path_factory):
+    """Keep debug trace logs out of the repo: redirect ./logs to a temp dir.
+
+    Any test that runs an endpoint with ``debug=True`` writes one JSON file per
+    call; without this redirect those files would land in the working-directory
+    ``logs/`` folder. Tests that assert on the log path set the env var
+    themselves, which overrides this default.
+    """
+    if not os.environ.get("COURTSIDE_DEBUG_LOG_DIR"):
+        os.environ["COURTSIDE_DEBUG_LOG_DIR"] = str(tmp_path_factory.mktemp("debug-logs"))
+
+
 def pytest_runtest_setup(item):
     """Block all network access in non-e2e tests.
 

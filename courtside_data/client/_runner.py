@@ -26,6 +26,7 @@ from pydantic import ValidationError
 
 from courtside_data.data import OutputType, OutputWriteOption
 from courtside_data.debug import DebugTrace, debug_trace_context
+from courtside_data.debug.sink import debug_log_path, prepare_log_dir
 from courtside_data.endpoints import ENDPOINTS
 from courtside_data.errors import SchemaDriftError
 from courtside_data.http_service import HTTPService
@@ -343,16 +344,32 @@ def _output_debug_result(
         output_write_option=output_write_option.name if output_write_option is not None else None,
     )
     trace.record("output", "debug_output_ready", envelope_keys=["data", "debug"])
+    log_path = debug_log_path(trace)
+    trace.record("output", "trace_log", path=str(log_path))
     envelope = {"data": data, "debug": trace.to_dict()}
+    output_service = OutputService(
+        json_writer=JSONWriter(value_formatter=BasketballReferenceJSONEncoder),
+        csv_writer=CSVWriter(value_formatter=format_value),
+    )
+
+    # Always persist the full envelope to ./logs (one JSON file per call),
+    # reusing the JSON writer so row models serialize exactly as the return value.
+    if prepare_log_dir(log_path):
+        output_service.output(
+            data=envelope,
+            options=OutputOptions.of(
+                file_options=FileOptions.of(path=str(log_path), mode=OutputWriteOption.WRITE),
+                output_type=OutputType.JSON,
+                json_options=json_options,
+                csv_options={"column_names": None},
+            ),
+        )
+
     options = OutputOptions.of(
         file_options=FileOptions.of(path=output_file_path, mode=output_write_option),
         output_type=output_type,
         json_options=json_options,
         csv_options={"column_names": None},
-    )
-    output_service = OutputService(
-        json_writer=JSONWriter(value_formatter=BasketballReferenceJSONEncoder),
-        csv_writer=CSVWriter(value_formatter=format_value),
     )
     return output_service.output(data=envelope, options=options)
 

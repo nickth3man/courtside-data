@@ -75,6 +75,11 @@ class DebugTrace:
         if self.runtime:
             self.record("debug", "runtime_context_captured", **self.runtime)
 
+    @property
+    def started_unix_ns(self) -> int:
+        """Wall-clock start time of this trace, in nanoseconds since the epoch."""
+        return self._started_unix_ns
+
     def record(
         self,
         stage: str,

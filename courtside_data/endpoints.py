@@ -103,9 +103,10 @@ class TableEndpoint:
 
     Table lookup order in ``HTTPService.fetch_table``:
     1. ``table_id`` via a CSS ``table#<id>`` query (if set),
-    2. ``commented_table_id`` via :func:`extract_commented_table` (if set),
-    3. transaction-list fallback (if ``transaction_list_fallback``),
-    4. otherwise an empty result.
+    2. ``fallback_table_ids`` via CSS ``table#<id>`` queries (if set),
+    3. ``commented_table_id`` via :func:`extract_commented_table` (if set),
+    4. transaction-list fallback (if ``transaction_list_fallback``),
+    5. otherwise an empty result.
     """
 
     path: str
@@ -113,6 +114,7 @@ class TableEndpoint:
     # the generated HTTPService delegates and client functions.
     params: tuple[str, ...] = ()
     table_id: str | None = None
+    fallback_table_ids: tuple[str, ...] = ()
     commented_table_id: str | None = None
     use_header_fallback: bool = False
     transaction_list_fallback: bool = False
@@ -152,6 +154,7 @@ def _endpoint(
     error_params: tuple[str, ...],
     error_status_codes: tuple[int, ...] = NOT_FOUND,
     table_id: str | None = None,
+    fallback_table_ids: tuple[str, ...] = (),
     commented_table_id: str | None = None,
     use_header_fallback: bool = False,
     transaction_list_fallback: bool = False,
@@ -164,6 +167,7 @@ def _endpoint(
         path=path,
         params=params,
         table_id=table_id,
+        fallback_table_ids=fallback_table_ids,
         commented_table_id=commented_table_id,
         use_header_fallback=use_header_fallback,
         transaction_list_fallback=transaction_list_fallback,
@@ -309,6 +313,7 @@ ENDPOINTS: dict[str, TableEndpoint] = {
     "season_awards": _season(
         "/awards/awards_{season_end_year}.html",
         table_id="mvp",
+        fallback_table_ids=("nba_mvp",),
         row_model=league.SeasonAwardsRow,
         csv_columns=SEASON_AWARDS_COLUMN_NAMES,
     ),
