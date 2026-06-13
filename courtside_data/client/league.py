@@ -16,6 +16,7 @@ def league_per_game_stats(
     output_write_option: OutputWriteOption | None = None,
     json_options: dict[str, Any] | None = None,
     raw: bool = False,
+    debug: bool = False,
 ) -> Any:
     """League-wide per-game player statistics for a season.
 
@@ -29,6 +30,7 @@ def league_per_game_stats(
         output_write_option=output_write_option,
         json_options=json_options,
         raw=raw,
+        debug=debug,
     )
 
 
@@ -39,6 +41,7 @@ def league_per_36_minutes(
     output_write_option: OutputWriteOption | None = None,
     json_options: dict[str, Any] | None = None,
     raw: bool = False,
+    debug: bool = False,
 ) -> Any:
     """League-wide per-36-minute player statistics for a season.
 
@@ -52,6 +55,7 @@ def league_per_36_minutes(
         output_write_option=output_write_option,
         json_options=json_options,
         raw=raw,
+        debug=debug,
     )
 
 
@@ -62,6 +66,7 @@ def league_totals(
     output_write_option: OutputWriteOption | None = None,
     json_options: dict[str, Any] | None = None,
     raw: bool = False,
+    debug: bool = False,
 ) -> Any:
     """League-wide total player statistics for a season.
 
@@ -75,6 +80,7 @@ def league_totals(
         output_write_option=output_write_option,
         json_options=json_options,
         raw=raw,
+        debug=debug,
     )
 
 
@@ -85,6 +91,7 @@ def league_per_100_possessions(
     output_write_option: OutputWriteOption | None = None,
     json_options: dict[str, Any] | None = None,
     raw: bool = False,
+    debug: bool = False,
 ) -> Any:
     """League-wide per-100-possessions player statistics for a season.
 
@@ -98,6 +105,7 @@ def league_per_100_possessions(
         output_write_option=output_write_option,
         json_options=json_options,
         raw=raw,
+        debug=debug,
     )
 
 
@@ -108,6 +116,7 @@ def league_shooting(
     output_write_option: OutputWriteOption | None = None,
     json_options: dict[str, Any] | None = None,
     raw: bool = False,
+    debug: bool = False,
 ) -> Any:
     """League-wide shooting statistics for a season.
 
@@ -121,6 +130,7 @@ def league_shooting(
         output_write_option=output_write_option,
         json_options=json_options,
         raw=raw,
+        debug=debug,
     )
 
 
@@ -131,6 +141,7 @@ def league_transactions(
     output_write_option: OutputWriteOption | None = None,
     json_options: dict[str, Any] | None = None,
     raw: bool = False,
+    debug: bool = False,
 ) -> Any:
     """League-wide transactions for a season.
 
@@ -144,6 +155,7 @@ def league_transactions(
         output_write_option=output_write_option,
         json_options=json_options,
         raw=raw,
+        debug=debug,
     )
 
 
@@ -154,6 +166,7 @@ def rookie_stats(
     output_write_option: OutputWriteOption | None = None,
     json_options: dict[str, Any] | None = None,
     raw: bool = False,
+    debug: bool = False,
 ) -> Any:
     """Rookie statistics for a season.
 
@@ -167,6 +180,7 @@ def rookie_stats(
         output_write_option=output_write_option,
         json_options=json_options,
         raw=raw,
+        debug=debug,
     )
 
 
@@ -177,6 +191,7 @@ def standings(
     output_write_option: OutputWriteOption | None = None,
     json_options: dict[str, Any] | None = None,
     raw: bool = False,
+    debug: bool = False,
 ) -> Any:
     """Eastern and Western conference standings for a season.
 
@@ -190,6 +205,7 @@ def standings(
         output_write_option=output_write_option,
         json_options=json_options,
         raw=raw,
+        debug=debug,
     )
 
 
@@ -200,6 +216,7 @@ def standings_by_date(
     output_write_option: OutputWriteOption | None = None,
     json_options: dict[str, Any] | None = None,
     raw: bool = False,
+    debug: bool = False,
 ) -> Any:
     """Day-by-day standings for both conferences for a season.
 
@@ -213,6 +230,7 @@ def standings_by_date(
         output_write_option=output_write_option,
         json_options=json_options,
         raw=raw,
+        debug=debug,
     )
 
 
@@ -223,6 +241,7 @@ def attendance(
     output_write_option: OutputWriteOption | None = None,
     json_options: dict[str, Any] | None = None,
     raw: bool = False,
+    debug: bool = False,
 ) -> Any:
     """Per-team arena attendance for a season.
 
@@ -236,4 +255,5 @@ def attendance(
         output_write_option=output_write_option,
         json_options=json_options,
         raw=raw,
+        debug=debug,
     )

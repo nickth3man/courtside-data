@@ -1,0 +1,444 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://courtside-data.local/schemas/debug-trace.schema.json",
+  "title": "courtside-data debug trace",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "trace_id",
+    "endpoint",
+    "params",
+    "duration_ms",
+    "status",
+    "spans",
+    "events",
+    "artifact_index",
+    "artifacts"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "integer",
+      "const": 3
+    },
+    "capabilities": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "trace_id": {
+      "type": "string"
+    },
+    "endpoint": {
+      "type": "string"
+    },
+    "params": {
+      "type": "object"
+    },
+    "started_unix_ns": {
+      "type": "integer"
+    },
+    "duration_ms": {
+      "type": "number"
+    },
+    "status": {
+      "type": "object",
+      "required": [
+        "code",
+        "error_type",
+        "error_message"
+      ],
+      "properties": {
+        "code": {
+          "enum": [
+            "ok",
+            "error",
+            "cancelled"
+          ]
+        },
+        "error_type": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "error_message": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "runtime": {
+      "type": "object",
+      "properties": {
+        "python_version": {
+          "type": "string"
+        },
+        "python_implementation": {
+          "type": "string"
+        },
+        "platform": {
+          "type": "string"
+        },
+        "package_version": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "service.name": {
+          "type": "string"
+        },
+        "service.version": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "telemetry.sdk.name": {
+          "type": "string"
+        },
+        "telemetry.sdk.language": {
+          "type": "string"
+        },
+        "telemetry.sdk.version": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "instrumentation_scope.name": {
+          "type": "string"
+        },
+        "instrumentation_scope.version": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "process.pid": {
+          "type": "integer"
+        },
+        "process.runtime.name": {
+          "type": "string"
+        },
+        "process.runtime.version": {
+          "type": "string"
+        },
+        "host.name": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": true
+    },
+    "limits": {
+      "type": "object",
+      "properties": {
+        "max_events": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "max_artifact_items": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "max_string_length": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "max_depth": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "include_artifacts": {
+          "type": "boolean"
+        },
+        "include_stacktraces": {
+          "type": "boolean"
+        },
+        "include_runtime": {
+          "type": "boolean"
+        },
+        "include_row_diagnostics": {
+          "type": "boolean"
+        },
+        "artifact_sample": {
+          "enum": [
+            "head",
+            "tail",
+            "head_tail"
+          ]
+        },
+        "max_column_examples": {
+          "type": "integer"
+        },
+        "redact_keys": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "safe_response_headers": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": true
+    },
+    "metrics": {
+      "type": "object",
+      "additionalProperties": {
+        "type": [
+          "number",
+          "integer",
+          "string",
+          "boolean",
+          "object",
+          "array",
+          "null"
+        ]
+      }
+    },
+    "stage_counts": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "integer"
+      }
+    },
+    "dropped_events": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "spans": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "span_id",
+          "parent_span_id",
+          "name",
+          "stage",
+          "status",
+          "start_sequence",
+          "end_sequence",
+          "start_time_unix_ns",
+          "end_time_unix_ns",
+          "start_elapsed_ms",
+          "end_elapsed_ms",
+          "duration_ms",
+          "attributes",
+          "error_type",
+          "error_message"
+        ],
+        "properties": {
+          "span_id": {
+            "type": "string"
+          },
+          "parent_span_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "stage": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "start_sequence": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "end_sequence": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "start_time_unix_ns": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "end_time_unix_ns": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "start_elapsed_ms": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "end_elapsed_ms": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "duration_ms": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "attributes": {
+            "type": "object"
+          },
+          "error_type": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "error_message": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      }
+    },
+    "events": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "sequence",
+          "time_unix_ns",
+          "elapsed_ms",
+          "stage",
+          "event",
+          "status",
+          "severity_text",
+          "severity_number",
+          "attributes"
+        ],
+        "properties": {
+          "sequence": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "time_unix_ns": {
+            "type": "integer"
+          },
+          "elapsed_ms": {
+            "type": "number"
+          },
+          "stage": {
+            "type": "string"
+          },
+          "event": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "severity_text": {
+            "type": "string"
+          },
+          "severity_number": {
+            "type": "integer"
+          },
+          "span_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "parent_span_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "attributes": {
+            "type": "object"
+          }
+        }
+      }
+    },
+    "artifact_index": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "required": [
+          "type",
+          "stored",
+          "truncated",
+          "sha256",
+          "byte_length"
+        ],
+        "properties": {
+          "type": {
+            "type": "string"
+          },
+          "stored": {
+            "type": "boolean"
+          },
+          "truncated": {
+            "type": "boolean"
+          },
+          "sha256": {
+            "type": "string"
+          },
+          "stored_count": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "original_count": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "byte_length": {
+            "type": "integer"
+          },
+          "keys": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "row_keys": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "artifacts": {
+      "type": "object"
+    }
+  }
+}

@@ -12,7 +12,7 @@ from courtside_data import client
 from courtside_data.endpoints import ENDPOINTS
 from courtside_data.schemas import ROW_ADAPTERS
 
-OUTPUT_PARAMS = ["output_type", "output_file_path", "output_write_option", "json_options", "raw"]
+OUTPUT_PARAMS = ["output_type", "output_file_path", "output_write_option", "json_options", "raw", "debug"]
 
 
 def expected_params(name):
@@ -45,9 +45,10 @@ class TestClientRegistrySync:
             params = list(sig.parameters.values())
             domain = expected_params(name)
             assert [p.name for p in params] == domain + OUTPUT_PARAMS, name
-            for p in params[len(domain) : -1]:
+            for p in params[len(domain) : -2]:
                 assert p.default is None, f"{name}.{p.name} should default to None"
-            assert params[-1].default is False, f"{name}.raw should default to False"
+            assert params[-2].default is False, f"{name}.raw should default to False"
+            assert params[-1].default is False, f"{name}.debug should default to False"
 
     def test_docstring_mentions_endpoint_path(self):
         for name, endpoint in ENDPOINTS.items():
@@ -62,4 +63,5 @@ class TestClientRegistrySync:
         sig.bind("BOS", 2024)
         sig.bind(team_abbreviation="BOS", season_end_year=2024, output_type=None)
         sig.bind(team_abbreviation="BOS", season_end_year=2024, raw=True)
+        sig.bind(team_abbreviation="BOS", season_end_year=2024, debug=True)
         sig.bind("BOS", season_end_year=2024)

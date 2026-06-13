@@ -15,6 +15,7 @@ def playoff_per_game(
     output_write_option: OutputWriteOption | None = None,
     json_options: dict[str, Any] | None = None,
     raw: bool = False,
+    debug: bool = False,
 ) -> Any:
     """Playoff per-game player statistics for a season.
 
@@ -28,6 +29,7 @@ def playoff_per_game(
         output_write_option=output_write_option,
         json_options=json_options,
         raw=raw,
+        debug=debug,
     )
 
 
@@ -38,6 +40,7 @@ def playoff_totals(
     output_write_option: OutputWriteOption | None = None,
     json_options: dict[str, Any] | None = None,
     raw: bool = False,
+    debug: bool = False,
 ) -> Any:
     """Playoff total player statistics for a season.
 
@@ -51,6 +54,7 @@ def playoff_totals(
         output_write_option=output_write_option,
         json_options=json_options,
         raw=raw,
+        debug=debug,
     )
 
 
@@ -61,6 +65,7 @@ def playoff_bracket(
     output_write_option: OutputWriteOption | None = None,
     json_options: dict[str, Any] | None = None,
     raw: bool = False,
+    debug: bool = False,
 ) -> Any:
     """Playoff bracket series results for a season.
 
@@ -74,4 +79,5 @@ def playoff_bracket(
         output_write_option=output_write_option,
         json_options=json_options,
         raw=raw,
+        debug=debug,
     )

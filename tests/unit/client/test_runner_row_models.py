@@ -4,6 +4,7 @@ from unittest import mock
 from pydantic import BaseModel, TypeAdapter
 
 from courtside_data.client import _runner
+from courtside_data.debug import DebugTrace
 from courtside_data.errors import SchemaDriftError
 
 
@@ -48,6 +49,34 @@ def test_row_model_endpoint_raw_returns_extracted_rows_before_validation():
         )
 
     assert result == raw_rows
+
+
+def test_row_model_endpoint_debug_returns_data_and_trace():
+    adapter = TypeAdapter(list[ExampleRow])
+    trace = DebugTrace(endpoint="example_endpoint", params={"season_end_year": 2024})
+
+    with mock.patch.dict(_runner.ROW_ADAPTERS, {"example_endpoint": adapter}, clear=False):
+        result = _runner._execute(
+            service_call=lambda: [{"player": "Jayson Tatum", "games": "74"}],
+            endpoint=_endpoint(),
+            endpoint_name="example_endpoint",
+            endpoint_params={"season_end_year": 2024},
+            debug=True,
+            trace=trace,
+        )
+
+    assert result["data"] == [ExampleRow(player="Jayson Tatum", games=74)]
+    assert result["debug"]["schema_version"] == 3
+    assert result["debug"]["endpoint"] == "example_endpoint"
+    assert result["debug"]["metrics"]["debug.enabled"] is True
+    assert result["debug"]["runtime"]["python_version"]
+    assert result["debug"]["artifacts"]["service_values"] == [{"player": "Jayson Tatum", "games": "74"}]
+    assert result["debug"]["artifacts"]["validated_rows"] == [{"player": "Jayson Tatum", "games": 74}]
+    assert result["debug"]["artifacts"]["validated_rows_diagnostics"]["by_column"]["games"]["type_counts"] == {"int": 1}
+    assert result["debug"]["artifact_index"]["service_values"]["stored"] is True
+    assert [span["name"] for span in result["debug"]["spans"]] == ["service_call", "pydantic_validation"]
+    assert all(span["duration_ms"] is not None for span in result["debug"]["spans"])
+    assert [event["event"] for event in result["debug"]["events"]]
 
 
 def test_row_model_validation_error_is_schema_drift_with_endpoint_context():

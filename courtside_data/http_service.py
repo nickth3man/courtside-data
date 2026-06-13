@@ -9,6 +9,7 @@ which the generated client functions call directly.
 
 from __future__ import annotations
 
+import hashlib
 import json
 import logging
 import os
@@ -36,6 +37,7 @@ from courtside_data.data import (
     Division,
     Team,
 )
+from courtside_data.debug import current_debug_trace
 from courtside_data.endpoints import ENDPOINTS, TableEndpoint
 from courtside_data.errors import InvalidDate, InvalidPlayerAndSeason, RateLimitJailed
 from courtside_data.tables import GenericTable, extract_commented_table, parse_transaction_list
@@ -300,6 +302,7 @@ class HTTPService:
 
     def _apply_rate_limiting(self) -> None:
         with self._rate_limit_lock:
+            trace = current_debug_trace()
             # A jail set by a previous process (persisted to disk) carries over
             if not self.__class__._jail_state_loaded:
                 self.__class__._jail_state_loaded = True
@@ -308,11 +311,15 @@ class HTTPService:
                     remaining = jailed_until_epoch - time.time()
                     self.__class__._jailed_until = self._time() + remaining
                     logger.warning("Loaded persisted jail state: %.0fs remaining", remaining)
+                    if trace is not None:
+                        trace.record("rate_limit", "persisted_jail_loaded", remaining_seconds=remaining)
 
             # Circuit breaker: if jailed, refuse all requests immediately
             current_time = self._time()
             if current_time < self.__class__._jailed_until:
                 remaining = self.__class__._jailed_until - current_time
+                if trace is not None:
+                    trace.record("rate_limit", "jailed_request_rejected", remaining_seconds=remaining)
                 raise RateLimitJailed(retry_after=remaining)
 
             time_since_last = current_time - self.__class__._last_request_time
@@ -320,12 +327,32 @@ class HTTPService:
                 jitter = self._random(0.0, self._rate_limit_jitter)
                 wait = (self._rate_limit_interval - time_since_last) + jitter
                 logger.debug("Rate-limit pacing: sleeping %.2fs", wait)
+                if trace is not None:
+                    trace.record(
+                        "rate_limit",
+                        "sleep",
+                        interval_seconds=self._rate_limit_interval,
+                        jitter_seconds=jitter,
+                        wait_seconds=wait,
+                        seconds_since_last_request=time_since_last,
+                    )
                 self._sleep(wait)
+            elif trace is not None:
+                trace.record(
+                    "rate_limit",
+                    "no_sleep",
+                    interval_seconds=self._rate_limit_interval,
+                    seconds_since_last_request=time_since_last,
+                )
             self.__class__._last_request_time = self._time()
 
     def _get(self, url: str, **kwargs: Any) -> httpx.Response:
+        trace = current_debug_trace()
+        if trace is not None:
+            trace.record("http", "request_prepare", url=url, kwargs=sorted(kwargs))
         self._apply_rate_limiting()
         response = None
+        attempt_count = 0
         try:
             for attempt in stamina.retry_context(
                 on=_should_retry,
@@ -335,10 +362,31 @@ class HTTPService:
                 wait_jitter=0.5,
             ):
                 with attempt:
+                    attempt_count += 1
+                    if trace is not None:
+                        trace.record("http", "attempt_start", attempt=attempt_count, url=url)
                     response = self._session.get(url=url, **kwargs)
+                    if trace is not None:
+                        trace.record(
+                            "http",
+                            "attempt_response",
+                            attempt=attempt_count,
+                            status_code=response.status_code,
+                            url=str(response.url),
+                            headers=trace.sanitize_headers(response.headers),
+                            extensions={key: repr(value) for key, value in response.extensions.items()},
+                        )
                     response.raise_for_status()
             assert response is not None  # retry_context either yields a response or raises
         except httpx.HTTPStatusError as e:
+            if trace is not None:
+                trace.record(
+                    "http",
+                    "status_error",
+                    status_code=e.response.status_code,
+                    url=str(e.response.url),
+                    attempts=attempt_count,
+                )
             if e.response.status_code == 429:
                 retry_after = e.response.headers.get("Retry-After")
                 if retry_after is not None:
@@ -349,24 +397,52 @@ class HTTPService:
                         self.__class__._jailed_until = self._time() + parsed
                         _persist_jail(time.time() + parsed)
                         logger.warning("Session jailed by Basketball-Reference for %.0fs", parsed)
+                        if trace is not None:
+                            trace.record("rate_limit", "jail_detected", retry_after_seconds=parsed)
                         raise RateLimitJailed(retry_after=parsed) from e
             raise
         else:
             # Reset pacing — retries consumed time, so measure from now
             with self._rate_limit_lock:
                 self.__class__._last_request_time = self._time()
+            if trace is not None:
+                trace.record(
+                    "http",
+                    "request_complete",
+                    status_code=response.status_code,
+                    final_url=str(response.url),
+                    attempts=attempt_count,
+                )
         return response
 
     def _get_selector(self, url: str) -> Selector:
         """Fetch a page (no redirects) and wrap the body in a parsel Selector."""
         response = self._get(url=url, follow_redirects=False)
         response.raise_for_status()
+        trace = current_debug_trace()
+        if trace is not None:
+            trace.record(
+                "http",
+                "selector_created",
+                url=str(response.url),
+                response_text_length=len(response.text),
+                response_text_sha256=hashlib.sha256(response.text.encode("utf-8", errors="replace")).hexdigest(),
+            )
         return Selector(text=response.text)
 
     def _get_html(self, url: str, **kwargs: Any) -> html.HtmlElement:
         """Fetch a page, raise on HTTP errors, and parse the body with lxml."""
         response = self._get(url=url, **kwargs)
         response.raise_for_status()
+        trace = current_debug_trace()
+        if trace is not None:
+            trace.record(
+                "http",
+                "html_created",
+                url=str(response.url),
+                response_content_length=len(response.content),
+                response_content_sha256=hashlib.sha256(response.content).hexdigest(),
+            )
         return html.fromstring(response.content)
 
     # ── Generic endpoint plumbing ───────────────────────────────────────
@@ -380,23 +456,88 @@ class HTTPService:
         """
         if endpoint.custom:
             raise ValueError("Endpoint requires its bespoke HTTPService method, not fetch_table()")
-        selector = self._get_selector(url=f"{HTTPService.BASE_URL}{endpoint.path.format(**params)}")
+        trace = current_debug_trace()
+        url = f"{HTTPService.BASE_URL}{endpoint.path.format(**params)}"
+        if trace is not None:
+            trace.record(
+                "endpoint",
+                "generic_fetch_table_start",
+                url=url,
+                path_template=endpoint.path,
+                table_id=endpoint.table_id,
+                commented_table_id=endpoint.commented_table_id,
+                transaction_list_fallback=endpoint.transaction_list_fallback,
+                use_header_fallback=endpoint.use_header_fallback,
+            )
+        selector = self._get_selector(url=url)
 
         table_selector: Selector | None = None
+        table_source: str | None = None
         if endpoint.table_id is not None:
-            found = selector.css(f"table#{endpoint.table_id.format(**params)}")
+            rendered_table_id = endpoint.table_id.format(**params)
+            found = selector.css(f"table#{rendered_table_id}")
+            if trace is not None:
+                trace.record(
+                    "table_resolution",
+                    "table_id_lookup",
+                    selector=f"table#{rendered_table_id}",
+                    matched=bool(found),
+                    match_count=len(found),
+                )
             if found:
                 table_selector = found[0]
+                table_source = "table_id"
         if table_selector is None and endpoint.commented_table_id is not None:
             table_selector = extract_commented_table(selector, endpoint.commented_table_id)
+            if trace is not None:
+                trace.record(
+                    "table_resolution",
+                    "commented_table_lookup",
+                    table_id=endpoint.commented_table_id,
+                    matched=table_selector is not None,
+                )
+            if table_selector is not None:
+                table_source = "commented_table_id"
 
         if table_selector is None:
             if endpoint.transaction_list_fallback:
-                return parse_transaction_list(selector)
+                rows = parse_transaction_list(selector)
+                if trace is not None:
+                    trace.record("table_resolution", "transaction_list_fallback", row_count=len(rows))
+                    trace.artifact("raw_rows", rows)
+                return rows
+            if trace is not None:
+                trace.record("table_resolution", "no_table_found", returned_row_count=0)
             return []
 
         table = GenericTable(table_selector, use_header_fallback=endpoint.use_header_fallback)
-        return [row.to_dict() for row in table.rows]
+        rows = [row.to_dict() for row in table.rows]
+        if trace is not None:
+            raw_table_html = table_selector.get() or ""
+            row_class_counts: dict[str, int] = {}
+            for row_selector in table_selector.css("tr"):
+                classes = row_selector.attrib.get("class", "").split()
+                if not classes:
+                    row_class_counts["<none>"] = row_class_counts.get("<none>", 0) + 1
+                for class_name in classes:
+                    row_class_counts[class_name] = row_class_counts.get(class_name, 0) + 1
+            trace.record(
+                "parse",
+                "generic_table_parsed",
+                source=table_source,
+                row_count=len(rows),
+                column_names=list(rows[0].keys()) if rows else [],
+                table_attributes=dict(table_selector.attrib),
+                table_html_length=len(raw_table_html),
+                table_html_sha256=hashlib.sha256(raw_table_html.encode("utf-8", errors="replace")).hexdigest(),
+                row_class_counts=row_class_counts,
+            )
+            trace.artifact("raw_rows", rows)
+            trace.artifact(
+                "row_metadata",
+                [{"row_index": index, "metadata": row.metadata} for index, row in enumerate(table.rows)],
+            )
+        return rows
 
     # ── Legacy endpoints (dedicated page classes and parser chains) ─────
 
@@ -414,7 +555,26 @@ class HTTPService:
         use_header_fallback: bool = False,
     ) -> list[tuple[dict[str, Any], dict[str, dict[str, str]]]]:
         table = GenericTable(table_selector, use_header_fallback=use_header_fallback)
-        return [(row.to_dict(), row.metadata) for row in table.rows]
+        rows = [(row.to_dict(), row.metadata) for row in table.rows]
+        trace = current_debug_trace()
+        if trace is not None:
+            trace.record(
+                "parse",
+                "raw_rows_from_table",
+                row_count=len(rows),
+                use_header_fallback=use_header_fallback,
+                column_names=list(rows[0][0].keys()) if rows else [],
+            )
+            trace.append_artifact(
+                "raw_table_extracts",
+                {
+                    "rows": [row for row, _ in rows],
+                    "row_metadata": [
+                        {"row_index": index, "metadata": metadata} for index, (_, metadata) in enumerate(rows)
+                    ],
+                },
+            )
+        return rows
 
     @staticmethod
     def _cell_text(selector: Any) -> str:

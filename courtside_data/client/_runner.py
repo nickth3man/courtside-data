@@ -16,6 +16,7 @@ and the parser graph are reused across calls.
 from __future__ import annotations
 
 import threading
+import warnings
 from collections.abc import Callable, Sequence
 from contextvars import ContextVar
 from typing import Any, cast
@@ -24,6 +25,7 @@ import httpx
 from pydantic import ValidationError
 
 from courtside_data.data import OutputType, OutputWriteOption
+from courtside_data.debug import DebugTrace, debug_trace_context
 from courtside_data.endpoints import ENDPOINTS
 from courtside_data.errors import SchemaDriftError
 from courtside_data.http_service import HTTPService
@@ -138,16 +140,59 @@ def _execute(
     endpoint_name: str | None = None,
     endpoint_params: dict[str, Any] | None = None,
     raw: bool = False,
+    debug: bool = False,
+    trace: DebugTrace | None = None,
 ) -> Any:
-    values = _call_with_error_mapping(service_call, error_mappings)
+    if debug and output_type in (OutputType.CSV, OutputType.DATAFRAME):
+        raise ValueError("debug=True is only supported with Python-returned data or OutputType.JSON.")
+
+    if trace is not None:
+        trace.metric("debug.enabled", True)
+        trace.record(
+            "runner",
+            "execute_start",
+            output_type=output_type.name if output_type is not None else None,
+            output_file_path=output_file_path,
+            validate_output=validate_output,
+            raw=raw,
+        )
+
+    if trace is not None:
+        with trace.span("service_call", stage="runner"):
+            values = _call_with_error_mapping(service_call, error_mappings)
+    else:
+        values = _call_with_error_mapping(service_call, error_mappings)
+    if trace is not None:
+        trace.record("runner", "service_call_complete", value_type=type(values).__name__)
+        trace.artifact("service_values", values)
+        trace.observe_rows("service_values", values, expected_columns=csv_column_names)
 
     # Row-model endpoints validate the raw Basketball-Reference rows directly.
     # That intentionally bypasses the legacy coerce_data/validate_rows path.
     row_model = getattr(endpoint, "row_model", None)
     if row_model is not None:
         raw_rows = _extract_raw_rows(values)
+        if trace is not None:
+            trace.record(
+                "runner",
+                "row_model_pipeline_start",
+                row_model=row_model.__name__,
+                raw_row_count=len(raw_rows),
+                raw_requested=raw,
+            )
+            trace.observe_rows("raw_rows", raw_rows, expected_columns=csv_column_names)
         if raw:
-            return raw_rows
+            result = raw_rows
+            if debug and trace is not None:
+                return _output_debug_result(
+                    result,
+                    trace,
+                    output_type,
+                    output_file_path,
+                    output_write_option,
+                    json_options,
+                )
+            return result
 
         adapter = ROW_ADAPTERS.get(endpoint_name)
         if adapter is None:
@@ -155,8 +200,28 @@ def _execute(
                 f"Endpoint {endpoint_name!r} declares row_model {row_model.__name__!r} but no adapter is registered."
             )
         try:
-            values = adapter.validate_python(raw_rows)
+            if trace is not None:
+                with trace.span("pydantic_validation", stage="validation", row_model=row_model.__name__):
+                    values = adapter.validate_python(raw_rows)
+            else:
+                values = adapter.validate_python(raw_rows)
+            if trace is not None:
+                trace.record(
+                    "validation",
+                    "pydantic_validation_complete",
+                    adapter_registered=True,
+                    row_model=row_model.__name__,
+                    row_count=len(values),
+                )
         except ValidationError as exc:
+            if trace is not None:
+                trace.record(
+                    "validation",
+                    "pydantic_validation_failed",
+                    row_model=row_model.__name__,
+                    errors=exc.errors(),
+                )
+                trace.record_exception(exc, stage="validation")
             raise SchemaDriftError(
                 endpoint_name=endpoint_name or "<unknown>",
                 url=_endpoint_url_context(endpoint, endpoint_params),
@@ -168,6 +233,12 @@ def _execute(
 
         if output_type in (OutputType.CSV, OutputType.DATAFRAME):
             csv_column_names = tuple(row_model.model_fields)
+        if trace is not None:
+            trace.artifact("validated_rows", values)
+            trace.observe_rows("validated_rows", values, expected_columns=tuple(row_model.model_fields))
+
+        if debug and trace is not None:
+            return _output_debug_result(values, trace, output_type, output_file_path, output_write_option, json_options)
 
         options = OutputOptions.of(
             file_options=FileOptions.of(path=output_file_path, mode=output_write_option),
@@ -183,17 +254,63 @@ def _execute(
 
     # Coerce raw string values to proper Python types (idempotent for endpoints
     # whose parser chains already produce typed values)
-    values = coerce_data(values)
+    if trace is not None:
+        trace.record("runner", "coerce_data_start")
+    if trace is not None:
+        with warnings.catch_warnings(record=True) as caught_warnings:
+            warnings.simplefilter("always")
+            with trace.span("coerce_data", stage="runner"):
+                values = coerce_data(values)
+        trace.metric("warnings.coerce_data.count", len(caught_warnings))
+        if caught_warnings:
+            trace.artifact(
+                "coerce_data_warnings",
+                [
+                    {
+                        "category": warning.category.__name__,
+                        "message": str(warning.message),
+                        "filename": warning.filename,
+                        "lineno": warning.lineno,
+                    }
+                    for warning in caught_warnings
+                ],
+            )
+    else:
+        values = coerce_data(values)
+    if trace is not None:
+        trace.record("runner", "coerce_data_complete", value_type=type(values).__name__)
+        trace.artifact("coerced_values", values)
+        trace.observe_rows("coerced_values", values, expected_columns=csv_column_names)
 
     if output_type in (OutputType.CSV, OutputType.DATAFRAME) and csv_column_names is None:
         rows = _extract_rows(values)
         if rows is not None:
             csv_column_names = _detect_csv_columns(rows)
+            if trace is not None:
+                trace.record("output", "csv_columns_detected", column_names=list(csv_column_names))
 
     if validate_output and isinstance(values, list) and values and isinstance(values[0], dict):
-        report = validate_rows(values, expected_columns=csv_column_names)
+        if trace is not None:
+            with trace.span("legacy_validate_rows", stage="validation"):
+                report = validate_rows(values, expected_columns=csv_column_names)
+        else:
+            report = validate_rows(values, expected_columns=csv_column_names)
+        if trace is not None:
+            trace.record(
+                "validation",
+                "legacy_validation_complete",
+                ok=report.ok,
+                error_count=report.error_count,
+                errors=[str(error) for error in report.errors],
+            )
         if not report.ok:
-            raise ValueError(str(report))
+            error = ValueError(str(report))
+            if trace is not None:
+                trace.record_exception(error, stage="validation")
+            raise error
+
+    if debug and trace is not None:
+        return _output_debug_result(values, trace, output_type, output_file_path, output_write_option, json_options)
 
     options = OutputOptions.of(
         file_options=FileOptions.of(path=output_file_path, mode=output_write_option),
@@ -208,6 +325,38 @@ def _execute(
     return output_service.output(data=values, options=options)
 
 
+def _output_debug_result(
+    data: Any,
+    trace: DebugTrace,
+    output_type: OutputType | None,
+    output_file_path: str | None,
+    output_write_option: OutputWriteOption | None,
+    json_options: dict[str, Any] | None,
+) -> Any:
+    trace.record("debug", "envelope_created", data_type=type(data).__name__)
+    trace.observe_rows("result_data", data)
+    trace.record(
+        "output",
+        "debug_output_start",
+        output_type=output_type.name if output_type is not None else None,
+        output_file_path=output_file_path,
+        output_write_option=output_write_option.name if output_write_option is not None else None,
+    )
+    trace.record("output", "debug_output_ready", envelope_keys=["data", "debug"])
+    envelope = {"data": data, "debug": trace.to_dict()}
+    options = OutputOptions.of(
+        file_options=FileOptions.of(path=output_file_path, mode=output_write_option),
+        output_type=output_type,
+        json_options=json_options,
+        csv_options={"column_names": None},
+    )
+    output_service = OutputService(
+        json_writer=JSONWriter(value_formatter=BasketballReferenceJSONEncoder),
+        csv_writer=CSVWriter(value_formatter=format_value),
+    )
+    return output_service.output(data=envelope, options=options)
+
+
 def _run_endpoint(
     name: str,
     params: dict[str, Any],
@@ -217,6 +366,7 @@ def _run_endpoint(
     output_write_option: OutputWriteOption | None = None,
     json_options: dict[str, Any] | None = None,
     raw: bool = False,
+    debug: bool = False,
 ) -> Any:
     """Execute the registry-described endpoint ``name`` with bound call params.
 
@@ -224,23 +374,44 @@ def _run_endpoint(
     columns, error mapping); the caller supplies an explicit, typed signature.
     """
     endpoint = ENDPOINTS[name]
+    trace = DebugTrace(endpoint=name, params=params) if debug else None
+    if trace is not None:
+        trace.record(
+            "endpoint",
+            "run_endpoint_start",
+            endpoint=name,
+            params=params,
+            custom=endpoint.custom,
+            path_template=endpoint.path,
+            table_id=endpoint.table_id,
+            commented_table_id=endpoint.commented_table_id,
+            row_model=getattr(endpoint.row_model, "__name__", None),
+            csv_columns=list(endpoint.csv_columns) if endpoint.csv_columns is not None else None,
+        )
 
     def service_call() -> Any:
         service = _resolve_service()
         if endpoint.custom:
+            if trace is not None:
+                trace.record("endpoint", "custom_service_dispatch", method=name)
             return getattr(service, name)(**params)
+        if trace is not None:
+            trace.record("endpoint", "generic_service_dispatch", method="fetch_table")
         return service.fetch_table(endpoint, **params)
 
-    return _execute(
-        service_call=service_call,
-        csv_column_names=endpoint.csv_columns,
-        error_mappings=endpoint.error_mappings(params),
-        output_type=output_type,
-        output_file_path=output_file_path,
-        output_write_option=output_write_option,
-        json_options=json_options,
-        endpoint=endpoint,
-        endpoint_name=name,
-        endpoint_params=params,
-        raw=raw,
-    )
+    with debug_trace_context(trace):
+        return _execute(
+            service_call=service_call,
+            csv_column_names=endpoint.csv_columns,
+            error_mappings=endpoint.error_mappings(params),
+            output_type=output_type,
+            output_file_path=output_file_path,
+            output_write_option=output_write_option,
+            json_options=json_options,
+            endpoint=endpoint,
+            endpoint_name=name,
+            endpoint_params=params,
+            raw=raw,
+            debug=debug,
+            trace=trace,
+        )

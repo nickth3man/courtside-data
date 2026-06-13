@@ -53,6 +53,29 @@ class TestMain:
         with pytest.raises(SystemExit):
             cli.main(["league_per_game_stats", "--season-end-year", "2024", "--output-type", "csv"])
 
+    def test_debug_flag_is_forwarded(self, capsys):
+        with mock.patch.object(cli.client, "team_roster") as func:
+            func.return_value = '{"data": [], "debug": {"events": []}}'
+            assert cli.main(["team_roster", "--team-abbreviation", "BOS", "--season-end-year", "2024", "--debug"]) == 0
+        assert func.call_args.kwargs["debug"] is True
+
+    def test_debug_rejects_csv(self):
+        with pytest.raises(SystemExit):
+            cli.main(
+                [
+                    "team_roster",
+                    "--team-abbreviation",
+                    "BOS",
+                    "--season-end-year",
+                    "2024",
+                    "--output-type",
+                    "csv",
+                    "--output-file",
+                    "out.csv",
+                    "--debug",
+                ]
+            )
+
 
 def _required_args(name):
     endpoint = ENDPOINTS[name]

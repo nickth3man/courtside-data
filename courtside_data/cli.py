@@ -50,6 +50,7 @@ def _add_endpoint_parser(subparsers: argparse._SubParsersAction, name: str, endp
     parser.add_argument("--output-type", choices=["json", "csv"], default="json")
     parser.add_argument("--output-file", default=None, help="write to this file instead of stdout")
     parser.add_argument("--append", action="store_true", help="append to the output file instead of overwriting")
+    parser.add_argument("--debug", action="store_true", help="return a structured debug trace with the result")
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -81,12 +82,20 @@ def main(argv: list[str] | None = None) -> int:
     output_type = OutputType.CSV if args.output_type == "csv" else OutputType.JSON
     if output_type == OutputType.CSV and not args.output_file:
         parser.error("--output-type csv requires --output-file")
+    if args.debug and output_type == OutputType.CSV:
+        parser.error("--debug requires JSON output")
+
+    endpoint_options = {
+        "output_type": output_type,
+        "output_file_path": args.output_file,
+        "output_write_option": OutputWriteOption.APPEND if args.append else None,
+    }
+    if args.debug:
+        endpoint_options["debug"] = True
 
     result = func(
         **call_params,
-        output_type=output_type,
-        output_file_path=args.output_file,
-        output_write_option=OutputWriteOption.APPEND if args.append else None,
+        **endpoint_options,
     )
     if args.output_file:
         print(f"Wrote {args.output_file}")
