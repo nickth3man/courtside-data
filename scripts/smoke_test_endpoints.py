@@ -12,19 +12,21 @@ import re
 import sys
 import time
 import traceback
-from datetime import datetime, timezone
+from datetime import UTC, datetime
+from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO_ROOT))
 
-import courtside_data  # noqa: F401  — endpoint functions (importable)
-import httpx
-from courtside_data import client
-from courtside_data import errors as cderrors
-from courtside_data.data import TEAM_ABBREVIATIONS_TO_TEAM, Team
-from courtside_data.endpoints import ENDPOINTS
+import httpx  # noqa: E402  — sys.path must be bootstrapped first
+
+import courtside_data  # noqa: E402,F401  — endpoint functions (importable)
+from courtside_data import client  # noqa: E402
+from courtside_data import errors as cderrors  # noqa: E402
+from courtside_data.data import TEAM_ABBREVIATIONS_TO_TEAM, Team  # noqa: E402
+from courtside_data.endpoints import ENDPOINTS  # noqa: E402
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # Verified query pools — DO NOT CHANGE
@@ -125,14 +127,16 @@ def _clean_path_template(path: str) -> str:
 
 def _field_regex(param_name: str) -> str:
     if param_name == "game_date":
-        return r"\d{9}"
+        return r"\d{8,9}"
+    if param_name in {"day", "month"}:
+        return r"\d{1,2}"
+    if param_name in {"year", "season_end_year"}:
+        return r"\d{4}"
     if param_name in {"game_code", "away", "team_abbreviation", "team_a", "team_b"}:
         return r"[A-Za-z0-9]+"
-    if param_name == "season_end_year":
-        return r"\d{4}"
     if param_name in {"player_identifier", "slug", "round", "stat", "view"}:
         return r"[A-Za-z0-9_-]+"
-    return r"[^/]+"
+    return r"[^/&]+"
 
 
 def _path_template_regex(path_template: str) -> tuple[re.Pattern[str], dict[str, str]]:
@@ -155,15 +159,20 @@ def _path_template_regex(path_template: str) -> tuple[re.Pattern[str], dict[str,
     return re.compile("^" + "".join(parts) + "$"), group_params
 
 
+_FAMILIES_CACHE: list[str] | None = None
+
+
 def _endpoint_family(name: str) -> str | None:
+    global _FAMILIES_CACHE
     if not RAW_ROOT.is_dir():
         return None
-    families = sorted(
-        (path.name for path in RAW_ROOT.iterdir() if path.is_dir()),
-        key=len,
-        reverse=True,
-    )
-    for family in families:
+    if _FAMILIES_CACHE is None:
+        _FAMILIES_CACHE = sorted(
+            (path.name for path in RAW_ROOT.iterdir() if path.is_dir()),
+            key=len,
+            reverse=True,
+        )
+    for family in _FAMILIES_CACHE:
         if name == family or name.startswith(f"{family}_"):
             return family
     return None
@@ -188,7 +197,8 @@ def _corpus_param_sets(name: str, endpoint: Any) -> list[dict[str, Any]]:
         if meta.get("status_code", 200) != 200:
             continue
         parsed = urlparse(str(meta.get("final_url") or meta.get("url") or ""))
-        match = path_re.fullmatch(parsed.path)
+        url_to_match = parsed.path + (f"?{parsed.query}" if parsed.query else "")
+        match = path_re.fullmatch(url_to_match)
         if not match:
             continue
         groups = match.groupdict()
@@ -478,7 +488,7 @@ def main() -> int:
     seed: int = args.seed
     random.seed(seed)
 
-    started_at = datetime.now(timezone.utc)
+    started_at = datetime.now(UTC)
     endpoint_items = list(ENDPOINTS.items())  # insertion-order snapshot
     if args.param:
         selected_params = set(args.param)

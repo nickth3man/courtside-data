@@ -16,7 +16,6 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
 
-
 _REPO_ROOT = Path(__file__).resolve().parent.parent
 _RAW_ROOT = _REPO_ROOT / "raw"
 _BACKLOG_PATH = _REPO_ROOT / "docs" / "raw_coverage_backlog.json"
@@ -149,7 +148,7 @@ def _clean_path_template(pattern: str) -> str:
     usable Basketball-Reference paths.
     """
 
-    return pattern.strip().split(",", 1)[0].split(None, 1)[0]
+    return pattern.strip().split(",", 1)[0].split(None, 1)[0].split("#", 1)[0]
 
 
 def _convert_placeholders(pattern: str) -> str:
