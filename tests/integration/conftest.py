@@ -25,3 +25,21 @@ def _patch_rate_limiter():
     """
     with patch("time.sleep"):
         yield
+
+
+@pytest.fixture(autouse=True)
+def _clear_http_service_selector_cache():
+    """Clear the shared HTTPService selector cache between tests.
+
+    The shared service is a process-level singleton, and its selector cache
+    is meant to avoid re-fetching the same static page within a single
+    session. In tests, mocks may return different bodies for the same URL,
+    so we reset the cache before every integration test to keep tests
+    independent.
+    """
+    from courtside_data.client import _runner
+
+    service = _runner._shared_service
+    if service is not None:
+        service._selector_cache.clear()
+    yield

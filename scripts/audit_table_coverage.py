@@ -88,6 +88,15 @@ KNOWN_MISSING_ACCEPTED: dict[str, set[str]] = {}
 # wider page table (so "missing" columns are by design, not drift).
 INTENTIONAL_SUBSET: frozenset[str] = frozenset({"attendance"})
 
+# Some endpoints scrape different tables from the *same* Basketball-Reference
+# page (e.g. the three 7-game playoff series outcome matrices). The corpus
+# stores one fixture under a primary endpoint directory; map the sibling
+# endpoints to that directory so the audit still validates their table ids.
+SHARED_FIXTURE_ENDPOINTS: dict[str, str] = {
+    "friv_7_game_playoff_series_outcomes_team_is_tied": "friv_7_game_playoff_series_outcomes_team_is_down",
+    "friv_7_game_playoff_series_outcomes_team_is_up": "friv_7_game_playoff_series_outcomes_team_is_down",
+}
+
 
 @dataclass
 class EndpointAudit:
@@ -344,7 +353,7 @@ def ordered_real_keys(name: str, endpoint: TableEndpoint, corpus_root: Path) -> 
 
 
 def discover_fixtures(corpus_root: Path, endpoint_name: str) -> list[Path]:
-    endpoint_dir = corpus_root / endpoint_name
+    endpoint_dir = corpus_root / SHARED_FIXTURE_ENDPOINTS.get(endpoint_name, endpoint_name)
     if not endpoint_dir.is_dir():
         return []
     return sorted(p for p in endpoint_dir.rglob("*.html") if p.is_file())

@@ -7,7 +7,7 @@
 | Metric | Value |
 |---|---|
 | served endpoints | 344 |
-| corpus dirs | 149 |
+| corpus dirs | 147 |
 | unserved families | 0 |
 | unserved families trivial | 0 |
 | unserved families bespoke | 0 |

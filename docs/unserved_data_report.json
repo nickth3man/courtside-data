@@ -514,7 +514,7 @@
   },
   "orphan_tables": [],
   "summary": {
-    "corpus_dirs": 149,
+    "corpus_dirs": 147,
     "disallowed_or_off_domain_families": 18,
     "endpoints_with_dropped_columns": 11,
     "endpoints_with_dropped_columns_actionable": 0,

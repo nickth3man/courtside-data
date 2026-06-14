@@ -304,7 +304,7 @@ ENDPOINTS: dict[str, TableEndpoint] = {
         row_model=playoffs.PlayoffBracketRow,
         csv_columns=PLAYOFF_BRACKET_COLUMN_NAMES,
     ),
-    "friv_7_game_playoff_series_outcomes": TableEndpoint(
+    "friv_7_game_playoff_series_outcomes_team_is_down": TableEndpoint(
         path="/friv/7-game-playoff-series-outcomes-22111.html",
         table_id="team-is-down",
         row_model=playoffs.SevenGamePlayoffSeriesOutcomesRow,

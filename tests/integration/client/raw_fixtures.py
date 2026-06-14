@@ -152,3 +152,23 @@ def search_term(term: str) -> str:
 def search_ja_page(page: int) -> str:
     """One page of the paginated ``ja`` search (raw: ``search/ja_page_<n>.html``)."""
     return read(f"search/ja_page_{page}.html")
+
+
+def seven_game_playoff_series_outcomes_page() -> str:
+    """The 7-game playoff series outcomes page.
+
+    The three endpoint variants (team-is-down, team-is-tied, team-is-up) all
+    live on the same Basketball-Reference page, so the corpus stores a single
+    fixture under the ``team_is_down`` family and resolves the other two to it.
+    """
+    for endpoint_dir in (
+        "friv_7_game_playoff_series_outcomes_team_is_down",
+        "friv_7_game_playoff_series_outcomes",
+    ):
+        path = RAW_ROOT / endpoint_dir / "7-game-playoff-series-outcomes-22111.html"
+        if path.is_file():
+            return path.read_text(encoding="utf8")
+    pytest.skip(
+        "raw corpus missing 7-game-playoff-series-outcomes page; "
+        "run scripts.raw_download to add it"
+    )

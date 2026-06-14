@@ -202,6 +202,6 @@ class SevenGamePlayoffSeriesOutcomesRow(BRRow):
     wl: str = Field(validation_alias="wl")
 
 
-register("friv_7_game_playoff_series_outcomes", SevenGamePlayoffSeriesOutcomesRow)
+register("friv_7_game_playoff_series_outcomes_team_is_down", SevenGamePlayoffSeriesOutcomesRow)
 register("friv_7_game_playoff_series_outcomes_team_is_tied", SevenGamePlayoffSeriesOutcomesRow)
 register("friv_7_game_playoff_series_outcomes_team_is_up", SevenGamePlayoffSeriesOutcomesRow)
