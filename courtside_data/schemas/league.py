@@ -365,6 +365,43 @@ class LeagueShootingRow(BRRow):
 register("league_shooting", LeagueShootingRow)
 
 
+class LeaguePlayByPlayRow(BRRow):
+    """Row from a league play-by-play stats table.
+
+    This is the league-wide version of the player-page ``pbp_stats`` table:
+    it contains derived play-by-play rates and counts, not the chronological
+    game play log served by the ``play_by_play`` endpoint.
+    """
+
+    name_display: str = Field(validation_alias="name_display")
+    age: BRIntOrNone = Field(default=None, validation_alias="age")
+    team_name_abbr: TeamOrAggregateFieldOrNone = Field(default=None, validation_alias="team_name_abbr")
+    pos: PositionsField = Field(default_factory=list, validation_alias="pos")
+    games: BRIntOrNone = Field(default=None, validation_alias="games")
+    games_started: BRIntOrNone = Field(default=None, validation_alias="games_started")
+    mp: BRIntOrNone = Field(default=None, validation_alias="mp")
+    pct_1: BRPercentage = Field(default=None, validation_alias="pct_1")
+    pct_2: BRPercentage = Field(default=None, validation_alias="pct_2")
+    pct_3: BRPercentage = Field(default=None, validation_alias="pct_3")
+    pct_4: BRPercentage = Field(default=None, validation_alias="pct_4")
+    pct_5: BRPercentage = Field(default=None, validation_alias="pct_5")
+    plus_minus_on: BRFloatOrNone = Field(default=None, validation_alias="plus_minus_on")
+    plus_minus_net: BRFloatOrNone = Field(default=None, validation_alias="plus_minus_net")
+    tov_bad_pass: BRIntOrNone = Field(default=None, validation_alias="tov_bad_pass")
+    tov_lost_ball: BRIntOrNone = Field(default=None, validation_alias="tov_lost_ball")
+    fouls_shooting: BRIntOrNone = Field(default=None, validation_alias="fouls_shooting")
+    fouls_offensive: BRIntOrNone = Field(default=None, validation_alias="fouls_offensive")
+    drawn_shooting: BRIntOrNone = Field(default=None, validation_alias="drawn_shooting")
+    drawn_offensive: BRIntOrNone = Field(default=None, validation_alias="drawn_offensive")
+    astd_pts: BRIntOrNone = Field(default=None, validation_alias="astd_pts")
+    and1s: BRIntOrNone = Field(default=None, validation_alias="and1s")
+    own_shots_blk: BRIntOrNone = Field(default=None, validation_alias="own_shots_blk")
+    awards: StrOrNone = Field(default=None, validation_alias="awards")
+
+
+register("league_play_by_play", LeaguePlayByPlayRow)
+
+
 # ---------------------------------------------------------------------------
 # Transactions / attendance
 # ---------------------------------------------------------------------------

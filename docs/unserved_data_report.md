@@ -14,8 +14,8 @@
 | endpoints with dropped columns | 11 |
 | endpoints with dropped columns actionable | 0 |
 | total dropped columns | 259 |
-| page groups with orphan tables | 0 |
-| total orphan tables | 0 |
+| page groups with orphan tables | 1 |
+| total orphan tables | 1 |
 | disallowed or off domain families | 18 |
 
 ## §A — Unserved page families (downloaded, no endpoint)
@@ -44,7 +44,13 @@
 
 ## §C — Orphan tables on already-downloaded pages
 
-0 `<table id>`s appear on pages we already download for a served endpoint but are declared by **no** endpoint (0 page templates affected). Grouped by page. **Caveat:** an orphan may still be reachable through a bespoke `custom=True` parser that does not declare its table id — verify before treating it as a hard gap.
+1 `<table id>`s appear on pages we already download for a served endpoint but are declared by **no** endpoint (1 page templates affected). Grouped by page. **Caveat:** an orphan may still be reachable through a bespoke `custom=True` parser that does not declare its table id — verify before treating it as a hard gap.
+
+### `/leagues/NBA_{season_end_year}_play-by-play.html`
+
+- Served via: `league_play_by_play`
+- Claimed tables: `pbp_stats`
+- **Orphan tables (1):** `pbp_stats_post`
 
 ## §D — Disallowed / off-domain families (no fixtures)
 

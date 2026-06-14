@@ -69,6 +69,7 @@ courtside-data team_roster --team-abbreviation BOS --season-end-year 2024 \
 |             | `league_per_100_possessions`     | Per-100-possessions stats                |
 |             | `league_totals`                  | Season totals for all players            |
 |             | `league_shooting`                | Shooting by distance                     |
+|             | `league_play_by_play`            | Play-by-play derived stats               |
 |             | `rookie_stats`                   | Rookie season statistics                 |
 |             | `standings_by_date`              | Standings on a specific date             |
 |             | `attendance`                     | Team attendance figures                  |

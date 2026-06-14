@@ -40,6 +40,7 @@ from courtside_data.output.columns import (
     LEAGUE_PER_36_COLUMN_NAMES,
     LEAGUE_PER_100_POSSESSIONS_COLUMN_NAMES,
     LEAGUE_PER_GAME_COLUMN_NAMES,
+    LEAGUE_PLAY_BY_PLAY_COLUMN_NAMES,
     LEAGUE_SHOOTING_COLUMN_NAMES,
     LEAGUE_TOTALS_COLUMN_NAMES,
     LEAGUE_TRANSACTIONS_COLUMN_NAMES,
@@ -247,6 +248,12 @@ ENDPOINTS: dict[str, TableEndpoint] = {
         table_id="shooting",
         row_model=league.LeagueShootingRow,
         csv_columns=LEAGUE_SHOOTING_COLUMN_NAMES,
+    ),
+    "league_play_by_play": _season(
+        "/leagues/NBA_{season_end_year}_play-by-play.html",
+        table_id="pbp_stats",
+        row_model=league.LeaguePlayByPlayRow,
+        csv_columns=LEAGUE_PLAY_BY_PLAY_COLUMN_NAMES,
     ),
     "league_transactions": _season(
         "/leagues/NBA_{season_end_year}_transactions.html",

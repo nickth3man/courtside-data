@@ -134,6 +134,31 @@ def league_shooting(
     )
 
 
+def league_play_by_play(
+    season_end_year: int,
+    output_type: OutputType | None = None,
+    output_file_path: str | None = None,
+    output_write_option: OutputWriteOption | None = None,
+    json_options: dict[str, Any] | None = None,
+    raw: bool = False,
+    debug: bool = False,
+) -> Any:
+    """League-wide play-by-play derived player statistics for a season.
+
+    URL: /leagues/NBA_{season_end_year}_play-by-play.html
+    """
+    return _run_endpoint(
+        "league_play_by_play",
+        {"season_end_year": season_end_year},
+        output_type=output_type,
+        output_file_path=output_file_path,
+        output_write_option=output_write_option,
+        json_options=json_options,
+        raw=raw,
+        debug=debug,
+    )
+
+
 def league_transactions(
     season_end_year: int,
     output_type: OutputType | None = None,
