@@ -11,7 +11,7 @@ from __future__ import annotations
 
 from typing import Annotated
 
-from pydantic import BeforeValidator, Field
+from pydantic import AliasChoices, BeforeValidator, Field
 
 from courtside_data.data import Team
 from courtside_data.schemas import register
@@ -156,13 +156,44 @@ class LeagueTotalsRow(BRRow, LeagueTotalStats):
 register("league_totals", LeagueTotalsRow)
 
 
-class RookieStatsRow(BRRow, LeaguePerGameStats):
+class RookieStatsRow(BRRow):
     """Row from a league rookies table (``/leagues/NBA_{year}_rookies.html``).
 
-    The rookies table is structurally identical to the per-game table, so we
-    reuse the :data:`PerGameStats` mixin and apply the same ``team``
-    override.
+    The rookies table uses a mix of totals and per-game columns, plus rookie-
+    specific fields like debut date and years of experience.
     """
+
+    name_display: str = Field(validation_alias=AliasChoices("player", "name_display"))
+    debut: StrOrNone = Field(default=None, validation_alias="debut")
+    age: BRIntOrNone = Field(default=None, validation_alias="age")
+    years: BRIntOrNone = Field(default=None, validation_alias="years")
+    team: TeamOrAggregateFieldOrNone = Field(default=None, validation_alias="team_name_abbr")
+    positions: PositionsField = Field(default_factory=list, validation_alias="pos")
+    games_played: BRIntOrNone = Field(default=None, validation_alias="g")
+    minutes_played: BRIntOrNone = Field(default=None, validation_alias="mp")
+    made_field_goals: BRIntOrNone = Field(default=None, validation_alias="fg")
+    attempted_field_goals: BRIntOrNone = Field(default=None, validation_alias="fga")
+    made_three_point_field_goals: BRIntOrNone = Field(default=None, validation_alias="fg3")
+    attempted_three_point_field_goals: BRIntOrNone = Field(default=None, validation_alias="fg3a")
+    made_free_throws: BRIntOrNone = Field(default=None, validation_alias="ft")
+    attempted_free_throws: BRIntOrNone = Field(default=None, validation_alias="fta")
+    offensive_rebounds: BRIntOrNone = Field(default=None, validation_alias="orb")
+    total_rebounds: BRIntOrNone = Field(default=None, validation_alias="trb")
+    assists: BRIntOrNone = Field(default=None, validation_alias="ast")
+    steals: BRIntOrNone = Field(default=None, validation_alias="stl")
+    blocks: BRIntOrNone = Field(default=None, validation_alias="blk")
+    turnovers: BRIntOrNone = Field(default=None, validation_alias="tov")
+    personal_fouls: BRIntOrNone = Field(default=None, validation_alias="pf")
+    points: BRIntOrNone = Field(default=None, validation_alias="pts")
+    field_goal_percentage: BRPercentage = Field(default=None, validation_alias="fg_pct")
+    three_point_field_goal_percentage: BRPercentage = Field(default=None, validation_alias="fg3_pct")
+    free_throw_percentage: BRPercentage = Field(default=None, validation_alias="ft_pct")
+    minutes_played_per_game: BRFloatOrNone = Field(default=None, validation_alias="mp_per_g")
+    points_per_game: BRFloatOrNone = Field(default=None, validation_alias="pts_per_g")
+    total_rebounds_per_game: BRFloatOrNone = Field(default=None, validation_alias="trb_per_g")
+    assists_per_game: BRFloatOrNone = Field(default=None, validation_alias="ast_per_g")
+    steals_per_game: BRFloatOrNone = Field(default=None, validation_alias="stl_per_g")
+    blocks_per_game: BRFloatOrNone = Field(default=None, validation_alias="blk_per_g")
 
 
 register("rookie_stats", RookieStatsRow)
@@ -388,14 +419,30 @@ register("attendance", AttendanceRow)
 class SeasonAwardsRow(BRRow):
     """Row from a season awards table (``/awards/awards_{year}.html``).
 
-    The MVP table exposes at minimum the award name and the player who
-    won (or is being voted on). Both fields are required — a row without
-    a player is meaningless, and the award name disambiguates the row
-    when several awards share a page.
+    The MVP table exposes voting results: rank, player, age, team, vote
+    shares, per-game stats, and advanced metrics.
     """
 
-    award: str = Field(validation_alias="award")
+    rank: BRIntOrNone = Field(default=None, validation_alias="rank")
     player: str = Field(validation_alias="player")
+    age: BRIntOrNone = Field(default=None, validation_alias="age")
+    team_id: StrOrNone = Field(default=None, validation_alias="team_id")
+    votes_first: BRIntOrNone = Field(default=None, validation_alias="votes_first")
+    points_won: BRIntOrNone = Field(default=None, validation_alias="points_won")
+    points_max: BRIntOrNone = Field(default=None, validation_alias="points_max")
+    award_share: BRFloatOrNone = Field(default=None, validation_alias="award_share")
+    g: BRIntOrNone = Field(default=None, validation_alias="g")
+    mp_per_g: BRFloatOrNone = Field(default=None, validation_alias="mp_per_g")
+    pts_per_g: BRFloatOrNone = Field(default=None, validation_alias="pts_per_g")
+    trb_per_g: BRFloatOrNone = Field(default=None, validation_alias="trb_per_g")
+    ast_per_g: BRFloatOrNone = Field(default=None, validation_alias="ast_per_g")
+    stl_per_g: BRFloatOrNone = Field(default=None, validation_alias="stl_per_g")
+    blk_per_g: BRFloatOrNone = Field(default=None, validation_alias="blk_per_g")
+    fg_pct: BRPercentage = Field(default=None, validation_alias="fg_pct")
+    fg3_pct: BRPercentage = Field(default=None, validation_alias="fg3_pct")
+    ft_pct: BRPercentage = Field(default=None, validation_alias="ft_pct")
+    ws: BRFloatOrNone = Field(default=None, validation_alias="ws")
+    ws_per_48: BRFloatOrNone = Field(default=None, validation_alias="ws_per_48")
 
 
 register("season_awards", SeasonAwardsRow)

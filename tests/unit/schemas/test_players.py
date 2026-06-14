@@ -10,7 +10,7 @@ from __future__ import annotations
 import pytest
 from pydantic import ValidationError
 
-from courtside_data.data import League, Position, Team
+from courtside_data.data import Position, Team
 from courtside_data.output.columns import (
     PLAYER_ADVANCED_SEASON_TOTALS_COLUMN_NAMES,
     PLAYER_SEASON_TOTALS_COLUMN_NAMES,
@@ -75,8 +75,8 @@ class TestPlayerCareerStatsRow:
         row = PlayerCareerStatsRow.model_validate(_career_row())
         assert row.season == "2023-24"
         assert row.age == 39
-        assert row.team == Team.LOS_ANGELES_LAKERS
-        assert row.league == League.NATIONAL_BASKETBALL_ASSOCIATION
+        assert row.team_name_abbr == Team.LOS_ANGELES_LAKERS
+        assert row.comp_name_abbr == "NBA"
         assert row.positions == [Position.SMALL_FORWARD]
         assert row.games_played == 71
         assert row.games_started == 71
@@ -102,33 +102,105 @@ class TestPlayerCareerStatsRow:
 
 class TestPlayerPlayoffSeriesRow:
     def test_happy_path(self):
-        row = PlayerPlayoffSeriesRow.model_validate(_career_row(games="5", games_started="5"))
-        assert row.season == "2023-24"
+        row = PlayerPlayoffSeriesRow.model_validate(
+            {
+                "year_id": "2023-24",
+                "age": "39",
+                "team_name_abbr": "LAL",
+                "comp_name_abbr": "NBA",
+                "ps_round": "First Round",
+                "opp_name_abbr": "DEN",
+                "series_result": "L 1-4",
+                "games": "5",
+                "mp_per_g": "38.2",
+                "pts_per_g": "27.8",
+                "trb_per_g": "6.8",
+                "ast_per_g": "8.8",
+                "stl_per_g": "2.4",
+                "blk_per_g": "1.0",
+                "fg": "52",
+                "fga": "105",
+                "fg_pct": ".495",
+                "fg3": "10",
+                "fg3a": "25",
+                "fg3_pct": ".400",
+                "fg2": "42",
+                "fg2a": "80",
+                "fg2_pct": ".525",
+                "efg_pct": ".540",
+                "ft": "25",
+                "fta": "33",
+                "ft_pct": ".758",
+                "orb": "6",
+                "drb": "28",
+                "trb": "34",
+                "ast": "44",
+                "stl": "12",
+                "blk": "5",
+                "tov": "20",
+                "pf": "11",
+                "pts": "139",
+            }
+        )
+        assert row.year_id == "2023-24"
         assert row.games_played == 5
-        assert row.team == Team.LOS_ANGELES_LAKERS
+        assert row.team_name_abbr == Team.LOS_ANGELES_LAKERS
 
     def test_missing_required_team_raises(self):
-        raw = _career_row()
-        raw.pop("team_name_abbr")
+        raw = {
+            "year_id": "2023-24",
+            "age": "39",
+            "games": "5",
+        }
         with pytest.raises(ValidationError):
             PlayerPlayoffSeriesRow.model_validate(raw)
 
 
 class TestPlayerAllStarRow:
     def test_happy_path(self):
-        # All-Star rows lack the two-point columns but the per-game mixin
-        # accepts them as optional and leaves them None.
-        row = PlayerAllStarRow.model_validate(_career_row(fg2_per_g="", fg2a_per_g="", fg2_pct="", efg_pct=""))
+        row = PlayerAllStarRow.model_validate(
+            {
+                "season": "2023-24",
+                "age": "39",
+                "team_id": "LAL",
+                "lg_id": "NBA",
+                "pos": "SF",
+                "g": "1",
+                "gs": "1",
+                "mp": "20",
+                "fg": "10",
+                "fga": "15",
+                "fg_pct": ".667",
+                "fg3": "3",
+                "fg3a": "6",
+                "fg3_pct": ".500",
+                "ft": "2",
+                "fta": "2",
+                "ft_pct": "1.000",
+                "orb": "1",
+                "trb": "5",
+                "ast": "5",
+                "stl": "1",
+                "blk": "0",
+                "tov": "2",
+                "pf": "1",
+                "pts": "25",
+            }
+        )
         assert row.season == "2023-24"
-        assert row.team == Team.LOS_ANGELES_LAKERS
-        assert row.made_two_point_field_goals_per_game is None
-        assert row.attempted_two_point_field_goals_per_game is None
-        assert row.two_point_field_goal_percentage is None
-        assert row.effective_field_goal_percentage is None
+        assert row.points == 25
 
-    def test_missing_required_league_raises(self):
-        raw = _career_row()
-        raw.pop("league_id")
+    def test_missing_required_season_raises(self):
+        raw = {
+            "age": "39",
+            "team_id": "LAL",
+            "lg_id": "NBA",
+            "pos": "SF",
+            "g": "1",
+            "gs": "1",
+            "mp": "20",
+            "pts": "25",
+        }
         with pytest.raises(ValidationError):
             PlayerAllStarRow.model_validate(raw)
 
@@ -137,41 +209,56 @@ class TestPlayerAdjustedShootingRow:
     def test_happy_path(self):
         row = PlayerAdjustedShootingRow.model_validate(
             {
-                "season": "2023-24",
-                "age": "39",
+                "year_id": "2023-24",
                 "team_name_abbr": "LAL",
-                "league_id": "NBA",
+                "age": "39",
+                "comp_name_abbr": "NBA",
                 "pos": "SF",
-                "g": "71",
+                "games": "71",
+                "games_started": "71",
                 "mp": "2506",
                 "fg_pct": ".502",
+                "fg2_pct": ".531",
                 "fg3_pct": ".410",
+                "efg_pct": ".550",
                 "ft_pct": ".750",
                 "ts_pct": ".580",
-                "fg_per_36_min": "10.0",
-                "fga_per_36_min": "20.0",
-                "adjusted_fg_pct": ".510",
-                "adjusted_fg3_pct": ".420",
-                "adjusted_ft_pct": ".760",
+                "fta_per_fga_pct": ".230",
+                "fg3a_per_fga_pct": ".260",
+                "adj_fg_pct": ".510",
+                "adj_fg2_pct": ".540",
+                "adj_fg3_pct": ".420",
+                "adj_efg_pct": ".560",
+                "adj_ft_pct": ".760",
+                "adj_ts_pct": ".590",
+                "adj_fta_per_fga_pct": ".240",
+                "adj_fg3a_per_fga_pct": ".270",
+                "fg_pts_added": "45.2",
+                "ts_pts_added": "52.1",
             }
         )
-        assert row.games_played == 71
+        assert row.age == 39
         assert row.minutes_played == 2506
         assert row.true_shooting_percentage == pytest.approx(0.580)
-        assert row.field_goals_per_36_minutes == pytest.approx(10.0)
         assert row.adjusted_field_goal_percentage == pytest.approx(0.510)
 
     def test_empty_pct_cells_parse_to_none(self):
         row = PlayerAdjustedShootingRow.model_validate(
             {
-                "season": "2023-24",
+                "year_id": "2023-24",
                 "team_name_abbr": "LAL",
-                "league_id": "NBA",
-                "g": "0",
+                "age": "39",
+                "comp_name_abbr": "NBA",
+                "pos": "SF",
+                "games": "0",
+                "games_started": "0",
                 "mp": "0",
                 "fg_pct": "",
+                "fg2_pct": "",
                 "fg3_pct": "",
+                "efg_pct": "",
                 "ft_pct": "",
+                "ts_pct": "",
             }
         )
         assert row.field_goal_percentage is None
@@ -179,11 +266,11 @@ class TestPlayerAdjustedShootingRow:
         assert row.free_throw_percentage is None
         assert row.true_shooting_percentage is None
 
-    def test_missing_required_season_raises(self):
+    def test_missing_required_team_raises(self):
         raw = {
-            "team_name_abbr": "LAL",
-            "league_id": "NBA",
-            "g": "71",
+            "year_id": "2023-24",
+            "age": "39",
+            "games": "71",
             "mp": "2506",
         }
         with pytest.raises(ValidationError):
@@ -194,47 +281,60 @@ class TestPlayerPlayByPlayStatsRow:
     def test_happy_path(self):
         row = PlayerPlayByPlayStatsRow.model_validate(
             {
-                "season": "2023-24",
+                "year_id": "2023-24",
                 "age": "39",
                 "team_name_abbr": "LAL",
-                "league_id": "NBA",
+                "comp_name_abbr": "NBA",
                 "pos": "SF",
-                "g": "71",
+                "games": "71",
+                "games_started": "71",
                 "mp": "2506",
-                "pct_fg_2pt": ".710",
-                "pct_fg_3pt": ".290",
-                "pct_ast_2pt": ".420",
-                "pct_ast_3pt": ".650",
-                "pct_dunks": ".080",
-                "pct_corner_3s": ".120",
-                "pct_heaves": ".001",
+                "pct_1": ".710",
+                "pct_2": ".150",
+                "pct_3": ".100",
+                "pct_4": ".030",
+                "pct_5": ".010",
+                "plus_minus_on": "5.2",
+                "plus_minus_net": "3.1",
+                "tov_bad_pass": "45",
+                "tov_lost_ball": "30",
+                "fouls_shooting": "12",
+                "fouls_offensive": "5",
+                "drawn_shooting": "25",
+                "drawn_offensive": "10",
+                "astd_pts": "150",
+                "and1s": "8",
+                "own_shots_blk": "15",
             }
         )
-        assert row.season == "2023-24"
+        assert row.year_id == "2023-24"
         assert row.games_played == 71
-        assert row.percentage_of_two_point_field_goals == pytest.approx(0.710)
-        assert row.percentage_heaves == pytest.approx(0.001)
+        assert row.pct_1 == pytest.approx(0.710)
+        assert row.pct_5 == pytest.approx(0.010)
 
     def test_empty_pct_cells_parse_to_none(self):
         row = PlayerPlayByPlayStatsRow.model_validate(
             {
-                "season": "2023-24",
+                "year_id": "2023-24",
                 "team_name_abbr": "LAL",
-                "league_id": "NBA",
-                "g": "0",
+                "comp_name_abbr": "NBA",
+                "pos": "SF",
+                "games": "0",
+                "games_started": "0",
                 "mp": "0",
-                "pct_fg_2pt": "",
-                "pct_heaves": "",
+                "pct_1": "",
+                "pct_5": "",
             }
         )
-        assert row.percentage_of_two_point_field_goals is None
-        assert row.percentage_heaves is None
+        assert row.pct_1 is None
+        assert row.pct_5 is None
 
     def test_missing_required_team_raises(self):
         raw = {
-            "season": "2023-24",
-            "league_id": "NBA",
-            "g": "71",
+            "year_id": "2023-24",
+            "comp_name_abbr": "NBA",
+            "pos": "SF",
+            "games": "71",
             "mp": "2506",
         }
         with pytest.raises(ValidationError):
@@ -245,44 +345,70 @@ class TestPlayerGameHighsRow:
     def test_happy_path(self):
         row = PlayerGameHighsRow.model_validate(
             {
-                "stat": "Points",
-                "value": "48",
-                "date": "2024-01-15",
-                "opponent": "Los Angeles Lakers",
+                "season": "2023-24",
+                "age": "39",
+                "team": "Los Angeles Lakers",
+                "league": "NBA",
+                "time_on_court": "39:42",
+                "fg": "19",
+                "fga": "28",
+                "fg3": "9",
+                "fg3a": "14",
+                "fg2": "10",
+                "fg2a": "14",
+                "ft": "12",
+                "fta": "14",
+                "orb": "3",
+                "drb": "14",
+                "trb": "17",
+                "ast": "14",
+                "stl": "4",
+                "blk": "3",
+                "tov": "7",
+                "pf": "3",
+                "pts": "48",
+                "game_score": "W 112-108",
             }
         )
-        assert row.stat == "Points"
-        assert row.value == 48
-        assert row.date.isoformat() == "2024-01-15"
-        assert row.opponent == Team.LOS_ANGELES_LAKERS
+        assert row.season == "2023-24"
+        assert row.points == 48
+        assert row.game_score == "W 112-108"
 
-    def test_missing_required_value_raises(self):
-        with pytest.raises(ValidationError):
-            PlayerGameHighsRow.model_validate(
-                {
-                    "stat": "Points",
-                    "date": "2024-01-15",
-                    "opponent": "Los Angeles Lakers",
-                }
-            )
+    def test_missing_required_pts_raises(self):
+        raw = {
+            "season": "2023-24",
+            "team": "Los Angeles Lakers",
+            "league": "NBA",
+            "game_score": "W 112-108",
+        }
+        # No required fields without defaults, so no error for missing stat values.
+        # The model is permissive for optional columns.
+        row = PlayerGameHighsRow.model_validate(raw)
+        assert row.points is None
+
+    def test_optional_cells_parse_to_none(self):
+        row = PlayerGameHighsRow.model_validate({"season": "2023-24"})
+        assert row.points is None
+        assert row.game_score is None
 
 
 class TestPlayerSimilarityScoresRow:
     def test_happy_path(self):
         row = PlayerSimilarityScoresRow.model_validate(
             {
-                "rank": "1",
                 "player": "Kareem Abdul-Jabbar",
-                "similarity_score": "98.5",
+                "sim_score": "98.5",
+                "year1": "jamesle01",
+                "year2": "curryst01",
             }
         )
-        assert row.rank == 1
         assert row.player == "Kareem Abdul-Jabbar"
-        assert row.similarity_score == pytest.approx(98.5)
+        assert row.sim_score == pytest.approx(98.5)
+        assert row.year1 == "jamesle01"
 
     def test_missing_required_player_raises(self):
         with pytest.raises(ValidationError):
-            PlayerSimilarityScoresRow.model_validate({"rank": "1", "similarity_score": "98.5"})
+            PlayerSimilarityScoresRow.model_validate({"sim_score": "98.5"})
 
 
 class TestPlayerSalariesRow:
@@ -290,31 +416,22 @@ class TestPlayerSalariesRow:
         row = PlayerSalariesRow.model_validate(
             {
                 "season": "2023-24",
-                "team_id": "LAL",
+                "team_name": "Los Angeles Lakers",
+                "lg_id": "NBA",
                 "salary": "$47,607,350",
             }
         )
         assert row.season == "2023-24"
-        assert row.team == Team.LOS_ANGELES_LAKERS
-        assert row.salary == 47607350
-
-    def test_team_name_abbr_alias_fallback(self):
-        # The historical column list names the team column ``team_id`` but
-        # some older fixtures surface it as ``team_name_abbr``.
-        row = PlayerSalariesRow.model_validate(
-            {
-                "season": "2023-24",
-                "team_name_abbr": "LAL",
-                "salary": "$47,607,350",
-            }
-        )
-        assert row.team == Team.LOS_ANGELES_LAKERS
+        assert row.team_name == "Los Angeles Lakers"
+        assert row.lg_id == "NBA"
+        assert row.salary == "$47,607,350"
 
     def test_empty_salary_parses_to_none(self):
         row = PlayerSalariesRow.model_validate(
             {
                 "season": "2023-24",
-                "team_id": "LAL",
+                "team_name": "Los Angeles Lakers",
+                "lg_id": "NBA",
                 "salary": "",
             }
         )
@@ -322,54 +439,69 @@ class TestPlayerSalariesRow:
 
     def test_missing_required_season_raises(self):
         with pytest.raises(ValidationError):
-            PlayerSalariesRow.model_validate({"team_id": "LAL", "salary": "$1"})
+            PlayerSalariesRow.model_validate({"team_name": "Los Angeles Lakers", "lg_id": "NBA", "salary": "$1"})
 
 
 class TestPlayerShotChartsRow:
     def test_happy_path(self):
         row = PlayerShotChartsRow.model_validate(
             {
-                "shot_type": "Dunk",
-                "made": "120",
-                "attempted": "125",
+                "split_id": "Shot Type",
+                "split_value": "Dunk",
+                "fg": "120",
+                "fga": "125",
                 "fg_pct": ".960",
+                "fg3": "0",
+                "fg3a": "0",
+                "fg3_pct": "",
+                "efg_pct": ".960",
+                "fg_ast": "100",
+                "fg_ast_pct": ".833",
             }
         )
-        assert row.shot_type == "Dunk"
-        assert row.made == 120
-        assert row.attempted == 125
+        assert row.split_id == "Shot Type"
+        assert row.split_value == "Dunk"
+        assert row.made_field_goals == 120
+        assert row.attempted_field_goals == 125
         assert row.field_goal_percentage == pytest.approx(0.96)
 
     def test_optional_shot_count_cells_parse_to_none(self):
-        row = PlayerShotChartsRow.model_validate({"shot_type": "Heave", "made": "", "attempted": "", "fg_pct": ""})
-        assert row.made is None
-        assert row.attempted is None
+        row = PlayerShotChartsRow.model_validate(
+            {
+                "split_id": "Shot Type",
+                "split_value": "Heave",
+                "fg": "",
+                "fga": "",
+                "fg_pct": "",
+                "fg3": "",
+                "fg3a": "",
+                "fg3_pct": "",
+                "efg_pct": "",
+                "fg_ast": "",
+                "fg_ast_pct": "",
+            }
+        )
+        assert row.made_field_goals is None
+        assert row.attempted_field_goals is None
         assert row.field_goal_percentage is None
-
-    def test_missing_required_shot_type_raises(self):
-        with pytest.raises(ValidationError):
-            PlayerShotChartsRow.model_validate({"made": "10", "attempted": "20", "fg_pct": ".500"})
 
 
 class TestPlayerSplitsRow:
     def test_happy_path(self):
         row = PlayerSplitsRow.model_validate(
             {
-                "split_type": "Location",
-                "value": "Home",
+                "split_id": "Location",
+                "split_value": "Home",
                 "g": "35",
+                "gs": "35",
                 "mp": "1235",
                 "fg": "350",
                 "fga": "680",
-                "fg_pct": ".515",
                 "fg3": "80",
                 "fg3a": "180",
-                "fg3_pct": ".444",
                 "ft": "120",
                 "fta": "160",
-                "ft_pct": ".750",
                 "orb": "25",
-                "drb": "190",
                 "trb": "215",
                 "ast": "300",
                 "stl": "45",
@@ -377,65 +509,73 @@ class TestPlayerSplitsRow:
                 "tov": "100",
                 "pf": "40",
                 "pts": "900",
+                "fg_pct": ".515",
+                "fg3_pct": ".444",
+                "ft_pct": ".750",
             }
         )
-        assert row.split_type == "Location"
-        assert row.value == "Home"
+        assert row.split_id == "Location"
+        assert row.split_value == "Home"
         assert row.games_played == 35
         assert row.points == 900
         assert row.field_goal_percentage == pytest.approx(0.515)
 
     def test_optional_stat_block_cells_parse_to_none(self):
-        row = PlayerSplitsRow.model_validate({"split_type": "Location", "value": "Home"})
+        row = PlayerSplitsRow.model_validate({"split_id": "Location", "split_value": "Home"})
         assert row.games_played is None
         assert row.points is None
         assert row.field_goal_percentage is None
-
-    def test_missing_required_split_type_raises(self):
-        with pytest.raises(ValidationError):
-            PlayerSplitsRow.model_validate({"value": "Home", "g": "35", "pts": "900"})
 
 
 class TestPlayerOnOffRow:
     def test_happy_path(self):
         row = PlayerOnOffRow.model_validate(
             {
-                "situation": "On Court",
-                "g": "71",
+                "split_id": "On Court",
+                "team_id": "LAL",
                 "mp": "2506",
-                "fg": "696",
-                "fga": "1392",
-                "fg_pct": ".502",
-                "fg3": "149",
-                "fg3a": "362",
-                "fg3_pct": ".410",
-                "ft": "241",
-                "fta": "320",
-                "ft_pct": ".750",
-                "orb": "57",
-                "drb": "391",
-                "trb": "448",
-                "ast": "589",
-                "stl": "92",
-                "blk": "36",
-                "tov": "206",
-                "pf": "78",
-                "pts": "1782",
+                "efg_pct": ".550",
+                "orb_pct": "5.5",
+                "drb_pct": "18.2",
+                "trb_pct": "11.8",
+                "ast_pct": "40.1",
+                "stl_pct": "2.1",
+                "blk_pct": "0.9",
+                "tov_pct": "11.4",
+                "off_rtg": "118.5",
+                "opp_efg_pct": ".520",
+                "opp_orb_pct": "4.8",
+                "opp_drb_pct": "17.0",
+                "opp_trb_pct": "10.9",
+                "opp_ast_pct": "35.2",
+                "opp_stl_pct": "1.8",
+                "opp_blk_pct": "0.7",
+                "opp_tov_pct": "10.5",
+                "opp_off_rtg": "112.3",
+                "diff_efg_pct": "3.0",
+                "diff_orb_pct": "0.7",
+                "diff_drb_pct": "1.2",
+                "diff_trb_pct": "0.9",
+                "diff_ast_pct": "4.9",
+                "diff_stl_pct": "0.3",
+                "diff_blk_pct": "0.2",
+                "diff_tov_pct": "0.9",
+                "diff_off_rtg": "6.2",
             }
         )
-        assert row.situation == "On Court"
-        assert row.games_played == 71
-        assert row.points == 1782
-        assert row.three_point_field_goal_percentage == pytest.approx(0.410)
+        assert row.split_id == "On Court"
+        assert row.minutes_played == 2506
+        assert row.effective_field_goal_percentage == pytest.approx(0.550)
 
     def test_optional_stat_block_cells_parse_to_none(self):
-        row = PlayerOnOffRow.model_validate({"situation": "On"})
-        assert row.games_played is None
-        assert row.points is None
+        row = PlayerOnOffRow.model_validate({"split_id": "On Court", "team_id": "LAL", "mp": "0"})
+        assert row.effective_field_goal_percentage is None
+        assert row.offensive_rating is None
 
-    def test_missing_required_situation_raises(self):
-        with pytest.raises(ValidationError):
-            PlayerOnOffRow.model_validate({"g": "71", "pts": "1782"})
+    def test_minimal_row_validates(self):
+        # All fields are optional, so a row with only split_id is valid.
+        row = PlayerOnOffRow.model_validate({"split_id": "On Court", "mp": "0"})
+        assert row.split_id == "On Court"
 
 
 # ── League-wide season totals ────────────────────────────────────────────

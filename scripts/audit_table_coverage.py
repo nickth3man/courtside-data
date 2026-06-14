@@ -33,10 +33,12 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlparse
 
 from parsel import Selector
 from pydantic import AliasChoices
@@ -47,14 +49,22 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 from courtside_data.endpoints import ENDPOINTS, TableEndpoint  # noqa: E402
+from courtside_data.schemas._base import BRRow  # noqa: E402
 from courtside_data.tables import GenericTable, extract_commented_table  # noqa: E402
 
 DEFAULT_CORPUS_ROOT = REPO_ROOT / "raw"
 
 # ── Allowlists ─────────────────────────────────────────────────────────────
 # Structural cells that GenericTable keeps (they carry a data-stat) but that are
-# never real, user-facing columns: the row-number gutter and over-header cells.
-GLOBAL_DROP_KEYS: frozenset[str] = frozenset({"ranker", "", "DUMMY", "x"})
+# never real, user-facing columns.
+GLOBAL_DROP_KEYS: frozenset[str] = frozenset(
+    {
+        "ranker",  # row-number gutter cell (first column of every stats table)
+        "",  # empty-string data-stat (e.g. blank spacer cells)
+        "counter",  # "Count" column header in awards/milestones tables
+        "DUMMY",  # over-header spacer cell used to separate grouped stat columns
+    }
+)
 
 
 def _is_dropped_key(key: str) -> bool:
@@ -63,7 +73,13 @@ def _is_dropped_key(key: str) -> bool:
 
 # Declared columns legitimately absent from the corpus's eras (kept minimal;
 # the union-across-fixtures usually removes the need). Key: endpoint -> data-stat keys.
-ERA_OK_EXTRA: dict[str, set[str]] = {}
+# Entries here are backward-compat AliasChoices aliases that don't appear as
+# data-stat keys on the page but are kept for API stability.
+ERA_OK_EXTRA: dict[str, set[str]] = {
+    "franchise_history": {"team_abbreviation", "team_name_abbr"},
+    "player_career_stats": {"league_id", "season"},
+    "rookie_stats": {"name_display", "pos", "team_name_abbr"},
+}
 
 # Known gaps deliberately not fixed yet (debt escape hatch). Key: endpoint -> data-stat keys.
 KNOWN_MISSING_ACCEPTED: dict[str, set[str]] = {}
@@ -82,6 +98,9 @@ class EndpointAudit:
     missing: set[str] = field(default_factory=set)
     extra: set[str] = field(default_factory=set)
     unresolved_fixtures: list[str] = field(default_factory=list)
+    table_id_declared: list[str] = field(default_factory=list)
+    table_id_discovered: list[str] = field(default_factory=list)
+    table_id_mismatch: bool = False
     custom: bool = False
     header_fallback: bool = False
     transaction_list: bool = False
@@ -95,11 +114,11 @@ class EndpointAudit:
             return False
         if self.header_fallback or self.transaction_list or self.intentional_subset or self.custom:
             return False
-        return bool(self.missing) or bool(self.unresolved_fixtures)
+        return bool(self.missing) or bool(self.unresolved_fixtures) or self.table_id_mismatch
 
     @property
     def has_any_finding(self) -> bool:
-        return bool(self.missing or self.extra or self.unresolved_fixtures)
+        return bool(self.missing or self.extra or self.unresolved_fixtures or self.table_id_mismatch)
 
     def to_json(self) -> dict[str, Any]:
         return {
@@ -109,6 +128,9 @@ class EndpointAudit:
             "missing": sorted(self.missing),
             "extra": sorted(self.extra),
             "unresolved_fixtures": self.unresolved_fixtures,
+            "table_id_declared": self.table_id_declared,
+            "table_id_discovered": self.table_id_discovered,
+            "table_id_mismatch": self.table_id_mismatch,
             "custom": self.custom,
             "header_fallback": self.header_fallback,
             "transaction_list": self.transaction_list,
@@ -117,7 +139,7 @@ class EndpointAudit:
         }
 
 
-def model_datastat_keys(model: type | None) -> set[str]:
+def model_datastat_keys(model: type[BRRow] | None) -> set[str]:
     """Return the set of ``data-stat`` keys a row model reads.
 
     For each field the read key is its ``validation_alias`` (a plain string, or
@@ -171,6 +193,18 @@ def _candidate_table_ids(endpoint: TableEndpoint, sidecar: dict[str, Any]) -> li
 
 
 def _resolve_table(selector: Selector, endpoint: TableEndpoint, sidecar: dict[str, Any]) -> Selector | None:
+    """Find the endpoint's target table on a page for any candidate id.
+
+    The resolution order mirrors ``HTTPService.fetch_table`` — CSS
+    ``table#<id>`` first, then comment-wrapped fallback — but with one
+    **deliberate broadening for audit purposes**: ``extract_commented_table``
+    is tried for *every* candidate id, not just ``commented_table_id``.
+    ``fetch_table`` only unwraps ``commented_table_id`` because the
+    downloader already knows which table is comment-wrapped.  An audit
+    tool cannot assume that: if a table has drifted from visible to
+    comment-wrapped (or vice versa), the audit still needs to locate it
+    and flag the mismatch.  This broadening is by design.
+    """
     for table_id in _candidate_table_ids(endpoint, sidecar):
         found = selector.css(f"table#{table_id}")
         if found:
@@ -179,6 +213,59 @@ def _resolve_table(selector: Selector, endpoint: TableEndpoint, sidecar: dict[st
         if commented is not None:
             return commented
     return None
+
+
+def _extract_params_from_url(url: str, path_template: str) -> dict[str, str]:
+    """Extract format-string params from a URL using the endpoint's path template.
+
+    Converts a path template like ``/teams/{team_abbreviation}/`` into a regex
+    with named groups, then matches against the URL's path component.  Returns
+    an empty dict if the URL / template is missing or matching fails.
+    """
+    if not url or not path_template or "{" not in path_template:
+        return {}
+    parsed = urlparse(url)
+    url_path = parsed.path
+    # Build regex: escape template, then replace escaped braces with named groups.
+    escaped = re.escape(path_template)
+
+    def _replacement(m: re.Match[str]) -> str:
+        raw = m.group(1)
+        # Strip Python format-spec suffixes like [0] for valid regex group name
+        clean = re.sub(r"\[[^\]]*\]", "", raw)
+        return f"(?P<{clean}>[^/]+)"
+
+    try:
+        pattern = re.sub(r"\\\{([^}]+)\\\}", _replacement, escaped)
+        compiled = re.compile(f"^{pattern}$")
+    except re.error:
+        return {}
+    match = compiled.match(url_path)
+    if match:
+        return match.groupdict()
+    return {}
+
+
+def _render_table_id(template: str | None, params: dict[str, str]) -> str | None:
+    """Render a table_id template with *params*, returning None on failure."""
+    if template is None:
+        return None
+    if "{" not in template:
+        return template
+    try:
+        return template.format(**params)
+    except (KeyError, ValueError, IndexError):
+        return None
+
+
+def _declared_table_ids(endpoint: TableEndpoint, params: dict[str, str]) -> set[str]:
+    """Build the rendered declared table-id set for one fixture."""
+    ids: set[str] = set()
+    for tid in (endpoint.table_id, endpoint.commented_table_id, *endpoint.fallback_table_ids):
+        rendered = _render_table_id(tid, params)
+        if rendered:
+            ids.add(rendered)
+    return ids
 
 
 def _real_keys_for_fixture(html_text: str, endpoint: TableEndpoint, sidecar: dict[str, Any]) -> tuple[list[str], bool]:
@@ -246,6 +333,25 @@ def discover_fixtures(corpus_root: Path, endpoint_name: str) -> list[Path]:
     return sorted(p for p in endpoint_dir.rglob("*.html") if p.is_file())
 
 
+# Matches ``<table ... id="X">`` in raw HTML, including tables nested inside
+# HTML comments (comment-wrapped tables are part of the raw text).  Case-
+# insensitive; tolerates single/double quotes and attributes preceding ``id``.
+_TABLE_ID_RE = re.compile(r"""<table\b[^>]*?\bid=["']([^"']+)["']""", re.IGNORECASE)
+
+
+def _discover_table_ids_from_html(html_text: str) -> set[str]:
+    """Return every ``<table id="...">`` id present in *html_text*.
+
+    Scans the raw markup so tables wrapped in ``<!-- ... -->`` comments are
+    included.  This is the audit's authoritative source of "which table ids
+    does this page actually contain" and intentionally does NOT depend on
+    sidecar vintage: a large fraction of corpus sidecars predate the
+    ``discovered_table_ids`` field and would otherwise yield an empty
+    discovered set, producing false-positive table-id mismatches.
+    """
+    return {tid for tid in _TABLE_ID_RE.findall(html_text)}
+
+
 def audit_endpoint(name: str, endpoint: TableEndpoint, corpus_root: Path) -> EndpointAudit:
     result = EndpointAudit(
         endpoint=name,
@@ -262,24 +368,65 @@ def audit_endpoint(name: str, endpoint: TableEndpoint, corpus_root: Path) -> End
         return result
 
     real: set[str] = set()
+    declared_table_ids: set[str] = set()
+    discovered_table_ids: set[str] = set()
+
     for html_path in fixtures:
         rel = html_path.relative_to(corpus_root).as_posix()
         result.fixtures.append(rel)
         sidecar = _sidecar_for(html_path)
+
+        # ── Table-id comparison (per-fixture, union across all eras) ──────
+        # Even for custom / header-fallback / transaction-list endpoints we
+        # collect the declared-vs-discovered table-id sets so the JSON report
+        # always carries them.  The mismatch boolean is the primary signal.
+        params = _extract_params_from_url(
+            sidecar.get("final_url") or sidecar.get("url", ""),
+            endpoint.path,
+        )
+        declared_table_ids |= _declared_table_ids(endpoint, params)
+
         if sidecar.get("status_code", 200) != 200:
             continue  # 404 / error fixtures carry no table
         try:
             html_text = html_path.read_text(encoding="utf-8", errors="replace")
         except OSError:
             continue
-        keys, resolved = _real_keys_for_fixture(html_text, endpoint, sidecar)
-        real.update(keys)
-        # Only call a fixture "unresolved" when a table was genuinely expected:
-        # transaction-list endpoints have no data-stat table by design.
-        if not resolved and not endpoint.transaction_list_fallback and _candidate_table_ids(endpoint, sidecar):
-            result.unresolved_fixtures.append(rel)
+
+        # ── Discovered table ids — ground truth read from the page itself ──
+        # Every <table id="..."> in the raw markup (comment-wrapped tables
+        # included).  This is authoritative and self-contained; the sidecar's
+        # `discovered_table_ids` is unioned in only as a cross-check, since
+        # ~62% of corpus sidecars predate that field and would otherwise make
+        # the discovered set look empty (false-positive mismatches).
+        discovered_table_ids |= _discover_table_ids_from_html(html_text)
+        sidecar_discovered = sidecar.get("discovered_table_ids")
+        if sidecar_discovered:
+            discovered_table_ids |= {tid for tid in sidecar_discovered if tid}
+
+        if endpoint.custom:
+            # Custom endpoints (bespoke HTTPService methods) have no single
+            # fetch_table-style resolution.  Give them a lighter audit:
+            # collect every data-stat key found across ALL <table> elements
+            # on the page — visible via CSS and comment-wrapped via regex.
+            selector = Selector(text=html_text)
+            page_keys: set[str] = set(selector.css("table [data-stat]::attr(data-stat)").getall())
+            # Also scan raw HTML for data-stat inside comment-wrapped tables.
+            for comment_body in re.findall(r"<!--(.*?)-->", html_text, flags=re.DOTALL):
+                page_keys.update(re.findall(r"""data-stat=["']([^"']+)["']""", comment_body))
+            real.update(page_keys)
+        else:
+            keys, resolved = _real_keys_for_fixture(html_text, endpoint, sidecar)
+            real.update(keys)
+            # Only call a fixture "unresolved" when a table was genuinely expected:
+            # transaction-list endpoints have no data-stat table by design.
+            if not resolved and not endpoint.transaction_list_fallback and _candidate_table_ids(endpoint, sidecar):
+                result.unresolved_fixtures.append(rel)
 
     result.real_keys = {key for key in real if not _is_dropped_key(key)}
+    result.table_id_declared = sorted(declared_table_ids)
+    result.table_id_discovered = sorted(discovered_table_ids)
+    result.table_id_mismatch = bool(declared_table_ids - discovered_table_ids)
 
     if result.transaction_list or result.header_fallback:
         # No data-stat column contract to diff; keep table-resolution signal only.
@@ -306,7 +453,7 @@ def summarize(results: list[EndpointAudit]) -> dict[str, int]:
         "endpoints_with_drift": len(actionable),
         "total_missing_columns": sum(len(r.missing) for r in actionable),
         "total_extra_columns": sum(len(r.extra) for r in results if not (r.header_fallback or r.transaction_list)),
-        "table_id_mismatches": sum(1 for r in results if r.unresolved_fixtures and not r.transaction_list),
+        "table_id_mismatches": sum(1 for r in results if r.table_id_mismatch),
     }
 
 
@@ -321,7 +468,7 @@ def print_report(results: list[EndpointAudit]) -> None:
     actionable = [r for r in results if r.actionable]
     if actionable:
         print("\n" + "-" * 78)
-        print("ACTION NEEDED — missing real columns / unresolved tables")
+        print("ACTION NEEDED — missing real columns / unresolved tables / table-id mismatches")
         print("-" * 78)
         for r in sorted(actionable, key=lambda a: a.endpoint):
             print(f"\n• {r.endpoint}")
@@ -329,6 +476,10 @@ def print_report(results: list[EndpointAudit]) -> None:
                 print(f"    MISSING ({len(r.missing)}): {', '.join(sorted(r.missing))}")
             if r.extra:
                 print(f"    extra   ({len(r.extra)}): {', '.join(sorted(r.extra))}")
+            if r.table_id_mismatch:
+                print("    TABLE-ID MISMATCH")
+                print(f"        declared (rendered): {r.table_id_declared}")
+                print(f"        discovered (sidecar): {r.table_id_discovered}")
             for fixture in r.unresolved_fixtures:
                 print(f"    UNRESOLVED table in fixture: {fixture}")
 
@@ -359,6 +510,8 @@ def print_report(results: list[EndpointAudit]) -> None:
                 note.append(f"missing={len(r.missing)}")
             if r.extra:
                 note.append(f"extra={len(r.extra)}")
+            if r.table_id_mismatch:
+                note.append("table_id_mismatch")
             if r.unresolved_fixtures:
                 note.append(f"unresolved={len(r.unresolved_fixtures)}")
             print(f"• {r.endpoint}{tag_str} {' '.join(note)}")

@@ -497,23 +497,65 @@ class TestAttendanceRow:
 
 class TestSeasonAwardsRow:
     def test_happy_path(self):
-        row = SeasonAwardsRow.model_validate({"award": "MVP", "player": "Nikola Jokic"})
-        assert row.award == "MVP"
+        raw = {
+            "rank": "1",
+            "player": "Nikola Jokic",
+            "age": "28",
+            "team_id": "DEN",
+            "votes_first": "79",
+            "points_won": "926",
+            "points_max": "990",
+            "award_share": "0.935",
+            "g": "79",
+            "mp_per_g": "34.6",
+            "pts_per_g": "26.4",
+            "trb_per_g": "12.4",
+            "ast_per_g": "9.0",
+            "stl_per_g": "1.4",
+            "blk_per_g": "0.9",
+            "fg_pct": ".583",
+            "fg3_pct": ".359",
+            "ft_pct": ".817",
+            "ws": "17.0",
+            "ws_per_48": ".299",
+        }
+        row = SeasonAwardsRow.model_validate(raw)
+        assert row.rank == 1
         assert row.player == "Nikola Jokic"
+        assert row.age == 28
+        assert row.team_id == "DEN"
+        assert row.votes_first == 79
+        assert row.points_won == 926
+        assert row.points_max == 990
+        assert row.award_share == pytest.approx(0.935)
+        assert row.g == 79
+        assert row.mp_per_g == pytest.approx(34.6)
+        assert row.pts_per_g == pytest.approx(26.4)
+        assert row.trb_per_g == pytest.approx(12.4)
+        assert row.ast_per_g == pytest.approx(9.0)
+        assert row.stl_per_g == pytest.approx(1.4)
+        assert row.blk_per_g == pytest.approx(0.9)
+        assert row.fg_pct == pytest.approx(0.583)
+        assert row.fg3_pct == pytest.approx(0.359)
+        assert row.ft_pct == pytest.approx(0.817)
+        assert row.ws == pytest.approx(17.0)
+        assert row.ws_per_48 == pytest.approx(0.299)
+
+    def test_optional_cells_become_none(self):
+        row = SeasonAwardsRow.model_validate({"player": "Nikola Jokic"})
+        assert row.rank is None
+        assert row.age is None
+        assert row.team_id is None
+        assert row.votes_first is None
 
     def test_alias_keys_match_validation_alias(self):
-        # The fetcher emits raw dicts keyed by the data-stat names.
-        row = SeasonAwardsRow.model_validate({"award": "Defensive Player of the Year", "player": "Jaren Jackson Jr."})
-        assert row.award == "Defensive Player of the Year"
-        assert row.player == "Jaren Jackson Jr."
-
-    def test_missing_required_award_raises(self):
-        with pytest.raises(ValidationError):
-            SeasonAwardsRow.model_validate({"player": "Nikola Jokic"})
+        assert SeasonAwardsRow.model_fields["player"].validation_alias == "player"
+        assert SeasonAwardsRow.model_fields["rank"].validation_alias == "rank"
+        assert SeasonAwardsRow.model_fields["award_share"].validation_alias == "award_share"
 
     def test_missing_required_player_raises(self):
         with pytest.raises(ValidationError):
-            SeasonAwardsRow.model_validate({"award": "MVP"})
+            SeasonAwardsRow.model_validate({"rank": "1"})
 
 
 class TestSeasonLeadersRow:

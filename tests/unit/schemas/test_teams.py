@@ -6,8 +6,6 @@ optional cell, and a missing required ``data-stat`` alias.
 
 from __future__ import annotations
 
-from datetime import date
-
 import pytest
 from pydantic import ValidationError
 
@@ -90,30 +88,32 @@ class TestTeamInjuryReportRow:
         row = TeamInjuryReportRow.model_validate(
             {
                 "player": "LeBron James",
-                "date": "Tue, Oct 30, 2018",
-                "description": "Rest",
+                "team_name": "Los Angeles Lakers",
+                "date_update": "Tue, Oct 30, 2018",
+                "note": "Rest",
             }
         )
         assert row.player == "LeBron James"
-        assert row.date == date(2018, 10, 30)
-        assert row.description == "Rest"
+        assert row.team_name == "Los Angeles Lakers"
+        assert row.date_update == "Tue, Oct 30, 2018"
+        assert row.note == "Rest"
 
-    def test_empty_date_raises(self):
-        # Injury rows are only meaningful with a real date; the validator
-        # rejects empty strings.
-        with pytest.raises(ValidationError):
-            TeamInjuryReportRow.model_validate({"player": "LeBron James", "date": "", "description": "Rest"})
+    def test_optional_cells_become_none(self):
+        row = TeamInjuryReportRow.model_validate({"player": "LeBron James"})
+        assert row.team_name is None
+        assert row.date_update is None
+        assert row.note is None
 
-    def test_missing_required_description_raises(self):
+    def test_missing_required_player_raises(self):
         with pytest.raises(ValidationError):
-            TeamInjuryReportRow.model_validate({"player": "LeBron James", "date": "Tue, Oct 30, 2018"})
+            TeamInjuryReportRow.model_validate({"date_update": "Tue, Oct 30, 2018", "note": "Rest"})
 
 
 class TestTeamAndOpponentRow:
     def test_happy_path(self):
         row = TeamAndOpponentRow.model_validate(
             {
-                "stat_type": "Team",
+                "player": "Team",
                 "g": "82",
                 "mp": "19872",
                 "fg": "3500",
@@ -136,41 +136,33 @@ class TestTeamAndOpponentRow:
                 "pts": "9500",
             }
         )
-        assert row.stat_type == "Team"
-        assert row.games_played == 82
-        assert row.minutes_played == 19872
-        assert row.made_field_goals == 3500
-        assert row.field_goal_percentage == pytest.approx(0.467)
-        assert row.total_rebounds == 3550
-        assert row.points == 9500
+        assert row.player == "Team"
+        assert row.g == 82
+        assert row.mp == 19872
+        assert row.fg == 3500
+        assert row.fg_pct == pytest.approx(0.467)
+        assert row.trb == 3550
+        assert row.pts == 9500
 
     def test_optional_stat_block_cells_parse_to_none(self):
-        # Only the required ``stat_type`` is present; every other column is
-        # optional on the g-based stat block.
-        row = TeamAndOpponentRow.model_validate({"stat_type": "Lg"})
-        assert row.stat_type == "Lg"
-        assert row.games_played is None
-        assert row.points is None
-        assert row.field_goal_percentage is None
+        row = TeamAndOpponentRow.model_validate({})
+        assert row.player is None
+        assert row.g is None
+        assert row.pts is None
+        assert row.fg_pct is None
 
-    def test_alias_team_name_abbr_fallback(self):
-        # On commented tables BR sometimes uses ``team_name_abbr`` instead of
-        # ``stat_type`` for the row label.
-        row = TeamAndOpponentRow.model_validate({"team_name_abbr": "LAL", "g": "82", "pts": "9500"})
-        assert row.stat_type == "LAL"
-        assert row.games_played == 82
-        assert row.points == 9500
-
-    def test_missing_required_stat_type_raises(self):
-        with pytest.raises(ValidationError):
-            TeamAndOpponentRow.model_validate({"g": "82", "pts": "9500"})
+    def test_empty_model_is_valid(self):
+        """All fields are optional; an empty dict produces a valid model."""
+        row = TeamAndOpponentRow.model_validate({})
+        assert row.g is None
+        assert row.pts is None
 
 
 class TestTeamMiscFourFactorsRow:
     def test_happy_path(self):
         row = TeamMiscFourFactorsRow.model_validate(
             {
-                "stat_type": "Lg",
+                "player": "Team",
                 "pace": "100.2",
                 "efg_pct": "0.532",
                 "tov_pct": "0.123",
@@ -182,21 +174,23 @@ class TestTeamMiscFourFactorsRow:
                 "opp_ft_rate": "0.220",
             }
         )
-        assert row.stat_type == "Lg"
+        assert row.player == "Team"
         assert row.pace == pytest.approx(100.2)
-        assert row.effective_field_goal_percentage == pytest.approx(0.532)
-        assert row.turnover_percentage == pytest.approx(0.123)
-        assert row.opponent_effective_field_goal_percentage == pytest.approx(0.510)
-        assert row.defensive_rebound_percentage == pytest.approx(0.750)
+        assert row.efg_pct == pytest.approx(0.532)
+        assert row.tov_pct == pytest.approx(0.123)
+        assert row.opp_efg_pct == pytest.approx(0.510)
+        assert row.drb_pct == pytest.approx(0.750)
 
     def test_optional_misc_cells_parse_to_none(self):
-        row = TeamMiscFourFactorsRow.model_validate({"stat_type": "Lg"})
+        row = TeamMiscFourFactorsRow.model_validate({})
+        assert row.player is None
         assert row.pace is None
-        assert row.turnover_percentage is None
+        assert row.tov_pct is None
 
-    def test_missing_required_stat_type_raises(self):
-        with pytest.raises(ValidationError):
-            TeamMiscFourFactorsRow.model_validate({"pace": "100.2"})
+    def test_all_fields_optional_empty_dict_is_valid(self):
+        row = TeamMiscFourFactorsRow.model_validate({})
+        assert row.wins is None
+        assert row.losses is None
 
 
 class TestTeamOpponentStatsRow:
@@ -207,26 +201,27 @@ class TestTeamOpponentStatsRow:
     def test_happy_path(self):
         row = TeamOpponentStatsRow.model_validate(
             {
-                "stat_type": "Opponent",
+                "player": "Opponent",
                 "g": "82",
                 "mp": "19872",
                 "pts": "9000",
                 "fg_pct": "0.450",
             }
         )
-        assert row.stat_type == "Opponent"
-        assert row.games_played == 82
-        assert row.points == 9000
-        assert row.field_goal_percentage == pytest.approx(0.450)
+        assert row.player == "Opponent"
+        assert row.g == 82
+        assert row.pts == 9000
+        assert row.fg_pct == pytest.approx(0.450)
 
     def test_optional_cells_parse_to_none(self):
-        row = TeamOpponentStatsRow.model_validate({"stat_type": "Opponent"})
-        assert row.games_played is None
-        assert row.points is None
+        row = TeamOpponentStatsRow.model_validate({})
+        assert row.g is None
+        assert row.pts is None
 
-    def test_missing_required_stat_type_raises(self):
-        with pytest.raises(ValidationError):
-            TeamOpponentStatsRow.model_validate({"g": "82"})
+    def test_empty_model_is_valid(self):
+        """All fields are optional."""
+        row = TeamOpponentStatsRow.model_validate({})
+        assert row.player is None
 
 
 class TestTeamTransactionsRow:
@@ -249,10 +244,11 @@ class TestTeamSplitsRow:
     def test_happy_path(self):
         row = TeamSplitsRow.model_validate(
             {
-                "split_type": "Value",
-                "value": "Home",
+                "split_id": "Value",
+                "split_value": "Home",
                 "g": "41",
-                "mp": "9920",
+                "wins": "25",
+                "losses": "16",
                 "fg": "1750",
                 "fga": "3700",
                 "fg_pct": "0.473",
@@ -263,7 +259,6 @@ class TestTeamSplitsRow:
                 "fta": "950",
                 "ft_pct": "0.789",
                 "orb": "425",
-                "drb": "1350",
                 "trb": "1775",
                 "ast": "1100",
                 "stl": "350",
@@ -273,20 +268,22 @@ class TestTeamSplitsRow:
                 "pts": "4750",
             }
         )
-        assert row.split_type == "Value"
-        assert row.value == "Home"
-        assert row.games_played == 41
-        assert row.points == 4750
-        assert row.three_point_field_goal_percentage == pytest.approx(0.370)
+        assert row.split_id == "Value"
+        assert row.split_value == "Home"
+        assert row.g == 41
+        assert row.pts == 4750
+        assert row.fg3_pct == pytest.approx(0.370)
 
     def test_optional_stat_block_cells_parse_to_none(self):
-        row = TeamSplitsRow.model_validate({"split_type": "Value", "value": "Home"})
-        assert row.games_played is None
-        assert row.points is None
+        row = TeamSplitsRow.model_validate({})
+        assert row.split_id is None
+        assert row.split_value is None
+        assert row.g is None
+        assert row.pts is None
 
-    def test_missing_required_split_type_raises(self):
-        with pytest.raises(ValidationError):
-            TeamSplitsRow.model_validate({"value": "Home", "g": "41"})
+    def test_all_fields_optional_empty_dict_is_valid(self):
+        row = TeamSplitsRow.model_validate({})
+        assert row.g is None
 
 
 class TestTeamContractsRow:
@@ -295,51 +292,46 @@ class TestTeamContractsRow:
         row = TeamContractsRow.model_validate(
             {
                 "player": "Pascal Siakam",
+                "age_today": "29",
                 "y1": "$37,893,408",
                 "y2": "",
                 "y3": "",
                 "y4": "",
                 "y5": "",
                 "y6": "",
+                "remain_gtd": "$37,893,408",
             }
         )
         assert row.player == "Pascal Siakam"
-        assert row.salary == 37893408
-        assert row.years_remaining == 1
+        assert row.age_today == "29"
+        assert row.y1 == "$37,893,408"
+        assert row.y2 is None
+        assert row.y3 is None
+        assert row.y4 is None
+        assert row.y5 is None
+        assert row.y6 is None
+        assert row.remain_gtd == "$37,893,408"
 
     def test_six_year_contract(self):
         # Jaylen Brown's supermax: y1-y6 all populated.
         row = TeamContractsRow.model_validate(
             {
                 "player": "Jaylen Brown",
+                "age_today": "27",
                 "y1": "$31,830,357",
                 "y2": "$49,700,000",
                 "y3": "$53,676,000",
                 "y4": "$57,652,000",
                 "y5": "$61,628,000",
                 "y6": "$65,604,000",
+                "remain_gtd": "$320,090,357",
             }
         )
         assert row.player == "Jaylen Brown"
-        assert row.salary == 31830357
-        assert row.years_remaining == 6
-
-    def test_explicit_years_remaining_overrides_derivation(self):
-        # If BR pre-fills a "years_remaining" cell, use it verbatim.
-        row = TeamContractsRow.model_validate(
-            {
-                "player": "Gary Trent Jr.",
-                "y1": "$18,560,000",
-                "y2": "",
-                "y3": "",
-                "y4": "",
-                "y5": "",
-                "y6": "",
-                "years_remaining": "1",
-            }
-        )
-        assert row.salary == 18560000
-        assert row.years_remaining == 1
+        assert row.y1 == "$31,830,357"
+        assert row.y2 == "$49,700,000"
+        assert row.y6 == "$65,604,000"
+        assert row.remain_gtd == "$320,090,357"
 
     def test_missing_required_player_raises(self):
         with pytest.raises(ValidationError):
@@ -351,96 +343,127 @@ class TestTeamLineupsRow:
         row = TeamLineupsRow.model_validate(
             {
                 "lineup": "A. Davis - L. James - R. Westbrook - M. Monk - C. Anthony",
-                "g": "10",
                 "mp": "200",
-                "fg": "60",
-                "fga": "120",
-                "fg_pct": "0.500",
-                "fg3": "20",
-                "fg3a": "50",
-                "fg3_pct": "0.400",
-                "ft": "30",
-                "fta": "40",
-                "ft_pct": "0.750",
-                "orb": "15",
-                "drb": "50",
-                "trb": "65",
-                "ast": "40",
-                "stl": "12",
-                "blk": "8",
-                "tov": "20",
-                "pf": "25",
-                "pts": "170",
+                "diff_pts": "10.5",
+                "diff_fg": "5.0",
+                "diff_fga": "8.0",
+                "diff_fg_pct": "0.025",
+                "diff_fg3": "2.0",
+                "diff_fg3a": "4.0",
+                "diff_fg3_pct": "0.015",
+                "diff_efg_pct": "0.030",
+                "diff_ft": "3.0",
+                "diff_fta": "4.0",
+                "diff_ft_pct": "0.010",
+                "diff_orb": "1.5",
+                "diff_orb_pct": "0.020",
+                "diff_drb": "4.0",
+                "diff_drb_pct": "0.015",
+                "diff_trb": "5.5",
+                "diff_trb_pct": "0.018",
+                "diff_ast": "3.0",
+                "diff_stl": "1.0",
+                "diff_blk": "0.5",
+                "diff_tov": "-1.0",
+                "diff_pf": "-0.5",
             }
         )
         assert row.lineup == "A. Davis - L. James - R. Westbrook - M. Monk - C. Anthony"
-        assert row.games_played == 10
-        assert row.points == 170
+        assert row.mp == pytest.approx(200.0)
+        assert row.diff_pts == pytest.approx(10.5)
+        assert row.diff_fg_pct == pytest.approx(0.025)
 
     def test_optional_stat_block_cells_parse_to_none(self):
         row = TeamLineupsRow.model_validate({"lineup": "A. Davis - L. James - M. Monk - C. Anthony - D. Russell"})
-        assert row.games_played is None
-        assert row.points is None
+        assert row.mp is None
+        assert row.diff_pts is None
 
-    def test_missing_required_lineup_raises(self):
-        with pytest.raises(ValidationError):
-            TeamLineupsRow.model_validate({"g": "10", "pts": "170"})
+    def test_empty_model_is_valid(self):
+        """All fields are optional; an empty dict produces a valid model."""
+        row = TeamLineupsRow.model_validate({})
+        assert row.lineup is None
+        assert row.mp is None
+        assert row.diff_pts is None
 
 
 class TestTeamStartingLineupsRow:
     def test_happy_path(self):
         row = TeamStartingLineupsRow.model_validate(
             {
-                "player": "L. James",
-                "g": "82",
-                "mp": "2500",
-                "fg": "650",
-                "fga": "1300",
-                "fg_pct": "0.500",
-                "pts": "1800",
+                "g": "1",
+                "date_game": "Tue, Oct 30, 2018",
+                "game_start_time": "7:30p",
+                "network": "TNT",
+                "box_score_text": "Box Score",
+                "game_location": "@",
+                "opp_name": "Los Angeles Lakers",
+                "game_result": "W",
+                "overtimes": "",
+                "pts": "112",
+                "opp_pts": "108",
+                "wins": "1",
+                "losses": "0",
+                "game_starters": "L. James - A. Davis - ...",
             }
         )
-        assert row.player == "L. James"
-        assert row.games_played == 82
-        assert row.points == 1800
-        assert row.field_goal_percentage == pytest.approx(0.500)
+        assert row.g == 1
+        assert row.date_game == "Tue, Oct 30, 2018"
+        assert row.opp_name == "Los Angeles Lakers"
+        assert row.pts == 112
+        assert row.opp_pts == 108
+        assert row.wins == 1
+        assert row.losses == 0
+        assert row.game_starters == "L. James - A. Davis - ..."
 
-    def test_optional_stat_block_cells_parse_to_none(self):
-        row = TeamStartingLineupsRow.model_validate({"player": "L. James"})
-        assert row.games_played is None
-        assert row.points is None
+    def test_optional_cells_parse_to_none(self):
+        row = TeamStartingLineupsRow.model_validate({})
+        assert row.g is None
+        assert row.pts is None
+        assert row.game_starters is None
 
-    def test_missing_required_player_raises(self):
-        with pytest.raises(ValidationError):
-            TeamStartingLineupsRow.model_validate({"g": "82", "pts": "1800"})
+    def test_empty_model_is_valid(self):
+        """All fields are optional."""
+        row = TeamStartingLineupsRow.model_validate({})
+        assert row.wins is None
+        assert row.losses is None
 
 
 class TestTeamOnOffRow:
     def test_happy_path(self):
         row = TeamOnOffRow.model_validate(
             {
-                "situation": "On",
-                "g": "82",
+                "player": "L. James",
+                "split_id": "On",
                 "mp": "2000",
-                "fg": "400",
-                "fga": "900",
-                "fg_pct": "0.444",
-                "pts": "1100",
+                "efg_pct": "0.544",
+                "orb_pct": "0.250",
+                "drb_pct": "0.750",
+                "trb_pct": "0.125",
+                "ast_pct": "0.220",
+                "stl_pct": "0.015",
+                "blk_pct": "0.030",
+                "tov_pct": "0.120",
+                "pace": "100.5",
+                "off_rtg": "115.0",
             }
         )
-        assert row.situation == "On"
-        assert row.games_played == 82
-        assert row.field_goal_percentage == pytest.approx(0.444)
-        assert row.points == 1100
+        assert row.player == "L. James"
+        assert row.split_id == "On"
+        assert row.mp == 2000
+        assert row.efg_pct == pytest.approx(0.544)
+        assert row.off_rtg == pytest.approx(115.0)
 
     def test_optional_stat_block_cells_parse_to_none(self):
-        row = TeamOnOffRow.model_validate({"situation": "Off"})
-        assert row.games_played is None
-        assert row.points is None
+        row = TeamOnOffRow.model_validate({})
+        assert row.player is None
+        assert row.split_id is None
+        assert row.mp is None
 
-    def test_missing_required_situation_raises(self):
-        with pytest.raises(ValidationError):
-            TeamOnOffRow.model_validate({"g": "82", "pts": "1100"})
+    def test_empty_model_is_valid(self):
+        """All fields are optional."""
+        row = TeamOnOffRow.model_validate({})
+        assert row.efg_pct is None
+        assert row.off_rtg is None
 
 
 class TestFranchiseHistoryRow:
@@ -448,24 +471,39 @@ class TestFranchiseHistoryRow:
         row = FranchiseHistoryRow.model_validate(
             {
                 "season": "2020-21",
-                "team_abbreviation": "LAL",
+                "lg_id": "NBA",
+                "team_name": "LAL",
                 "wins": "42",
                 "losses": "30",
-                "playoffs": "Won Finals",
+                "win_loss_pct": "0.583",
+                "rank_team": "3",
+                "srs": "4.21",
+                "pace": "99.6",
+                "pace_rel": "0.3",
+                "off_rtg": "113.7",
+                "off_rtg_rel": "2.8",
+                "def_rtg": "108.5",
+                "def_rtg_rel": "-2.4",
+                "rank_team_playoffs": "1",
+                "coaches": "Frank Vogel",
+                "top_ws": "LeBron James (9.4)",
             }
         )
         assert row.season == "2020-21"
-        assert row.team_abbreviation == "LAL"
+        assert row.lg_id == "NBA"
+        assert row.team_name == "LAL"
         assert row.wins == 42
         assert row.losses == 30
-        assert row.playoffs == "Won Finals"
+        assert row.win_loss_pct == pytest.approx(0.583)
+        assert row.rank_team_playoffs == 1
+        assert row.coaches == "Frank Vogel"
+        assert row.top_ws == "LeBron James (9.4)"
 
-    def test_optional_playoffs_parses_to_none(self):
-        # Seasons that missed the playoffs have an empty ``playoffs`` cell.
+    def test_optional_cells_parse_to_none(self):
         row = FranchiseHistoryRow.model_validate(
             {
                 "season": "2018-19",
-                "team_abbreviation": "LAL",
+                "team_name": "LAL",
                 "wins": "37",
                 "losses": "45",
             }
@@ -473,11 +511,11 @@ class TestFranchiseHistoryRow:
         assert row.season == "2018-19"
         assert row.wins == 37
         assert row.losses == 45
-        assert row.playoffs is None
+        assert row.rank_team_playoffs is None
+        assert row.coaches is None
 
     def test_team_name_abbr_alias_fallback(self):
-        # Some historical seasons expose ``team_name_abbr`` instead of
-        # ``team_abbreviation`` for the franchise column.
+        # AliasChoices allows ``team_name_abbr`` as an alias for ``team_name``.
         row = FranchiseHistoryRow.model_validate(
             {
                 "season": "2017-18",
@@ -486,14 +524,26 @@ class TestFranchiseHistoryRow:
                 "losses": "27",
             }
         )
-        assert row.team_abbreviation == "BOS"
+        assert row.team_name == "BOS"
+
+    def test_team_abbreviation_alias_fallback(self):
+        # AliasChoices also allows ``team_abbreviation`` for ``team_name``.
+        row = FranchiseHistoryRow.model_validate(
+            {
+                "season": "2019-20",
+                "team_abbreviation": "MIA",
+                "wins": "44",
+                "losses": "29",
+            }
+        )
+        assert row.team_name == "MIA"
 
     def test_missing_required_wins_raises(self):
         with pytest.raises(ValidationError):
             FranchiseHistoryRow.model_validate(
                 {
                     "season": "2020-21",
-                    "team_abbreviation": "LAL",
+                    "team_name": "LAL",
                     "losses": "30",
                 }
             )

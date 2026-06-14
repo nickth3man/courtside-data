@@ -8,13 +8,13 @@ the merged validator, the empty-start-time path, and the alias fallbacks for
 
 from __future__ import annotations
 
-from datetime import UTC, date, datetime
+from datetime import UTC, datetime
 from zoneinfo import ZoneInfo
 
 import pytest
 from pydantic import ValidationError
 
-from courtside_data.data import Outcome, Team
+from courtside_data.data import Team
 from courtside_data.schemas.schedule import SeasonScheduleRow, TeamScheduleRow
 
 _EASTERN = ZoneInfo("US/Eastern")
@@ -34,115 +34,69 @@ def _expected_start_time(raw_date: str, raw_time: str) -> datetime:
 
 
 class TestTeamScheduleRow:
-    def test_happy_path_using_g_and_visitor_aliases(self):
+    def test_happy_path(self):
         raw = {
             "g": "1",
             "date_game": "Tue, Oct 30, 2018",
             "game_start_time": "7:30p",
-            "visitor_team_name": "Boston Celtics",
-            "visitor_pts": "112",
-            "home_team_name": "Los Angeles Lakers",
-            "home_pts": "108",
+            "network": "TNT",
+            "box_score_text": "Box Score",
+            "game_location": "@",
+            "opp_name": "Los Angeles Lakers",
             "game_result": "W",
             "overtimes": "",
+            "pts": "112",
+            "opp_pts": "108",
             "wins": "1",
             "losses": "0",
-            "streak": "W 1",
+            "game_streak": "W 1",
+            "attendance": "18997",
+            "game_duration": "2:15",
+            "game_remarks": "",
         }
         row = TeamScheduleRow.model_validate(raw)
-        assert row.game_number == 1
-        assert row.date == date(2018, 10, 30)
-        assert row.start_time == _expected_start_time("Tue, Oct 30, 2018", "7:30p")
-        assert row.away_team == Team.BOSTON_CELTICS
-        assert row.away_team_score == 112
-        assert row.home_team == Team.LOS_ANGELES_LAKERS
-        assert row.home_team_score == 108
-        assert row.result == Outcome.WIN
-        assert row.overtimes == ""
+        assert row.g == 1
+        assert row.date_game == "Tue, Oct 30, 2018"
+        assert row.game_start_time == "7:30p"
+        assert row.network == "TNT"
+        assert row.box_score_text == "Box Score"
+        assert row.game_location == "@"
+        assert row.opp_name == "Los Angeles Lakers"
+        assert row.game_result == "W"
+        assert row.overtimes is None
+        assert row.pts == 112
+        assert row.opp_pts == 108
         assert row.wins == 1
         assert row.losses == 0
-        assert row.streak == "W 1"
+        assert row.game_streak == "W 1"
+        assert row.attendance == 18997
+        assert row.game_duration == "2:15"
+        assert row.game_remarks is None
 
-    def test_alternative_aliases_away_team_name_and_team_name(self):
-        # Some BR pages expose the team schedule with ``away_team_name`` for
-        # the visitor and ``team_name`` for the home squad.
-        raw = {
-            "game_number": "1",
-            "date_game": "Tue, Oct 30, 2018",
-            "game_start_time": "7:30p",
-            "away_team_name": "Boston Celtics",
-            "away_team_score": "112",
-            "team_name": "Los Angeles Lakers",
-            "home_team_score": "108",
-            "result": "L",
-            "wins": "1",
-            "losses": "0",
-            "streak": "W 1",
-        }
-        row = TeamScheduleRow.model_validate(raw)
-        assert row.away_team == Team.BOSTON_CELTICS
-        assert row.home_team == Team.LOS_ANGELES_LAKERS
-        assert row.result == Outcome.LOSS
+    def test_optional_cells_parse_to_none(self):
+        row = TeamScheduleRow.model_validate({})
+        assert row.g is None
+        assert row.date_game is None
+        assert row.pts is None
+        assert row.opp_pts is None
+        assert row.wins is None
+        assert row.losses is None
+        assert row.attendance is None
 
-    def test_opp_name_alias(self):
-        # ``opp_name`` is the data-stat on the franchise-team schedule pages.
-        raw = {
-            "game_number": "1",
-            "date_game": "Tue, Oct 30, 2018",
-            "game_start_time": "7:30p",
-            "opp_name": "Boston Celtics",
-            "opp_pts": "112",
-            "team_name": "Los Angeles Lakers",
-            "tm_pts": "108",
-            "result": "L",
-            "wins": "1",
-            "losses": "0",
-            "streak": "W 1",
-        }
-        row = TeamScheduleRow.model_validate(raw)
-        assert row.away_team == Team.BOSTON_CELTICS
-        assert row.away_team_score == 112
-        assert row.home_team == Team.LOS_ANGELES_LAKERS
-        assert row.home_team_score == 108
+    def test_empty_strings_become_none_for_int_fields(self):
+        row = TeamScheduleRow.model_validate({"g": "", "pts": "", "opp_pts": "", "attendance": ""})
+        assert row.g is None
+        assert row.pts is None
+        assert row.opp_pts is None
+        assert row.attendance is None
 
-    def test_optional_score_and_overtime_cells_parse_to_none(self):
-        # Future games on a team schedule leave the score columns empty.
-        raw = {
-            "g": "1",
-            "date_game": "Tue, Oct 30, 2018",
-            "game_start_time": "7:30p",
-            "visitor_team_name": "Boston Celtics",
-            "visitor_pts": "",
-            "home_team_name": "Los Angeles Lakers",
-            "home_pts": "",
-            "game_result": "W",
-            "overtimes": "",
-            "wins": "0",
-            "losses": "0",
-            "streak": "",
-        }
-        row = TeamScheduleRow.model_validate(raw)
-        assert row.away_team_score is None
-        assert row.home_team_score is None
-        assert row.overtimes == ""
+    def test_game_result_string_values(self):
+        row = TeamScheduleRow.model_validate({"game_result": "W", "opp_name": "Celtics"})
+        assert row.game_result == "W"
 
-    def test_missing_required_game_number_raises(self):
-        with pytest.raises(ValidationError):
-            TeamScheduleRow.model_validate(
-                {
-                    "date_game": "Tue, Oct 30, 2018",
-                    "game_start_time": "7:30p",
-                    "visitor_team_name": "Boston Celtics",
-                    "visitor_pts": "112",
-                    "home_team_name": "Los Angeles Lakers",
-                    "home_pts": "108",
-                    "game_result": "W",
-                    "overtimes": "",
-                    "wins": "1",
-                    "losses": "0",
-                    "streak": "W 1",
-                }
-            )
+    def test_game_streak_string_values(self):
+        row = TeamScheduleRow.model_validate({"game_streak": "L 3", "opp_name": "Celtics"})
+        assert row.game_streak == "L 3"
 
 
 class TestSeasonScheduleRow:
