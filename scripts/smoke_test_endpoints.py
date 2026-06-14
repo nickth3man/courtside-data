@@ -8,15 +8,17 @@ from __future__ import annotations
 import argparse
 import json
 import random
+import re
 import sys
 import time
 import traceback
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Any
 
 import courtside_data  # noqa: F401  — the 50 endpoint functions (importable)
 from courtside_data import client
-from courtside_data.data import Team
+from courtside_data.data import TEAM_ABBREVIATIONS_TO_TEAM, Team
 from courtside_data.endpoints import ENDPOINTS
 from courtside_data import errors as cderrors
 
@@ -38,21 +40,20 @@ PLAYERS = [
 ]
 SEARCH_TERMS = ["Jordan", "Curry", "LeBron", "Wilt"]
 
-# Date defaults — Christmas 2024 slate (Lakers host Warriors)
+# Date defaults — Christmas 2024 (deterministic date shared by any endpoint
+# that takes day/month/year params; ``play_by_play`` is overridden from the
+# corpus via ``_resolve_play_by_play_params``).
 DEFAULT_DAY = 25
 DEFAULT_MONTH = 12
 DEFAULT_YEAR = 2024
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# Hardcoded overrides for two endpoints (override the random builder)
+# Hardcoded overrides for endpoints that need a curated query (override the
+# random builder). ``play_by_play`` is resolved at runtime from the corpus —
+# see ``_resolve_play_by_play_params`` below — because its ``home_team`` and
+# date pairing must be one that the live BBR index actually exposes.
 # ═══════════════════════════════════════════════════════════════════════════════
 HARDCODED_PARAMS: dict[str, dict[str, Any]] = {
-    "play_by_play": {
-        "home_team": Team.LOS_ANGELES_LAKERS,
-        "day": 25,
-        "month": 12,
-        "year": 2024,
-    },
     "playoff_player_box_scores": {
         "player_identifier": "tatumja01",
         "season_end_year": 2024,
@@ -85,9 +86,12 @@ def build_params(endpoint: Any) -> dict[str, Any]:
     - player_identifier    → random.choice(PLAYERS)
     - term                 → random.choice(SEARCH_TERMS)
     - day / month / year   → Christmas 2024 defaults (not randomized)
-    - home_team            → Team.LOS_ANGELES_LAKERS
     - include_inactive_games → False (bool)
     - include_combined_values → False (bool)
+
+    Endpoints that need a curated (home_team, date) pairing (currently
+    ``play_by_play``) are handled in :func:`main` via
+    :func:`_resolve_play_by_play_params` rather than this builder.
     """
     params: dict[str, Any] = {}
     for param_name in endpoint.params:
@@ -105,11 +109,90 @@ def build_params(endpoint: Any) -> dict[str, Any]:
             params[param_name] = DEFAULT_MONTH
         elif param_name == "year":
             params[param_name] = DEFAULT_YEAR
-        elif param_name == "home_team":
-            params[param_name] = Team.LOS_ANGELES_LAKERS
         elif param_name in ("include_inactive_games", "include_combined_values"):
             params[param_name] = False
     return params
+
+
+# Regex matching the corpus directory naming convention used by
+# ``scripts/raw_download.py`` for ``play_by_play`` fixtures:
+# ``<TEAM_ABBR>_<YYYY>_<MM>_<DD>``. Parsing the directory name directly is the
+# authoritative source of (home_team, date) pairings known to round-trip
+# through the live BBR box-score index.
+_PBP_DIR_RE = re.compile(r"^([A-Z]+)_(\d{4})_(\d{2})_(\d{2})$")
+
+# Filename of the per-game PBP page written by ``raw_download.py`` for a
+# ``play_by_play`` fixture, of the form ``<YYYYMMDD>0<TEAM_ABBR>.html`` (the
+# ``0`` is BBR's home-team slot marker in the daily index URL). Requiring the
+# existence of this file ensures the (home_team, date) pairing is one for
+# which a PBP HTML body was actually downloaded — directory-level metadata
+# (e.g. a daily index page) alone is not enough.
+_PBP_FILE_RE = re.compile(r"^(\d{8})0([A-Z]+)\.html$")
+
+
+def _resolve_play_by_play_params(seed: int) -> dict[str, Any]:
+    """Pick a known-valid ``play_by_play`` (home_team, date) from the corpus.
+
+    Walks ``raw/play_by_play/`` (committed, version-pinned corpus mirrors of
+    real BBR pbp pages), parses each subdirectory name of the form
+    ``<TEAM_ABBR>_<YYYY>_<MM>_<DD>``, requires that the directory also contain
+    a sibling per-game PBP HTML file (``<YYYYMMDD>0<TEAM_ABBR>.html``), and
+    yields a ``{home_team, day, month, year}`` dict for each such fixture.
+    The list is sorted for reproducibility, then one entry is selected
+    deterministically via a separate :class:`random.Random` seeded with
+    *seed*. Using a dedicated RNG keeps the pick reproducible regardless of
+    how many other endpoints the harness has iterated by the time
+    ``play_by_play`` is reached.
+
+    A hardcoded fallback (``MIL + 2018-10-27``) is used when the corpus
+    directory is absent or contains no qualifying fixtures, so the script
+    still runs on a fresh clone with no downloaded fixtures.
+    """
+    corpus_root = Path(__file__).resolve().parent.parent / "raw" / "play_by_play"
+    candidates: list[dict[str, Any]] = []
+    if corpus_root.is_dir():
+        for sub in sorted(corpus_root.iterdir()):
+            if not sub.is_dir():
+                continue
+            match = _PBP_DIR_RE.match(sub.name)
+            if match is None:
+                continue
+            abbr, year, month, day = (
+                match.group(1),
+                int(match.group(2)),
+                int(match.group(3)),
+                int(match.group(4)),
+            )
+            team = TEAM_ABBREVIATIONS_TO_TEAM.get(abbr)
+            if team is None:
+                # Unknown / historical abbreviation — skip rather than guess.
+                continue
+            # Require the per-game PBP HTML file (not just a daily index).
+            pbp_filename = f"{year:04d}{month:02d}{day:02d}0{abbr}.html"
+            if not (sub / pbp_filename).is_file():
+                continue
+            candidates.append(
+                {
+                    "home_team": team,
+                    "day": day,
+                    "month": month,
+                    "year": year,
+                }
+            )
+
+    if not candidates:
+        # Fallback pairing: MIL hosted on 2018-10-27 (a real BBR-indexed game).
+        candidates.append(
+            {
+                "home_team": Team.MILWAUKEE_BUCKS,
+                "day": 27,
+                "month": 10,
+                "year": 2018,
+            }
+        )
+
+    rng = random.Random(seed)
+    return rng.choice(candidates)
 
 
 def build_url(endpoint: Any, params: dict[str, Any]) -> str:
@@ -268,6 +351,11 @@ def main() -> int:
     jailed = False
     t0 = time.perf_counter()
 
+    # Resolve the play_by_play (home_team, date) pairing once per run, from
+    # the corpus. Done before the loop so the result is recorded in the
+    # report even if play_by_play trips the rate-limit jail later.
+    play_by_play_params = _resolve_play_by_play_params(seed)
+
     for i, (name, endpoint) in enumerate(endpoint_items, 1):
         # ── Already jailed → skip ──
         if jailed:
@@ -283,7 +371,9 @@ def main() -> int:
             continue
 
         # ── Apply hardcoded overrides ──
-        if name in HARDCODED_PARAMS:
+        if name == "play_by_play":
+            params = dict(play_by_play_params)
+        elif name in HARDCODED_PARAMS:
             params = dict(HARDCODED_PARAMS[name])
         else:
             params = build_params(endpoint)
@@ -356,6 +446,7 @@ def main() -> int:
         "seed": seed,
         "total_endpoints": total,
         "elapsed_s": round(elapsed, 2),
+        "play_by_play_params": _serialize_params(play_by_play_params),
         "summary": {
             "ok": ok_count,
             "error": error_count,
@@ -386,6 +477,10 @@ def main() -> int:
     md_lines.append(f"- **Skipped**: {meta['summary']['skipped']}")
     if by_category:
         md_lines.append(f"- **By category**: {json.dumps(by_category)}")
+    md_lines.append(
+        f"- **play_by_play pairing**: `{json.dumps(meta['play_by_play_params'])}` "
+        f"(resolved from corpus, seed-deterministic)"
+    )
     md_lines.append("")
 
     # Summary table

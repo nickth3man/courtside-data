@@ -90,6 +90,8 @@ def render() -> str:
     by_section: dict[str, list[str]] = {title: [] for title in SECTIONS.values()}
     for name, endpoint in ENDPOINTS.items():
         module = getattr(client, name).__module__
+        if module not in SECTIONS:
+            continue
         title = SECTIONS[module]
         by_section[title].append(_endpoint_section(name, endpoint))
 
