@@ -8,13 +8,19 @@ from __future__ import annotations
 import argparse
 import json
 import random
+import re
 import sys
 import time
 import traceback
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Any
+from urllib.parse import urlparse
 
-import courtside_data  # noqa: F401  — the 50 endpoint functions (importable)
+REPO_ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(REPO_ROOT))
+
+import courtside_data  # noqa: F401  — endpoint functions (importable)
 from courtside_data import client
 from courtside_data.data import Team
 from courtside_data.endpoints import ENDPOINTS
@@ -42,6 +48,9 @@ SEARCH_TERMS = ["Jordan", "Curry", "LeBron", "Wilt"]
 DEFAULT_DAY = 25
 DEFAULT_MONTH = 12
 DEFAULT_YEAR = 2024
+
+RAW_ROOT = REPO_ROOT / "raw"
+_CORPUS_PARAM_CACHE: dict[str, list[dict[str, Any]]] = {}
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # Hardcoded overrides for two endpoints (override the random builder)
@@ -76,7 +85,88 @@ def _serialize_params(params: dict[str, Any]) -> dict[str, Any]:
     return out
 
 
-def build_params(endpoint: Any) -> dict[str, Any]:
+def _clean_path_template(path: str) -> str:
+    return path.strip().split(",", 1)[0].split(None, 1)[0].split("#", 1)[0]
+
+
+def _field_regex(param_name: str) -> str:
+    if param_name == "game_date":
+        return r"\d{9}"
+    if param_name in {"game_code", "away", "team_abbreviation", "team_a", "team_b"}:
+        return r"[A-Za-z0-9]+"
+    if param_name == "season_end_year":
+        return r"\d{4}"
+    if param_name in {"player_identifier", "slug", "round", "stat", "view"}:
+        return r"[A-Za-z0-9_-]+"
+    return r"[^/]+"
+
+
+def _path_template_regex(path_template: str) -> tuple[re.Pattern[str], dict[str, str]]:
+    template = _clean_path_template(path_template)
+    parts: list[str] = []
+    group_params: dict[str, str] = {}
+    group_counts: dict[str, int] = {}
+    cursor = 0
+    for match in re.finditer(r"\{([^{}]+)\}", template):
+        parts.append(re.escape(template[cursor:match.start()]))
+        raw_param_name = match.group(1)
+        param_name = re.sub(r"\[[^\]]*\]", "", raw_param_name)
+        group_counts[param_name] = group_counts.get(param_name, 0) + 1
+        group_name = f"{param_name}__{group_counts[param_name]}"
+        if "[" not in raw_param_name:
+            group_params[group_name] = param_name
+        parts.append(f"(?P<{group_name}>{_field_regex(param_name)})")
+        cursor = match.end()
+    parts.append(re.escape(template[cursor:]))
+    return re.compile("^" + "".join(parts) + "$"), group_params
+
+
+def _endpoint_family(name: str) -> str | None:
+    if not RAW_ROOT.is_dir():
+        return None
+    families = sorted((path.name for path in RAW_ROOT.iterdir() if path.is_dir()), key=len, reverse=True)
+    for family in families:
+        if name == family or name.startswith(f"{family}_"):
+            return family
+    return None
+
+
+def _corpus_param_sets(name: str, endpoint: Any) -> list[dict[str, Any]]:
+    family = _endpoint_family(name)
+    if not family:
+        return []
+    cache_key = f"{family}:{endpoint.path}"
+    if cache_key in _CORPUS_PARAM_CACHE:
+        return _CORPUS_PARAM_CACHE[cache_key]
+
+    family_dir = RAW_ROOT / family
+    path_re, group_params = _path_template_regex(endpoint.path)
+    candidates: list[dict[str, Any]] = []
+    for sidecar in sorted(family_dir.rglob("*.html.meta.json")):
+        try:
+            meta = json.loads(sidecar.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            continue
+        if meta.get("status_code", 200) != 200:
+            continue
+        parsed = urlparse(str(meta.get("final_url") or meta.get("url") or ""))
+        match = path_re.fullmatch(parsed.path)
+        if not match:
+            continue
+        groups = match.groupdict()
+        params = {
+            param_name: groups[group_name]
+            for group_name, param_name in group_params.items()
+            if param_name in endpoint.params
+        }
+        if params:
+            candidates.append(params)
+
+    _CORPUS_PARAM_CACHE[cache_key] = candidates
+    return candidates
+
+
+def build_params(name: str, endpoint: Any) -> dict[str, Any]:
     """Build a random-but-valid param dict for *endpoint*.
 
     Rules (per param name):
@@ -88,9 +178,16 @@ def build_params(endpoint: Any) -> dict[str, Any]:
     - home_team            → Team.LOS_ANGELES_LAKERS
     - include_inactive_games → False (bool)
     - include_combined_values → False (bool)
+    - raw-corpus params    → first sorted sidecar matching the endpoint URL
     """
     params: dict[str, Any] = {}
+    corpus_params = _corpus_param_sets(name, endpoint)
+    if corpus_params:
+        params.update(corpus_params[0])
+
     for param_name in endpoint.params:
+        if param_name in params:
+            continue
         if param_name == "season_end_year":
             params[param_name] = random.choice(SEASONS)
         elif param_name == "team_abbreviation":
@@ -120,10 +217,11 @@ def build_url(endpoint: Any, params: dict[str, Any]) -> str:
     contains ``{conference}`` that is *not* in params) fall back to the raw
     template string.  Prefix with ``https://www.basketball-reference.com``.
     """
+    path = _clean_path_template(endpoint.path)
     try:
-        formatted = endpoint.path.format(**params)
+        formatted = path.format(**params)
     except (KeyError, IndexError, ValueError, TypeError):
-        formatted = endpoint.path
+        formatted = path
     return f"https://www.basketball-reference.com{formatted}"
 
 
@@ -255,14 +353,27 @@ def main() -> int:
         default=20260614,
         help="RNG seed for reproducible random-query selection (default: 20260614)",
     )
+    parser.add_argument(
+        "--param",
+        action="append",
+        default=[],
+        help="Only run endpoints whose signature includes this parameter. Repeatable.",
+    )
     args = parser.parse_args()
 
     seed: int = args.seed
     random.seed(seed)
 
     started_at = datetime.now(timezone.utc)
-    total = len(ENDPOINTS)
     endpoint_items = list(ENDPOINTS.items())  # insertion-order snapshot
+    if args.param:
+        selected_params = set(args.param)
+        endpoint_items = [
+            (name, endpoint)
+            for name, endpoint in endpoint_items
+            if selected_params.intersection(endpoint.params)
+        ]
+    total = len(endpoint_items)
 
     results: list[dict[str, Any]] = []
     jailed = False
@@ -286,7 +397,7 @@ def main() -> int:
         if name in HARDCODED_PARAMS:
             params = dict(HARDCODED_PARAMS[name])
         else:
-            params = build_params(endpoint)
+            params = build_params(name, endpoint)
 
         url = build_url(endpoint, params)
 
@@ -354,6 +465,7 @@ def main() -> int:
     meta = {
         "started_at_utc": started_at.isoformat(),
         "seed": seed,
+        "selected_params": args.param,
         "total_endpoints": total,
         "elapsed_s": round(elapsed, 2),
         "summary": {
@@ -379,6 +491,8 @@ def main() -> int:
     md_lines.append("")
     md_lines.append(f"- **Started**: {meta['started_at_utc']}")
     md_lines.append(f"- **Seed**: {meta['seed']}")
+    if args.param:
+        md_lines.append(f"- **Selected params**: {', '.join(args.param)}")
     md_lines.append(f"- **Elapsed**: {meta['elapsed_s']:.1f}s")
     md_lines.append(f"- **Total endpoints**: {meta['total_endpoints']}")
     md_lines.append(f"- **OK**: {meta['summary']['ok']}")

@@ -133,10 +133,23 @@ def _path_template(meta: dict[str, Any]) -> str:
     pattern = str(meta.get("canonical_pattern") or "")
     if pattern:
         converted = _convert_placeholders(pattern)
-        if _is_valid_format_template(converted):
-            return converted
+        cleaned = _clean_path_template(converted)
+        if _is_valid_format_template(cleaned):
+            return cleaned
     parsed = urlparse(str(meta.get("final_url") or meta.get("url") or ""))
     return parsed.path or pattern or "/"
+
+
+def _clean_path_template(pattern: str) -> str:
+    """Strip corpus notes from generated URL templates.
+
+    Some raw sidecars preserve human notes in ``canonical_pattern`` (for
+    example ``, player_post_*.html`` or ``(~30 stats x 7-9 views)``). Keep the
+    concrete URL template only, so generated endpoints and smoke reports format
+    usable Basketball-Reference paths.
+    """
+
+    return pattern.strip().split(",", 1)[0].split(None, 1)[0]
 
 
 def _convert_placeholders(pattern: str) -> str:
