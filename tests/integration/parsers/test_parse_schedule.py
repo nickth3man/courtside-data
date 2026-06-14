@@ -1,4 +1,3 @@
-import os
 from datetime import UTC, datetime, timedelta
 from unittest import TestCase
 from zoneinfo import ZoneInfo
@@ -8,6 +7,7 @@ from lxml import html
 from courtside_data.data import TEAM_NAME_TO_TEAM, Team
 from courtside_data.legacy.html import SchedulePage
 from courtside_data.legacy.parsers import ScheduledGamesParser, ScheduledStartTimeParser, TeamNameParser
+from tests.integration.client import raw_fixtures
 
 
 class BaseTest(TestCase):
@@ -15,14 +15,7 @@ class BaseTest(TestCase):
 
     @classmethod
     def setUpClass(cls):
-        with open(
-            os.path.join(
-                os.path.dirname(__file__),
-                f"../files/schedule/{cls._path_from_schedule_directory}",
-            ),
-            encoding="utf-8",
-        ) as file_input:
-            _html = file_input.read()
+        _html = raw_fixtures.schedule_page(cls._path_from_schedule_directory)
         cls._page = SchedulePage(html=html.fromstring(_html))
 
         super().setUpClass()
@@ -31,14 +24,7 @@ class BaseTest(TestCase):
 class BaseParserTest(BaseTest):
     @classmethod
     def setUpClass(cls):
-        with open(
-            os.path.join(
-                os.path.dirname(__file__),
-                f"../files/schedule/{cls._path_from_schedule_directory}",
-            ),
-            encoding="utf-8",
-        ) as file_input:
-            _html = file_input.read()
+        _html = raw_fixtures.schedule_page(cls._path_from_schedule_directory)
         cls._parsed_results = ScheduledGamesParser(
             start_time_parser=ScheduledStartTimeParser(),
             team_name_parser=TeamNameParser(team_names_to_teams=TEAM_NAME_TO_TEAM),

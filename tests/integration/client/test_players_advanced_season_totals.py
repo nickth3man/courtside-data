@@ -8,18 +8,12 @@ from courtside_data.client import players_advanced_season_totals
 from courtside_data.data import OutputType, Position, Team
 from courtside_data.errors import InvalidSeason
 from tests import http_mock as requests_mock
+from tests.integration.client import raw_fixtures
 
 
 class Test2019(TestCase):
     def setUp(self):
-        with open(
-            os.path.join(
-                os.path.dirname(__file__),
-                "../files/player_advanced_season_totals/2019.html",
-            ),
-            encoding="utf8",
-        ) as file_input:
-            self._html = file_input.read()
+        self._html = raw_fixtures.players_advanced_season_totals(2019)
 
     @requests_mock.Mocker()
     def test_length(self, m):
@@ -38,14 +32,7 @@ class BaseTestPlayerAdvancedSeasonTotalsCSVOutput(TestCase):
         raise NotImplementedError
 
     def setUp(self):
-        with open(
-            os.path.join(
-                os.path.dirname(__file__),
-                f"../files/player_advanced_season_totals/{self.year}.html",
-            ),
-            encoding="utf8",
-        ) as file_input:
-            self._html = file_input.read()
+        self._html = raw_fixtures.players_advanced_season_totals(self.year)
 
         self.output_file_path = os.path.join(
             os.path.dirname(__file__),
@@ -88,14 +75,7 @@ class BaseTestPlayerAdvancedSeasonTotalsJSONOutput(TestCase):
         raise NotImplementedError
 
     def setUp(self):
-        with open(
-            os.path.join(
-                os.path.dirname(__file__),
-                f"../files/player_advanced_season_totals/{self.year}.html",
-            ),
-            encoding="utf8",
-        ) as file_input:
-            self._html = file_input.read()
+        self._html = raw_fixtures.players_advanced_season_totals(self.year)
 
         self.output_file_path = os.path.join(
             os.path.dirname(__file__),
@@ -268,14 +248,7 @@ class Test2001PlayerAdvancedSeasonTotalsJSONOutput(BaseTestPlayerAdvancedSeasonT
 @requests_mock.Mocker()
 class TestPlayerAdvancedSeasonTotalsInMemoryOutput(TestCase):
     def setUp(self):
-        with open(
-            os.path.join(
-                os.path.dirname(__file__),
-                "../files/player_advanced_season_totals/2018.html",
-            ),
-            encoding="utf8",
-        ) as file_input:
-            self._html = file_input.read()
+        self._html = raw_fixtures.players_advanced_season_totals(2018)
 
     def test_future_season_raises_invalid_season(self, m):
         m.get(

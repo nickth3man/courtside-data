@@ -1,9 +1,0 @@
-{
-  "byte_count": 505356,
-  "content_type": "text/html",
-  "downloaded_at": "2026-06-02T05:33:48.204720+00:00",
-  "sha256": "1d062c76a525a03252aca997f85614b306a565267077e7f6a0f048de62d73331",
-  "status_code": 200,
-  "tool": "requests",
-  "url": "https://www.basketball-reference.com/boxscores/201701010ATL.html"
-}

@@ -8,14 +8,12 @@ from courtside_data.client import playoff_player_box_scores
 from courtside_data.data import Outcome, OutputType, Team
 from courtside_data.errors import InvalidPlayerAndSeason
 from tests import http_mock as requests_mock
+from tests.integration.client import raw_fixtures
 
 
 class TestRussellWestbrook2019(TestCase):
     def setUp(self):
-        with open(
-            os.path.join(os.path.dirname(__file__), "../files/player_box_scores/2019/westbru01.html"), encoding="utf8"
-        ) as file_input:
-            self._html = file_input.read()
+        self._html = raw_fixtures.gamelog("westbru01", 2019)
 
     @requests_mock.Mocker()
     def test_length(self, m):
@@ -54,10 +52,7 @@ class TestRussellWestbrook2019(TestCase):
 
 class RussellWestbrook2020IncludingInactiveGames(TestCase):
     def setUp(self):
-        with open(
-            os.path.join(os.path.dirname(__file__), "../files/player_box_scores/2020/westbru01.html"), encoding="utf8"
-        ) as file_input:
-            self._html = file_input.read()
+        self._html = raw_fixtures.gamelog("westbru01", 2020)
         self.expected_output_json_file_path = os.path.join(
             os.path.dirname(__file__),
             "./output/expected/playoff_player_box_scores/2020/westbru01/include_inactive.json",
@@ -128,10 +123,7 @@ class RussellWestbrook2020IncludingInactiveGames(TestCase):
 
 class TestNonExistentPlayerPlayoffBoxScores(TestCase):
     def setUp(self):
-        with open(
-            os.path.join(os.path.dirname(__file__), "../files/player_box_scores/2020/foobar.html"), encoding="utf8"
-        ) as file_input:
-            self._html = file_input.read()
+        self._html = raw_fixtures.gamelog("foobar", 2020)
 
     @requests_mock.Mocker()
     def test_get_season_box_scores_for_player_that_does_not_exist_raises_exception(self, m):
@@ -151,10 +143,7 @@ class TestNonExistentPlayerPlayoffBoxScores(TestCase):
 
 class Giannis2020(TestCase):
     def setUp(self):
-        with open(
-            os.path.join(os.path.dirname(__file__), "../files/player_box_scores/2020/antetgi01.html"), encoding="utf8"
-        ) as file_input:
-            self._html = file_input.read()
+        self._html = raw_fixtures.gamelog("antetgi01", 2020)
 
     @requests_mock.Mocker()
     def test_inactive_games_are_removed_by_default(self, m):

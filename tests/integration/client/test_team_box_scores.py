@@ -6,27 +6,22 @@ from unittest import TestCase
 
 import courtside_data.client as client
 from courtside_data.data import Outcome, OutputType, OutputWriteOption, Team
+from tests.integration.client import raw_fixtures
 from tests.integration.client.utilities import ResponseMocker
 
 
 class BoxScoresResponseMocker(ResponseMocker):
     def __init__(self, boxscore_date: date):
         year, month, day = boxscore_date.year, boxscore_date.month, boxscore_date.day
-        boxscores_directory = os.path.join(os.path.dirname(__file__), f"../files/boxscores/{year}/{month}/{day}")
+        boxscores_directory = raw_fixtures.team_box_scores_dir(year, month, day)
 
         basketball_reference_paths_by_filename = {}
-        for file in os.listdir(os.fsencode(boxscores_directory)):
-            filename = os.fsdecode(file)
-            if not filename.endswith(".html"):
-                raise ValueError(
-                    f"Unexpected prefix for {filename}. Expected all files in {boxscores_directory} to end with .html."
-                )
-
-            if filename.startswith("index"):
+        for path in sorted(boxscores_directory.glob("*.html")):
+            if path.name.startswith("index"):
                 key = f"boxscores/?day={day}&month={month}&year={year}"
             else:
-                key = f"/boxscores/{filename}"
-            basketball_reference_paths_by_filename[os.path.join(boxscores_directory, filename)] = key
+                key = f"/boxscores/{path.name}"
+            basketball_reference_paths_by_filename[str(path)] = key
 
         super().__init__(basketball_reference_paths_by_filename=basketball_reference_paths_by_filename)
 

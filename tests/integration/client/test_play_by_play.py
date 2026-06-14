@@ -6,18 +6,12 @@ from courtside_data.client import play_by_play
 from courtside_data.data import OutputType, OutputWriteOption, PeriodType, Team
 from courtside_data.errors import InvalidDate
 from tests import http_mock as requests_mock
+from tests.integration.client import raw_fixtures
 
 
 class Test199911160ATLPlayByPlay(TestCase):
     def setUp(self):
-        with open(
-            os.path.join(
-                os.path.dirname(__file__),
-                "../files/play_by_play/199911160ATL.html",
-            ),
-            encoding="utf8",
-        ) as file_input:
-            self._html = file_input.read()
+        self._html = raw_fixtures.play_by_play_game("199911160ATL")
 
     @requests_mock.Mocker()
     def test_length(self, m):
@@ -33,14 +27,7 @@ class Test199911160ATLPlayByPlay(TestCase):
 
 class Test201810270MILPlayByPlay(TestCase):
     def setUp(self):
-        with open(
-            os.path.join(
-                os.path.dirname(__file__),
-                "../files/play_by_play/201810270MIL.html",
-            ),
-            encoding="utf8",
-        ) as file_input:
-            self._html = file_input.read()
+        self._html = raw_fixtures.play_by_play_game("201810270MIL")
 
     @requests_mock.Mocker()
     def test_length(self, m):
@@ -104,14 +91,7 @@ class Test201810270MILPlayByPlay(TestCase):
 
 class Test201901010DEN(TestCase):
     def setUp(self):
-        with open(
-            os.path.join(
-                os.path.dirname(__file__),
-                "../files/play_by_play/201901010DEN.html",
-            ),
-            encoding="utf8",
-        ) as file_input:
-            self._html = file_input.read()
+        self._html = raw_fixtures.play_by_play_game("201901010DEN")
 
     @requests_mock.Mocker()
     def test_total_play_by_play_length_for_single_digit_month_and_day(self, m):
@@ -175,14 +155,7 @@ class Test201901010DEN(TestCase):
 
 class Test201901010SAC(TestCase):
     def setUp(self):
-        with open(
-            os.path.join(
-                os.path.dirname(__file__),
-                "../files/play_by_play/201901010SAC.html",
-            ),
-            encoding="utf8",
-        ) as file_input:
-            self._html = file_input.read()
+        self._html = raw_fixtures.play_by_play_game("201901010SAC")
 
     @requests_mock.Mocker()
     def test_last_play_by_play_for_overtime_game(self, m):
@@ -211,14 +184,7 @@ class Test201901010SAC(TestCase):
 
 class Test201810160GSW(TestCase):
     def setUp(self):
-        with open(
-            os.path.join(
-                os.path.dirname(__file__),
-                "../files/play_by_play/201810160GSW.html",
-            ),
-            encoding="utf8",
-        ) as file_input:
-            self._html = file_input.read()
+        self._html = raw_fixtures.play_by_play_game("201810160GSW")
 
     @requests_mock.Mocker()
     def test_non_unicode_matches(self, m):
@@ -261,14 +227,7 @@ class TestPlayByPlayCSVOutput(TestCase):
         self.expected_output_file_path = os.path.join(
             os.path.dirname(__file__), "../output/expected/2003_10_29_TOR_pbp.csv"
         )
-        with open(
-            os.path.join(
-                os.path.dirname(__file__),
-                "../files/play_by_play/200310290TOR.html",
-            ),
-            encoding="utf-8",
-        ) as file_input:
-            self._html = file_input.read()
+        self._html = raw_fixtures.play_by_play_game("200310290TOR")
 
     def tearDown(self):
         os.remove(self.output_file_path)
@@ -306,14 +265,7 @@ class TestPlayByPlayJSONOutput(TestCase):
         self.expected_output_file_path = os.path.join(
             os.path.dirname(__file__), "../output/expected/2003_10_29_TOR_pbp.json"
         )
-        with open(
-            os.path.join(
-                os.path.dirname(__file__),
-                "../files/play_by_play/200310290TOR.html",
-            ),
-            encoding="utf8",
-        ) as file_input:
-            self._html = file_input.read()
+        self._html = raw_fixtures.play_by_play_game("200310290TOR")
 
     def tearDown(self):
         os.remove(self.output_file_path)

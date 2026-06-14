@@ -1,5 +1,4 @@
 import datetime
-import os
 from unittest import TestCase
 
 from lxml import html
@@ -19,6 +18,7 @@ from courtside_data.legacy.parsers import (
     SecondsPlayedParser,
     TeamAbbreviationParser,
 )
+from tests.integration.client import raw_fixtures
 
 
 class BaseBoxScoresTestCase(TestCase):
@@ -28,14 +28,7 @@ class BaseBoxScoresTestCase(TestCase):
     def setUpClass(cls):
         assert cls._date is not None, "subclasses must set _date"
         year, month, day = cls._date.year, cls._date.month, cls._date.day
-        with open(
-            os.path.join(
-                os.path.dirname(__file__),
-                f"../files/player_box_scores/{year}/{month}/{day}.html",
-            ),
-            encoding="utf-8",
-        ) as file_input:
-            _html = file_input.read()
+        _html = raw_fixtures.player_daily_box_scores(year, month, day)
         cls._parsed_results = PlayerBoxScoresParser(
             team_abbreviation_parser=TeamAbbreviationParser(abbreviations_to_teams=TEAM_ABBREVIATIONS_TO_TEAM),
             location_abbreviation_parser=LocationAbbreviationParser(

@@ -7,6 +7,7 @@ from unittest import TestCase
 from courtside_data.client import season_schedule
 from courtside_data.data import OutputType, Team
 from tests import http_mock as requests_mock
+from tests.integration.client import raw_fixtures
 from tests.integration.client.utilities import SeasonScheduleMocker
 
 
@@ -51,14 +52,7 @@ class TestSeasonScheduleInMemoryOutput(TestCase):
 
 class TestFutureSeasonSchedule(TestCase):
     def setUp(self):
-        with open(
-            os.path.join(
-                os.path.dirname(__file__),
-                "../files/schedule/not-found.html",
-            ),
-            encoding="utf-8",
-        ) as file_input:
-            self._html = file_input.read()
+        self._html = raw_fixtures.read("season_schedule/not_found.html")
 
     @requests_mock.Mocker()
     def test_future_season_schedule_returns_empty_list(self, m):

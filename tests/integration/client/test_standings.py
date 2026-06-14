@@ -7,6 +7,7 @@ from unittest import TestCase
 from courtside_data.client import standings
 from courtside_data.data import Conference, Division, OutputType, OutputWriteOption, Team
 from tests import http_mock as requests_mock
+from tests.integration.client import raw_fixtures
 
 
 class StandingsMocker:
@@ -30,20 +31,9 @@ class StandingsMocker:
     def mock(self, callable):
         @functools.wraps(callable)
         def inner(*args, **kwargs):
-            html_files_directory = os.path.join(self._schedules_directory, str(self._season_end_year))
             with requests_mock.Mocker() as m:
-                for file in os.listdir(os.fsencode(html_files_directory)):
-                    filename = os.fsdecode(file)
-                    if not filename.endswith(".html"):
-                        raise ValueError(
-                            f"Unexpected prefix for {filename}. Expected all files in {html_files_directory} to end with .html."
-                        )
-
-                    with open(os.path.join(html_files_directory, filename), encoding="utf8") as file_input:
-                        if filename.startswith(str(self._season_end_year)):
-                            key = f"https://www.basketball-reference.com/leagues/NBA_{self._season_end_year}.html"
-                            m.get(key, text=file_input.read(), status_code=200)
-
+                key = f"https://www.basketball-reference.com/leagues/NBA_{self._season_end_year}.html"
+                m.get(key, text=raw_fixtures.standings(self._season_end_year), status_code=200)
                 return callable(*args, **kwargs)
 
         return inner

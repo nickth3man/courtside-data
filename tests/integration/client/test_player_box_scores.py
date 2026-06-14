@@ -7,14 +7,12 @@ from courtside_data.client import player_box_scores
 from courtside_data.data import OutputType, OutputWriteOption
 from courtside_data.errors import InvalidDate
 from tests import http_mock as requests_mock
+from tests.integration.client import raw_fixtures
 
 
 class Test20180101(TestCase):
     def setUp(self):
-        with open(
-            os.path.join(os.path.dirname(__file__), "../files/player_box_scores/2018/1/1.html"), encoding="utf8"
-        ) as file_input:
-            self._html = file_input.read()
+        self._html = raw_fixtures.player_daily_box_scores(2018, 1, 1)
 
     @requests_mock.Mocker()
     def test_player_box_scores_length(self, m):
@@ -29,10 +27,7 @@ class Test20180101(TestCase):
 
 class Test20010101(TestCase):
     def setUp(self):
-        with open(
-            os.path.join(os.path.dirname(__file__), "../files/player_box_scores/2001/1/1.html"), encoding="utf8"
-        ) as file_input:
-            self._html = file_input.read()
+        self._html = raw_fixtures.player_daily_box_scores(2001, 1, 1)
 
     @requests_mock.Mocker()
     def test_2001_01_01_player_box_scores_length(self, m):

@@ -6,6 +6,7 @@ from unittest import TestCase
 from courtside_data import client
 from courtside_data.data import OutputType, Position, Team
 from tests import http_mock as requests_mock
+from tests.integration.client import raw_fixtures
 
 
 class BaseCSVOutputTest(TestCase):
@@ -14,14 +15,7 @@ class BaseCSVOutputTest(TestCase):
         raise NotImplementedError
 
     def setUp(self):
-        with open(
-            os.path.join(
-                os.path.dirname(__file__),
-                f"../files/players_season_totals/{self.year}.html",
-            ),
-            encoding="utf8",
-        ) as file_input:
-            self._html = file_input.read()
+        self._html = raw_fixtures.players_season_totals(self.year)
 
         self.output_file_path = os.path.join(
             os.path.dirname(__file__),
@@ -59,14 +53,7 @@ class BaseJSONOutputTest(TestCase):
         raise NotImplementedError
 
     def setUp(self):
-        with open(
-            os.path.join(
-                os.path.dirname(__file__),
-                f"../files/players_season_totals/{self.year}.html",
-            ),
-            encoding="utf8",
-        ) as file_input:
-            self._html = file_input.read()
+        self._html = raw_fixtures.players_season_totals(self.year)
 
         self.output_file_path = os.path.join(
             os.path.dirname(__file__),
@@ -104,14 +91,7 @@ class BaseInMemoryJSONOutputTest(TestCase):
         raise NotImplementedError
 
     def setUp(self):
-        with open(
-            os.path.join(
-                os.path.dirname(__file__),
-                f"../files/players_season_totals/{self.year}.html",
-            ),
-            encoding="utf8",
-        ) as file_input:
-            self._html = file_input.read()
+        self._html = raw_fixtures.players_season_totals(self.year)
 
         self.expected_output_file_path = os.path.join(
             os.path.dirname(__file__),
@@ -630,14 +610,7 @@ class BaseInMemoryTest(TestCase):
         raise NotImplementedError("Implement year to fetch players season totals for")
 
     def setUp(self):
-        with open(
-            os.path.join(
-                os.path.dirname(__file__),
-                f"../files/players_season_totals/{self.year}.html",
-            ),
-            encoding="utf8",
-        ) as file_input:
-            self._html = file_input.read()
+        self._html = raw_fixtures.players_season_totals(self.year)
 
 
 @requests_mock.Mocker()

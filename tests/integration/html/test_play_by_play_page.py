@@ -1,17 +1,14 @@
-import os
 from unittest import TestCase
 
 from lxml import html
 
 from courtside_data.legacy.html import PlayByPlayPage
+from tests.integration.client import raw_fixtures
 
 
 class TestPlayByPlayPage(TestCase):
     def setUp(self):
-        with open(
-            os.path.join(os.path.dirname(__file__), "../files/play_by_play/199911160ATL.html"), encoding="utf-8"
-        ) as f:
-            self._1999_11_16_ATL_html = f.read()
+        self._1999_11_16_ATL_html = raw_fixtures.play_by_play_game("199911160ATL")
 
     def test_game_url_paths_query(self):
         page = PlayByPlayPage(html=html.fromstring(self._1999_11_16_ATL_html))

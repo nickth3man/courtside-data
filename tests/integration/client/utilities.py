@@ -1,5 +1,4 @@
 import functools
-import os
 
 from tests import http_mock as requests_mock
 
@@ -47,15 +46,23 @@ class ResponseMocker:
 
 
 class SeasonScheduleMocker(ResponseMocker):
+    """Mock a season's schedule pages from the ``raw/season_schedule/<year>`` corpus.
+
+    The corpus stores the main schedule page as ``index.html`` and each month as
+    ``<month>.html`` (the ``schedules_directory`` argument is retained for call-site
+    compatibility but ignored — fixtures are resolved from ``raw/``).
+    """
+
     def __init__(self, schedules_directory: str, season_end_year: int):
+        from tests.integration.client import raw_fixtures
+
+        html_files_directory = raw_fixtures.season_schedule_dir(season_end_year)
         basketball_reference_paths_by_filename: dict[str, str] = {}
-        html_files_directory = os.path.join(schedules_directory, str(season_end_year))
-        for file in os.listdir(os.fsencode(html_files_directory)):
-            filename = os.fsdecode(file)
-            if filename.startswith(str(season_end_year)):
+        for path in sorted(html_files_directory.glob("*.html")):
+            if path.name == "index.html":
                 key = f"leagues/NBA_{season_end_year}_games.html"
             else:
-                key = f"leagues/NBA_{season_end_year}_games-{filename}"
-            basketball_reference_paths_by_filename[os.path.join(html_files_directory, filename)] = key
+                key = f"leagues/NBA_{season_end_year}_games-{path.name}"
+            basketball_reference_paths_by_filename[str(path)] = key
 
         super().__init__(basketball_reference_paths_by_filename=basketball_reference_paths_by_filename)

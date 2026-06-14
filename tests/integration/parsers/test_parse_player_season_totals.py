@@ -1,4 +1,3 @@
-import os
 from unittest import TestCase
 
 from lxml import html
@@ -6,6 +5,7 @@ from lxml import html
 from courtside_data.data import POSITION_ABBREVIATIONS_TO_POSITION, TEAM_ABBREVIATIONS_TO_TEAM, Position, Team
 from courtside_data.legacy.html import PlayerSeasonTotalTable
 from courtside_data.legacy.parsers import PlayerSeasonTotalsParser, PositionAbbreviationParser, TeamAbbreviationParser
+from tests.integration.client import raw_fixtures
 
 
 class BasePlayerSeasonTotalsTestCase(TestCase):
@@ -13,14 +13,7 @@ class BasePlayerSeasonTotalsTestCase(TestCase):
 
     @classmethod
     def setUpClass(cls):
-        with open(
-            os.path.join(
-                os.path.dirname(__file__),
-                f"../files/players_season_totals/{cls._season_end_year}.html",
-            ),
-            encoding="utf-8",
-        ) as file_input:
-            _html = file_input.read()
+        _html = raw_fixtures.players_season_totals(cls._season_end_year)
         cls._parsed_season_totals = PlayerSeasonTotalsParser(
             position_abbreviation_parser=PositionAbbreviationParser(
                 abbreviations_to_positions=POSITION_ABBREVIATIONS_TO_POSITION

@@ -84,5 +84,9 @@ missing_datapoints.md
 # Debug trace logs (debug=True writes one JSON per call; override dir with COURTSIDE_DEBUG_LOG_DIR)
 logs/
 
-# Raw downloaded HTML corpus (regenerable via scripts/raw_download.py)
-raw/
+# Raw downloaded HTML corpus (regenerable via scripts/raw_download.py).
+# Committed and consumed as integration-test fixtures; metadata sidecars are
+# excluded since the tests only read the .html bodies.
+raw/**/*.meta.json
+raw/_manifest.json
+raw/_failures/

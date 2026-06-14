@@ -6,6 +6,7 @@ from unittest import TestCase
 from courtside_data import client
 from courtside_data.data import OutputType, OutputWriteOption
 from tests import http_mock as requests_mock
+from tests.integration.client import raw_fixtures
 
 
 def _dump_results(results):
@@ -15,24 +16,15 @@ def _dump_results(results):
 @requests_mock.Mocker()
 class TestJa(TestCase):
     def setUp(self):
-        with open(os.path.join(os.path.dirname(__file__), "../files/search/ja/0.html"), encoding="utf-8") as file_input:
-            self._html = file_input.read()
-        with open(os.path.join(os.path.dirname(__file__), "../files/search/ja/1.html"), encoding="utf-8") as file_input:
-            self._1_html = file_input.read()
-        with open(os.path.join(os.path.dirname(__file__), "../files/search/ja/2.html"), encoding="utf-8") as file_input:
-            self._2_html = file_input.read()
-        with open(os.path.join(os.path.dirname(__file__), "../files/search/ja/3.html"), encoding="utf-8") as file_input:
-            self._3_html = file_input.read()
-        with open(os.path.join(os.path.dirname(__file__), "../files/search/ja/4.html"), encoding="utf-8") as file_input:
-            self._4_html = file_input.read()
-        with open(os.path.join(os.path.dirname(__file__), "../files/search/ja/5.html"), encoding="utf-8") as file_input:
-            self._5_html = file_input.read()
-        with open(os.path.join(os.path.dirname(__file__), "../files/search/ja/6.html"), encoding="utf-8") as file_input:
-            self._6_html = file_input.read()
-        with open(os.path.join(os.path.dirname(__file__), "../files/search/ja/7.html"), encoding="utf-8") as file_input:
-            self._7_html = file_input.read()
-        with open(os.path.join(os.path.dirname(__file__), "../files/search/ja/8.html"), encoding="utf-8") as file_input:
-            self._8_html = file_input.read()
+        self._html = raw_fixtures.search_ja_page(0)
+        self._1_html = raw_fixtures.search_ja_page(1)
+        self._2_html = raw_fixtures.search_ja_page(2)
+        self._3_html = raw_fixtures.search_ja_page(3)
+        self._4_html = raw_fixtures.search_ja_page(4)
+        self._5_html = raw_fixtures.search_ja_page(5)
+        self._6_html = raw_fixtures.search_ja_page(6)
+        self._7_html = raw_fixtures.search_ja_page(7)
+        self._8_html = raw_fixtures.search_ja_page(8)
 
     def test_length(self, m):
         m.get(
@@ -42,49 +34,49 @@ class TestJa(TestCase):
             complete_qs=True,
         )  # Exact match: prevents subset fallback to this mock from later pagination requests
         m.get(
-            "https://www.basketball-reference.com/search/search.fcgi?search=ja&i=players&offset=100",
+            "https://www.basketball-reference.com/search/search.fcgi?search=ja&idx=players&offset=100",
             text=self._1_html,
             status_code=200,
         )
         m.get(
-            "https://www.basketball-reference.com/search/search.fcgi?search=ja&i=players&offset=200",
+            "https://www.basketball-reference.com/search/search.fcgi?search=ja&idx=players&offset=200",
             text=self._2_html,
             status_code=200,
         )
         m.get(
-            "https://www.basketball-reference.com/search/search.fcgi?search=ja&i=players&offset=300",
+            "https://www.basketball-reference.com/search/search.fcgi?search=ja&idx=players&offset=300",
             text=self._3_html,
             status_code=200,
         )
         m.get(
-            "https://www.basketball-reference.com/search/search.fcgi?search=ja&i=players&offset=400",
+            "https://www.basketball-reference.com/search/search.fcgi?search=ja&idx=players&offset=400",
             text=self._4_html,
             status_code=200,
         )
         m.get(
-            "https://www.basketball-reference.com/search/search.fcgi?search=ja&i=players&offset=500",
+            "https://www.basketball-reference.com/search/search.fcgi?search=ja&idx=players&offset=500",
             text=self._5_html,
             status_code=200,
         )
         m.get(
-            "https://www.basketball-reference.com/search/search.fcgi?search=ja&i=players&offset=600",
+            "https://www.basketball-reference.com/search/search.fcgi?search=ja&idx=players&offset=600",
             text=self._6_html,
             status_code=200,
         )
         m.get(
-            "https://www.basketball-reference.com/search/search.fcgi?search=ja&i=players&offset=700",
+            "https://www.basketball-reference.com/search/search.fcgi?search=ja&idx=players&offset=700",
             text=self._7_html,
             status_code=200,
         )
         m.get(
-            "https://www.basketball-reference.com/search/search.fcgi?search=ja&i=players&offset=800",
+            "https://www.basketball-reference.com/search/search.fcgi?search=ja&idx=players&offset=800",
             text=self._8_html,
             status_code=200,
         )
         results = client.search(term="ja")
         # 1 initial request + 8 paginated requests = 9 total
         self.assertEqual(9, m.call_count)
-        self.assertEqual(863, len(results))
+        self.assertEqual(888, len(results))
         self.assertEqual(
             {"name": "LeBron James", "identifier": "jamesle01", "leagues": set()}, results[0].model_dump(mode="python")
         )
@@ -93,10 +85,7 @@ class TestJa(TestCase):
 @requests_mock.Mocker()
 class TestAlonzoMourning(TestCase):
     def setUp(self):
-        with open(
-            os.path.join(os.path.dirname(__file__), "../files/search/Alonzo Mourning.html"), encoding="utf-8"
-        ) as file_input:
-            self._html = file_input.read()
+        self._html = raw_fixtures.search_term("Alonzo Mourning")
 
     def test_result(self, m):
         m.get(
@@ -121,10 +110,7 @@ class TestAlonzoMourning(TestCase):
 @requests_mock.Mocker()
 class TestDominiqueWilkins(TestCase):
     def setUp(self):
-        with open(
-            os.path.join(os.path.dirname(__file__), "../files/search/Dominique Wilkins.html"), encoding="utf-8"
-        ) as file_input:
-            self._html = file_input.read()
+        self._html = raw_fixtures.search_term("Dominique Wilkins")
 
     def test_result(self, m):
         m.get(
@@ -141,10 +127,7 @@ class TestDominiqueWilkins(TestCase):
 @requests_mock.Mocker()
 class TestRickBarry(TestCase):
     def setUp(self):
-        with open(
-            os.path.join(os.path.dirname(__file__), "../files/search/Rick Barry.html"), encoding="utf-8"
-        ) as file_input:
-            self._html = file_input.read()
+        self._html = raw_fixtures.search_term("Rick Barry")
 
     def test_result(self, m):
         m.get(
@@ -159,10 +142,7 @@ class TestRickBarry(TestCase):
 @requests_mock.Mocker()
 class TestJaebaebae(TestCase):
     def setUp(self):
-        with open(
-            os.path.join(os.path.dirname(__file__), "../files/search/jaebaebae.html"), encoding="utf-8"
-        ) as file_input:
-            self._html = file_input.read()
+        self._html = raw_fixtures.search_term("jaebaebae")
 
     def test_result(self, m):
         m.get(
@@ -175,10 +155,7 @@ class TestJaebaebae(TestCase):
 @requests_mock.Mocker()
 class TestKobeBryant(TestCase):
     def setUp(self):
-        with open(
-            os.path.join(os.path.dirname(__file__), "../files/search/kobe bryant.html"), encoding="utf-8"
-        ) as file_input:
-            self._html = file_input.read()
+        self._html = raw_fixtures.search_term("kobe bryant")
 
     def test_result(self, m):
         m.get(
@@ -193,8 +170,7 @@ class TestKobeBryant(TestCase):
 @requests_mock.Mocker()
 class TestKobe(TestCase):
     def setUp(self):
-        with open(os.path.join(os.path.dirname(__file__), "../files/search/kobe.html"), encoding="utf-8") as file_input:
-            self._html = file_input.read()
+        self._html = raw_fixtures.search_term("kobe")
 
     def test_result(self, m):
         m.get("https://www.basketball-reference.com/search/search.fcgi?search=kobe", text=self._html, status_code=200)
@@ -218,8 +194,7 @@ class TestKobe(TestCase):
 @requests_mock.Mocker()
 class TestSearchJSONFileOutput(TestCase):
     def setUp(self):
-        with open(os.path.join(os.path.dirname(__file__), "../files/search/kobe.html"), encoding="utf-8") as file_input:
-            self._html = file_input.read()
+        self._html = raw_fixtures.search_term("kobe")
         self.output_file_path = os.path.join(
             os.path.dirname(__file__),
             "./output/generated/search/kobe.json",
@@ -247,8 +222,7 @@ class TestSearchJSONFileOutput(TestCase):
 @requests_mock.Mocker()
 class TestSearchJSONInMemoryOutput(TestCase):
     def setUp(self):
-        with open(os.path.join(os.path.dirname(__file__), "../files/search/kobe.html"), encoding="utf-8") as file_input:
-            self._html = file_input.read()
+        self._html = raw_fixtures.search_term("kobe")
         self.output_file_path = os.path.join(
             os.path.dirname(__file__),
             "./output/generated/search/kobe.json",
@@ -275,8 +249,7 @@ class TestSearchJSONInMemoryOutput(TestCase):
 @requests_mock.Mocker()
 class TestSearchCSVOutput(TestCase):
     def setUp(self):
-        with open(os.path.join(os.path.dirname(__file__), "../files/search/kobe.html"), encoding="utf-8") as file_input:
-            self._html = file_input.read()
+        self._html = raw_fixtures.search_term("kobe")
         self.output_file_path = os.path.join(
             os.path.dirname(__file__),
             "./output/generated/search/kobe.csv",

@@ -1,9 +1,0 @@
-{
-  "byte_count": 2116440,
-  "content_type": "text/html",
-  "downloaded_at": "2026-06-02T05:33:53.652993+00:00",
-  "sha256": "88042ca0254bdd573f3db3d2251ce44496ec11250f95c27bfe888af965334aa3",
-  "status_code": 200,
-  "tool": "requests",
-  "url": "https://www.basketball-reference.com/leagues/NBA_2019_advanced.html"
-}

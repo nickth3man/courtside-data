@@ -58,7 +58,7 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
-from urllib.parse import parse_qsl, urlsplit
+from urllib.parse import parse_qsl, quote_plus, urlsplit
 
 import httpx
 from lxml import html
@@ -68,9 +68,9 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-from courtside_data.endpoints import ENDPOINTS, TableEndpoint
-from courtside_data.errors import RateLimitJailed
-from courtside_data.http_service import HTTPService, build_client
+from courtside_data.endpoints import ENDPOINTS, TableEndpoint  # noqa: E402
+from courtside_data.errors import RateLimitJailed  # noqa: E402
+from courtside_data.http_service import HTTPService, build_client  # noqa: E402
 
 logger = logging.getLogger("raw_download")
 
@@ -89,9 +89,7 @@ TOOL_NAME = "courtside-data:5.0.0a1"
 DEFAULT_CSV_PATH = Path("docs/bref_new_page_families.csv")
 BREF_BASE_URL = "https://www.basketball-reference.com/"
 # P1_duplicate CSV rows that are still in scope (need table-id discovery).
-_SCOPED_P1_DUPLICATE_FAMILIES = frozenset(
-    {"season_awards_voting", "friv_upcoming_milestones"}
-)
+_SCOPED_P1_DUPLICATE_FAMILIES = frozenset({"season_awards_voting", "friv_upcoming_milestones"})
 
 
 class RawDownloadError(RuntimeError):
@@ -152,6 +150,7 @@ class FetchResult:
 # Catalog builders
 # ---------------------------------------------------------------------------
 
+
 def _url(path: str) -> str:
     return f"{BASE_URL}{path}"
 
@@ -182,8 +181,10 @@ def _generic_example(
     # in a year digit, a query string, or an unrecognised extension like .fcgi).
     file_name = f"{example_id}.html"
     # Transaction-list endpoints have no table id; the parser uses <ul> lists.
-    resolved_table_ids = () if endpoint.transaction_list_fallback else (
-        _endpoint_table_ids(endpoint, params) if table_ids is None else table_ids
+    resolved_table_ids = (
+        ()
+        if endpoint.transaction_list_fallback
+        else (_endpoint_table_ids(endpoint, params) if table_ids is None else table_ids)
     )
     return RawExample(
         endpoint=endpoint_name,
@@ -220,6 +221,7 @@ def _static_example(endpoint_name: str, example_id: str = "default") -> RawExamp
 # Full catalog: 2 examples per endpoint
 # ---------------------------------------------------------------------------
 
+
 def _build_season_schedule_example(season: int) -> RawExample:
     """Build a season_schedule example by discovering month pages dynamically.
 
@@ -243,18 +245,14 @@ def _build_season_schedule_example(season: int) -> RawExample:
             )
         ]
 
-        for link in document.cssselect(
-            'div#content div.filter div:not([class*="current"]) a'
-        ):
+        for link in document.cssselect('div#content div.filter div:not([class*="current"]) a'):
             href = link.attrib.get("href", "")
             if "games-" in href:
                 month_name = href.split("games-")[-1].removesuffix(".html")
                 tasks.append(
                     FetchTask(
                         url=f"{BASE_URL}{href}",
-                        relative_path=Path("season_schedule")
-                        / str(season)
-                        / f"{month_name}.html",
+                        relative_path=Path("season_schedule") / str(season) / f"{month_name}.html",
                         table_ids=("schedule",),
                     )
                 )
@@ -269,33 +267,241 @@ def _build_season_schedule_example(season: int) -> RawExample:
         client.close()
 
 
+def _build_team_box_scores_example(year: int, month: int, day: int) -> RawExample:
+    """Build a team_box_scores example by discovering that day's games dynamically.
+
+    ``team_box_scores`` reads the daily index and fetches *every* gamelink it
+    lists, so the corpus must contain the index plus one page per game played
+    that day — otherwise a mocked run would request an un-mocked URL.
+    """
+    example_id = f"{year}_{month:02d}_{day:02d}"
+    index_url = f"{BASE_URL}/boxscores/?day={day}&month={month}&year={year}"
+    client = build_client(cache=True)
+    try:
+        response = client.get(index_url)
+        response.raise_for_status()
+        document = html.fromstring(_decompress_if_needed(response.content))
+        tasks: list[FetchTask] = [
+            FetchTask(
+                url=index_url,
+                relative_path=Path("team_box_scores") / example_id / "index.html",
+                table_ids=(),
+            )
+        ]
+        for link in document.cssselect("td.gamelink a"):
+            href = link.attrib.get("href", "")
+            game_id = href.rstrip("/").rsplit("/", 1)[-1].removesuffix(".html")
+            if game_id:
+                tasks.append(
+                    FetchTask(
+                        url=f"{BASE_URL}/boxscores/{game_id}.html",
+                        relative_path=Path("team_box_scores") / example_id / f"{game_id}.html",
+                        table_ids=(),
+                    )
+                )
+        return RawExample(
+            endpoint="team_box_scores",
+            example_id=example_id,
+            params={"day": day, "month": month, "year": year},
+            tasks=tuple(tasks),
+        )
+    finally:
+        client.close()
+
+
+def _build_integration_test_examples() -> list[RawExample]:
+    """Examples the integration test-suite asserts on that the curated catalog omits.
+
+    Added so ``tests/integration/client`` can read fixtures straight from the
+    committed ``raw/`` corpus. Seasons/games already present in the curated
+    catalog are intentionally excluded here (re-fetching them would be a no-op
+    skip). A handful of these (search ``ja`` pagination, the 2018-01-01 game
+    set) are content/time-coupled and their assertions are re-baselined after
+    download.
+    """
+    examples: list[RawExample] = []
+
+    # players_season_totals — every asserted season except 2018 (already curated).
+    for year in (*range(2001, 2018), 2019):
+        examples.append(
+            _generic_example("players_season_totals", str(year), {"season_end_year": year}, ("totals_stats",))
+        )
+
+    # players_advanced_season_totals — asserted seasons except 2019 (curated).
+    for year, combined in ((2001, False), (2016, True), (2017, True), (2018, False)):
+        examples.append(
+            _generic_example(
+                "players_advanced_season_totals",
+                f"{year}_{str(combined).lower()}",
+                {"season_end_year": year, "include_combined_values": combined},
+                ("advanced",),
+            )
+        )
+
+    # standings — asserted seasons (none overlap the curated 2010/2021/2024 set).
+    for year in (2000, 2001, 2002, 2005, 2019, 2020):
+        examples.append(
+            _generic_example(
+                "standings", str(year), {"season_end_year": year}, ("divs_standings_E", "divs_standings_W")
+            )
+        )
+
+    # season_schedule 2001 (2018 already curated; 2026 stays a synthetic not-found fixture).
+    examples.append(_build_season_schedule_example(2001))
+
+    # player daily box scores — 2001-01-01 (client test) plus the dates the
+    # legacy parser tests assert on (2017-12-12 is already curated).
+    daily_box_score_dates = [
+        ("2001_01_01", 1, 1, 2001),
+        ("2003_11_03", 3, 11, 2003),
+        ("2006_11_01", 1, 11, 2006),
+        ("2015_12_18", 18, 12, 2015),
+        ("2017_01_29", 29, 1, 2017),
+    ]
+    for example_id, day, month, year in daily_box_score_dates:
+        examples.append(
+            _generic_example("player_box_scores", example_id, {"day": day, "month": month, "year": year}, ("stats",))
+        )
+
+    # play-by-play — the integration suite only reads the pbp game page (it stubs
+    # the daily index inline), so fetch the pbp page alone. TOR_2003 is curated.
+    pbp_games = [
+        ("ATL_1999_11_16", "199911160ATL"),
+        ("MIL_2018_10_27", "201810270MIL"),
+        ("DEN_2019_01_01", "201901010DEN"),
+        ("SAC_2019_01_01", "201901010SAC"),
+        ("GSW_2018_10_16", "201810160GSW"),
+    ]
+    for example_id, game_id in pbp_games:
+        examples.append(
+            RawExample(
+                endpoint="play_by_play",
+                example_id=example_id,
+                params={"game_id": game_id},
+                tasks=(
+                    FetchTask(
+                        url=f"{BASE_URL}/boxscores/pbp/{game_id}.html",
+                        relative_path=Path("play_by_play") / example_id / f"{game_id}.html",
+                        table_ids=("pbp",),
+                    ),
+                ),
+            )
+        )
+
+    # team box scores — 2018-01-01 (index + every game that day, discovered live).
+    examples.append(_build_team_box_scores_example(2018, 1, 1))
+
+    # player gamelogs (regular + playoff). Reg/playoff share the gamelog URL, so
+    # duplicate (player, season) pairs are served from cache on the second fetch.
+    gamelogs = [
+        ("regular_season_player_box_scores", "brownja01", 2015, "player_game_log_reg"),
+        ("regular_season_player_box_scores", "bradlav01", 2019, "player_game_log_reg"),
+        ("regular_season_player_box_scores", "westbru01", 2020, "player_game_log_reg"),
+        ("playoff_player_box_scores", "westbru01", 2019, "player_game_log_post"),
+        ("playoff_player_box_scores", "westbru01", 2020, "player_game_log_post"),
+        ("playoff_player_box_scores", "antetgi01", 2020, "player_game_log_post"),
+    ]
+    for endpoint_name, player_id, year, table_id in gamelogs:
+        examples.append(
+            _generic_example(
+                endpoint_name,
+                f"{player_id}_{year}",
+                {"player_identifier": player_id, "season_end_year": year, "include_inactive_games": False},
+                (table_id,),
+            )
+        )
+    # Invalid-player gamelog (404/500) for the error-path test.
+    examples.append(
+        RawExample(
+            endpoint="regular_season_player_box_scores",
+            example_id="foobar_2020",
+            params={"player_identifier": "foobar", "season_end_year": 2020},
+            tasks=(
+                FetchTask(
+                    url=f"{BASE_URL}/players/f/foobar/gamelog/2020",
+                    relative_path=Path("regular_season_player_box_scores") / "foobar_2020.html",
+                    table_ids=(),
+                    allowed_statuses=(200, 404, 500),
+                ),
+            ),
+        )
+    )
+
+    # Search — single-match terms (may redirect to a player page), a no-result
+    # term, and the "ja" pagination pages 2-8 (pages 0-1 are curated).
+    search_terms = [
+        ("kobe_bryant", "kobe bryant"),
+        ("alonzo_mourning", "Alonzo Mourning"),
+        ("dominique_wilkins", "Dominique Wilkins"),
+        ("rick_barry", "Rick Barry"),
+        ("jaebaebae", "jaebaebae"),
+    ]
+    for example_id, term in search_terms:
+        examples.append(
+            RawExample(
+                endpoint="search",
+                example_id=example_id,
+                params={"term": term},
+                tasks=(
+                    FetchTask(
+                        url=f"{BASE_URL}/search/search.fcgi?search={quote_plus(term)}",
+                        relative_path=Path("search") / f"{example_id}.html",
+                        table_ids=(),
+                        allowed_statuses=(200,),
+                    ),
+                ),
+            )
+        )
+    for offset in (200, 300, 400, 500, 600, 700, 800):
+        examples.append(
+            RawExample(
+                endpoint="search",
+                example_id=f"ja_page_{offset // 100}",
+                params={"term": "ja", "offset": offset},
+                tasks=(
+                    FetchTask(
+                        url=f"{BASE_URL}/search/search.fcgi?search=ja&i=players&offset={offset}",
+                        relative_path=Path("search") / f"ja_page_{offset // 100}.html",
+                        table_ids=(),
+                    ),
+                ),
+            )
+        )
+
+    return examples
+
+
 def build_catalog() -> tuple[RawExample, ...]:
     """Return the curated raw-HTML example catalog."""
     examples: list[RawExample] = []
 
     # ── League-wide season tables ──
-    examples.extend([
-        _generic_example("league_per_game_stats", "2024", {"season_end_year": 2024}),
-        _generic_example("league_per_game_stats", "2010", {"season_end_year": 2010}),
-        _generic_example("league_per_36_minutes", "2024", {"season_end_year": 2024}),
-        _generic_example("league_per_36_minutes", "2015", {"season_end_year": 2015}),
-        _generic_example("league_totals", "2024", {"season_end_year": 2024}),
-        _generic_example("league_totals", "2012", {"season_end_year": 2012}),
-        _generic_example("league_per_100_possessions", "2024", {"season_end_year": 2024}),
-        _generic_example("league_per_100_possessions", "2016", {"season_end_year": 2016}),
-        _generic_example("league_shooting", "2024", {"season_end_year": 2024}),
-        _generic_example("league_shooting", "2018", {"season_end_year": 2018}),
-        _generic_example("league_transactions", "2024", {"season_end_year": 2024}),
-        _generic_example("league_transactions", "2020", {"season_end_year": 2020}),
-        _generic_example("rookie_stats", "2024", {"season_end_year": 2024}),
-        _generic_example("rookie_stats", "2019", {"season_end_year": 2019}),
-    ])
+    examples.extend(
+        [
+            _generic_example("league_per_game_stats", "2024", {"season_end_year": 2024}),
+            _generic_example("league_per_game_stats", "2010", {"season_end_year": 2010}),
+            _generic_example("league_per_36_minutes", "2024", {"season_end_year": 2024}),
+            _generic_example("league_per_36_minutes", "2015", {"season_end_year": 2015}),
+            _generic_example("league_totals", "2024", {"season_end_year": 2024}),
+            _generic_example("league_totals", "2012", {"season_end_year": 2012}),
+            _generic_example("league_per_100_possessions", "2024", {"season_end_year": 2024}),
+            _generic_example("league_per_100_possessions", "2016", {"season_end_year": 2016}),
+            _generic_example("league_shooting", "2024", {"season_end_year": 2024}),
+            _generic_example("league_shooting", "2018", {"season_end_year": 2018}),
+            _generic_example("league_transactions", "2024", {"season_end_year": 2024}),
+            _generic_example("league_transactions", "2020", {"season_end_year": 2020}),
+            _generic_example("rookie_stats", "2024", {"season_end_year": 2024}),
+            _generic_example("rookie_stats", "2019", {"season_end_year": 2019}),
+        ]
+    )
 
     # Standings requires the bespoke parser page.
-    examples.extend([
-        _generic_example("standings", "2024", {"season_end_year": 2024}, ("divs_standings_E", "divs_standings_W")),
-        _generic_example("standings", "2010", {"season_end_year": 2010}, ("divs_standings_E", "divs_standings_W")),
-    ])
+    examples.extend(
+        [
+            _generic_example("standings", "2024", {"season_end_year": 2024}, ("divs_standings_E", "divs_standings_W")),
+            _generic_example("standings", "2010", {"season_end_year": 2010}, ("divs_standings_E", "divs_standings_W")),
+        ]
+    )
 
     # Standings by date: one example spans both conferences.
     for season in (2024, 2018):
@@ -319,30 +525,36 @@ def build_catalog() -> tuple[RawExample, ...]:
             )
         )
 
-    examples.extend([
-        _generic_example("attendance", "2024", {"season_end_year": 2024}, ("advanced-team",)),
-        _generic_example("attendance", "2016", {"season_end_year": 2016}, ("advanced-team",)),
-    ])
+    examples.extend(
+        [
+            _generic_example("attendance", "2024", {"season_end_year": 2024}, ("advanced-team",)),
+            _generic_example("attendance", "2016", {"season_end_year": 2016}, ("advanced-team",)),
+        ]
+    )
 
     # ── Playoffs ──
-    examples.extend([
-        _generic_example("playoff_per_game", "2024", {"season_end_year": 2024}, ("per_game_stats_post",)),
-        _generic_example("playoff_per_game", "2019", {"season_end_year": 2019}, ("per_game_stats_post",)),
-        _generic_example("playoff_totals", "2024", {"season_end_year": 2024}, ("totals_stats_post",)),
-        _generic_example("playoff_totals", "2018", {"season_end_year": 2018}, ("totals_stats_post",)),
-        _generic_example("playoff_bracket", "2024", {"season_end_year": 2024}, ("all_playoffs",)),
-        _generic_example("playoff_bracket", "2015", {"season_end_year": 2015}, ("all_playoffs",)),
-    ])
+    examples.extend(
+        [
+            _generic_example("playoff_per_game", "2024", {"season_end_year": 2024}, ("per_game_stats_post",)),
+            _generic_example("playoff_per_game", "2019", {"season_end_year": 2019}, ("per_game_stats_post",)),
+            _generic_example("playoff_totals", "2024", {"season_end_year": 2024}, ("totals_stats_post",)),
+            _generic_example("playoff_totals", "2018", {"season_end_year": 2018}, ("totals_stats_post",)),
+            _generic_example("playoff_bracket", "2024", {"season_end_year": 2024}, ("all_playoffs",)),
+            _generic_example("playoff_bracket", "2015", {"season_end_year": 2015}, ("all_playoffs",)),
+        ]
+    )
 
     # ── Draft, awards, leaders ──
-    examples.extend([
-        _generic_example("draft_picks", "2024", {"season_end_year": 2024}, ("stats",)),
-        _generic_example("draft_picks", "2010", {"season_end_year": 2010}, ("stats",)),
-        _generic_example("season_awards", "2024", {"season_end_year": 2024}, ("mvp",)),
-        _generic_example("season_awards", "2015", {"season_end_year": 2015}, ("mvp",)),
-        _static_example("season_leaders", "default"),
-        _static_example("career_leaders", "default"),
-    ])
+    examples.extend(
+        [
+            _generic_example("draft_picks", "2024", {"season_end_year": 2024}, ("stats",)),
+            _generic_example("draft_picks", "2010", {"season_end_year": 2010}, ("stats",)),
+            _generic_example("season_awards", "2024", {"season_end_year": 2024}, ("mvp",)),
+            _generic_example("season_awards", "2015", {"season_end_year": 2015}, ("mvp",)),
+            _static_example("season_leaders", "default"),
+            _static_example("career_leaders", "default"),
+        ]
+    )
 
     # ── Player pages ──
     player_pages = [
@@ -356,32 +568,86 @@ def build_catalog() -> tuple[RawExample, ...]:
         ("player_salaries", "jamesle01", "duranke01", ("all_salaries",)),
     ]
     for endpoint_name, player_a, player_b, table_ids in player_pages:
-        examples.extend([
-            _generic_example(endpoint_name, player_a, {"player_identifier": player_a}, table_ids),
-            _generic_example(endpoint_name, player_b, {"player_identifier": player_b}, table_ids),
-        ])
+        examples.extend(
+            [
+                _generic_example(endpoint_name, player_a, {"player_identifier": player_a}, table_ids),
+                _generic_example(endpoint_name, player_b, {"player_identifier": player_b}, table_ids),
+            ]
+        )
 
     # Player deep pages (robots.txt disallowed)
-    examples.extend([
-        _generic_example("player_splits", "jamesle01_2024", {"player_identifier": "jamesle01", "season_end_year": 2024}, ("splits",)),
-        _generic_example("player_splits", "curryst01_2023", {"player_identifier": "curryst01", "season_end_year": 2023}, ("splits",)),
-        _generic_example("player_on_off", "jamesle01_2024", {"player_identifier": "jamesle01", "season_end_year": 2024}, ("on-off",)),
-        _generic_example("player_on_off", "jokicni01_2024", {"player_identifier": "jokicni01", "season_end_year": 2024}, ("on-off",)),
-        _generic_example("player_shot_charts", "jamesle01_2024", {"player_identifier": "jamesle01", "season_end_year": 2024}, ("shooting",)),
-        _generic_example("player_shot_charts", "curryst01_2024", {"player_identifier": "curryst01", "season_end_year": 2024}, ("shooting",)),
-    ])
+    examples.extend(
+        [
+            _generic_example(
+                "player_splits",
+                "jamesle01_2024",
+                {"player_identifier": "jamesle01", "season_end_year": 2024},
+                ("splits",),
+            ),
+            _generic_example(
+                "player_splits",
+                "curryst01_2023",
+                {"player_identifier": "curryst01", "season_end_year": 2023},
+                ("splits",),
+            ),
+            _generic_example(
+                "player_on_off",
+                "jamesle01_2024",
+                {"player_identifier": "jamesle01", "season_end_year": 2024},
+                ("on-off",),
+            ),
+            _generic_example(
+                "player_on_off",
+                "jokicni01_2024",
+                {"player_identifier": "jokicni01", "season_end_year": 2024},
+                ("on-off",),
+            ),
+            _generic_example(
+                "player_shot_charts",
+                "jamesle01_2024",
+                {"player_identifier": "jamesle01", "season_end_year": 2024},
+                ("shooting",),
+            ),
+            _generic_example(
+                "player_shot_charts",
+                "curryst01_2024",
+                {"player_identifier": "curryst01", "season_end_year": 2024},
+                ("shooting",),
+            ),
+        ]
+    )
 
     # ── Team pages ──
     team_params = [
         ("team_roster", "BOS_2024", {"team_abbreviation": "BOS", "season_end_year": 2024}, ("roster",)),
         ("team_roster", "LAL_2023", {"team_abbreviation": "LAL", "season_end_year": 2023}, ("roster",)),
         ("team_injury_report", "default", {"team_abbreviation": "BOS", "season_end_year": 2024}, ("injuries",)),
-        ("team_and_opponent", "BOS_2024", {"team_abbreviation": "BOS", "season_end_year": 2024}, ("team_and_opponent",)),
-        ("team_and_opponent", "GSW_2023", {"team_abbreviation": "GSW", "season_end_year": 2023}, ("team_and_opponent",)),
+        (
+            "team_and_opponent",
+            "BOS_2024",
+            {"team_abbreviation": "BOS", "season_end_year": 2024},
+            ("team_and_opponent",),
+        ),
+        (
+            "team_and_opponent",
+            "GSW_2023",
+            {"team_abbreviation": "GSW", "season_end_year": 2023},
+            ("team_and_opponent",),
+        ),
         ("team_misc_four_factors", "BOS_2024", {"team_abbreviation": "BOS", "season_end_year": 2024}, ("team_misc",)),
         ("team_misc_four_factors", "MIA_2023", {"team_abbreviation": "MIA", "season_end_year": 2023}, ("team_misc",)),
-        ("team_opponent_stats", "BOS_2024", {"team_abbreviation": "BOS", "season_end_year": 2024}, ("team_and_opponent",)),
-        ("team_opponent_stats", "DEN_2024", {"team_abbreviation": "DEN", "season_end_year": 2024}, ("team_and_opponent",)),
+        (
+            "team_opponent_stats",
+            "BOS_2024",
+            {"team_abbreviation": "BOS", "season_end_year": 2024},
+            ("team_and_opponent",),
+        ),
+        (
+            "team_opponent_stats",
+            "DEN_2024",
+            {"team_abbreviation": "DEN", "season_end_year": 2024},
+            ("team_and_opponent",),
+        ),
         ("team_schedule", "BOS_2024", {"team_abbreviation": "BOS", "season_end_year": 2024}, ("games",)),
         ("team_schedule", "LAL_2023", {"team_abbreviation": "LAL", "season_end_year": 2023}, ("games",)),
         ("team_transactions", "BOS_2024", {"team_abbreviation": "BOS", "season_end_year": 2024}, ("transactions",)),
@@ -392,8 +658,18 @@ def build_catalog() -> tuple[RawExample, ...]:
         ("team_contracts", "LAL", {"team_abbreviation": "LAL"}, ("contracts",)),
         ("team_lineups", "BOS_2024", {"team_abbreviation": "BOS", "season_end_year": 2024}, ("lineups_5-man_",)),
         ("team_lineups", "DEN_2024", {"team_abbreviation": "DEN", "season_end_year": 2024}, ("lineups_5-man_",)),
-        ("team_starting_lineups", "BOS_2024", {"team_abbreviation": "BOS", "season_end_year": 2024}, ("starting_lineups_po0",)),
-        ("team_starting_lineups", "PHO_2024", {"team_abbreviation": "PHO", "season_end_year": 2024}, ("starting_lineups_po0",)),
+        (
+            "team_starting_lineups",
+            "BOS_2024",
+            {"team_abbreviation": "BOS", "season_end_year": 2024},
+            ("starting_lineups_po0",),
+        ),
+        (
+            "team_starting_lineups",
+            "PHO_2024",
+            {"team_abbreviation": "PHO", "season_end_year": 2024},
+            ("starting_lineups_po0",),
+        ),
         ("team_on_off", "BOS_2024", {"team_abbreviation": "BOS", "season_end_year": 2024}, ("on_off",)),
         ("team_on_off", "MIL_2023", {"team_abbreviation": "MIL", "season_end_year": 2023}, ("on_off",)),
         ("franchise_history", "BOS", {"team_abbreviation": "BOS"}, ("BOS",)),
@@ -405,20 +681,22 @@ def build_catalog() -> tuple[RawExample, ...]:
     # ── Bespoke / custom endpoints ──
 
     # Player daily box scores
-    examples.extend([
-        _generic_example(
-            "player_box_scores",
-            "2018_01_01",
-            {"day": 1, "month": 1, "year": 2018},
-            ("stats",),
-        ),
-        _generic_example(
-            "player_box_scores",
-            "2017_12_12",
-            {"day": 12, "month": 12, "year": 2017},
-            ("stats",),
-        ),
-    ])
+    examples.extend(
+        [
+            _generic_example(
+                "player_box_scores",
+                "2018_01_01",
+                {"day": 1, "month": 1, "year": 2018},
+                ("stats",),
+            ),
+            _generic_example(
+                "player_box_scores",
+                "2017_12_12",
+                {"day": 12, "month": 12, "year": 2017},
+                ("stats",),
+            ),
+        ]
+    )
 
     # Team box scores: daily index + individual game pages.
     team_box_score_dates = [
@@ -478,32 +756,34 @@ def build_catalog() -> tuple[RawExample, ...]:
         )
 
     # Player gamelogs (regular season and playoffs)
-    examples.extend([
-        _generic_example(
-            "regular_season_player_box_scores",
-            "westbru01_2019",
-            {"player_identifier": "westbru01", "season_end_year": 2019, "include_inactive_games": False},
-            ("player_game_log_reg",),
-        ),
-        _generic_example(
-            "regular_season_player_box_scores",
-            "antetgi01_2020",
-            {"player_identifier": "antetgi01", "season_end_year": 2020, "include_inactive_games": False},
-            ("player_game_log_reg",),
-        ),
-        _generic_example(
-            "playoff_player_box_scores",
-            "jamesle01_2023",
-            {"player_identifier": "jamesle01", "season_end_year": 2023, "include_inactive_games": False},
-            ("player_game_log_post",),
-        ),
-        _generic_example(
-            "playoff_player_box_scores",
-            "curryst01_2023",
-            {"player_identifier": "curryst01", "season_end_year": 2023, "include_inactive_games": False},
-            ("player_game_log_post",),
-        ),
-    ])
+    examples.extend(
+        [
+            _generic_example(
+                "regular_season_player_box_scores",
+                "westbru01_2019",
+                {"player_identifier": "westbru01", "season_end_year": 2019, "include_inactive_games": False},
+                ("player_game_log_reg",),
+            ),
+            _generic_example(
+                "regular_season_player_box_scores",
+                "antetgi01_2020",
+                {"player_identifier": "antetgi01", "season_end_year": 2020, "include_inactive_games": False},
+                ("player_game_log_reg",),
+            ),
+            _generic_example(
+                "playoff_player_box_scores",
+                "jamesle01_2023",
+                {"player_identifier": "jamesle01", "season_end_year": 2023, "include_inactive_games": False},
+                ("player_game_log_post",),
+            ),
+            _generic_example(
+                "playoff_player_box_scores",
+                "curryst01_2023",
+                {"player_identifier": "curryst01", "season_end_year": 2023, "include_inactive_games": False},
+                ("player_game_log_post",),
+            ),
+        ]
+    )
 
     # Season schedule: main page + monthly pages (discovered dynamically).
     # Includes anomaly seasons: 1999 (lockout, Feb start), 2020 (COVID bubble,
@@ -512,33 +792,39 @@ def build_catalog() -> tuple[RawExample, ...]:
         examples.append(_build_season_schedule_example(season))
 
     # Players season totals
-    examples.extend([
-        _generic_example("players_season_totals", "2024", {"season_end_year": 2024}, ("totals_stats",)),
-        _generic_example("players_season_totals", "2018", {"season_end_year": 2018}, ("totals_stats",)),
-    ])
+    examples.extend(
+        [
+            _generic_example("players_season_totals", "2024", {"season_end_year": 2024}, ("totals_stats",)),
+            _generic_example("players_season_totals", "2018", {"season_end_year": 2018}, ("totals_stats",)),
+        ]
+    )
 
     # Players advanced season totals
-    examples.extend([
-        _generic_example(
-            "players_advanced_season_totals",
-            "2024_false",
-            {"season_end_year": 2024, "include_combined_values": False},
-            ("advanced",),
-        ),
-        _generic_example(
-            "players_advanced_season_totals",
-            "2019_true",
-            {"season_end_year": 2019, "include_combined_values": True},
-            ("advanced",),
-        ),
-    ])
+    examples.extend(
+        [
+            _generic_example(
+                "players_advanced_season_totals",
+                "2024_false",
+                {"season_end_year": 2024, "include_combined_values": False},
+                ("advanced",),
+            ),
+            _generic_example(
+                "players_advanced_season_totals",
+                "2019_true",
+                {"season_end_year": 2019, "include_combined_values": True},
+                ("advanced",),
+            ),
+        ]
+    )
 
     # Search: one redirect, one results page, one no-results, one pagination.
-    examples.extend([
-        _generic_example("search", "kobe", {"term": "kobe"}, ()),
-        _generic_example("search", "Alonz", {"term": "Alonz"}, ()),
-        _generic_example("search", "no_results", {"term": "qqqqqqqqqqq"}, ()),
-    ])
+    examples.extend(
+        [
+            _generic_example("search", "kobe", {"term": "kobe"}, ()),
+            _generic_example("search", "Alonz", {"term": "Alonz"}, ()),
+            _generic_example("search", "no_results", {"term": "qqqqqqqqqqq"}, ()),
+        ]
+    )
 
     # Search pagination: fetch first two pages of "ja" query.
     for page, offset in (("ja_page_0", 0), ("ja_page_1", 100)):
@@ -578,11 +864,36 @@ def build_catalog() -> tuple[RawExample, ...]:
         ("players_season_totals", "1975", {"season_end_year": 1975}, ("totals_stats",)),
         ("players_season_totals", "1980", {"season_end_year": 1980}, ("totals_stats",)),
         ("players_season_totals", "1990", {"season_end_year": 1990}, ("totals_stats",)),
-        ("players_advanced_season_totals", "1974", {"season_end_year": 1974, "include_combined_values": False}, ("advanced",)),
-        ("players_advanced_season_totals", "1977", {"season_end_year": 1977, "include_combined_values": False}, ("advanced",)),
-        ("players_advanced_season_totals", "1978", {"season_end_year": 1978, "include_combined_values": False}, ("advanced",)),
-        ("players_advanced_season_totals", "1985", {"season_end_year": 1985, "include_combined_values": False}, ("advanced",)),
-        ("players_advanced_season_totals", "1990", {"season_end_year": 1990, "include_combined_values": False}, ("advanced",)),
+        (
+            "players_advanced_season_totals",
+            "1974",
+            {"season_end_year": 1974, "include_combined_values": False},
+            ("advanced",),
+        ),
+        (
+            "players_advanced_season_totals",
+            "1977",
+            {"season_end_year": 1977, "include_combined_values": False},
+            ("advanced",),
+        ),
+        (
+            "players_advanced_season_totals",
+            "1978",
+            {"season_end_year": 1978, "include_combined_values": False},
+            ("advanced",),
+        ),
+        (
+            "players_advanced_season_totals",
+            "1985",
+            {"season_end_year": 1985, "include_combined_values": False},
+            ("advanced",),
+        ),
+        (
+            "players_advanced_season_totals",
+            "1990",
+            {"season_end_year": 1990, "include_combined_values": False},
+            ("advanced",),
+        ),
         ("standings", "1974", {"season_end_year": 1974}, ("divs_standings_E", "divs_standings_W")),
         ("standings", "1980", {"season_end_year": 1980}, ("divs_standings_E", "divs_standings_W")),
         ("playoff_per_game", "1980", {"season_end_year": 1980}, ("per_game_stats_post",)),
@@ -594,9 +905,11 @@ def build_catalog() -> tuple[RawExample, ...]:
         ("rookie_stats", "1980", {"season_end_year": 1980}, ("rookies",)),
     ]
     for entry in era_league_endpoints:
-        endpoint_name, example_id, params, table_ids = entry[:4]
-        allowed_statuses = entry[4] if len(entry) > 4 else (200,)
-        examples.append(_generic_example(endpoint_name, example_id, params, table_ids, allowed_statuses=allowed_statuses))
+        endpoint_name, example_id, params, table_ids, *rest = entry
+        allowed_statuses = rest[0] if rest else (200,)
+        examples.append(
+            _generic_example(endpoint_name, example_id, params, table_ids, allowed_statuses=allowed_statuses)
+        )
 
     # ── Era-spanning player career pages (P1/P2) ──
     era_player_pages = [
@@ -616,18 +929,40 @@ def build_catalog() -> tuple[RawExample, ...]:
         examples.append(_generic_example(endpoint_name, player_id, {"player_identifier": player_id}, table_ids))
 
     # ── Era boundary player deep pages (P1) ──
-    examples.extend([
-        _generic_example("player_splits", "birdla01_1980", {"player_identifier": "birdla01", "season_end_year": 1980}, ("splits",)),
-        _generic_example("player_on_off", "jordami01_1997", {"player_identifier": "jordami01", "season_end_year": 1997}, ("on-off",)),
-        _generic_example("player_shot_charts", "jordami01_1997", {"player_identifier": "jordami01", "season_end_year": 1997}, ("shooting",)),
-    ])
+    examples.extend(
+        [
+            _generic_example(
+                "player_splits",
+                "birdla01_1980",
+                {"player_identifier": "birdla01", "season_end_year": 1980},
+                ("splits",),
+            ),
+            _generic_example(
+                "player_on_off",
+                "jordami01_1997",
+                {"player_identifier": "jordami01", "season_end_year": 1997},
+                ("on-off",),
+            ),
+            _generic_example(
+                "player_shot_charts",
+                "jordami01_1997",
+                {"player_identifier": "jordami01", "season_end_year": 1997},
+                ("shooting",),
+            ),
+        ]
+    )
 
     # ── Era/edge-case team pages (P1/P2) ──
     era_team_params = [
         ("team_roster", "BOS_1974", {"team_abbreviation": "BOS", "season_end_year": 1974}, ("roster",)),
         ("team_roster", "BOS_1980", {"team_abbreviation": "BOS", "season_end_year": 1980}, ("roster",)),
         ("team_schedule", "SEA_2008", {"team_abbreviation": "SEA", "season_end_year": 2008}, ("games",)),
-        ("team_and_opponent", "BOS_1974", {"team_abbreviation": "BOS", "season_end_year": 1974}, ("team_and_opponent",)),
+        (
+            "team_and_opponent",
+            "BOS_1974",
+            {"team_abbreviation": "BOS", "season_end_year": 1974},
+            ("team_and_opponent",),
+        ),
         ("team_misc_four_factors", "BOS_1974", {"team_abbreviation": "BOS", "season_end_year": 1974}, ("team_misc",)),
         ("team_splits", "BOS_1980", {"team_abbreviation": "BOS", "season_end_year": 1980}, ("team_splits",)),
         ("team_on_off", "CHI_1997", {"team_abbreviation": "CHI", "season_end_year": 1997}, ("on_off",)),
@@ -640,63 +975,65 @@ def build_catalog() -> tuple[RawExample, ...]:
         examples.append(_generic_example(endpoint_name, example_id, params, table_ids))
 
     # ── Empty-state / error-case fixtures (P0/P2) ──
-    examples.extend([
-        # No-game date for team box scores
-        RawExample(
-            endpoint="team_box_scores",
-            example_id="2024_07_04_no_games",
-            params={"day": 4, "month": 7, "year": 2024},
-            tasks=(
-                FetchTask(
-                    url=f"{BASE_URL}/boxscores/?day=4&month=7&year=2024",
-                    relative_path=Path("team_box_scores") / "2024_07_04" / "index.html",
-                    table_ids=(),
-                    allowed_statuses=(200,),
+    examples.extend(
+        [
+            # No-game date for team box scores
+            RawExample(
+                endpoint="team_box_scores",
+                example_id="2024_07_04_no_games",
+                params={"day": 4, "month": 7, "year": 2024},
+                tasks=(
+                    FetchTask(
+                        url=f"{BASE_URL}/boxscores/?day=4&month=7&year=2024",
+                        relative_path=Path("team_box_scores") / "2024_07_04" / "index.html",
+                        table_ids=(),
+                        allowed_statuses=(200,),
+                    ),
                 ),
             ),
-        ),
-        # Offseason injury report (static URL; reusing same global page is fine)
-        RawExample(
-            endpoint="team_injury_report",
-            example_id="offseason",
-            params={"team_abbreviation": "BOS", "season_end_year": 2024},
-            tasks=(
-                FetchTask(
-                    url=f"{BASE_URL}/friv/injuries.fcgi",
-                    relative_path=Path("team_injury_report") / "offseason.html",
-                    table_ids=("injuries",),
+            # Offseason injury report (static URL; reusing same global page is fine)
+            RawExample(
+                endpoint="team_injury_report",
+                example_id="offseason",
+                params={"team_abbreviation": "BOS", "season_end_year": 2024},
+                tasks=(
+                    FetchTask(
+                        url=f"{BASE_URL}/friv/injuries.fcgi",
+                        relative_path=Path("team_injury_report") / "offseason.html",
+                        table_ids=("injuries",),
+                    ),
                 ),
             ),
-        ),
-        # 404 player page
-        RawExample(
-            endpoint="player_career_stats",
-            example_id="invalid_404",
-            params={"player_identifier": "xyzabc01"},
-            tasks=(
-                FetchTask(
-                    url=f"{BASE_URL}/players/x/xyzabc01.html",
-                    relative_path=Path("errors") / "invalid_player_404.html",
-                    table_ids=(),
-                    allowed_statuses=(404,),
+            # 404 player page
+            RawExample(
+                endpoint="player_career_stats",
+                example_id="invalid_404",
+                params={"player_identifier": "xyzabc01"},
+                tasks=(
+                    FetchTask(
+                        url=f"{BASE_URL}/players/x/xyzabc01.html",
+                        relative_path=Path("errors") / "invalid_player_404.html",
+                        table_ids=(),
+                        allowed_statuses=(404,),
+                    ),
                 ),
             ),
-        ),
-        # 404 team page
-        RawExample(
-            endpoint="team_roster",
-            example_id="invalid_team_404",
-            params={"team_abbreviation": "XYZ", "season_end_year": 2024},
-            tasks=(
-                FetchTask(
-                    url=f"{BASE_URL}/teams/XYZ/2024.html",
-                    relative_path=Path("errors") / "invalid_team_404.html",
-                    table_ids=(),
-                    allowed_statuses=(404,),
+            # 404 team page
+            RawExample(
+                endpoint="team_roster",
+                example_id="invalid_team_404",
+                params={"team_abbreviation": "XYZ", "season_end_year": 2024},
+                tasks=(
+                    FetchTask(
+                        url=f"{BASE_URL}/teams/XYZ/2024.html",
+                        relative_path=Path("errors") / "invalid_team_404.html",
+                        table_ids=(),
+                        allowed_statuses=(404,),
+                    ),
                 ),
             ),
-        ),
-    ])
+        ]
+    )
 
     # ── Play-by-play: first PBP season + multi-OT modern game (P1) ──
     pbp_era_games = [
@@ -725,20 +1062,22 @@ def build_catalog() -> tuple[RawExample, ...]:
         )
 
     # ── Custom player endpoints: additional active/inactive and empty-state cases (P0/P1) ──
-    examples.extend([
-        _generic_example(
-            "regular_season_player_box_scores",
-            "jokicni01_2024",
-            {"player_identifier": "jokicni01", "season_end_year": 2024, "include_inactive_games": True},
-            ("player_game_log_reg",),
-        ),
-        _generic_example(
-            "playoff_player_box_scores",
-            "doncilu01_2024",
-            {"player_identifier": "doncilu01", "season_end_year": 2024, "include_inactive_games": False},
-            ("player_game_log_post",),
-        ),
-    ])
+    examples.extend(
+        [
+            _generic_example(
+                "regular_season_player_box_scores",
+                "jokicni01_2024",
+                {"player_identifier": "jokicni01", "season_end_year": 2024, "include_inactive_games": True},
+                ("player_game_log_reg",),
+            ),
+            _generic_example(
+                "playoff_player_box_scores",
+                "doncilu01_2024",
+                {"player_identifier": "doncilu01", "season_end_year": 2024, "include_inactive_games": False},
+                ("player_game_log_post",),
+            ),
+        ]
+    )
 
     # ── Era/edge-case gaps identified by PDCA cycle 1 (P1) ──
     # Stat-availability boundaries not previously exercised:
@@ -757,7 +1096,12 @@ def build_catalog() -> tuple[RawExample, ...]:
     franchise_relocation_params = [
         # NJN -> BRK rename (2012-13)
         ("team_roster", "BRK_2013", {"team_abbreviation": "BRK", "season_end_year": 2013}, ("roster",)),
-        ("team_and_opponent", "BRK_2013", {"team_abbreviation": "BRK", "season_end_year": 2013}, ("team_and_opponent",)),
+        (
+            "team_and_opponent",
+            "BRK_2013",
+            {"team_abbreviation": "BRK", "season_end_year": 2013},
+            ("team_and_opponent",),
+        ),
         # Vancouver expansion + VAN -> MEM move (2001-02)
         ("team_roster", "VAN_1996", {"team_abbreviation": "VAN", "season_end_year": 1996}, ("roster",)),
         ("team_roster", "MEM_2002", {"team_abbreviation": "MEM", "season_end_year": 2002}, ("roster",)),
@@ -798,12 +1142,16 @@ def build_catalog() -> tuple[RawExample, ...]:
             )
         )
 
+    # Examples the integration test-suite asserts on (beyond the curated set).
+    examples.extend(_build_integration_test_examples())
+
     return tuple(examples)
 
 
 # ---------------------------------------------------------------------------
 # CSV page-family catalog (BREF new page families)
 # ---------------------------------------------------------------------------
+
 
 def _example_id_from_url(sample_url: str) -> str:
     """Derive a descriptive ``example_id`` from a CSV ``sample_url``.
@@ -869,7 +1217,9 @@ def _build_csv_catalog(csv_path: Path) -> list[RawExample]:
             if robots_status != "allowed":
                 logger.debug(
                     "CSV row %d (%s): robots_status=%s, excluded",
-                    row_num + 1, page_family, robots_status,
+                    row_num + 1,
+                    page_family,
+                    robots_status,
                 )
                 continue
             if tier == "P2_new":
@@ -879,13 +1229,16 @@ def _build_csv_catalog(csv_path: Path) -> list[RawExample]:
             else:
                 logger.debug(
                     "CSV row %d (%s): tier=%s, excluded",
-                    row_num + 1, page_family, tier,
+                    row_num + 1,
+                    page_family,
+                    tier,
                 )
                 continue
             if not sample_url.startswith(BREF_BASE_URL):
                 logger.debug(
                     "CSV row %d (%s): sample_url off-domain, excluded",
-                    row_num + 1, page_family,
+                    row_num + 1,
+                    page_family,
                 )
                 continue
 
@@ -918,6 +1271,7 @@ def _build_csv_catalog(csv_path: Path) -> list[RawExample]:
 # ---------------------------------------------------------------------------
 # Validation
 # ---------------------------------------------------------------------------
+
 
 def _decompress_if_needed(content: bytes) -> bytes:
     """Defensively decompress gzip responses.
@@ -965,13 +1319,11 @@ def _discover_table_ids(
     contains without requiring them upfront (so every URL downloads regardless
     of table count).
     """
-    visible_ids = [str(i) for i in document.xpath('//table[@id]/@id')]
+    visible_ids = [str(i) for i in document.xpath("//table[@id]/@id")]
     text = html_bytes.decode("utf-8", errors="ignore")
     commented_ids: list[str] = []
     for comment_body in re.findall(r"<!--(.*?)-->", text, flags=re.DOTALL):
-        commented_ids += re.findall(
-            r"""<table[^>]*\sid=["']([^"']+)["']""", comment_body
-        )
+        commented_ids += re.findall(r"""<table[^>]*\sid=["']([^"']+)["']""", comment_body)
     visible = sorted(set(visible_ids))
     commented = sorted(set(commented_ids))
     union = sorted(set(visible_ids) | set(commented_ids))
@@ -1007,9 +1359,7 @@ def validate_html(
 ) -> None:
     """Validate a downloaded HTML body. Raises RawDownloadError on failure."""
     if len(html_bytes) < MIN_BODY_BYTES:
-        raise RawDownloadError(
-            f"Body too small ({len(html_bytes)} bytes) for {task.url}; likely a block page"
-        )
+        raise RawDownloadError(f"Body too small ({len(html_bytes)} bytes) for {task.url}; likely a block page")
 
     for marker in BLOCKED_MARKERS:
         if marker in html_bytes:
@@ -1025,9 +1375,7 @@ def validate_html(
 
     if not _looks_like_br_page(document):
         title = _extract_title(document)
-        raise RawDownloadError(
-            f"Page title does not look like Basketball-Reference for {task.url} (title={title!r})"
-        )
+        raise RawDownloadError(f"Page title does not look like Basketball-Reference for {task.url} (title={title!r})")
 
     for table_id in task.table_ids:
         if document.xpath(f'//table[@id="{table_id}"]'):
@@ -1041,6 +1389,7 @@ def validate_html(
 # ---------------------------------------------------------------------------
 # Download orchestration
 # ---------------------------------------------------------------------------
+
 
 @dataclass
 class DownloadStats:
@@ -1163,9 +1512,7 @@ def _fetch_one(
         except Exception:  # noqa: BLE001
             document = None
         if document is not None:
-            discovered_visible, discovered_commented, discovered_table_ids = (
-                _discover_table_ids(html_bytes, document)
-            )
+            discovered_visible, discovered_commented, discovered_table_ids = _discover_table_ids(html_bytes, document)
             logger.debug(
                 "Discovered %d table id(s) for %s: visible=%s commented=%s",
                 len(discovered_table_ids),
@@ -1234,16 +1581,10 @@ def download_corpus(
         tasks_to_run = tasks_to_run[:10]
 
     if max_requests is not None and len(tasks_to_run) > max_requests:
-        raise RawDownloadError(
-            f"Would make {len(tasks_to_run)} requests but --max-requests is {max_requests}"
-        )
+        raise RawDownloadError(f"Would make {len(tasks_to_run)} requests but --max-requests is {max_requests}")
 
-    rate_limit_interval = float(
-        os.environ.get("BASKETBALL_REF_RATE_LIMIT_INTERVAL", DEFAULT_RATE_LIMIT_INTERVAL)
-    )
-    rate_limit_jitter = float(
-        os.environ.get("BASKETBALL_REF_RATE_LIMIT_JITTER", DEFAULT_RATE_LIMIT_JITTER)
-    )
+    rate_limit_interval = float(os.environ.get("BASKETBALL_REF_RATE_LIMIT_INTERVAL", DEFAULT_RATE_LIMIT_INTERVAL))
+    rate_limit_jitter = float(os.environ.get("BASKETBALL_REF_RATE_LIMIT_JITTER", DEFAULT_RATE_LIMIT_JITTER))
 
     service = HTTPService(
         cache=DEFAULT_CACHE,
@@ -1304,6 +1645,7 @@ def download_corpus(
 # Manifest and reporting
 # ---------------------------------------------------------------------------
 
+
 def write_manifest(
     output_root: Path,
     examples: Sequence[RawExample],
@@ -1346,9 +1688,7 @@ def write_manifest(
             "failed": stats.failed,
             "total_bytes": stats.total_bytes,
             "wallclock_seconds": round(stats.wallclock_seconds, 2),
-            "effective_rps": round(len(fixtures) / stats.wallclock_seconds, 3)
-            if stats.wallclock_seconds
-            else 0.0,
+            "effective_rps": round(len(fixtures) / stats.wallclock_seconds, 3) if stats.wallclock_seconds else 0.0,
         },
         "endpoint_counts": endpoint_counts,
         "fixtures": fixtures,
@@ -1387,6 +1727,7 @@ def print_summary(
 # ---------------------------------------------------------------------------
 # CLI
 # ---------------------------------------------------------------------------
+
 
 def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
@@ -1466,9 +1807,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         selected = set(args.endpoint)
         examples = [example for example in examples if example.endpoint in selected]
         if not examples:
-            logger.warning(
-                "No examples matched --endpoint filter: %s", sorted(selected)
-            )
+            logger.warning("No examples matched --endpoint filter: %s", sorted(selected))
 
     try:
         results, failures, stats = download_corpus(

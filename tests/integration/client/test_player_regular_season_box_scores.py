@@ -7,14 +7,12 @@ from courtside_data.client import regular_season_player_box_scores
 from courtside_data.data import Outcome, OutputType, Team
 from courtside_data.errors import InvalidPlayerAndSeason
 from tests import http_mock as requests_mock
+from tests.integration.client import raw_fixtures
 
 
 class TestWestbrook2020(TestCase):
     def setUp(self):
-        with open(
-            os.path.join(os.path.dirname(__file__), "../files/player_box_scores/2020/westbru01.html"), encoding="utf8"
-        ) as file_input:
-            self._html = file_input.read()
+        self._html = raw_fixtures.gamelog("westbru01", 2020)
 
     @requests_mock.Mocker()
     def test_length(self, m):
@@ -51,10 +49,7 @@ class TestWestbrook2020(TestCase):
 
 class TestWestbrook2019(TestCase):
     def setUp(self):
-        with open(
-            os.path.join(os.path.dirname(__file__), "../files/player_box_scores/2019/westbru01.html"), encoding="utf8"
-        ) as file_input:
-            self._html = file_input.read()
+        self._html = raw_fixtures.gamelog("westbru01", 2019)
 
     @requests_mock.Mocker()
     def test_length(self, m):
@@ -65,10 +60,7 @@ class TestWestbrook2019(TestCase):
 
 class TestNonExistentPlayerPlayoffBoxScores(TestCase):
     def setUp(self):
-        with open(
-            os.path.join(os.path.dirname(__file__), "../files/player_box_scores/2020/foobar.html"), encoding="utf8"
-        ) as file_input:
-            self._html = file_input.read()
+        self._html = raw_fixtures.gamelog("foobar", 2020)
 
     @requests_mock.Mocker()
     def test_non_existent_player_raises(self, m):
@@ -88,10 +80,7 @@ class TestNonExistentPlayerPlayoffBoxScores(TestCase):
 
 class TestJabariBrown2015(TestCase):
     def setUp(self):
-        with open(
-            os.path.join(os.path.dirname(__file__), "../files/player_box_scores/2015/brownja01.html"), encoding="utf8"
-        ) as file_input:
-            self._html = file_input.read()
+        self._html = raw_fixtures.gamelog("brownja01", 2015)
 
     @requests_mock.Mocker()
     def test_default_does_not_include_inactive_games(self, m):
@@ -160,10 +149,7 @@ class TestJabariBrown2015(TestCase):
 
 class TestAveryBradley2019(TestCase):
     def setUp(self):
-        with open(
-            os.path.join(os.path.dirname(__file__), "../files/player_box_scores/2019/bradlav01.html"), encoding="utf8"
-        ) as file_input:
-            self._html = file_input.read()
+        self._html = raw_fixtures.gamelog("bradlav01", 2019)
         self.expected_excluding_inactive_games_output_json_file_path = os.path.join(
             os.path.dirname(__file__),
             "./output/expected/player_box_scores/2019/bradlav01/exclude_inactive.json",
