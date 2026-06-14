@@ -1,26 +1,41 @@
 #!/usr/bin/env python3
 """Download a raw HTML corpus from basketball-reference.com.
 
-This script populates ``./raw/`` with 2 representative full-HTML examples for
-every endpoint declared in ``courtside_data.endpoints``. It uses the project's
-own ``HTTPService`` so it inherits rate limiting, retry, jail detection, and TLS
+This script populates ``./raw/`` with representative full-HTML examples for
+every endpoint declared in ``courtside_data.endpoints`` AND for every in-scope
+page family listed in the BREF inventory CSV
+(``docs/bref_new_page_families.csv``). It uses the project's own
+``HTTPService`` so it inherits rate limiting, retry, jail detection, and TLS
 impersonation. Run it with conservative settings and never in parallel.
+
+CSV page families are written to ``raw/{page_family}/sample.html`` with the same
+directory layout and duplicate-skip logic as ENDPOINTS examples. Because their
+table ids are unknown up front, they are fetched with ``table_ids=()`` — so
+every URL downloads regardless of how many tables it contains; the tables that
+ARE present are discovered (visible + comment-wrapped) and recorded in the
+sidecar under ``discovered_table_ids``.
 
 Examples
 --------
     # 10-request pilot (recommended before any full run)
     python -m scripts.raw_download --pilot
 
-    # Full corpus download
+    # Full corpus download (ENDPOINTS + CSV page families)
     python -m scripts.raw_download
 
-    # Resume from an interrupted run
+    # Resume from an interrupted run (already-present files are skipped)
     python -m scripts.raw_download
+
+    # Only fetch the CSV page families
+    python -m scripts.raw_download --csv-only
+
+    # ENDPOINTS corpus only (skip CSV page families)
+    python -m scripts.raw_download --no-csv
 
 Environment variables
 ---------------------
 BASKETBALL_REF_RATE_LIMIT_INTERVAL
-    Seconds between requests (default 10.0 for this script).
+    Seconds between requests (default 6.0 for ENDPOINTS rows).
 BASKETBALL_REF_RATE_LIMIT_JITTER
     Extra random seconds up to this value (default 2.0).
 """
@@ -28,11 +43,13 @@ BASKETBALL_REF_RATE_LIMIT_JITTER
 from __future__ import annotations
 
 import argparse
+import csv
 import gzip
 import hashlib
 import json
 import logging
 import os
+import re
 import sys
 import time
 import zlib
@@ -41,6 +58,7 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
+from urllib.parse import parse_qsl, urlsplit
 
 import httpx
 from lxml import html
@@ -68,6 +86,12 @@ BLOCKED_MARKERS = (
     b"Too Many Requests",
 )
 TOOL_NAME = "courtside-data:5.0.0a1"
+DEFAULT_CSV_PATH = Path("docs/bref_new_page_families.csv")
+BREF_BASE_URL = "https://www.basketball-reference.com/"
+# P1_duplicate CSV rows that are still in scope (need table-id discovery).
+_SCOPED_P1_DUPLICATE_FAMILIES = frozenset(
+    {"season_awards_voting", "friv_upcoming_milestones"}
+)
 
 
 class RawDownloadError(RuntimeError):
@@ -121,6 +145,7 @@ class FetchResult:
     attempts: int = 1
     retry_after_seen: int | None = None
     skipped: bool = False
+    discovered_table_ids: list[str] = field(default_factory=list)
 
 
 # ---------------------------------------------------------------------------
@@ -152,8 +177,10 @@ def _generic_example(
 ) -> RawExample:
     endpoint = ENDPOINTS[endpoint_name]
     path = endpoint.path.format(**params)
-    suffix = ".html" if path.endswith(".html") or path.endswith(".cgi") or path.endswith("/") else ""
-    file_name = f"{example_id}{suffix}"
+    # All corpus pages are HTML; always emit the documented .html extension
+    # regardless of the URL path ending (avoids dropping it for paths that end
+    # in a year digit, a query string, or an unrecognised extension like .fcgi).
+    file_name = f"{example_id}.html"
     # Transaction-list endpoints have no table id; the parser uses <ul> lists.
     resolved_table_ids = () if endpoint.transaction_list_fallback else (
         _endpoint_table_ids(endpoint, params) if table_ids is None else table_ids
@@ -479,7 +506,9 @@ def build_catalog() -> tuple[RawExample, ...]:
     ])
 
     # Season schedule: main page + monthly pages (discovered dynamically).
-    for season in (2024, 2018, 1980, 2000, 2012):
+    # Includes anomaly seasons: 1999 (lockout, Feb start), 2020 (COVID bubble,
+    # Mar suspension / Jul-Oct resume), 2021 (compressed Dec start, play-in era).
+    for season in (2024, 2018, 1980, 2000, 2012, 1999, 2020, 2021):
         examples.append(_build_season_schedule_example(season))
 
     # Players season totals
@@ -711,7 +740,179 @@ def build_catalog() -> tuple[RawExample, ...]:
         ),
     ])
 
+    # ── Era/edge-case gaps identified by PDCA cycle 1 (P1) ──
+    # Stat-availability boundaries not previously exercised:
+    examples.append(
+        # First public season of the shooting-detail table (1996-97).
+        _generic_example("league_shooting", "1997", {"season_end_year": 1997}, ("shooting",))
+    )
+    examples.append(
+        # Play-in-era standings seeding labels.
+        _generic_example("standings", "2021", {"season_end_year": 2021}, ("divs_standings_E", "divs_standings_W"))
+    )
+
+    # Franchise relocation / rename / expansion edge cases. The Team enum already
+    # recognises every historical abbreviation below; these exercise abbreviation
+    # resolution, rename boundaries, and split franchise histories.
+    franchise_relocation_params = [
+        # NJN -> BRK rename (2012-13)
+        ("team_roster", "BRK_2013", {"team_abbreviation": "BRK", "season_end_year": 2013}, ("roster",)),
+        ("team_and_opponent", "BRK_2013", {"team_abbreviation": "BRK", "season_end_year": 2013}, ("team_and_opponent",)),
+        # Vancouver expansion + VAN -> MEM move (2001-02)
+        ("team_roster", "VAN_1996", {"team_abbreviation": "VAN", "season_end_year": 1996}, ("roster",)),
+        ("team_roster", "MEM_2002", {"team_abbreviation": "MEM", "season_end_year": 2002}, ("roster",)),
+        # New Orleans abbreviation drift: NOH -> NOK (OKC temp.) -> NOH -> NOP
+        ("team_roster", "NOH_2003", {"team_abbreviation": "NOH", "season_end_year": 2003}, ("roster",)),
+        ("team_roster", "NOK_2006", {"team_abbreviation": "NOK", "season_end_year": 2006}, ("roster",)),
+        ("team_roster", "NOP_2014", {"team_abbreviation": "NOP", "season_end_year": 2014}, ("roster",)),
+        # Charlotte: Bobcats expansion (CHA), original Hornets (CHH), modern reclaim (CHO)
+        ("team_roster", "CHA_2005", {"team_abbreviation": "CHA", "season_end_year": 2005}, ("roster",)),
+        ("team_roster", "CHH_1989", {"team_abbreviation": "CHH", "season_end_year": 1989}, ("roster",)),
+        ("team_roster", "CHO_2015", {"team_abbreviation": "CHO", "season_end_year": 2015}, ("roster",)),
+        # Washington Bullets (WSB) -> Wizards (WAS) rename boundary
+        ("team_roster", "WSB_1997", {"team_abbreviation": "WSB", "season_end_year": 1997}, ("roster",)),
+        ("team_roster", "WAS_1998", {"team_abbreviation": "WAS", "season_end_year": 1998}, ("roster",)),
+        # Kansas City Kings (KCK) -> Sacramento (SAC) move (1985-86)
+        ("team_roster", "KCK_1984", {"team_abbreviation": "KCK", "season_end_year": 1984}, ("roster",)),
+        ("team_roster", "SAC_1986", {"team_abbreviation": "SAC", "season_end_year": 1986}, ("roster",)),
+    ]
+    for endpoint_name, example_id, params, table_ids in franchise_relocation_params:
+        examples.append(_generic_example(endpoint_name, example_id, params, table_ids))
+
+    # League-wide player play-by-play stats page — new page family
+    # (/leagues/NBA_{YEAR}_play-by-play.html) not yet backed by an endpoint.
+    # table_ids=() downloads regardless of table count; endpoint TBD later.
+    for pbp_year in (1997, 2024):
+        examples.append(
+            RawExample(
+                endpoint="league_play_by_play",
+                example_id=str(pbp_year),
+                params={"season_end_year": pbp_year},
+                tasks=(
+                    FetchTask(
+                        url=_url(f"/leagues/NBA_{pbp_year}_play-by-play.html"),
+                        relative_path=Path("league_play_by_play") / f"{pbp_year}.html",
+                        table_ids=(),
+                    ),
+                ),
+            )
+        )
+
     return tuple(examples)
+
+
+# ---------------------------------------------------------------------------
+# CSV page-family catalog (BREF new page families)
+# ---------------------------------------------------------------------------
+
+def _example_id_from_url(sample_url: str) -> str:
+    """Derive a descriptive ``example_id`` from a CSV ``sample_url``.
+
+    Mirrors the older ENDPOINTS convention of naming files by their identifying
+    parameter (``BOS_2024``, ``jamesle01``) rather than a generic placeholder.
+    Rule: last URL path segment (extension stripped) + sorted query params
+    folded in after ``__``; sanitized to be filename-safe. Examples:
+      ``/coaches/mazzujo99c.html``                            -> ``mazzujo99c``
+      ``/boxscores/202606100NYK.html#all_four_factors``       -> ``202606100NYK``
+      ``/leagues/NBA_2026_rookies.html``                      -> ``NBA_2026_rookies``
+      ``/friv/birthdays.fcgi?month=12&day=30``                -> ``birthdays__day-30_month-12``
+    """
+    parts = urlsplit(sample_url)
+    segments = [s for s in parts.path.split("/") if s]
+    if segments:
+        last = segments[-1]
+        for ext in (".html", ".htm", ".fcgi", ".cgi"):
+            if last.endswith(ext):
+                last = last[: -len(ext)]
+                break
+        segments[-1] = last
+    slug = segments[-1] if segments else "index"
+    if parts.query:
+        params = sorted(parse_qsl(parts.query))  # deterministic order by key
+        qs = "_".join(f"{k}-{v}" for k, v in params)
+        slug = f"{slug}__{qs}"
+    slug = re.sub(r"[^A-Za-z0-9._-]+", "_", slug)
+    slug = re.sub(r"_+", "_", slug).strip("._")
+    return slug or "index"
+
+
+def _build_csv_catalog(csv_path: Path) -> list[RawExample]:
+    """Load in-scope page families from the BREF inventory CSV.
+
+    A CSV row is in scope IFF:
+      1. ``robots_status == "allowed"``
+      2. ``tier == "P2_new"`` OR (``tier == "P1_duplicate"`` AND
+         ``page_family`` in :data:`_SCOPED_P1_DUPLICATE_FAMILIES`)
+      3. ``sample_url`` starts with the basketball-reference.com base URL.
+
+    Each in-scope row becomes one :class:`RawExample` writing to
+    ``raw/{page_family}/sample.html`` with ``table_ids=()`` (unknown up front)
+    and ``allowed_statuses=(200, 404)``. Because ``table_ids`` is empty,
+    :func:`validate_html` never rejects a page for missing tables — every URL
+    downloads regardless of table count; discovered tables are recorded in the
+    sidecar instead.
+    """
+    examples: list[RawExample] = []
+    if not csv_path.exists():
+        logger.warning("CSV catalog not found: %s", csv_path)
+        return examples
+
+    with csv_path.open(newline="", encoding="utf-8") as fh:
+        reader = csv.DictReader(fh)
+        for row_num, row in enumerate(reader, start=1):
+            page_family = row.get("page_family", "").strip()
+            category = row.get("category", "").strip()
+            tier = row.get("tier", "").strip()
+            robots_status = row.get("robots_status", "").strip()
+            sample_url = row.get("sample_url", "").strip()
+
+            if robots_status != "allowed":
+                logger.debug(
+                    "CSV row %d (%s): robots_status=%s, excluded",
+                    row_num + 1, page_family, robots_status,
+                )
+                continue
+            if tier == "P2_new":
+                pass
+            elif tier == "P1_duplicate" and page_family in _SCOPED_P1_DUPLICATE_FAMILIES:
+                pass
+            else:
+                logger.debug(
+                    "CSV row %d (%s): tier=%s, excluded",
+                    row_num + 1, page_family, tier,
+                )
+                continue
+            if not sample_url.startswith(BREF_BASE_URL):
+                logger.debug(
+                    "CSV row %d (%s): sample_url off-domain, excluded",
+                    row_num + 1, page_family,
+                )
+                continue
+
+            example_id = _example_id_from_url(sample_url)
+            examples.append(
+                RawExample(
+                    endpoint=page_family,
+                    example_id=example_id,
+                    params={
+                        "category": category,
+                        "tier": tier,
+                        "librarian_row": row.get("librarian_row", "").strip(),
+                        "url": sample_url,
+                    },
+                    tasks=(
+                        FetchTask(
+                            url=sample_url,
+                            relative_path=Path(page_family) / f"{example_id}.html",
+                            table_ids=(),
+                            allowed_statuses=(200, 404),
+                        ),
+                    ),
+                )
+            )
+
+    logger.info("Loaded %d in-scope CSV page families from %s", len(examples), csv_path)
+    return examples
 
 
 # ---------------------------------------------------------------------------
@@ -750,6 +951,31 @@ def _extract_title(document: html.HtmlElement) -> str | None:
 def _looks_like_br_page(document: html.HtmlElement) -> bool:
     title = _extract_title(document) or ""
     return "Basketball-Reference" in title or "Basketball Stats and History" in title
+
+
+def _discover_table_ids(
+    html_bytes: bytes,
+    document: html.HtmlElement,
+) -> tuple[list[str], list[str], list[str]]:
+    """Extract every ``<table id="...">`` — visible and comment-wrapped.
+
+    Basketball-Reference hides many tables inside HTML comments
+    (``<!-- <table id="X"> ... -->``). Returns ``(visible, commented, union)``,
+    each a sorted, deduplicated list. Used to record what tables a page actually
+    contains without requiring them upfront (so every URL downloads regardless
+    of table count).
+    """
+    visible_ids = [str(i) for i in document.xpath('//table[@id]/@id')]
+    text = html_bytes.decode("utf-8", errors="ignore")
+    commented_ids: list[str] = []
+    for comment_body in re.findall(r"<!--(.*?)-->", text, flags=re.DOTALL):
+        commented_ids += re.findall(
+            r"""<table[^>]*\sid=["']([^"']+)["']""", comment_body
+        )
+    visible = sorted(set(visible_ids))
+    commented = sorted(set(commented_ids))
+    union = sorted(set(visible_ids) | set(commented_ids))
+    return visible, commented, union
 
 
 def _snapshot_response(
@@ -885,6 +1111,7 @@ def _fetch_one(
                 sha256=meta.get("sha256", ""),
                 wallclock_ms=0,
                 skipped=True,
+                discovered_table_ids=meta.get("discovered_table_ids", []),
             )
         except (OSError, ValueError):
             pass  # malformed sidecar; refetch
@@ -916,6 +1143,11 @@ def _fetch_one(
         raw_bytes[:2] == b"\x1f\x8b",
     )
 
+    # Discovery state (populated only for HTTP 200 pages).
+    discovered_visible: list[str] = []
+    discovered_commented: list[str] = []
+    discovered_table_ids: list[str] = []
+
     # Skip HTML validation for allowed non-200 statuses (e.g. 404 fixtures)
     if response.status_code == 200:
         try:
@@ -924,6 +1156,23 @@ def _fetch_one(
             failure_path = _save_failure_snapshot(output_root, task, response, html_bytes, str(exc))
             logger.warning("Saved failure snapshot to %s", failure_path)
             raise
+        # Record every <table id> present (visible + comment-wrapped). This is
+        # non-blocking: a page with zero tables still downloads successfully.
+        try:
+            document = html.fromstring(html_bytes)
+        except Exception:  # noqa: BLE001
+            document = None
+        if document is not None:
+            discovered_visible, discovered_commented, discovered_table_ids = (
+                _discover_table_ids(html_bytes, document)
+            )
+            logger.debug(
+                "Discovered %d table id(s) for %s: visible=%s commented=%s",
+                len(discovered_table_ids),
+                task.url,
+                discovered_visible,
+                discovered_commented,
+            )
 
     output_path.write_bytes(html_bytes)
     digest = hashlib.sha256(html_bytes).hexdigest()
@@ -941,6 +1190,9 @@ def _fetch_one(
         "allowed_statuses": task.allowed_statuses,
         "table_ids": task.table_ids,
         "wallclock_ms": wallclock_ms,
+        "discovered_visible_table_ids": discovered_visible,
+        "discovered_commented_table_ids": discovered_commented,
+        "discovered_table_ids": discovered_table_ids,
     }
     metadata_path.write_text(json.dumps(metadata, indent=2, sort_keys=True), encoding="utf-8")
 
@@ -952,6 +1204,7 @@ def _fetch_one(
         byte_count=len(html_bytes),
         sha256=digest,
         wallclock_ms=wallclock_ms,
+        discovered_table_ids=discovered_table_ids,
     )
 
 
@@ -1008,16 +1261,25 @@ def download_corpus(
         try:
             result = _fetch_one(service, task, output_root, force=force)
             if result.skipped:
-                logger.info("[%d/%d] SKIP %s", index, total, label)
+                logger.info(
+                    "[%d/%d] SKIP %s (%d tables: %s)",
+                    index,
+                    total,
+                    label,
+                    len(result.discovered_table_ids),
+                    ",".join(result.discovered_table_ids) or "(none)",
+                )
                 stats.skipped += 1
             else:
                 logger.info(
-                    "[%d/%d] OK %s (%d bytes, %d ms)",
+                    "[%d/%d] OK %s (%d bytes, %d ms, %d tables: %s)",
                     index,
                     total,
                     label,
                     result.byte_count,
                     result.wallclock_ms,
+                    len(result.discovered_table_ids),
+                    ",".join(result.discovered_table_ids) or "(none)",
                 )
                 stats.fetched += 1
                 stats.total_bytes += result.byte_count
@@ -1051,17 +1313,20 @@ def write_manifest(
     fixtures: list[dict[str, Any]] = []
     endpoint_counts: dict[str, int] = {}
 
-    for meta_path in sorted(output_root.rglob("*.html.meta.json")):
+    for meta_path in sorted(output_root.rglob("*.meta.json")):
+        rel_meta = meta_path.relative_to(output_root)
+        if rel_meta.parts[0] == "_failures":
+            continue
         try:
             meta = json.loads(meta_path.read_text(encoding="utf-8"))
         except (OSError, ValueError):
             continue
-        html_path = meta_path.with_suffix("").with_suffix(".html")
-        endpoint = html_path.relative_to(output_root).parts[0]
+        fixture_path = rel_meta.with_suffix("").with_suffix("")  # strips .meta.json
+        endpoint = fixture_path.parts[0]
         endpoint_counts[endpoint] = endpoint_counts.get(endpoint, 0) + 1
         fixtures.append(
             {
-                "path": str(html_path.relative_to(output_root)).replace("\\", "/"),
+                "path": str(fixture_path).replace("\\", "/"),
                 "url": meta.get("url"),
                 "sha256": meta.get("sha256"),
                 "byte_count": meta.get("byte_count"),
@@ -1152,7 +1417,22 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         "--endpoint",
         action="append",
         default=[],
-        help="Only download examples for this endpoint (can repeat)",
+        help="Only download examples for this endpoint or CSV page-family (can repeat)",
+    )
+    parser.add_argument(
+        "--csv",
+        default=str(DEFAULT_CSV_PATH),
+        help="Path to the BREF page-family inventory CSV (default: %(default)s)",
+    )
+    parser.add_argument(
+        "--no-csv",
+        action="store_true",
+        help="Exclude CSV page-family examples (ENDPOINTS corpus only)",
+    )
+    parser.add_argument(
+        "--csv-only",
+        action="store_true",
+        help="Fetch only CSV page-family examples (skip ENDPOINTS corpus)",
     )
     parser.add_argument(
         "--log-level",
@@ -1174,14 +1454,21 @@ def main(argv: Sequence[str] | None = None) -> int:
     output_root = Path(args.output_root)
     output_root.mkdir(parents=True, exist_ok=True)
 
-    examples = list(build_catalog())
+    # Build the merged catalog: ENDPOINTS corpus + CSV page families.
+    if args.csv_only:
+        examples: list[RawExample] = _build_csv_catalog(Path(args.csv))
+    elif args.no_csv:
+        examples = list(build_catalog())
+    else:
+        examples = list(build_catalog()) + _build_csv_catalog(Path(args.csv))
+
     if args.endpoint:
-        endpoints = set(args.endpoint)
-        unknown = endpoints - set(ENDPOINTS)
-        if unknown:
-            print(f"Unknown endpoints: {', '.join(sorted(unknown))}", file=sys.stderr)
-            return 1
-        examples = [example for example in examples if example.endpoint in endpoints]
+        selected = set(args.endpoint)
+        examples = [example for example in examples if example.endpoint in selected]
+        if not examples:
+            logger.warning(
+                "No examples matched --endpoint filter: %s", sorted(selected)
+            )
 
     try:
         results, failures, stats = download_corpus(
