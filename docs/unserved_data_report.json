@@ -512,16 +512,29 @@
       ]
     }
   },
-  "orphan_tables": [],
+  "orphan_tables": [
+    {
+      "claimed": [
+        "pbp_stats"
+      ],
+      "endpoint_dirs": [
+        "league_play_by_play"
+      ],
+      "orphans": [
+        "pbp_stats_post"
+      ],
+      "path": "/leagues/NBA_{season_end_year}_play-by-play.html"
+    }
+  ],
   "summary": {
     "corpus_dirs": 147,
     "disallowed_or_off_domain_families": 18,
     "endpoints_with_dropped_columns": 11,
     "endpoints_with_dropped_columns_actionable": 0,
-    "page_groups_with_orphan_tables": 0,
+    "page_groups_with_orphan_tables": 1,
     "served_endpoints": 341,
     "total_dropped_columns": 259,
-    "total_orphan_tables": 0,
+    "total_orphan_tables": 1,
     "unserved_families": 1,
     "unserved_families_bespoke": 0,
     "unserved_families_trivial": 1
