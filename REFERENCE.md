@@ -23,7 +23,7 @@ League-wide per-game player statistics for a season.
 
 <details><summary>CSV columns</summary>
 
-`name_display`, `pos`, `age`, `team_name_abbr`, `games`, `games_started`, `mp_per_g`, `fg_per_g`, `fga_per_g`, `fg_pct`, `fg3_per_g`, `fg3a_per_g`, `fg3_pct`, `fg2_per_g`, `fg2a_per_g`, `fg2_pct`, `efg_pct`, `ft_per_g`, `fta_per_g`, `ft_pct`, `orb_per_g`, `drb_per_g`, `trb_per_g`, `ast_per_g`, `stl_per_g`, `blk_per_g`, `tov_per_g`, `pf_per_g`, `pts_per_g`
+`name_display`, `age`, `team_name_abbr`, `pos`, `games`, `games_started`, `mp_per_g`, `fg_per_g`, `fga_per_g`, `fg_pct`, `fg3_per_g`, `fg3a_per_g`, `fg3_pct`, `fg2_per_g`, `fg2a_per_g`, `fg2_pct`, `efg_pct`, `ft_per_g`, `fta_per_g`, `ft_pct`, `orb_per_g`, `drb_per_g`, `trb_per_g`, `ast_per_g`, `stl_per_g`, `blk_per_g`, `tov_per_g`, `pf_per_g`, `pts_per_g`, `awards`
 
 </details>
 
@@ -38,7 +38,7 @@ League-wide per-36-minute player statistics for a season.
 
 <details><summary>CSV columns</summary>
 
-`name_display`, `pos`, `age`, `team_name_abbr`, `games`, `games_started`, `mp`, `fg_per_36_min`, `fga_per_36_min`, `fg_pct`, `fg3_per_36_min`, `fg3a_per_36_min`, `fg3_pct`, `fg2_per_36_min`, `fg2a_per_36_min`, `fg2_pct`, `ft_per_36_min`, `fta_per_36_min`, `ft_pct`, `orb_per_36_min`, `drb_per_36_min`, `trb_per_36_min`, `ast_per_36_min`, `stl_per_36_min`, `blk_per_36_min`, `tov_per_36_min`, `pf_per_36_min`, `pts_per_36_min`
+`name_display`, `age`, `team_name_abbr`, `pos`, `games`, `games_started`, `mp`, `fg_per_minute_36`, `fga_per_minute_36`, `fg_pct`, `fg3_per_minute_36`, `fg3a_per_minute_36`, `fg3_pct`, `fg2_per_minute_36`, `fg2a_per_minute_36`, `fg2_pct`, `efg_pct`, `ft_per_minute_36`, `fta_per_minute_36`, `ft_pct`, `orb_per_minute_36`, `drb_per_minute_36`, `trb_per_minute_36`, `ast_per_minute_36`, `stl_per_minute_36`, `blk_per_minute_36`, `tov_per_minute_36`, `pf_per_minute_36`, `pts_per_minute_36`, `awards`
 
 </details>
 
@@ -53,7 +53,7 @@ League-wide total player statistics for a season.
 
 <details><summary>CSV columns</summary>
 
-`name_display`, `pos`, `age`, `team_name_abbr`, `games`, `games_started`, `mp`, `fg`, `fga`, `fg_pct`, `fg3`, `fg3a`, `fg3_pct`, `fg2`, `fg2a`, `fg2_pct`, `efg_pct`, `ft`, `fta`, `ft_pct`, `orb`, `drb`, `trb`, `ast`, `stl`, `blk`, `tov`, `pf`, `pts`
+`name_display`, `age`, `team_name_abbr`, `pos`, `games`, `games_started`, `mp`, `fg`, `fga`, `fg_pct`, `fg3`, `fg3a`, `fg3_pct`, `fg2`, `fg2a`, `fg2_pct`, `efg_pct`, `ft`, `fta`, `ft_pct`, `orb`, `drb`, `trb`, `ast`, `stl`, `blk`, `tov`, `pf`, `pts`, `tpl_dbl`, `awards`
 
 </details>
 
@@ -68,7 +68,7 @@ League-wide per-100-possessions player statistics for a season.
 
 <details><summary>CSV columns</summary>
 
-`name_display`, `pos`, `age`, `team_name_abbr`, `games`, `games_started`, `mp`, `fg_per_100_poss`, `fga_per_100_poss`, `fg_pct`, `fg3_per_100_poss`, `fg3a_per_100_poss`, `fg3_pct`, `fg2_per_100_poss`, `fg2a_per_100_poss`, `fg2_pct`, `ft_per_100_poss`, `fta_per_100_poss`, `ft_pct`, `orb_per_100_poss`, `drb_per_100_poss`, `trb_per_100_poss`, `ast_per_100_poss`, `stl_per_100_poss`, `blk_per_100_poss`, `tov_per_100_poss`, `pf_per_100_poss`, `pts_per_100_poss`
+`name_display`, `age`, `team_name_abbr`, `pos`, `games`, `games_started`, `mp`, `fg_per_poss`, `fga_per_poss`, `fg_pct`, `fg3_per_poss`, `fg3a_per_poss`, `fg3_pct`, `fg2_per_poss`, `fg2a_per_poss`, `fg2_pct`, `efg_pct`, `ft_per_poss`, `fta_per_poss`, `ft_pct`, `orb_per_poss`, `drb_per_poss`, `trb_per_poss`, `ast_per_poss`, `stl_per_poss`, `blk_per_poss`, `tov_per_poss`, `pf_per_poss`, `pts_per_poss`, `off_rtg`, `def_rtg`, `awards`
 
 </details>
 
@@ -83,7 +83,22 @@ League-wide shooting statistics for a season.
 
 <details><summary>CSV columns</summary>
 
-`name_display`, `pos`, `age`, `team_name_abbr`, `games`, `mp`, `fg_pct_from_0_3_ft`, `fg_pct_from_3_10_ft`, `fg_pct_from_10_16_ft`, `fg_pct_from_16_3p`, `fg_pct_from_3p`, `pct_fga_from_0_3_ft`, `pct_fga_from_3_10_ft`, `pct_fga_from_10_16_ft`, `pct_fga_from_16_3p`, `pct_fga_from_3p`, `fg_pct_from_2p`, `fg_pct_from_0_3_ft_2`, `fg_pct_from_corner_3`, `pct_fga_from_corner_3`, `num_shots_heaved`, `pct_shots_heaved`
+`name_display`, `age`, `team_name_abbr`, `pos`, `games`, `games_started`, `mp`, `fg_pct`, `avg_dist`, `pct_fga_fg2a`, `pct_fga_00_03`, `pct_fga_03_10`, `pct_fga_10_16`, `pct_fga_16_xx`, `pct_fga_fg3a`, `fg_pct_fg2a`, `fg_pct_00_03`, `fg_pct_03_10`, `fg_pct_10_16`, `fg_pct_16_xx`, `fg_pct_fg3a`, `pct_ast_fg2`, `pct_ast_fg3`, `pct_fga_dunk`, `fg_dunk`, `pct_fg3a_corner3`, `fg_pct_corner3`, `fg3a_heave`, `fg3_heave`, `awards`
+
+</details>
+
+### `league_play_by_play`
+
+League-wide play-by-play derived player statistics for a season.
+
+- **Parameters:** `season_end_year`
+- **URL:** `/leagues/NBA_{season_end_year}_play-by-play.html`
+- **Table:** `table#pbp_stats`
+- **Raises:** `InvalidSeason` on HTTP 404
+
+<details><summary>CSV columns</summary>
+
+`name_display`, `age`, `team_name_abbr`, `pos`, `games`, `games_started`, `mp`, `pct_1`, `pct_2`, `pct_3`, `pct_4`, `pct_5`, `plus_minus_on`, `plus_minus_net`, `tov_bad_pass`, `tov_lost_ball`, `fouls_shooting`, `fouls_offensive`, `drawn_shooting`, `drawn_offensive`, `astd_pts`, `and1s`, `own_shots_blk`, `awards`
 
 </details>
 
@@ -113,7 +128,7 @@ Rookie statistics for a season.
 
 <details><summary>CSV columns</summary>
 
-`name_display`, `pos`, `age`, `team_name_abbr`, `games`, `games_started`, `mp_per_g`, `fg_per_g`, `fga_per_g`, `fg_pct`, `fg3_per_g`, `fg3a_per_g`, `fg3_pct`, `fg2_per_g`, `fg2a_per_g`, `fg2_pct`, `efg_pct`, `ft_per_g`, `fta_per_g`, `ft_pct`, `orb_per_g`, `drb_per_g`, `trb_per_g`, `ast_per_g`, `stl_per_g`, `blk_per_g`, `tov_per_g`, `pf_per_g`, `pts_per_g`
+`player`, `debut`, `age`, `years`, `g`, `mp`, `fg`, `fga`, `fg3`, `fg3a`, `ft`, `fta`, `orb`, `trb`, `ast`, `stl`, `blk`, `tov`, `pf`, `pts`, `fg_pct`, `fg3_pct`, `ft_pct`, `mp_per_g`, `pts_per_g`, `trb_per_g`, `ast_per_g`, `stl_per_g`, `blk_per_g`
 
 </details>
 
@@ -175,7 +190,7 @@ Playoff per-game player statistics for a season.
 
 <details><summary>CSV columns</summary>
 
-`name_display`, `pos`, `age`, `team_name_abbr`, `games`, `games_started`, `mp_per_g`, `fg_per_g`, `fga_per_g`, `fg_pct`, `fg3_per_g`, `fg3a_per_g`, `fg3_pct`, `fg2_per_g`, `fg2a_per_g`, `fg2_pct`, `efg_pct`, `ft_per_g`, `fta_per_g`, `ft_pct`, `orb_per_g`, `drb_per_g`, `trb_per_g`, `ast_per_g`, `stl_per_g`, `blk_per_g`, `tov_per_g`, `pf_per_g`, `pts_per_g`
+`name_display`, `age`, `team_name_abbr`, `pos`, `games`, `games_started`, `mp_per_g`, `fg_per_g`, `fga_per_g`, `fg_pct`, `fg3_per_g`, `fg3a_per_g`, `fg3_pct`, `fg2_per_g`, `fg2a_per_g`, `fg2_pct`, `efg_pct`, `ft_per_g`, `fta_per_g`, `ft_pct`, `orb_per_g`, `drb_per_g`, `trb_per_g`, `ast_per_g`, `stl_per_g`, `blk_per_g`, `tov_per_g`, `pf_per_g`, `pts_per_g`, `awards`
 
 </details>
 
@@ -190,7 +205,7 @@ Playoff total player statistics for a season.
 
 <details><summary>CSV columns</summary>
 
-`name_display`, `pos`, `age`, `team_name_abbr`, `games`, `games_started`, `mp`, `fg`, `fga`, `fg_pct`, `fg3`, `fg3a`, `fg3_pct`, `fg2`, `fg2a`, `fg2_pct`, `efg_pct`, `ft`, `fta`, `ft_pct`, `orb`, `drb`, `trb`, `ast`, `stl`, `blk`, `tov`, `pf`, `pts`
+`name_display`, `age`, `team_name_abbr`, `pos`, `games`, `games_started`, `mp`, `fg`, `fga`, `fg_pct`, `fg3`, `fg3a`, `fg3_pct`, `fg2`, `fg2a`, `fg2_pct`, `efg_pct`, `ft`, `fta`, `ft_pct`, `orb`, `drb`, `trb`, `ast`, `stl`, `blk`, `tov`, `pf`, `pts`, `tpl_dbl`, `awards`
 
 </details>
 
@@ -237,7 +252,7 @@ Season award voting results (MVP table).
 
 <details><summary>CSV columns</summary>
 
-`award`, `player`
+`rank`, `player`, `age`, `team_id`, `votes_first`, `points_won`, `points_max`, `award_share`, `g`, `mp_per_g`, `pts_per_g`, `trb_per_g`, `ast_per_g`, `stl_per_g`, `blk_per_g`, `fg_pct`, `fg3_pct`, `ft_pct`, `ws`, `ws_per_48`
 
 </details>
 
@@ -282,7 +297,7 @@ Season-by-season per-game career statistics for a player.
 
 <details><summary>CSV columns</summary>
 
-`season`, `age`, `team_name_abbr`, `league_id`, `pos`, `games`, `games_started`, `mp_per_g`, `fg_per_g`, `fga_per_g`, `fg_pct`, `fg3_per_g`, `fg3a_per_g`, `fg3_pct`, `fg2_per_g`, `fg2a_per_g`, `fg2_pct`, `efg_pct`, `ft_per_g`, `fta_per_g`, `ft_pct`, `orb_per_g`, `drb_per_g`, `trb_per_g`, `ast_per_g`, `stl_per_g`, `blk_per_g`, `tov_per_g`, `pf_per_g`, `pts_per_g`
+`year_id`, `age`, `team_name_abbr`, `comp_name_abbr`, `pos`, `games`, `games_started`, `mp_per_g`, `fg_per_g`, `fga_per_g`, `fg_pct`, `fg3_per_g`, `fg3a_per_g`, `fg3_pct`, `fg2_per_g`, `fg2a_per_g`, `fg2_pct`, `efg_pct`, `ft_per_g`, `fta_per_g`, `ft_pct`, `orb_per_g`, `drb_per_g`, `trb_per_g`, `ast_per_g`, `stl_per_g`, `blk_per_g`, `tov_per_g`, `pf_per_g`, `pts_per_g`, `awards`
 
 </details>
 
@@ -297,7 +312,7 @@ Playoff series results for a player.
 
 <details><summary>CSV columns</summary>
 
-`season`, `age`, `team_name_abbr`, `league_id`, `pos`, `games`, `games_started`, `mp_per_g`, `fg_per_g`, `fga_per_g`, `fg_pct`, `fg3_per_g`, `fg3a_per_g`, `fg3_pct`, `fg2_per_g`, `fg2a_per_g`, `fg2_pct`, `efg_pct`, `ft_per_g`, `fta_per_g`, `ft_pct`, `orb_per_g`, `drb_per_g`, `trb_per_g`, `ast_per_g`, `stl_per_g`, `blk_per_g`, `tov_per_g`, `pf_per_g`, `pts_per_g`
+`year_id`, `age`, `team_name_abbr`, `comp_name_abbr`, `ps_round`, `opp_name_abbr`, `series_result`, `games`, `mp_per_g`, `pts_per_g`, `trb_per_g`, `ast_per_g`, `stl_per_g`, `blk_per_g`, `fg`, `fga`, `fg_pct`, `fg3`, `fg3a`, `fg3_pct`, `fg2`, `fg2a`, `fg2_pct`, `efg_pct`, `ft`, `fta`, `ft_pct`, `orb`, `drb`, `trb`, `ast`, `stl`, `blk`, `tov`, `pf`, `pts`, `awards`
 
 </details>
 
@@ -312,7 +327,7 @@ League-adjusted shooting statistics for a player.
 
 <details><summary>CSV columns</summary>
 
-`season`, `age`, `team_id`, `league_id`, `pos`, `g`, `mp`, `fg_pct`, `fg3_pct`, `ft_pct`, `ts_pct`, `fg_per_36_min`, `fga_per_36_min`, `adjusted_fg_pct`, `adjusted_fg3_pct`, `adjusted_ft_pct`
+`year_id`, `team_name_abbr`, `age`, `comp_name_abbr`, `pos`, `games`, `games_started`, `mp`, `fg_pct`, `fg2_pct`, `fg3_pct`, `efg_pct`, `ft_pct`, `ts_pct`, `fta_per_fga_pct`, `fg3a_per_fga_pct`, `adj_fg_pct`, `adj_fg2_pct`, `adj_fg3_pct`, `adj_efg_pct`, `adj_ft_pct`, `adj_ts_pct`, `adj_fta_per_fga_pct`, `adj_fg3a_per_fga_pct`, `fg_pts_added`, `ts_pts_added`, `awards`
 
 </details>
 
@@ -327,7 +342,7 @@ Play-by-play position and usage statistics for a player.
 
 <details><summary>CSV columns</summary>
 
-`season`, `age`, `team_id`, `league_id`, `pos`, `g`, `mp`, `pct_fg_2pt`, `pct_fg_3pt`, `pct_ast_2pt`, `pct_ast_3pt`, `pct_dunks`, `pct_corner_3s`, `pct_heaves`
+`year_id`, `age`, `team_name_abbr`, `comp_name_abbr`, `pos`, `games`, `games_started`, `mp`, `pct_1`, `pct_2`, `pct_3`, `pct_4`, `pct_5`, `plus_minus_on`, `plus_minus_net`, `tov_bad_pass`, `tov_lost_ball`, `fouls_shooting`, `fouls_offensive`, `drawn_shooting`, `drawn_offensive`, `astd_pts`, `and1s`, `own_shots_blk`, `awards`
 
 </details>
 
@@ -342,7 +357,7 @@ Regular-season game highs for a player.
 
 <details><summary>CSV columns</summary>
 
-`stat`, `value`, `date`, `opponent`
+`season`, `age`, `team`, `league`, `time_on_court`, `fg`, `fga`, `fg3`, `fg3a`, `fg2`, `fg2a`, `ft`, `fta`, `orb`, `drb`, `trb`, `ast`, `stl`, `blk`, `tov`, `pf`, `pts`, `game_score`
 
 </details>
 
@@ -357,7 +372,7 @@ All-Star game appearances for a player.
 
 <details><summary>CSV columns</summary>
 
-`season`, `age`, `team_name_abbr`, `league_id`, `pos`, `games`, `games_started`, `mp_per_g`, `fg_per_g`, `fga_per_g`, `fg_pct`, `fg3_per_g`, `fg3a_per_g`, `fg3_pct`, `ft_per_g`, `fta_per_g`, `ft_pct`, `orb_per_g`, `drb_per_g`, `trb_per_g`, `ast_per_g`, `stl_per_g`, `blk_per_g`, `tov_per_g`, `pf_per_g`, `pts_per_g`
+`season`, `age`, `team_id`, `lg_id`, `pos`, `g`, `gs`, `mp`, `fg`, `fga`, `fg_pct`, `fg3`, `fg3a`, `fg3_pct`, `ft`, `fta`, `ft_pct`, `orb`, `trb`, `ast`, `stl`, `blk`, `tov`, `pf`, `pts`
 
 </details>
 
@@ -372,7 +387,7 @@ Career similarity scores for a player.
 
 <details><summary>CSV columns</summary>
 
-`rank`, `player`, `similarity_score`
+`player`, `sim_score`, `year1`, `year2`, `year3`, `year4`, `year5`, `year6`, `year7`, `year8`, `year9`, `year10`, `year11`, `year12`, `year13`, `year14`, `year15`, `year16`, `year17`, `year18`, `year19`, `year20`, `year21`, `year22`
 
 </details>
 
@@ -387,7 +402,7 @@ Year-by-year salaries for a player.
 
 <details><summary>CSV columns</summary>
 
-`season`, `team_id`, `salary`
+`season`, `team_name`, `lg_id`, `salary`
 
 </details>
 
@@ -402,7 +417,7 @@ Statistical splits for a player in a season.
 
 <details><summary>CSV columns</summary>
 
-`split_type`, `value`, `g`, `mp`, `fg`, `fga`, `fg_pct`, `fg3`, `fg3a`, `fg3_pct`, `ft`, `fta`, `ft_pct`, `orb`, `drb`, `trb`, `ast`, `stl`, `blk`, `tov`, `pf`, `pts`
+`split_id`, `split_value`, `g`, `gs`, `mp`, `fg`, `fga`, `fg3`, `fg3a`, `ft`, `fta`, `orb`, `trb`, `ast`, `stl`, `blk`, `tov`, `pf`, `pts`, `fg_pct`, `fg3_pct`, `ft_pct`, `ts_pct`, `usg_pct`, `off_rtg`, `def_rtg`, `plus_minus_per_200_poss`, `mp_per_g`, `pts_per_g`, `trb_per_g`, `ast_per_g`
 
 </details>
 
@@ -417,7 +432,7 @@ On/off court impact statistics for a player in a season.
 
 <details><summary>CSV columns</summary>
 
-`situation`, `g`, `mp`, `fg`, `fga`, `fg_pct`, `fg3`, `fg3a`, `fg3_pct`, `ft`, `fta`, `ft_pct`, `orb`, `drb`, `trb`, `ast`, `stl`, `blk`, `tov`, `pf`, `pts`
+`split_id`, `team_id`, `mp`, `efg_pct`, `orb_pct`, `drb_pct`, `trb_pct`, `ast_pct`, `stl_pct`, `blk_pct`, `tov_pct`, `off_rtg`, `opp_efg_pct`, `opp_orb_pct`, `opp_drb_pct`, `opp_trb_pct`, `opp_ast_pct`, `opp_stl_pct`, `opp_blk_pct`, `opp_tov_pct`, `opp_off_rtg`, `diff_efg_pct`, `diff_orb_pct`, `diff_drb_pct`, `diff_trb_pct`, `diff_ast_pct`, `diff_stl_pct`, `diff_blk_pct`, `diff_tov_pct`, `diff_off_rtg`
 
 </details>
 
@@ -432,7 +447,7 @@ Shooting distance/zone breakdown for a player in a season.
 
 <details><summary>CSV columns</summary>
 
-`shot_type`, `made`, `attempted`, `fg_pct`
+`split_id`, `split_value`, `fg`, `fga`, `fg_pct`, `fg3`, `fg3a`, `fg3_pct`, `efg_pct`, `fg_ast`, `fg_ast_pct`
 
 </details>
 
@@ -464,7 +479,7 @@ Current league-wide injury report.
 
 <details><summary>CSV columns</summary>
 
-`player`, `date`, `description`
+`player`, `team_name`, `date_update`, `note`
 
 </details>
 
@@ -479,7 +494,7 @@ Team and opponent aggregate statistics for a season.
 
 <details><summary>CSV columns</summary>
 
-`stat_type`, `g`, `mp`, `fg`, `fga`, `fg_pct`, `fg3`, `fg3a`, `fg3_pct`, `ft`, `fta`, `ft_pct`, `orb`, `drb`, `trb`, `ast`, `stl`, `blk`, `tov`, `pf`, `pts`
+`player`, `g`, `mp`, `fg`, `fga`, `fg_pct`, `fg3`, `fg3a`, `fg3_pct`, `fg2`, `fg2a`, `fg2_pct`, `ft`, `fta`, `ft_pct`, `orb`, `drb`, `trb`, `ast`, `stl`, `blk`, `tov`, `pf`, `pts`, `mp_per_g`, `fg_per_g`, `fga_per_g`, `fg3_per_g`, `fg3a_per_g`, `fg2_per_g`, `fg2a_per_g`, `ft_per_g`, `fta_per_g`, `orb_per_g`, `drb_per_g`, `trb_per_g`, `ast_per_g`, `stl_per_g`, `blk_per_g`, `tov_per_g`, `pf_per_g`, `pts_per_g`, `opp_fg`, `opp_fga`, `opp_fg_pct`, `opp_fg3`, `opp_fg3a`, `opp_fg3_pct`, `opp_fg2`, `opp_fg2a`, `opp_fg2_pct`, `opp_ft`, `opp_fta`, `opp_ft_pct`, `opp_orb`, `opp_drb`, `opp_trb`, `opp_ast`, `opp_stl`, `opp_blk`, `opp_tov`, `opp_pf`, `opp_pts`, `opp_fg_per_g`, `opp_fga_per_g`, `opp_fg3_per_g`, `opp_fg3a_per_g`, `opp_fg2_per_g`, `opp_fg2a_per_g`, `opp_ft_per_g`, `opp_fta_per_g`, `opp_orb_per_g`, `opp_drb_per_g`, `opp_trb_per_g`, `opp_ast_per_g`, `opp_stl_per_g`, `opp_blk_per_g`, `opp_tov_per_g`, `opp_pf_per_g`, `opp_pts_per_g`
 
 </details>
 
@@ -494,7 +509,7 @@ Miscellaneous team statistics including four factors for a season.
 
 <details><summary>CSV columns</summary>
 
-`stat_type`, `pace`, `efg_pct`, `tov_pct`, `orb_pct`, `ft_rate`, `opp_efg_pct`, `opp_tov_pct`, `drb_pct`, `opp_ft_rate`
+`player`, `wins`, `losses`, `wins_pyth`, `losses_pyth`, `mov`, `sos`, `srs`, `off_rtg`, `def_rtg`, `pace`, `fta_per_fga_pct`, `fg3a_per_fga_pct`, `efg_pct`, `tov_pct`, `orb_pct`, `ft_rate`, `opp_efg_pct`, `opp_tov_pct`, `drb_pct`, `opp_ft_rate`, `arena_name`, `attendance`
 
 </details>
 
@@ -509,7 +524,7 @@ Opponent statistics against a team for a season.
 
 <details><summary>CSV columns</summary>
 
-`stat_type`, `g`, `mp`, `fg`, `fga`, `fg_pct`, `fg3`, `fg3a`, `fg3_pct`, `ft`, `fta`, `ft_pct`, `orb`, `drb`, `trb`, `ast`, `stl`, `blk`, `tov`, `pf`, `pts`
+`player`, `g`, `mp`, `fg`, `fga`, `fg_pct`, `fg3`, `fg3a`, `fg3_pct`, `fg2`, `fg2a`, `fg2_pct`, `ft`, `fta`, `ft_pct`, `orb`, `drb`, `trb`, `ast`, `stl`, `blk`, `tov`, `pf`, `pts`, `mp_per_g`, `fg_per_g`, `fga_per_g`, `fg3_per_g`, `fg3a_per_g`, `fg2_per_g`, `fg2a_per_g`, `ft_per_g`, `fta_per_g`, `orb_per_g`, `drb_per_g`, `trb_per_g`, `ast_per_g`, `stl_per_g`, `blk_per_g`, `tov_per_g`, `pf_per_g`, `pts_per_g`, `opp_fg`, `opp_fga`, `opp_fg_pct`, `opp_fg3`, `opp_fg3a`, `opp_fg3_pct`, `opp_fg2`, `opp_fg2a`, `opp_fg2_pct`, `opp_ft`, `opp_fta`, `opp_ft_pct`, `opp_orb`, `opp_drb`, `opp_trb`, `opp_ast`, `opp_stl`, `opp_blk`, `opp_tov`, `opp_pf`, `opp_pts`, `opp_fg_per_g`, `opp_fga_per_g`, `opp_fg3_per_g`, `opp_fg3a_per_g`, `opp_fg2_per_g`, `opp_fg2a_per_g`, `opp_ft_per_g`, `opp_fta_per_g`, `opp_orb_per_g`, `opp_drb_per_g`, `opp_trb_per_g`, `opp_ast_per_g`, `opp_stl_per_g`, `opp_blk_per_g`, `opp_tov_per_g`, `opp_pf_per_g`, `opp_pts_per_g`
 
 </details>
 
@@ -524,7 +539,7 @@ Game-by-game schedule and results for a team in a season.
 
 <details><summary>CSV columns</summary>
 
-`game_number`, `date`, `start_time`, `away_team`, `away_team_score`, `home_team`, `home_team_score`, `result`, `overtimes`, `wins`, `losses`, `streak`
+`g`, `date_game`, `game_start_time`, `network`, `box_score_text`, `game_location`, `opp_name`, `game_result`, `overtimes`, `pts`, `opp_pts`, `wins`, `losses`, `game_streak`, `attendance`, `game_duration`, `game_remarks`
 
 </details>
 
@@ -554,7 +569,7 @@ Statistical splits for a team in a season.
 
 <details><summary>CSV columns</summary>
 
-`split_type`, `value`, `g`, `mp`, `fg`, `fga`, `fg_pct`, `fg3`, `fg3a`, `fg3_pct`, `ft`, `fta`, `ft_pct`, `orb`, `drb`, `trb`, `ast`, `stl`, `blk`, `tov`, `pf`, `pts`
+`split_id`, `split_value`, `g`, `wins`, `losses`, `fg`, `fga`, `fg3`, `fg3a`, `ft`, `fta`, `orb`, `trb`, `ast`, `stl`, `blk`, `tov`, `pf`, `pts`, `fg_pct`, `fg3_pct`, `efg_pct`, `ft_pct`, `ts_pct`, `opp_fg`, `opp_fga`, `opp_fg3`, `opp_fg3a`, `opp_ft`, `opp_fta`, `opp_orb`, `opp_trb`, `opp_ast`, `opp_stl`, `opp_blk`, `opp_tov`, `opp_pf`, `opp_pts`, `opp_fg_pct`, `opp_fg3_pct`, `opp_efg_pct`, `opp_ft_pct`, `opp_ts_pct`
 
 </details>
 
@@ -569,7 +584,7 @@ Current player contracts for a team.
 
 <details><summary>CSV columns</summary>
 
-`player`, `salary`, `years_remaining`
+`player`, `age_today`, `y1`, `y2`, `y3`, `y4`, `y5`, `y6`, `remain_gtd`
 
 </details>
 
@@ -584,7 +599,7 @@ Five-man lineup statistics for a team in a season.
 
 <details><summary>CSV columns</summary>
 
-`lineup`, `g`, `mp`, `fg`, `fga`, `fg_pct`, `fg3`, `fg3a`, `fg3_pct`, `ft`, `fta`, `ft_pct`, `orb`, `drb`, `trb`, `ast`, `stl`, `blk`, `tov`, `pf`, `pts`
+`lineup`, `mp`, `diff_pts`, `diff_fg`, `diff_fga`, `diff_fg_pct`, `diff_fg3`, `diff_fg3a`, `diff_fg3_pct`, `diff_efg_pct`, `diff_ft`, `diff_fta`, `diff_ft_pct`, `diff_orb`, `diff_orb_pct`, `diff_drb`, `diff_drb_pct`, `diff_trb`, `diff_trb_pct`, `diff_ast`, `diff_stl`, `diff_blk`, `diff_tov`, `diff_pf`
 
 </details>
 
@@ -599,7 +614,7 @@ Game-by-game starting lineups for a team in a season.
 
 <details><summary>CSV columns</summary>
 
-`player`, `g`, `mp`, `fg`, `fga`, `fg_pct`, `fg3`, `fg3a`, `fg3_pct`, `ft`, `fta`, `ft_pct`, `orb`, `drb`, `trb`, `ast`, `stl`, `blk`, `tov`, `pf`, `pts`
+`g`, `date_game`, `game_start_time`, `network`, `box_score_text`, `game_location`, `opp_name`, `game_result`, `overtimes`, `pts`, `opp_pts`, `wins`, `losses`, `game_starters`
 
 </details>
 
@@ -614,7 +629,7 @@ On/off court statistics for a team in a season.
 
 <details><summary>CSV columns</summary>
 
-`situation`, `g`, `mp`, `fg`, `fga`, `fg_pct`, `fg3`, `fg3a`, `fg3_pct`, `ft`, `fta`, `ft_pct`, `orb`, `drb`, `trb`, `ast`, `stl`, `blk`, `tov`, `pf`, `pts`
+`player`, `split_id`, `mp`, `efg_pct`, `orb_pct`, `drb_pct`, `trb_pct`, `ast_pct`, `stl_pct`, `blk_pct`, `tov_pct`, `pace`, `off_rtg`, `opp_efg_pct`, `opp_orb_pct`, `opp_drb_pct`, `opp_trb_pct`, `opp_ast_pct`, `opp_stl_pct`, `opp_blk_pct`, `opp_tov_pct`, `opp_pace`, `opp_off_rtg`, `diff_efg_pct`, `diff_orb_pct`, `diff_drb_pct`, `diff_trb_pct`, `diff_ast_pct`, `diff_stl_pct`, `diff_blk_pct`, `diff_tov_pct`, `diff_pace`, `diff_off_rtg`
 
 </details>
 
@@ -629,7 +644,7 @@ Season-by-season franchise history for a team.
 
 <details><summary>CSV columns</summary>
 
-`season`, `team_abbreviation`, `wins`, `losses`, `playoffs`
+`season`, `lg_id`, `team_name`, `wins`, `losses`, `win_loss_pct`, `rank_team`, `srs`, `pace`, `pace_rel`, `off_rtg`, `off_rtg_rel`, `def_rtg`, `def_rtg_rel`, `rank_team_playoffs`, `coaches`, `top_ws`
 
 </details>
 
