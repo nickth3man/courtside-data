@@ -52,6 +52,84 @@ def test_row_model_endpoint_raw_returns_extracted_rows_before_validation():
     assert result == raw_rows
 
 
+def test_row_model_validation_skips_bref_inactive_sentinel_rows():
+    adapter = TypeAdapter(list[ExampleRow])
+
+    with mock.patch.dict(_runner.ROW_ADAPTERS, {"example_endpoint": adapter}, clear=False):
+        result = _runner._execute(
+            service_call=lambda: [
+                {"player": "Jayson Tatum", "games": "74"},
+                {"player": "Joel Embiid", "games": "Did not play - injury"},
+                {"player": "Luka Doncic", "games": "Did Not Dress"},
+                {"player": "Nikola Jokic", "games": "79"},
+            ],
+            endpoint=_endpoint(),
+            endpoint_name="example_endpoint",
+            endpoint_params={"season_end_year": 2024},
+        )
+
+    assert result == [
+        ExampleRow(player="Jayson Tatum", games=74),
+        ExampleRow(player="Nikola Jokic", games=79),
+    ]
+
+
+def test_row_model_validation_skips_repeated_header_rows():
+    adapter = TypeAdapter(list[ExampleRow])
+
+    with mock.patch.dict(_runner.ROW_ADAPTERS, {"example_endpoint": adapter}, clear=False):
+        result = _runner._execute(
+            service_call=lambda: [
+                {"player": "Jayson Tatum", "games": "74"},
+                {"player": "Player", "games": "G"},
+                {"player": "Nikola Jokic", "games": "79"},
+            ],
+            endpoint=_endpoint(),
+            endpoint_name="example_endpoint",
+            endpoint_params={"season_end_year": 2024},
+        )
+
+    assert result == [
+        ExampleRow(player="Jayson Tatum", games=74),
+        ExampleRow(player="Nikola Jokic", games=79),
+    ]
+
+
+def test_row_model_validation_keeps_valid_rows_when_some_rows_are_malformed():
+    adapter = TypeAdapter(list[ExampleRow])
+
+    with mock.patch.dict(_runner.ROW_ADAPTERS, {"example_endpoint": adapter}, clear=False):
+        result = _runner._execute(
+            service_call=lambda: [
+                {"player": "Jayson Tatum", "games": "74"},
+                {"player": "Nikola Jokic", "games": "many"},
+            ],
+            endpoint=_endpoint(),
+            endpoint_name="example_endpoint",
+            endpoint_params={"season_end_year": 2024},
+        )
+
+    assert result == [ExampleRow(player="Jayson Tatum", games=74)]
+
+
+def test_row_model_validation_still_raises_when_no_rows_validate():
+    adapter = TypeAdapter(list[ExampleRow])
+
+    with mock.patch.dict(_runner.ROW_ADAPTERS, {"example_endpoint": adapter}, clear=False):
+        try:
+            _runner._execute(
+                service_call=lambda: [{"player": "Nikola Jokic", "games": "many"}],
+                endpoint=_endpoint(),
+                endpoint_name="example_endpoint",
+                endpoint_params={"season_end_year": 2024},
+            )
+        except SchemaDriftError as error:
+            assert error.endpoint_name == "example_endpoint"
+            assert error.pydantic_errors
+        else:
+            raise AssertionError("Expected SchemaDriftError")
+
+
 def test_row_model_endpoint_debug_returns_data_and_trace(tmp_path, monkeypatch):
     monkeypatch.setenv("COURTSIDE_DEBUG_LOG_DIR", str(tmp_path))
     adapter = TypeAdapter(list[ExampleRow])

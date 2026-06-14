@@ -6,126 +6,27 @@
 
 | Metric | Value |
 |---|---|
-| served endpoints | 50 |
+| served endpoints | 341 |
 | corpus dirs | 147 |
-| unserved families | 95 |
-| unserved families trivial | 79 |
-| unserved families bespoke | 16 |
+| unserved families | 1 |
+| unserved families trivial | 1 |
+| unserved families bespoke | 0 |
 | endpoints with dropped columns | 11 |
 | endpoints with dropped columns actionable | 0 |
 | total dropped columns | 259 |
-| page groups with orphan tables | 18 |
-| total orphan tables | 97 |
+| page groups with orphan tables | 0 |
+| total orphan tables | 0 |
 | disallowed or off domain families | 18 |
 
 ## §A — Unserved page families (downloaded, no endpoint)
 
-95 directories under `raw/` hold fixtures but have no entry in `ENDPOINTS`. Each was fetched from the page-family inventory. **79** are trivial single-table scrapes; **16** need bespoke multi-table parsers.
+1 directories under `raw/` hold fixtures but have no entry in `ENDPOINTS`. Each was fetched from the page-family inventory. **1** are trivial single-table scrapes; **0** need bespoke multi-table parsers.
 
-### Trivial table scrapes (79)
+### Trivial table scrapes (1)
 
 | Family | Category | Files | Discovered table ids | Resembles |
 |---|---|---|---|---|
-| `league_play_by_play` | — | 2 | `pbp_stats`, `pbp_stats_post` | — |
-| `allstar_career_leaders` | All-Star | 1 | — | `career_leaders` |
-| `allstar_career_stats` | All-Star | 1 | `career-stats` | `player_all_star` |
-| `allstar_single_game_leaders` | All-Star | 1 | — | `season_leaders` |
-| `awards_index` | Awards | 1 | `mvp_ABA`, `mvp_NBA`, `mvp_summary` | `season_awards` |
-| `awards_player_of_the_seeding_games` | Awards | 1 | `player_of_the_seeding_games_NBA`, `player_of_the_seeding_games_summary` | `awards_index` |
-| `season_awards_voting` | Awards | 1 | `clutch_poy`, `coy`, `dpoy`, `leading_all_defense`, `leading_all_nba`, `leading_all_rookie`, `mip`, `mvp`… | `season_awards` |
-| `boxscore_four_factors` | Boxscore | 1 | `box-NYK-game-advanced`, `box-NYK-game-basic`, `box-NYK-h1-basic`, `box-NYK-h2-basic`, `box-NYK-q1-basic`, `box-NYK-q2-basic`, `box-NYK-q3-basic`, `box-NYK-q4-basic`… | `team_misc_four_factors` |
-| `boxscore_plus_minus` | Boxscore | 1 | — | `team_on_off` |
-| `draft_combined_college` | Draft | 1 | `drafted_nba_aba_players`, `drafted_wnba_players` | — |
-| `draft_expansion` | Draft | 1 | `expansion_draft` | — |
-| `draft_rights` | Draft | 1 | `draft_rights` | — |
-| `draft_team_picks` | Draft | 1 | `draft` | — |
-| `draft_year_2_rounds` | Draft | 1 | `stats` | `draft_picks` |
 | `friv_7_game_playoff_series_outcomes` | Friv | 0 | — | — |
-| `friv_birthdays` | Friv | 1 | `nba_aba_players`, `wnba_players` | — |
-| `friv_birthplaces` | Friv | 1 | `stats` | — |
-| `friv_birthyears` | Friv | 1 | `stats` | — |
-| `friv_buzzer_beaters` | Friv | 1 | `buzzer-beaters` | — |
-| `friv_coffee` | Friv | 1 | `stats` | — |
-| `friv_colleges` | Friv | 1 | `nba_aba_players`, `wnba_players` | — |
-| `friv_continuity` | Friv | 1 | `continuity` | `leaders_record_boards` |
-| `friv_daily_leaders` | Friv | 1 | `stats` | — |
-| `friv_east_vs_west` | Friv | 1 | `east_vs_west` | — |
-| `friv_franchise_milestones` | Friv | 1 | `career_totals` | — |
-| `friv_high_schools` | Friv | 1 | `stats` | — |
-| `friv_hof_index` | Friv | 1 | `players` | `franchise_hall_of_famers` |
-| `friv_last_n_days` | Friv | 1 | `players` | `season_leaders` |
-| `friv_league_injuries` | Friv | 1 | `injuries` | `team_injury_report` |
-| `friv_milestones` | Friv | 1 | `career_totals`, `milestones` | — |
-| `friv_most_g_no_playoffs` | Friv | 1 | `stats` | — |
-| `friv_mvp_tracker` | Friv | 1 | `players` | `season_awards` |
-| `friv_numbers_index` | Friv | 1 | `numbers` | `friv_uniform_numbers` |
-| `friv_on_this_date` | Friv | 1 | — | — |
-| `friv_players_who_played_for_multiple_teams` | Friv | 1 | — | — |
-| `friv_playoff_probabilities` | Friv | 1 | `projected_standings_e`, `projected_standings_w` | — |
-| `friv_projected_draft` | Friv | 1 | `post_lottery_draft_position`, `pre_lottery_draft_position` | — |
-| `friv_projections` | Friv | 1 | `stats` | — |
-| `friv_standings_on_date` | Friv | 1 | `opponent`, `standings_e`, `standings_w`, `team` | `standings_by_date` |
-| `friv_teammates_and_opponents` | Friv | 1 | `teammates-and-opponents` | — |
-| `friv_trades` | Friv | 1 | `summary_matrix` | `team_transactions` |
-| `friv_transactions` | Friv | 1 | — | `team_transactions` |
-| `friv_uniform_numbers` | Friv | 1 | `numbers` | `league_uniform_numbers` |
-| `friv_upcoming_milestones` | Friv | 1 | `upcoming_leaderboards`, `upcoming_milestones` | `friv_milestones` |
-| `leaders_franchise` | Leaders | 1 | `leaders_active`, `leaders_defunct` | — |
-| `leaders_player_anniversary` | Leaders | 1 | `player-highest-pts_per_g-career`, `player-highest-pts_per_g-rookie-season`, `player-highest-pts_per_g-season`, `player-most-cons-g-10-pts`, `player-most-cons-g-20-pts`, `player-most-cons-g-30-pts`, `player-most-cons-g-40-pts`, `player-most-cons-g-50-pts`… | `season_leaders` |
-| `leaders_record_boards` | Leaders | 1 | `aba`, `nba`, `tot` | `career_leaders, season_leaders` |
-| `leaders_specialty_boards` | Leaders | 1 | `stats_active_hof_prob`, `tot` | — |
-| `leaders_team_records` | Leaders | 1 | `team-highest-win_loss_pct-season`, `team-lowest-win_loss_pct-season`, `team-most-cons-home-wins`, `team-most-cons-home-wins-end-season`, `team-most-cons-home-wins-start-season`, `team-most-cons-road-wins`, `team-most-cons-road-wins-end-season`, `team-most-cons-road-wins-start-season`… | — |
-| `trailers` | Leaders | 1 | `stats_ABA`, `stats_NBA`, `stats_TOT` | — |
-| `league_aba_best_worst` | League | 1 | `best_records` | — |
-| `league_best_worst_records` | League | 1 | `best_records` | — |
-| `league_preseason_odds` | League | 1 | `NBA_preseason_odds` | — |
-| `league_rookies` | League | 1 | `rookies` | `rookie_stats` |
-| `league_rookies_per_season_detail` | League | 1 | `rookies` | `league_rookies, rookie_stats` |
-| `league_uniform_numbers` | League | 1 | — | — |
-| `executives_register` | People | 1 | `executives` | `executives` |
-| `playoff_historical_series_index` | Playoffs | 1 | `playoffs_series` | `playoff_year_index` |
-| `playoff_year_games` | Playoffs | 1 | `schedule` | `season_schedule` |
-| `playoff_year_player_advanced` | Playoffs | 1 | `advanced_stats` | `players_advanced_season_totals` |
-| `playoff_year_player_per_game` | Playoffs | 1 | `per_game_stats` | `league_per_game_stats` |
-| `playoff_year_player_per_minute` | Playoffs | 1 | `per_minute_stats` | `league_per_36_minutes` |
-| `playoff_year_player_per_poss` | Playoffs | 1 | `per_poss_stats` | `league_per_100_possessions` |
-| `playoff_year_player_totals` | Playoffs | 1 | `totals_stats` | `players_season_totals` |
-| `playoff_year_standings` | Playoffs | 1 | `expanded_standings`, `team_vs_team` | `standings` |
-| `franchise_all_star_selections` | Team | 1 | — | `player_all_star` |
-| `franchise_all_time_coaches` | Team | 1 | `coaches` | — |
-| `franchise_all_time_executives` | Team | 1 | `executives` | — |
-| `franchise_all_time_roster` | Team | 1 | `franchise_register` | `team_roster` |
-| `franchise_hall_of_famers` | Team | 1 | — | — |
-| `franchise_head_to_head` | Team | 1 | `head2head` | — |
-| `franchise_uniform_numbers` | Team | 1 | — | `league_uniform_numbers` |
-| `franchise_year_by_year_opp_per_game` | Team | 1 | `stats` | `team_opponent_stats` |
-| `franchise_year_by_year_opp_totals` | Team | 1 | `stats` | `team_opponent_stats` |
-| `franchise_year_by_year_ranks` | Team | 1 | `stats` | — |
-| `franchise_year_by_year_stats_per_game` | Team | 1 | `stats` | `league_per_game_stats` |
-| `franchise_year_by_year_stats_totals` | Team | 1 | `stats` | `team_and_opponent` |
-| `franchise_year_over_year` | Team | 1 | `stats` | — |
-| `team_referees` | Team | 1 | `refs-summary` | — |
-
-### Bespoke multi-table pages (16)
-
-| Family | Category | Files | Discovered table ids | Resembles |
-|---|---|---|---|---|
-| `allstar_contests` | All-Star | 1 | `contests` | — |
-| `allstar_game_boxscore` | All-Star | 1 | `Team Chuck`, `Team Shaq`, `line_score` | `team_box_scores` |
-| `allstar_game_index` | All-Star | 1 | `Team Chuck`, `Team Shaq`, `line_score` | `player_all_star` |
-| `allstar_legends` | All-Star | 1 | `legends-index` | — |
-| `allstar_rookies` | All-Star | 1 | `rookie-index` | `rookie_stats` |
-| `allstar_voting` | All-Star | 1 | `bc-w` | — |
-| `boxscore_shot_chart` | Boxscore | 1 | `shooting-NYK`, `shooting-SAS` | `player_shot_charts` |
-| `league_ratings` | League | 1 | `ratings` | — |
-| `coaches` | People | 1 | `coach-awards`, `coach-of-the-year-voting`, `coach-stats` | — |
-| `executives` | People | 1 | `exec-stats` | — |
-| `referees` | People | 1 | `raw_`, `refs-summary`, `relative_`, `rs_home_vs_visitor` | — |
-| `player_high_school_exhibition` | Player | 1 | `hs-00-01`, `hs-01-02`, `hs-02-03`, `hs-99-00` | — |
-| `playoff_series_matchup` | Playoffs | 1 | `BOS`, `BOSadvanced`, `PHI`, `PHIadvanced`, `all_playoffs`, `four_factors` | — |
-| `playoff_year_leaders` | Playoffs | 1 | — | `season_leaders` |
-| `franchise_career_leaders` | Team | 1 | — | `career_leaders` |
-| `franchise_season_leaders` | Team | 1 | — | `season_leaders` |
 
 ## §B — Dropped columns on served endpoints
 
@@ -149,115 +50,7 @@
 
 ## §C — Orphan tables on already-downloaded pages
 
-97 `<table id>`s appear on pages we already download for a served endpoint but are declared by **no** endpoint (18 page templates affected). Grouped by page. **Caveat:** an orphan may still be reachable through a bespoke `custom=True` parser that does not declare its table id — verify before treating it as a hard gap.
-
-### `/awards/awards_{season_end_year}.html`
-
-- Served via: `season_awards`
-- Claimed tables: `mvp`, `nba_mvp`
-- **Orphan tables (12):** `aba_mvp`, `aba_roy`, `clutch_poy`, `coy`, `dpoy`, `leading_all_defense`, `leading_all_nba`, `leading_all_rookie`, `mip`, `nba_roy`, `roy`, `smoy`
-
-### `/contracts/{team_abbreviation}.html`
-
-- Served via: `team_contracts`
-- Claimed tables: `contracts`
-- **Orphan tables (1):** `payroll-notes`
-
-### `/leaders/`
-
-- Served via: `career_leaders`
-- Claimed tables: `leaders_index`
-- **Orphan tables (4):** `leaders_combined`, `leaders_finals`, `leaders_index_p`, `leaders_others`
-
-### `/leaders/per_season.html`
-
-- Served via: `season_leaders`
-- Claimed tables: `stats_TOT`
-- **Orphan tables (2):** `stats_ABA`, `stats_NBA`
-
-### `/leagues/NBA_{season_end_year}.html`
-
-- Served via: `attendance`, `standings`
-- Claimed tables: `advanced-team`, `divs_standings_E`, `divs_standings_W`
-- **Orphan tables (12):** `all_awards`, `all_playoffs`, `confs_standings_E`, `confs_standings_W`, `per_game-opponent`, `per_game-team`, `per_poss-opponent`, `per_poss-team`, `shooting-opponent`, `shooting-team`, `totals-opponent`, `totals-team`
-
-### `/leagues/NBA_{season_end_year}_advanced.html`
-
-- Served via: `players_advanced_season_totals`
-- Claimed tables: `advanced`, `advanced_stats`
-- **Orphan tables (1):** `advanced_post`
-
-### `/leagues/NBA_{season_end_year}_per_minute.html`
-
-- Served via: `league_per_36_minutes`
-- Claimed tables: `per_minute_stats`
-- **Orphan tables (1):** `per_minute_stats_post`
-
-### `/leagues/NBA_{season_end_year}_per_poss.html`
-
-- Served via: `league_per_100_possessions`
-- Claimed tables: `per_poss`
-- **Orphan tables (1):** `per_poss_post`
-
-### `/leagues/NBA_{season_end_year}_shooting.html`
-
-- Served via: `league_shooting`
-- Claimed tables: `shooting`
-- **Orphan tables (1):** `shooting_post`
-
-### `/players/{player_identifier[0]}/{player_identifier}.html`
-
-- Served via: `player_adjusted_shooting`, `player_all_star`, `player_career_stats`, `player_game_highs`, `player_play_by_play`, `player_playoff_series`, `player_salaries`, `player_similarity_scores`
-- Claimed tables: `adj_shooting`, `all_salaries`, `all_star`, `highs-reg-season`, `pbp_stats`, `per_game_stats`, `playoffs_series`, `sims-career`
-- **Orphan tables (22):** `adj_shooting_post`, `advanced`, `advanced_post`, `all_college_stats`, `contracts_gsw`, `contracts_hou`, `contracts_lal`, `contracts_tor`, `highs-playoffs`, `last5`, `pbp_stats_post`, `per_game_stats_post`, `per_minute_stats`, `per_minute_stats_post`, `per_poss`, `per_poss_post`, `shooting`, `shooting_post`, `sims-thru`, `stathead_insights`, `totals_stats`, `totals_stats_post`
-
-### `/players/{player_identifier[0]}/{player_identifier}/on-off/{season_end_year}`
-
-- Served via: `player_on_off`
-- Claimed tables: `on-off`
-- **Orphan tables (1):** `on-off-post`
-
-### `/players/{player_identifier[0]}/{player_identifier}/shooting/{season_end_year}`
-
-- Served via: `player_shot_charts`
-- Claimed tables: `shooting`
-- **Orphan tables (1):** `shot-chart`
-
-### `/playoffs/NBA_{season_end_year}.html`
-
-- Served via: `playoff_bracket`
-- Claimed tables: `all_playoffs`
-- **Orphan tables (9):** `advanced-team`, `per_game-opponent`, `per_game-team`, `per_poss-opponent`, `per_poss-team`, `shooting-opponent`, `shooting-team`, `totals-opponent`, `totals-team`
-
-### `/teams/{team_abbreviation}/{season_end_year}.html`
-
-- Served via: `team_and_opponent`, `team_misc_four_factors`, `team_opponent_stats`, `team_roster`
-- Claimed tables: `roster`, `team_and_opponent`, `team_misc`
-- **Orphan tables (17):** `adj_shooting`, `adj_shooting_post`, `advanced`, `advanced_post`, `pbp_stats`, `pbp_stats_post`, `per_game_stats`, `per_game_stats_post`, `per_minute_stats`, `per_minute_stats_post`, `per_poss`, `per_poss_post`, `salaries2`, `shooting`, `shooting_post`, `totals_stats`, `totals_stats_post`
-
-### `/teams/{team_abbreviation}/{season_end_year}/lineups/`
-
-- Served via: `team_lineups`
-- Claimed tables: `lineups_5-man_`
-- **Orphan tables (7):** `lineups_2-man_`, `lineups_2-man__p`, `lineups_3-man_`, `lineups_3-man__p`, `lineups_4-man_`, `lineups_4-man__p`, `lineups_5-man__p`
-
-### `/teams/{team_abbreviation}/{season_end_year}/on-off/`
-
-- Served via: `team_on_off`
-- Claimed tables: `on_off`
-- **Orphan tables (1):** `on_off_p`
-
-### `/teams/{team_abbreviation}/{season_end_year}_games.html`
-
-- Served via: `team_schedule`
-- Claimed tables: `games`
-- **Orphan tables (1):** `games_playoffs`
-
-### `/teams/{team_abbreviation}/{season_end_year}_start.html`
-
-- Served via: `team_starting_lineups`
-- Claimed tables: `starting_lineups_po0`
-- **Orphan tables (3):** `starting_lineups_po1`, `starting_lineups_summary_po0`, `starting_lineups_summary_po1`
+0 `<table id>`s appear on pages we already download for a served endpoint but are declared by **no** endpoint (0 page templates affected). Grouped by page. **Caveat:** an orphan may still be reachable through a bespoke `custom=True` parser that does not declare its table id — verify before treating it as a hard gap.
 
 ## §D — Disallowed / off-domain families (no fixtures)
 

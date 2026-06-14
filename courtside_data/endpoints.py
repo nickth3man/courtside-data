@@ -566,3 +566,8 @@ ENDPOINTS: dict[str, TableEndpoint] = {
         row_model=search.SearchResultRow,
     ),
 }
+
+
+from courtside_data.raw_coverage import extend_endpoints  # noqa: E402
+
+extend_endpoints(ENDPOINTS, TableEndpoint)

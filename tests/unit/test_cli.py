@@ -80,14 +80,23 @@ class TestMain:
 def _required_args(name):
     endpoint = ENDPOINTS[name]
     values = {
+        "away": "LAL",
         "season_end_year": "2024",
         "day": "1",
+        "game_code": "NBA",
+        "game_date": "20250216",
         "month": "1",
         "year": "2024",
         "player_identifier": "jamesle01",
+        "round": "1",
+        "slug": "sample",
+        "stat": "pts",
+        "team_a": "BOS",
         "team_abbreviation": "BOS",
+        "team_b": "LAL",
         "home_team": "BOSTON CELTICS",
         "term": "james",
+        "view": "basic",
     }
     args = []
     for param in endpoint.params:

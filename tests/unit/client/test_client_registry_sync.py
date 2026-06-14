@@ -31,7 +31,8 @@ class TestClientRegistrySync:
             assert callable(getattr(client, name)), f"missing client function: {name}"
 
     def test_every_endpoint_has_matching_row_adapter(self):
-        assert ENDPOINTS.keys() == ROW_ADAPTERS.keys()
+        row_model_endpoints = {name for name, endpoint in ENDPOINTS.items() if endpoint.row_model is not None}
+        assert row_model_endpoints == ROW_ADAPTERS.keys()
 
     def test_function_metadata(self):
         for name in ENDPOINTS:

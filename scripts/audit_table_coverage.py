@@ -206,13 +206,30 @@ def _resolve_table(selector: Selector, endpoint: TableEndpoint, sidecar: dict[st
     and flag the mismatch.  This broadening is by design.
     """
     for table_id in _candidate_table_ids(endpoint, sidecar):
-        found = selector.css(f"table#{table_id}")
+        found = _find_table_by_id(selector, table_id)
         if found:
             return found[0]
         commented = extract_commented_table(selector, table_id)
         if commented is not None:
             return commented
+    if endpoint.table_id is None and endpoint.commented_table_id is None:
+        found = selector.css("table")
+        if found:
+            return found[0]
     return None
+
+
+def _xpath_literal(value: str) -> str:
+    if "'" not in value:
+        return f"'{value}'"
+    if '"' not in value:
+        return f'"{value}"'
+    parts = value.split("'")
+    return "concat(" + ', "\'", '.join(f"'{part}'" for part in parts) + ")"
+
+
+def _find_table_by_id(selector: Selector, table_id: str) -> list[Selector]:
+    return list(selector.xpath(f"//table[@id={_xpath_literal(table_id)}]"))
 
 
 def _extract_params_from_url(url: str, path_template: str) -> dict[str, str]:

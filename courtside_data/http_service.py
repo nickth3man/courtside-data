@@ -84,6 +84,19 @@ _DEFAULT_HEADERS: dict[str, str] = {
 }
 
 
+def _xpath_literal(value: str) -> str:
+    if "'" not in value:
+        return f"'{value}'"
+    if '"' not in value:
+        return f'"{value}"'
+    parts = value.split("'")
+    return "concat(" + ', "\'", '.join(f"'{part}'" for part in parts) + ")"
+
+
+def _find_table_by_id(selector: Selector, table_id: str) -> list[Selector]:
+    return list(selector.xpath(f"//table[@id={_xpath_literal(table_id)}]"))
+
+
 class _SafeCurlTransport(httpx.BaseTransport):
     """Wraps :class:`httpx_curl_cffi.CurlTransport` with two workarounds for
     correct caching behavior with hishel:
@@ -475,12 +488,12 @@ class HTTPService:
         table_source: str | None = None
         if endpoint.table_id is not None:
             rendered_table_id = endpoint.table_id.format(**params)
-            found = selector.css(f"table#{rendered_table_id}")
+            found = _find_table_by_id(selector, rendered_table_id)
             if trace is not None:
                 trace.record(
                     "table_resolution",
                     "table_id_lookup",
-                    selector=f"table#{rendered_table_id}",
+                    selector=f"table[@id={rendered_table_id!r}]",
                     matched=bool(found),
                     match_count=len(found),
                 )
@@ -490,12 +503,12 @@ class HTTPService:
         if table_selector is None and endpoint.fallback_table_ids:
             for fallback_id in endpoint.fallback_table_ids:
                 rendered_fallback_id = fallback_id.format(**params)
-                found = selector.css(f"table#{rendered_fallback_id}")
+                found = _find_table_by_id(selector, rendered_fallback_id)
                 if trace is not None:
                     trace.record(
                         "table_resolution",
                         "fallback_table_id_lookup",
-                        selector=f"table#{rendered_fallback_id}",
+                        selector=f"table[@id={rendered_fallback_id!r}]",
                         fallback_id=fallback_id,
                         matched=bool(found),
                         match_count=len(found),
@@ -515,6 +528,12 @@ class HTTPService:
                 )
             if table_selector is not None:
                 table_source = "commented_table_id"
+
+        if table_selector is None and endpoint.table_id is None and endpoint.commented_table_id is None:
+            found = selector.css("table")
+            if found:
+                table_selector = found[0]
+                table_source = "first_table"
 
         if table_selector is None:
             if endpoint.transaction_list_fallback:

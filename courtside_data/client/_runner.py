@@ -113,6 +113,72 @@ def _detect_csv_columns(rows: list[dict[str, Any]]) -> Sequence[str]:
     return non_empty or column_names
 
 
+_SENTINEL_ROW_VALUES = {
+    "did not dress",
+    "did not play",
+    "inactive",
+    "not with team",
+    "player suspended",
+    "suspended",
+    "traded",
+    "forfeited",
+}
+
+
+_HEADER_ROW_VALUES = {
+    "2p",
+    "2p%",
+    "2pa",
+    "3p",
+    "3p%",
+    "3pa",
+    "age",
+    "ast",
+    "blk",
+    "date",
+    "drb",
+    "efg%",
+    "fg",
+    "fg%",
+    "fga",
+    "ft",
+    "ft%",
+    "fta",
+    "g",
+    "gs",
+    "lg",
+    "mp",
+    "opp",
+    "orb",
+    "pf",
+    "player",
+    "pos",
+    "pts",
+    "rk",
+    "season",
+    "stl",
+    "team",
+    "tov",
+    "trb",
+    "w/l",
+}
+
+
+def _normalized_cell_value(value: Any) -> str:
+    return " ".join(str(value).strip().lower().replace("\xa0", " ").split())
+
+
+def _is_skippable_bref_row(row: dict[str, Any]) -> bool:
+    values = {_normalized_cell_value(value) for value in row.values() if value not in (None, "")}
+    if any(any(marker in value for marker in _SENTINEL_ROW_VALUES) for value in values):
+        return True
+    # Some BREF tables repeat header rows or section rows that survive table
+    # extraction because they use data-stat attributes like normal cells.
+    if bool(values) and all(_normalized_cell_value(key) in values for key in row):
+        return True
+    return bool(values) and all(value in _HEADER_ROW_VALUES for value in values)
+
+
 def _endpoint_url_context(endpoint: Any, params: dict[str, Any] | None) -> str:
     if endpoint is None:
         return "<unknown>"
@@ -203,9 +269,9 @@ def _execute(
         try:
             if trace is not None:
                 with trace.span("pydantic_validation", stage="validation", row_model=row_model.__name__):
-                    values = adapter.validate_python(raw_rows)
+                    values = _validate_row_model_rows(row_model, raw_rows)
             else:
-                values = adapter.validate_python(raw_rows)
+                values = _validate_row_model_rows(row_model, raw_rows)
             if trace is not None:
                 trace.record(
                     "validation",
@@ -324,6 +390,30 @@ def _execute(
         csv_writer=CSVWriter(value_formatter=format_value),
     )
     return output_service.output(data=values, options=options)
+
+
+def _validate_row_model_rows(row_model: Any, raw_rows: list[dict[str, Any]]) -> list[Any]:
+    """Validate rows one at a time, dropping invalid BREF sentinel/header rows.
+
+    Basketball-Reference can interleave non-data rows with otherwise valid
+    table rows. Keep the validated rows instead of failing the whole table, but
+    still surface schema drift when no row in a non-empty table validates.
+    """
+    values: list[Any] = []
+    drift_errors: list[dict[str, Any]] = []
+    for index, row in enumerate(raw_rows):
+        try:
+            values.append(row_model.model_validate(row))
+        except ValidationError as exc:
+            if _is_skippable_bref_row(row):
+                continue
+            for error in exc.errors():
+                enriched = dict(error)
+                enriched["row_index"] = index
+                drift_errors.append(enriched)
+    if drift_errors and not values:
+        raise ValidationError.from_exception_data(row_model.__name__, drift_errors)
+    return values
 
 
 def _output_debug_result(
