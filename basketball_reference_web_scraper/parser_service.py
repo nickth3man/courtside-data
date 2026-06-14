@@ -1,3 +1,5 @@
+import re
+
 from basketball_reference_web_scraper.data import TEAM_ABBREVIATIONS_TO_TEAM, LOCATION_ABBREVIATIONS_TO_POSITION, OUTCOME_ABBREVIATIONS_TO_OUTCOME, TEAM_NAME_TO_TEAM, \
     POSITION_ABBREVIATIONS_TO_POSITION, LEAGUE_ABBREVIATIONS_TO_LEAGUE, Division, Team, DIVISIONS_TO_CONFERENCES
 from basketball_reference_web_scraper.html import GenericTable
@@ -14,6 +16,11 @@ class ParserService:
     PLAY_BY_PLAY_TIMESTAMP_FORMAT = "%M:%S.%f"
     PLAY_BY_PLAY_SCORES_REGEX = "(?P<away_team_score>[0-9]+)-(?P<home_team_score>[0-9]+)"
     SEARCH_RESULT_RESOURCE_LOCATION_REGEX = r'(https?://www\.basketball-reference\.com/)?(?P<resource_type>.+?(?=/)).*/(?P<resource_identifier>.+).html'
+    _GENERIC_INT_REGEX = re.compile(r'^[+-]?\d+$')
+    _GENERIC_FLOAT_REGEX = re.compile(r'^[+-]?(?:\d+\.\d+|\d+\.|\.\d+)$')
+    _GENERIC_PERCENT_REGEX = re.compile(r'^(?P<value>[+-]?(?:\d+\.\d+|\d+\.|\.\d+|\d+))%$')
+    _GENERIC_TIED_RANK_REGEX = re.compile(r'^(?P<rank>\d+)T$')
+    _GENERIC_MINUTES_SECONDS_REGEX = re.compile(r'^(?P<minutes>\d+):(?P<seconds>[0-5]\d)$')
 
     def __init__(self):
         self.team_abbreviation_parser = TeamAbbreviationParser(abbreviations_to_teams=TEAM_ABBREVIATIONS_TO_TEAM)
@@ -120,7 +127,7 @@ class ParserService:
     def parse_player_data(self, player):
         return self.player_data_parser.parse(player=player)
 
-    def parse_generic_table(self, table: 'GenericTable') -> list[dict[str, str]]:
+    def parse_generic_table(self, table: 'GenericTable') -> list[dict[str, object]]:
         """Convert a GenericTable to a list of dictionaries.
 
         Each row becomes a dict where keys are data-stat attribute values
@@ -132,4 +139,41 @@ class ParserService:
         Returns:
             List of dicts, one per data row
         """
-        return [row.to_dict() for row in table.rows]
+        return [
+            {
+                key: self._coerce_generic_value(value)
+                for key, value in row.to_dict().items()
+            }
+            for row in table.rows
+        ]
+
+    @classmethod
+    def _coerce_generic_value(cls, value):
+        if not isinstance(value, str):
+            return value
+
+        cleaned_value = value.strip().replace('\u2212', '-')
+        if cleaned_value == '':
+            return cleaned_value
+
+        tied_rank_match = cls._GENERIC_TIED_RANK_REGEX.match(cleaned_value)
+        if tied_rank_match is not None:
+            return int(tied_rank_match.group('rank'))
+
+        minutes_seconds_match = cls._GENERIC_MINUTES_SECONDS_REGEX.match(cleaned_value)
+        if minutes_seconds_match is not None:
+            minutes = int(minutes_seconds_match.group('minutes'))
+            seconds = int(minutes_seconds_match.group('seconds'))
+            return (minutes * 60) + seconds
+
+        percent_match = cls._GENERIC_PERCENT_REGEX.match(cleaned_value)
+        if percent_match is not None:
+            return float(percent_match.group('value'))
+
+        if cls._GENERIC_INT_REGEX.match(cleaned_value):
+            return int(cleaned_value)
+
+        if cls._GENERIC_FLOAT_REGEX.match(cleaned_value):
+            return float(cleaned_value)
+
+        return cleaned_value
