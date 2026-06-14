@@ -1,0 +1,19 @@
+{
+  "allowed_statuses": [
+    200
+  ],
+  "byte_count": 153474,
+  "content_encoding": "gzip",
+  "content_type": "text/html",
+  "downloaded_at": "2026-06-13T08:00:22.848225+00:00",
+  "final_url": "https://www.basketball-reference.com/contracts/BOS.html",
+  "raw_byte_count": 153474,
+  "sha256": "72554d94cdf72e6ea259841ab989f0dc0d726b2fa5208081b7606bbc8c718044",
+  "status_code": 200,
+  "table_ids": [
+    "contracts"
+  ],
+  "tool": "courtside-data:5.0.0a1",
+  "url": "https://www.basketball-reference.com/contracts/BOS.html",
+  "wallclock_ms": 6397
+}

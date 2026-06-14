@@ -1,0 +1,26 @@
+{
+  "allowed_statuses": [
+    200
+  ],
+  "byte_count": 422773,
+  "content_encoding": "gzip",
+  "content_type": "text/html",
+  "discovered_commented_table_ids": [],
+  "discovered_table_ids": [
+    "schedule"
+  ],
+  "discovered_visible_table_ids": [
+    "schedule"
+  ],
+  "downloaded_at": "2026-06-14T05:13:47.567933+00:00",
+  "final_url": "https://www.basketball-reference.com/leagues/NBA_2001_games-february.html",
+  "raw_byte_count": 422773,
+  "sha256": "54fddfe58b3b0b9f359212e3865524ffa960e27f2238c20beafe55383978345b",
+  "status_code": 200,
+  "table_ids": [
+    "schedule"
+  ],
+  "tool": "courtside-data:5.0.0a1",
+  "url": "https://www.basketball-reference.com/leagues/NBA_2001_games-february.html",
+  "wallclock_ms": 7471
+}

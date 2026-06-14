@@ -1,0 +1,19 @@
+{
+  "allowed_statuses": [
+    200
+  ],
+  "byte_count": 152209,
+  "content_encoding": "gzip",
+  "content_type": "text/html",
+  "downloaded_at": "2026-06-13T08:00:29.545862+00:00",
+  "final_url": "https://www.basketball-reference.com/contracts/LAL.html",
+  "raw_byte_count": 152209,
+  "sha256": "20465b1aa48ceca18b226fdd39e3d26381948a4676f3459833c1bff7c8ccfea0",
+  "status_code": 200,
+  "table_ids": [
+    "contracts"
+  ],
+  "tool": "courtside-data:5.0.0a1",
+  "url": "https://www.basketball-reference.com/contracts/LAL.html",
+  "wallclock_ms": 6694
+}

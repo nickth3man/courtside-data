@@ -1,0 +1,19 @@
+{
+  "allowed_statuses": [
+    200
+  ],
+  "byte_count": 263074,
+  "content_encoding": "gzip",
+  "content_type": "text/html; charset=utf-8",
+  "downloaded_at": "2026-06-13T08:01:38.005067+00:00",
+  "final_url": "https://www.basketball-reference.com/friv/dailyleaders.cgi?month=1&day=1&year=2018",
+  "raw_byte_count": 263074,
+  "sha256": "bcbafd08801da5ad90f3a9e61c4a9635a3f30b45ee56a7060b53ba122a2b50f9",
+  "status_code": 200,
+  "table_ids": [
+    "stats"
+  ],
+  "tool": "courtside-data:5.0.0a1",
+  "url": "https://www.basketball-reference.com/friv/dailyleaders.cgi?month=1&day=1&year=2018",
+  "wallclock_ms": 7570
+}

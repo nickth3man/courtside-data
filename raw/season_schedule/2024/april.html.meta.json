@@ -1,0 +1,19 @@
+{
+  "allowed_statuses": [
+    200
+  ],
+  "byte_count": 389259,
+  "content_encoding": "gzip",
+  "content_type": "text/html",
+  "downloaded_at": "2026-06-13T09:15:39.647438+00:00",
+  "final_url": "https://www.basketball-reference.com/leagues/NBA_2024_games-april.html",
+  "raw_byte_count": 389259,
+  "sha256": "0353988eb1f368975593f23f1cbcced1b2a4cb90180006e588971f7ff77dd994",
+  "status_code": 200,
+  "table_ids": [
+    "schedule"
+  ],
+  "tool": "courtside-data:5.0.0a1",
+  "url": "https://www.basketball-reference.com/leagues/NBA_2024_games-april.html",
+  "wallclock_ms": 6329
+}

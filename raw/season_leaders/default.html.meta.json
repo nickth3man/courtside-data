@@ -1,0 +1,19 @@
+{
+  "allowed_statuses": [
+    200
+  ],
+  "byte_count": 245339,
+  "content_encoding": "gzip",
+  "content_type": "text/html",
+  "downloaded_at": "2026-06-13T07:55:40.220432+00:00",
+  "final_url": "https://www.basketball-reference.com/leaders/per_season.html",
+  "raw_byte_count": 245339,
+  "sha256": "c7f041b6c61c35165b8fbf9465aa6cb76064175b7c82b408134debf3fa485d90",
+  "status_code": 200,
+  "table_ids": [
+    "stats_TOT"
+  ],
+  "tool": "courtside-data:5.0.0a1",
+  "url": "https://www.basketball-reference.com/leaders/per_season.html",
+  "wallclock_ms": 7815
+}

@@ -1,0 +1,19 @@
+{
+  "allowed_statuses": [
+    200
+  ],
+  "byte_count": 430262,
+  "content_encoding": "gzip",
+  "content_type": "text/html",
+  "downloaded_at": "2026-06-13T07:53:47.478265+00:00",
+  "final_url": "https://www.basketball-reference.com/leagues/NBA_2024_standings_by_date_eastern_conference.html",
+  "raw_byte_count": 430262,
+  "sha256": "d835ebeefb9d134d5d1323aab9f5faba9115f93672ce764bdf205c9adba2a3c9",
+  "status_code": 200,
+  "table_ids": [
+    "standings_by_date"
+  ],
+  "tool": "courtside-data:5.0.0a1",
+  "url": "https://www.basketball-reference.com/leagues/NBA_2024_standings_by_date_eastern_conference.html",
+  "wallclock_ms": 7353
+}

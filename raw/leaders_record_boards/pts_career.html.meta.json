@@ -1,0 +1,37 @@
+{
+  "allowed_statuses": [
+    200,
+    404
+  ],
+  "byte_count": 208771,
+  "canonical_pattern": "/leaders/{STAT}_{VIEW}.html (~30 stats x 7-9 views)",
+  "category": "Leaders",
+  "content_encoding": "gzip",
+  "content_type": "text/html",
+  "discovered_commented_table_ids": [],
+  "discovered_table_ids": [
+    "aba",
+    "nba",
+    "tot"
+  ],
+  "discovered_visible_table_ids": [
+    "aba",
+    "nba",
+    "tot"
+  ],
+  "downloaded_at": "2026-06-13T22:17:01.962333+00:00",
+  "expected_miss_404": false,
+  "final_url": "https://www.basketball-reference.com/leaders/pts_career.html",
+  "librarian_row": 53,
+  "page_family": "leaders_record_boards",
+  "primary_table_id_s_csv": "single leader table per page",
+  "raw_byte_count": 51778,
+  "resembles_endpoint": "career_leaders, season_leaders",
+  "robots_status": "allowed",
+  "sha256": "393caae152c1fd2ea775c8678bdacc02dcb419166cb9f44e7145d81011391200",
+  "status_code": 200,
+  "tier": "P2_new",
+  "tool": "courtside-data:scouting:1.0",
+  "url": "https://www.basketball-reference.com/leaders/pts_career.html",
+  "wallclock_ms": 8536
+}

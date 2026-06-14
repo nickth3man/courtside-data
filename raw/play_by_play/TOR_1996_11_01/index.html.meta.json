@@ -1,0 +1,17 @@
+{
+  "allowed_statuses": [
+    200
+  ],
+  "byte_count": 165297,
+  "content_encoding": "gzip",
+  "content_type": "text/html; charset=utf-8",
+  "downloaded_at": "2026-06-13T09:12:59.501038+00:00",
+  "final_url": "https://www.basketball-reference.com/boxscores/?day=1&month=11&year=1996",
+  "raw_byte_count": 165297,
+  "sha256": "524698be14bbc68bb28cc858791b76bb5a498d5a3f8238a53f14a57d0b9715a6",
+  "status_code": 200,
+  "table_ids": [],
+  "tool": "courtside-data:5.0.0a1",
+  "url": "https://www.basketball-reference.com/boxscores/?day=1&month=11&year=1996",
+  "wallclock_ms": 96
+}

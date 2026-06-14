@@ -1,0 +1,33 @@
+{
+  "allowed_statuses": [
+    200,
+    404
+  ],
+  "byte_count": 220299,
+  "canonical_pattern": "/allstar/contest.html",
+  "category": "All-Star",
+  "content_encoding": "gzip",
+  "content_type": "text/html",
+  "discovered_commented_table_ids": [],
+  "discovered_table_ids": [
+    "contests"
+  ],
+  "discovered_visible_table_ids": [
+    "contests"
+  ],
+  "downloaded_at": "2026-06-13T22:15:41.851040+00:00",
+  "expected_miss_404": false,
+  "final_url": "https://www.basketball-reference.com/allstar/contest.html",
+  "librarian_row": 44,
+  "page_family": "allstar_contests",
+  "primary_table_id_s_csv": "unknown (needs page fetch)",
+  "raw_byte_count": 48740,
+  "resembles_endpoint": "",
+  "robots_status": "allowed",
+  "sha256": "23cce6ca333228ff434343c7f5c58257cc51d094c6e93c7f7ef4aadec5f3f62f",
+  "status_code": 200,
+  "tier": "P2_new",
+  "tool": "courtside-data:scouting:1.0",
+  "url": "https://www.basketball-reference.com/allstar/contest.html",
+  "wallclock_ms": 9863
+}

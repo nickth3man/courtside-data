@@ -1,0 +1,19 @@
+{
+  "allowed_statuses": [
+    200
+  ],
+  "byte_count": 183535,
+  "content_encoding": "gzip",
+  "content_type": "text/html; charset=utf-8",
+  "downloaded_at": "2026-06-13T08:36:07.912034+00:00",
+  "final_url": "https://www.basketball-reference.com/players/j/jokicni01/on-off/2024",
+  "raw_byte_count": 183535,
+  "sha256": "1def91f7d51591dce7b43af220f6825e042a3bbd3b4491003876ce188d612bcc",
+  "status_code": 200,
+  "table_ids": [
+    "on-off"
+  ],
+  "tool": "courtside-data:5.0.0a1",
+  "url": "https://www.basketball-reference.com/players/j/jokicni01/on-off/2024",
+  "wallclock_ms": 8015
+}

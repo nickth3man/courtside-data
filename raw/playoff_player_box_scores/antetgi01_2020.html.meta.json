@@ -1,0 +1,28 @@
+{
+  "allowed_statuses": [
+    200
+  ],
+  "byte_count": 387449,
+  "content_encoding": "gzip",
+  "content_type": "text/html; charset=UTF-8",
+  "discovered_commented_table_ids": [],
+  "discovered_table_ids": [
+    "player_game_log_post",
+    "player_game_log_reg"
+  ],
+  "discovered_visible_table_ids": [
+    "player_game_log_post",
+    "player_game_log_reg"
+  ],
+  "downloaded_at": "2026-06-14T05:16:30.400754+00:00",
+  "final_url": "https://www.basketball-reference.com/players/a/antetgi01/gamelog/2020",
+  "raw_byte_count": 387449,
+  "sha256": "466632353419cb64decb975a2af31f0ebb7da866a13fb79f0ba6fc12398870d7",
+  "status_code": 200,
+  "table_ids": [
+    "player_game_log_post"
+  ],
+  "tool": "courtside-data:5.0.0a1",
+  "url": "https://www.basketball-reference.com/players/a/antetgi01/gamelog/2020",
+  "wallclock_ms": 9221
+}

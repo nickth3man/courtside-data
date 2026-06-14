@@ -1,0 +1,19 @@
+{
+  "allowed_statuses": [
+    200
+  ],
+  "byte_count": 318700,
+  "content_encoding": "gzip",
+  "content_type": "text/html; charset=utf-8",
+  "downloaded_at": "2026-06-13T08:37:51.054746+00:00",
+  "final_url": "https://www.basketball-reference.com/teams/GSW/2023/splits/",
+  "raw_byte_count": 318700,
+  "sha256": "3cf969ef3eec800778c22b1de8b198206bb740fff2bfaecad8c61d3f329d34c7",
+  "status_code": 200,
+  "table_ids": [
+    "team_splits"
+  ],
+  "tool": "courtside-data:5.0.0a1",
+  "url": "https://www.basketball-reference.com/teams/GSW/2023/splits/",
+  "wallclock_ms": 6895
+}

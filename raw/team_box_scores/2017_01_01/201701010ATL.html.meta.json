@@ -1,0 +1,17 @@
+{
+  "allowed_statuses": [
+    200
+  ],
+  "byte_count": 505343,
+  "content_encoding": "gzip",
+  "content_type": "text/html",
+  "downloaded_at": "2026-06-13T08:38:46.670702+00:00",
+  "final_url": "https://www.basketball-reference.com/boxscores/201701010ATL.html",
+  "raw_byte_count": 505343,
+  "sha256": "98bf3d67c3e9bac6ae39fbd4878c1b68c5f7af9b19069a88b344c20a85d31338",
+  "status_code": 200,
+  "table_ids": [],
+  "tool": "courtside-data:5.0.0a1",
+  "url": "https://www.basketball-reference.com/boxscores/201701010ATL.html",
+  "wallclock_ms": 6407
+}

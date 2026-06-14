@@ -1,0 +1,19 @@
+{
+  "allowed_statuses": [
+    200
+  ],
+  "byte_count": 378119,
+  "content_encoding": "gzip",
+  "content_type": "text/html",
+  "downloaded_at": "2026-06-13T08:46:45.477509+00:00",
+  "final_url": "https://www.basketball-reference.com/playoffs/NBA_1974.html",
+  "raw_byte_count": 378119,
+  "sha256": "6ece40de0188e7006fe995e35e61dbd5f73b9670d2a7fe3d45df3c4e474394f8",
+  "status_code": 200,
+  "table_ids": [
+    "all_playoffs"
+  ],
+  "tool": "courtside-data:5.0.0a1",
+  "url": "https://www.basketball-reference.com/playoffs/NBA_1974.html",
+  "wallclock_ms": 6627
+}

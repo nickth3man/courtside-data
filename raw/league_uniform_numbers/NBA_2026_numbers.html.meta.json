@@ -1,0 +1,29 @@
+{
+  "allowed_statuses": [
+    200,
+    404
+  ],
+  "byte_count": 252786,
+  "canonical_pattern": "/leagues/NBA_{YEAR}_numbers.html",
+  "category": "League",
+  "content_encoding": "gzip",
+  "content_type": "text/html",
+  "discovered_commented_table_ids": [],
+  "discovered_table_ids": [],
+  "discovered_visible_table_ids": [],
+  "downloaded_at": "2026-06-13T22:16:26.082134+00:00",
+  "expected_miss_404": false,
+  "final_url": "https://www.basketball-reference.com/leagues/NBA_2026_numbers.html",
+  "librarian_row": 49,
+  "page_family": "league_uniform_numbers",
+  "primary_table_id_s_csv": "unknown (needs page fetch)",
+  "raw_byte_count": 52756,
+  "resembles_endpoint": "",
+  "robots_status": "allowed",
+  "sha256": "dae74734e9ab4e6c55d60684cdaee855e7be0e63f6dfcffa381bbd8b3077de98",
+  "status_code": 200,
+  "tier": "P2_new",
+  "tool": "courtside-data:scouting:1.0",
+  "url": "https://www.basketball-reference.com/leagues/NBA_2026_numbers.html",
+  "wallclock_ms": 8460
+}

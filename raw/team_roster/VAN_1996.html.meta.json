@@ -1,0 +1,45 @@
+{
+  "allowed_statuses": [
+    200
+  ],
+  "byte_count": 510366,
+  "content_encoding": "gzip",
+  "content_type": "text/html",
+  "discovered_commented_table_ids": [
+    "adj_shooting",
+    "advanced",
+    "per_poss",
+    "salaries2",
+    "team_and_opponent",
+    "team_misc",
+    "totals_stats"
+  ],
+  "discovered_table_ids": [
+    "adj_shooting",
+    "advanced",
+    "per_game_stats",
+    "per_minute_stats",
+    "per_poss",
+    "roster",
+    "salaries2",
+    "team_and_opponent",
+    "team_misc",
+    "totals_stats"
+  ],
+  "discovered_visible_table_ids": [
+    "per_game_stats",
+    "per_minute_stats",
+    "roster"
+  ],
+  "downloaded_at": "2026-06-13T23:32:42.565155+00:00",
+  "final_url": "https://www.basketball-reference.com/teams/VAN/1996.html",
+  "raw_byte_count": 510366,
+  "sha256": "c2d726706a5c38c132850857254c44702b05af987fe69b264fe3bb1539cf86f8",
+  "status_code": 200,
+  "table_ids": [
+    "roster"
+  ],
+  "tool": "courtside-data:5.0.0a1",
+  "url": "https://www.basketball-reference.com/teams/VAN/1996.html",
+  "wallclock_ms": 7770
+}

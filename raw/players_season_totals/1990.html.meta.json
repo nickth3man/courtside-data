@@ -1,0 +1,19 @@
+{
+  "allowed_statuses": [
+    200
+  ],
+  "byte_count": 1293195,
+  "content_encoding": "gzip",
+  "content_type": "text/html",
+  "downloaded_at": "2026-06-13T08:45:34.406674+00:00",
+  "final_url": "https://www.basketball-reference.com/leagues/NBA_1990_totals.html",
+  "raw_byte_count": 1293195,
+  "sha256": "c2775fa88142b5e29d12c7d1cfd0bb4b9f73f37330e8ac9210a52d76c2afb504",
+  "status_code": 200,
+  "table_ids": [
+    "totals_stats"
+  ],
+  "tool": "courtside-data:5.0.0a1",
+  "url": "https://www.basketball-reference.com/leagues/NBA_1990_totals.html",
+  "wallclock_ms": 6308
+}

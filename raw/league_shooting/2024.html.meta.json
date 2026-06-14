@@ -1,0 +1,19 @@
+{
+  "allowed_statuses": [
+    200
+  ],
+  "byte_count": 2273907,
+  "content_encoding": "gzip",
+  "content_type": "text/html",
+  "downloaded_at": "2026-06-13T08:31:52.461698+00:00",
+  "final_url": "https://www.basketball-reference.com/leagues/NBA_2024_shooting.html",
+  "raw_byte_count": 2273907,
+  "sha256": "750a8f5de9530778e33c2f0ffbd8a2cbb9857ebce31e538d3fadf25e438e167d",
+  "status_code": 200,
+  "table_ids": [
+    "shooting"
+  ],
+  "tool": "courtside-data:5.0.0a1",
+  "url": "https://www.basketball-reference.com/leagues/NBA_2024_shooting.html",
+  "wallclock_ms": 7879
+}

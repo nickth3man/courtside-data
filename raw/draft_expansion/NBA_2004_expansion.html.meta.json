@@ -1,0 +1,25 @@
+{
+  "allowed_statuses": [
+    200,
+    404
+  ],
+  "byte_count": 129546,
+  "content_encoding": "gzip",
+  "content_type": "text/html",
+  "discovered_commented_table_ids": [],
+  "discovered_table_ids": [
+    "expansion_draft"
+  ],
+  "discovered_visible_table_ids": [
+    "expansion_draft"
+  ],
+  "downloaded_at": "2026-06-13T22:36:24.428556+00:00",
+  "final_url": "https://www.basketball-reference.com/draft/NBA_2004_expansion.html",
+  "raw_byte_count": 129546,
+  "sha256": "8e1e0c3d30a750d042693e8e80708ef86b05debdb49e0eba44e6fa39f5e6e763",
+  "status_code": 200,
+  "table_ids": [],
+  "tool": "courtside-data:5.0.0a1",
+  "url": "https://www.basketball-reference.com/draft/NBA_2004_expansion.html",
+  "wallclock_ms": 74
+}

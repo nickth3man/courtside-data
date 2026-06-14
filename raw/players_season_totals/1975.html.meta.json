@@ -1,0 +1,19 @@
+{
+  "allowed_statuses": [
+    200
+  ],
+  "byte_count": 674965,
+  "content_encoding": "gzip",
+  "content_type": "text/html",
+  "downloaded_at": "2026-06-13T08:45:21.820802+00:00",
+  "final_url": "https://www.basketball-reference.com/leagues/NBA_1975_totals.html",
+  "raw_byte_count": 674965,
+  "sha256": "d6e6278d1723363d2b6a978f462bf281c256026e39fc4921441f50d2f5db0f51",
+  "status_code": 200,
+  "table_ids": [
+    "totals_stats"
+  ],
+  "tool": "courtside-data:5.0.0a1",
+  "url": "https://www.basketball-reference.com/leagues/NBA_1975_totals.html",
+  "wallclock_ms": 7222
+}

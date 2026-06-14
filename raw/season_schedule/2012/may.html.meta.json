@@ -1,0 +1,19 @@
+{
+  "allowed_statuses": [
+    200
+  ],
+  "byte_count": 233208,
+  "content_encoding": "gzip",
+  "content_type": "text/html",
+  "downloaded_at": "2026-06-13T09:19:41.276606+00:00",
+  "final_url": "https://www.basketball-reference.com/leagues/NBA_2012_games-may.html",
+  "raw_byte_count": 233208,
+  "sha256": "f28d463322bfe29b12ce09d69437dac7c6fe08c84ddb33e6a3ef8d7523b522ab",
+  "status_code": 200,
+  "table_ids": [
+    "schedule"
+  ],
+  "tool": "courtside-data:5.0.0a1",
+  "url": "https://www.basketball-reference.com/leagues/NBA_2012_games-may.html",
+  "wallclock_ms": 7519
+}

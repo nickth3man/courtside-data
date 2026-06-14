@@ -1,0 +1,17 @@
+{
+  "allowed_statuses": [
+    200
+  ],
+  "byte_count": 477678,
+  "content_encoding": "gzip",
+  "content_type": "text/html",
+  "downloaded_at": "2026-06-13T08:32:13.126992+00:00",
+  "final_url": "https://www.basketball-reference.com/leagues/NBA_2020_transactions.html",
+  "raw_byte_count": 477678,
+  "sha256": "007c00a83c73706216a1622b7b89e2bb609657347c5b067972dc528f96b88c19",
+  "status_code": 200,
+  "table_ids": [],
+  "tool": "courtside-data:5.0.0a1",
+  "url": "https://www.basketball-reference.com/leagues/NBA_2020_transactions.html",
+  "wallclock_ms": 7035
+}

@@ -1,0 +1,25 @@
+{
+  "allowed_statuses": [
+    200,
+    404
+  ],
+  "byte_count": 545339,
+  "content_encoding": "gzip",
+  "content_type": "text/html; charset=utf-8",
+  "discovered_commented_table_ids": [],
+  "discovered_table_ids": [
+    "stats"
+  ],
+  "discovered_visible_table_ids": [
+    "stats"
+  ],
+  "downloaded_at": "2026-06-13T22:37:02.157699+00:00",
+  "final_url": "https://www.basketball-reference.com/friv/birthplaces.fcgi?country=US&state=OH",
+  "raw_byte_count": 545339,
+  "sha256": "3eba89970fa2575a43c7b063c754182fd867a972e4e93bbd2d1e9c80999fc838",
+  "status_code": 200,
+  "table_ids": [],
+  "tool": "courtside-data:5.0.0a1",
+  "url": "https://www.basketball-reference.com/friv/birthplaces.fcgi?country=US&state=OH",
+  "wallclock_ms": 6848
+}

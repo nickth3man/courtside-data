@@ -1,0 +1,33 @@
+{
+  "allowed_statuses": [
+    200,
+    404
+  ],
+  "byte_count": 283866,
+  "canonical_pattern": "/teams/{ID}/stats_basic_totals.html",
+  "category": "Team",
+  "content_encoding": "gzip",
+  "content_type": "text/html",
+  "discovered_commented_table_ids": [],
+  "discovered_table_ids": [
+    "stats"
+  ],
+  "discovered_visible_table_ids": [
+    "stats"
+  ],
+  "downloaded_at": "2026-06-13T22:04:34.349700+00:00",
+  "expected_miss_404": false,
+  "final_url": "https://www.basketball-reference.com/teams/ATL/stats_basic_totals.html",
+  "librarian_row": 2,
+  "page_family": "franchise_year_by_year_stats_totals",
+  "primary_table_id_s_csv": "unknown (needs page fetch)",
+  "raw_byte_count": 54130,
+  "resembles_endpoint": "team_and_opponent",
+  "robots_status": "allowed",
+  "sha256": "d35ac68c680b4d25ba3682cc74aa7ba855de56186e63edf8c5f16db33393fb61",
+  "status_code": 200,
+  "tier": "P2_new",
+  "tool": "courtside-data:scouting:1.0",
+  "url": "https://www.basketball-reference.com/teams/ATL/stats_basic_totals.html",
+  "wallclock_ms": 73
+}

@@ -1,0 +1,19 @@
+{
+  "allowed_statuses": [
+    200
+  ],
+  "byte_count": 600713,
+  "content_encoding": "gzip",
+  "content_type": "text/html",
+  "downloaded_at": "2026-06-13T08:45:14.575941+00:00",
+  "final_url": "https://www.basketball-reference.com/leagues/NBA_1974_totals.html",
+  "raw_byte_count": 600713,
+  "sha256": "89e42aedf3f7528bad4f1d29a3c7eecb4f5c8ef8a95ee9ee0d4bb011392b452b",
+  "status_code": 200,
+  "table_ids": [
+    "totals_stats"
+  ],
+  "tool": "courtside-data:5.0.0a1",
+  "url": "https://www.basketball-reference.com/leagues/NBA_1974_totals.html",
+  "wallclock_ms": 7556
+}

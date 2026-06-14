@@ -1,0 +1,55 @@
+{
+  "allowed_statuses": [
+    200
+  ],
+  "byte_count": 656596,
+  "content_encoding": "gzip",
+  "content_type": "text/html",
+  "discovered_commented_table_ids": [
+    "adj_shooting",
+    "adj_shooting_post",
+    "advanced",
+    "advanced_post",
+    "per_poss",
+    "per_poss_post",
+    "team_and_opponent",
+    "team_misc",
+    "totals_stats",
+    "totals_stats_post"
+  ],
+  "discovered_table_ids": [
+    "adj_shooting",
+    "adj_shooting_post",
+    "advanced",
+    "advanced_post",
+    "per_game_stats",
+    "per_game_stats_post",
+    "per_minute_stats",
+    "per_minute_stats_post",
+    "per_poss",
+    "per_poss_post",
+    "roster",
+    "team_and_opponent",
+    "team_misc",
+    "totals_stats",
+    "totals_stats_post"
+  ],
+  "discovered_visible_table_ids": [
+    "per_game_stats",
+    "per_game_stats_post",
+    "per_minute_stats",
+    "per_minute_stats_post",
+    "roster"
+  ],
+  "downloaded_at": "2026-06-13T23:33:52.569611+00:00",
+  "final_url": "https://www.basketball-reference.com/teams/KCK/1984.html",
+  "raw_byte_count": 656596,
+  "sha256": "e53f030f4739a6db04f089c515106398d241a37142b5c461aab66baa26d7d4c4",
+  "status_code": 200,
+  "table_ids": [
+    "roster"
+  ],
+  "tool": "courtside-data:5.0.0a1",
+  "url": "https://www.basketball-reference.com/teams/KCK/1984.html",
+  "wallclock_ms": 6761
+}

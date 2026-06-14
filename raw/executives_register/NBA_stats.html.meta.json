@@ -1,0 +1,25 @@
+{
+  "allowed_statuses": [
+    200,
+    404
+  ],
+  "byte_count": 419260,
+  "content_encoding": "gzip",
+  "content_type": "text/html",
+  "discovered_commented_table_ids": [],
+  "discovered_table_ids": [
+    "executives"
+  ],
+  "discovered_visible_table_ids": [
+    "executives"
+  ],
+  "downloaded_at": "2026-06-13T22:47:04.252199+00:00",
+  "final_url": "https://www.basketball-reference.com/executives/NBA_stats.html",
+  "raw_byte_count": 419260,
+  "sha256": "2a1407abf4dc6be24484ed2faafb949500b560446027a03721a7147ad50140ef",
+  "status_code": 200,
+  "table_ids": [],
+  "tool": "courtside-data:5.0.0a1",
+  "url": "https://www.basketball-reference.com/executives/NBA_stats.html",
+  "wallclock_ms": 6284
+}

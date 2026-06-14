@@ -1,0 +1,25 @@
+{
+  "allowed_statuses": [
+    200,
+    404
+  ],
+  "byte_count": 503083,
+  "content_encoding": "gzip",
+  "content_type": "text/html; charset=utf-8",
+  "discovered_commented_table_ids": [],
+  "discovered_table_ids": [
+    "stats"
+  ],
+  "discovered_visible_table_ids": [
+    "stats"
+  ],
+  "downloaded_at": "2026-06-13T22:37:09.341960+00:00",
+  "final_url": "https://www.basketball-reference.com/friv/high_schools.fcgi?country=US&state=OH",
+  "raw_byte_count": 503083,
+  "sha256": "8554a4575fb47e0db58ad4bee29b169c646876a9ef609e6efb0b82f7137aec2a",
+  "status_code": 200,
+  "table_ids": [],
+  "tool": "courtside-data:5.0.0a1",
+  "url": "https://www.basketball-reference.com/friv/high_schools.fcgi?country=US&state=OH",
+  "wallclock_ms": 7141
+}

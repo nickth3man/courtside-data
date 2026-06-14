@@ -1,0 +1,19 @@
+{
+  "allowed_statuses": [
+    200
+  ],
+  "byte_count": 280864,
+  "content_encoding": "gzip",
+  "content_type": "text/html; charset=UTF-8",
+  "downloaded_at": "2026-06-13T08:48:36.777377+00:00",
+  "final_url": "https://www.basketball-reference.com/players/b/birdla01/splits/1980",
+  "raw_byte_count": 280864,
+  "sha256": "199ea479318b063d21bcb45135ee5c421c018668c7fe0ddaf5f9ad174df64f05",
+  "status_code": 200,
+  "table_ids": [
+    "splits"
+  ],
+  "tool": "courtside-data:5.0.0a1",
+  "url": "https://www.basketball-reference.com/players/b/birdla01/splits/1980",
+  "wallclock_ms": 6917
+}

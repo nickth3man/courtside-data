@@ -1,0 +1,20 @@
+{
+  "allowed_statuses": [
+    200
+  ],
+  "byte_count": 487034,
+  "content_encoding": "gzip",
+  "content_type": "text/html",
+  "downloaded_at": "2026-06-13T08:46:17.408976+00:00",
+  "final_url": "https://www.basketball-reference.com/leagues/NBA_1974.html",
+  "raw_byte_count": 487034,
+  "sha256": "eb2bf29f9fdf4bc9dfd67d4bd44897ee08bd9e89a8e00bde34792c42d1036f1b",
+  "status_code": 200,
+  "table_ids": [
+    "divs_standings_E",
+    "divs_standings_W"
+  ],
+  "tool": "courtside-data:5.0.0a1",
+  "url": "https://www.basketball-reference.com/leagues/NBA_1974.html",
+  "wallclock_ms": 7052
+}

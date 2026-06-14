@@ -1,0 +1,19 @@
+{
+  "allowed_statuses": [
+    200
+  ],
+  "byte_count": 551466,
+  "content_encoding": "gzip",
+  "content_type": "text/html",
+  "downloaded_at": "2026-06-13T09:19:11.483157+00:00",
+  "final_url": "https://www.basketball-reference.com/leagues/NBA_2012_games-january.html",
+  "raw_byte_count": 551466,
+  "sha256": "9912feadbca74140838553f3645d8a85e0564e6daa5810241ac92a929cb792df",
+  "status_code": 200,
+  "table_ids": [
+    "schedule"
+  ],
+  "tool": "courtside-data:5.0.0a1",
+  "url": "https://www.basketball-reference.com/leagues/NBA_2012_games-january.html",
+  "wallclock_ms": 8041
+}

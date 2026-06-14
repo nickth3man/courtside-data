@@ -1,0 +1,26 @@
+{
+  "allowed_statuses": [
+    200
+  ],
+  "byte_count": 148634,
+  "content_encoding": "gzip",
+  "content_type": "text/html",
+  "discovered_commented_table_ids": [],
+  "discovered_table_ids": [
+    "schedule"
+  ],
+  "discovered_visible_table_ids": [
+    "schedule"
+  ],
+  "downloaded_at": "2026-06-14T05:14:14.704823+00:00",
+  "final_url": "https://www.basketball-reference.com/leagues/NBA_2001_games-june.html",
+  "raw_byte_count": 148634,
+  "sha256": "65a616a85983822ab8a5dd0682ca9810cbbcf3381529f9da935664cccd18b64f",
+  "status_code": 200,
+  "table_ids": [
+    "schedule"
+  ],
+  "tool": "courtside-data:5.0.0a1",
+  "url": "https://www.basketball-reference.com/leagues/NBA_2001_games-june.html",
+  "wallclock_ms": 6927
+}

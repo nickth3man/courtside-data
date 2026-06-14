@@ -1,0 +1,19 @@
+{
+  "allowed_statuses": [
+    200
+  ],
+  "byte_count": 145315,
+  "content_encoding": "gzip",
+  "content_type": "text/html",
+  "downloaded_at": "2026-06-13T09:15:53.386610+00:00",
+  "final_url": "https://www.basketball-reference.com/leagues/NBA_2024_games-june.html",
+  "raw_byte_count": 145315,
+  "sha256": "bc8cbb39ebb3ff73ca70ebd95905e932de549bebf5b5f66a2fd42105cb3a72eb",
+  "status_code": 200,
+  "table_ids": [
+    "schedule"
+  ],
+  "tool": "courtside-data:5.0.0a1",
+  "url": "https://www.basketball-reference.com/leagues/NBA_2024_games-june.html",
+  "wallclock_ms": 6908
+}

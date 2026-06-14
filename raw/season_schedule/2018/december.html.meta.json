@@ -1,0 +1,19 @@
+{
+  "allowed_statuses": [
+    200
+  ],
+  "byte_count": 502325,
+  "content_encoding": "gzip",
+  "content_type": "text/html",
+  "downloaded_at": "2026-06-13T09:16:14.546369+00:00",
+  "final_url": "https://www.basketball-reference.com/leagues/NBA_2018_games-december.html",
+  "raw_byte_count": 502325,
+  "sha256": "906cf10203c3129281d5756762e0b4bdf55f973dec3f9aed238d35fef632af2f",
+  "status_code": 200,
+  "table_ids": [
+    "schedule"
+  ],
+  "tool": "courtside-data:5.0.0a1",
+  "url": "https://www.basketball-reference.com/leagues/NBA_2018_games-december.html",
+  "wallclock_ms": 7278
+}

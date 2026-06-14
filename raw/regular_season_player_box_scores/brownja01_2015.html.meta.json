@@ -1,0 +1,26 @@
+{
+  "allowed_statuses": [
+    200
+  ],
+  "byte_count": 204554,
+  "content_encoding": "gzip",
+  "content_type": "text/html; charset=UTF-8",
+  "discovered_commented_table_ids": [],
+  "discovered_table_ids": [
+    "player_game_log_reg"
+  ],
+  "discovered_visible_table_ids": [
+    "player_game_log_reg"
+  ],
+  "downloaded_at": "2026-06-14T05:15:47.535513+00:00",
+  "final_url": "https://www.basketball-reference.com/players/b/brownja01/gamelog/2015",
+  "raw_byte_count": 204554,
+  "sha256": "2a92da589d9c714fe0910b12ae7eaa76689558ee95fcb8375e10f01f3a4289cc",
+  "status_code": 200,
+  "table_ids": [
+    "player_game_log_reg"
+  ],
+  "tool": "courtside-data:5.0.0a1",
+  "url": "https://www.basketball-reference.com/players/b/brownja01/gamelog/2015",
+  "wallclock_ms": 7868
+}

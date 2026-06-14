@@ -1,0 +1,26 @@
+{
+  "allowed_statuses": [
+    200
+  ],
+  "byte_count": 570071,
+  "content_encoding": "gzip",
+  "content_type": "text/html; charset=utf-8",
+  "discovered_commented_table_ids": [],
+  "discovered_table_ids": [
+    "stats"
+  ],
+  "discovered_visible_table_ids": [
+    "stats"
+  ],
+  "downloaded_at": "2026-06-14T05:28:41.317420+00:00",
+  "final_url": "https://www.basketball-reference.com/friv/dailyleaders.cgi?month=11&day=1&year=2006",
+  "raw_byte_count": 570071,
+  "sha256": "c7f45686c8a4a2aeccfd827b280ed6c7381c513376f3f02eaf04e230f403fc89",
+  "status_code": 200,
+  "table_ids": [
+    "stats"
+  ],
+  "tool": "courtside-data:5.0.0a1",
+  "url": "https://www.basketball-reference.com/friv/dailyleaders.cgi?month=11&day=1&year=2006",
+  "wallclock_ms": 7952
+}

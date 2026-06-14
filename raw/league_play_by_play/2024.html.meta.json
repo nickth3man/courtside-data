@@ -1,0 +1,26 @@
+{
+  "allowed_statuses": [
+    200
+  ],
+  "byte_count": 1701738,
+  "content_encoding": "gzip",
+  "content_type": "text/html",
+  "discovered_commented_table_ids": [],
+  "discovered_table_ids": [
+    "pbp_stats",
+    "pbp_stats_post"
+  ],
+  "discovered_visible_table_ids": [
+    "pbp_stats",
+    "pbp_stats_post"
+  ],
+  "downloaded_at": "2026-06-13T23:34:14.503865+00:00",
+  "final_url": "https://www.basketball-reference.com/leagues/NBA_2024_play-by-play.html",
+  "raw_byte_count": 1701738,
+  "sha256": "e0a57b8db5ed5bbacfa07cf78d71c031848d9ea49c86aed5431fa91ac700cc37",
+  "status_code": 200,
+  "table_ids": [],
+  "tool": "courtside-data:5.0.0a1",
+  "url": "https://www.basketball-reference.com/leagues/NBA_2024_play-by-play.html",
+  "wallclock_ms": 6904
+}

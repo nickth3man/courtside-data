@@ -1,0 +1,28 @@
+{
+  "allowed_statuses": [
+    200
+  ],
+  "byte_count": 1565523,
+  "content_encoding": "gzip",
+  "content_type": "text/html",
+  "discovered_commented_table_ids": [],
+  "discovered_table_ids": [
+    "totals_stats",
+    "totals_stats_post"
+  ],
+  "discovered_visible_table_ids": [
+    "totals_stats",
+    "totals_stats_post"
+  ],
+  "downloaded_at": "2026-06-14T05:10:48.171413+00:00",
+  "final_url": "https://www.basketball-reference.com/leagues/NBA_2008_totals.html",
+  "raw_byte_count": 1565523,
+  "sha256": "408ed75d585e9dff02859b955186e4eb87a75e60c801219de8c49be57b68f3c9",
+  "status_code": 200,
+  "table_ids": [
+    "totals_stats"
+  ],
+  "tool": "courtside-data:5.0.0a1",
+  "url": "https://www.basketball-reference.com/leagues/NBA_2008_totals.html",
+  "wallclock_ms": 6245
+}

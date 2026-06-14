@@ -1,0 +1,19 @@
+{
+  "allowed_statuses": [
+    200
+  ],
+  "byte_count": 187055,
+  "content_encoding": "gzip",
+  "content_type": "text/html; charset=utf-8",
+  "downloaded_at": "2026-06-13T08:48:44.766897+00:00",
+  "final_url": "https://www.basketball-reference.com/players/j/jordami01/on-off/1997",
+  "raw_byte_count": 187055,
+  "sha256": "e27ab16f99d6ccfb61722d7d7fdbb7de7393debf813c6ad1ad28aff14b6e8cba",
+  "status_code": 200,
+  "table_ids": [
+    "on-off"
+  ],
+  "tool": "courtside-data:5.0.0a1",
+  "url": "https://www.basketball-reference.com/players/j/jordami01/on-off/1997",
+  "wallclock_ms": 7982
+}

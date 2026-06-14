@@ -1,0 +1,65 @@
+{
+  "allowed_statuses": [
+    200
+  ],
+  "byte_count": 814351,
+  "content_encoding": "gzip",
+  "content_type": "text/html",
+  "discovered_commented_table_ids": [
+    "adj_shooting",
+    "adj_shooting_post",
+    "advanced",
+    "advanced_post",
+    "pbp_stats",
+    "pbp_stats_post",
+    "per_poss",
+    "per_poss_post",
+    "salaries2",
+    "shooting",
+    "shooting_post",
+    "team_and_opponent",
+    "team_misc",
+    "totals_stats",
+    "totals_stats_post"
+  ],
+  "discovered_table_ids": [
+    "adj_shooting",
+    "adj_shooting_post",
+    "advanced",
+    "advanced_post",
+    "pbp_stats",
+    "pbp_stats_post",
+    "per_game_stats",
+    "per_game_stats_post",
+    "per_minute_stats",
+    "per_minute_stats_post",
+    "per_poss",
+    "per_poss_post",
+    "roster",
+    "salaries2",
+    "shooting",
+    "shooting_post",
+    "team_and_opponent",
+    "team_misc",
+    "totals_stats",
+    "totals_stats_post"
+  ],
+  "discovered_visible_table_ids": [
+    "per_game_stats",
+    "per_game_stats_post",
+    "per_minute_stats",
+    "per_minute_stats_post",
+    "roster"
+  ],
+  "downloaded_at": "2026-06-13T23:32:56.754374+00:00",
+  "final_url": "https://www.basketball-reference.com/teams/NOH/2003.html",
+  "raw_byte_count": 814351,
+  "sha256": "e8d62fb3e8714304264a0634b5736376b7af74e053da34f82f048263a3029cff",
+  "status_code": 200,
+  "table_ids": [
+    "roster"
+  ],
+  "tool": "courtside-data:5.0.0a1",
+  "url": "https://www.basketball-reference.com/teams/NOH/2003.html",
+  "wallclock_ms": 7864
+}

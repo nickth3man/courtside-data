@@ -1,0 +1,33 @@
+{
+  "allowed_statuses": [
+    200,
+    404
+  ],
+  "byte_count": 157077,
+  "canonical_pattern": "/leagues/ABA_best_records.html, ABA_worst_records.html, ABA_stats_per_game.html, ABA_wins.html",
+  "category": "League",
+  "content_encoding": "gzip",
+  "content_type": "text/html",
+  "discovered_commented_table_ids": [],
+  "discovered_table_ids": [
+    "best_records"
+  ],
+  "discovered_visible_table_ids": [
+    "best_records"
+  ],
+  "downloaded_at": "2026-06-13T22:16:53.415834+00:00",
+  "expected_miss_404": false,
+  "final_url": "https://www.basketball-reference.com/leagues/ABA_best_records.html",
+  "librarian_row": 52,
+  "page_family": "league_aba_best_worst",
+  "primary_table_id_s_csv": "unknown (needs page fetch)",
+  "raw_byte_count": 41136,
+  "resembles_endpoint": "",
+  "robots_status": "allowed",
+  "sha256": "19198cb702d498a2c48c68d7c3ff47ca4241e7cc7abcef42f1de36bc070d76d4",
+  "status_code": 200,
+  "tier": "P2_new",
+  "tool": "courtside-data:scouting:1.0",
+  "url": "https://www.basketball-reference.com/leagues/ABA_best_records.html",
+  "wallclock_ms": 9024
+}

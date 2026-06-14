@@ -1,0 +1,19 @@
+{
+  "allowed_statuses": [
+    200
+  ],
+  "byte_count": 535361,
+  "content_encoding": "gzip",
+  "content_type": "text/html",
+  "downloaded_at": "2026-06-13T08:46:59.791394+00:00",
+  "final_url": "https://www.basketball-reference.com/draft/NBA_1984.html",
+  "raw_byte_count": 535361,
+  "sha256": "8530d38c2858b59597e4c080673429f8184cac9f4e324e017db2ed3a3858ac58",
+  "status_code": 200,
+  "table_ids": [
+    "stats"
+  ],
+  "tool": "courtside-data:5.0.0a1",
+  "url": "https://www.basketball-reference.com/draft/NBA_1984.html",
+  "wallclock_ms": 7995
+}

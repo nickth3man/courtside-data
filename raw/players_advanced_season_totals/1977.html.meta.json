@@ -1,0 +1,19 @@
+{
+  "allowed_statuses": [
+    200
+  ],
+  "byte_count": 1071838,
+  "content_encoding": "gzip",
+  "content_type": "text/html",
+  "downloaded_at": "2026-06-13T08:45:48.738741+00:00",
+  "final_url": "https://www.basketball-reference.com/leagues/NBA_1977_advanced.html",
+  "raw_byte_count": 1071838,
+  "sha256": "966ae1c421ef2c3b3e6b2704a77c3bf9742e48dcf98ffbb9f8bf10631e4d3c44",
+  "status_code": 200,
+  "table_ids": [
+    "advanced"
+  ],
+  "tool": "courtside-data:5.0.0a1",
+  "url": "https://www.basketball-reference.com/leagues/NBA_1977_advanced.html",
+  "wallclock_ms": 6277
+}

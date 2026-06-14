@@ -1,0 +1,19 @@
+{
+  "allowed_statuses": [
+    200
+  ],
+  "byte_count": 319321,
+  "content_encoding": "gzip",
+  "content_type": "text/html; charset=utf-8",
+  "downloaded_at": "2026-06-13T08:37:44.149219+00:00",
+  "final_url": "https://www.basketball-reference.com/teams/BOS/2024/splits/",
+  "raw_byte_count": 319321,
+  "sha256": "bb22fd6db23d140afc7f87422aec19a1e58e859cbe371a215290207fc1d947b3",
+  "status_code": 200,
+  "table_ids": [
+    "team_splits"
+  ],
+  "tool": "courtside-data:5.0.0a1",
+  "url": "https://www.basketball-reference.com/teams/BOS/2024/splits/",
+  "wallclock_ms": 6713
+}

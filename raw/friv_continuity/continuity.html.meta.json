@@ -1,0 +1,25 @@
+{
+  "allowed_statuses": [
+    200,
+    404
+  ],
+  "byte_count": 1301604,
+  "content_encoding": "gzip",
+  "content_type": "text/html",
+  "discovered_commented_table_ids": [],
+  "discovered_table_ids": [
+    "continuity"
+  ],
+  "discovered_visible_table_ids": [
+    "continuity"
+  ],
+  "downloaded_at": "2026-06-13T22:46:08.661099+00:00",
+  "final_url": "https://www.basketball-reference.com/friv/continuity.html",
+  "raw_byte_count": 1301604,
+  "sha256": "346881aa4b84f7a2d8bb74075780ebb9e7f22efdf55a2595a0e052be0e961869",
+  "status_code": 200,
+  "table_ids": [],
+  "tool": "courtside-data:5.0.0a1",
+  "url": "https://www.basketball-reference.com/friv/continuity.html",
+  "wallclock_ms": 7601
+}

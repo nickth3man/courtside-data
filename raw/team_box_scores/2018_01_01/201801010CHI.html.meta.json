@@ -1,0 +1,63 @@
+{
+  "allowed_statuses": [
+    200
+  ],
+  "byte_count": 493449,
+  "content_encoding": "gzip",
+  "content_type": "text/html",
+  "discovered_commented_table_ids": [
+    "four_factors",
+    "line_score"
+  ],
+  "discovered_table_ids": [
+    "box-CHI-game-advanced",
+    "box-CHI-game-basic",
+    "box-CHI-h1-basic",
+    "box-CHI-h2-basic",
+    "box-CHI-ot1-basic",
+    "box-CHI-q1-basic",
+    "box-CHI-q2-basic",
+    "box-CHI-q3-basic",
+    "box-CHI-q4-basic",
+    "box-POR-game-advanced",
+    "box-POR-game-basic",
+    "box-POR-h1-basic",
+    "box-POR-h2-basic",
+    "box-POR-ot1-basic",
+    "box-POR-q1-basic",
+    "box-POR-q2-basic",
+    "box-POR-q3-basic",
+    "box-POR-q4-basic",
+    "four_factors",
+    "line_score"
+  ],
+  "discovered_visible_table_ids": [
+    "box-CHI-game-advanced",
+    "box-CHI-game-basic",
+    "box-CHI-h1-basic",
+    "box-CHI-h2-basic",
+    "box-CHI-ot1-basic",
+    "box-CHI-q1-basic",
+    "box-CHI-q2-basic",
+    "box-CHI-q3-basic",
+    "box-CHI-q4-basic",
+    "box-POR-game-advanced",
+    "box-POR-game-basic",
+    "box-POR-h1-basic",
+    "box-POR-h2-basic",
+    "box-POR-ot1-basic",
+    "box-POR-q1-basic",
+    "box-POR-q2-basic",
+    "box-POR-q3-basic",
+    "box-POR-q4-basic"
+  ],
+  "downloaded_at": "2026-06-14T05:15:25.718507+00:00",
+  "final_url": "https://www.basketball-reference.com/boxscores/201801010CHI.html",
+  "raw_byte_count": 493449,
+  "sha256": "b0415efeb6b936c5bed26c5565311d9e29d2ad1146fea579c514f76465a1c88f",
+  "status_code": 200,
+  "table_ids": [],
+  "tool": "courtside-data:5.0.0a1",
+  "url": "https://www.basketball-reference.com/boxscores/201801010CHI.html",
+  "wallclock_ms": 7664
+}

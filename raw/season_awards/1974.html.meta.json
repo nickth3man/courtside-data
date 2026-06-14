@@ -1,0 +1,17 @@
+{
+  "allowed_statuses": [
+    200
+  ],
+  "byte_count": 275355,
+  "content_encoding": "gzip",
+  "content_type": "text/html",
+  "downloaded_at": "2026-06-13T09:14:38.508331+00:00",
+  "final_url": "https://www.basketball-reference.com/awards/awards_1974.html",
+  "raw_byte_count": 275355,
+  "sha256": "a9d396e7cf588e67e633fe9e8fbd15d5916861aded3729c693e1cd6b086d4127",
+  "status_code": 200,
+  "table_ids": [],
+  "tool": "courtside-data:5.0.0a1",
+  "url": "https://www.basketball-reference.com/awards/awards_1974.html",
+  "wallclock_ms": 43
+}

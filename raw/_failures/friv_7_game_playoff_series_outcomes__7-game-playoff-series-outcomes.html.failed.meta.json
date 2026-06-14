@@ -1,0 +1,12 @@
+{
+  "body_bytes": 342,
+  "content_encoding": "gzip",
+  "content_type": "text/html",
+  "error": "Body too small (342 bytes) for https://www.basketball-reference.com/friv/7-game-playoff-series-outcomes.html; likely a block page",
+  "final_url": "https://www.basketball-reference.com/friv/7-game-playoff-series-outcomes.html",
+  "first_kilobyte_preview": "<!DOCTYPE HTML>\n<html>\n  <head>\n    <meta charset=\"UTF-8\">\n    <meta http-equiv=\"refresh\" content=\"1;URL=/friv/7-game-playoff-series-outcomes-22111.html\">\n    <script type=\"text/javascript\">\n      window.location.href = \"/friv/7-game-playoff-series-outcomes-22111.html\";\n    </script>\n    <title></title>\n  </head>\n  <body>\n  </body>\n</html>\n",
+  "is_gzip": false,
+  "status_code": 200,
+  "title": null,
+  "url": "https://www.basketball-reference.com/friv/7-game-playoff-series-outcomes.html"
+}

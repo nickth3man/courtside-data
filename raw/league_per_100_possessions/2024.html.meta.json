@@ -1,0 +1,19 @@
+{
+  "allowed_statuses": [
+    200
+  ],
+  "byte_count": 2519386,
+  "content_encoding": "gzip",
+  "content_type": "text/html",
+  "downloaded_at": "2026-06-13T08:31:37.774969+00:00",
+  "final_url": "https://www.basketball-reference.com/leagues/NBA_2024_per_poss.html",
+  "raw_byte_count": 2519386,
+  "sha256": "b5827bd2d2f5d6e319c02bd98ee693a46f06df7b66c7ac5f1210f673cb16a889",
+  "status_code": 200,
+  "table_ids": [
+    "per_poss"
+  ],
+  "tool": "courtside-data:5.0.0a1",
+  "url": "https://www.basketball-reference.com/leagues/NBA_2024_per_poss.html",
+  "wallclock_ms": 7678
+}

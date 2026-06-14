@@ -1,0 +1,29 @@
+{
+  "allowed_statuses": [
+    200,
+    404
+  ],
+  "byte_count": 244774,
+  "canonical_pattern": "/teams/{ID}/numbers.html",
+  "category": "Team",
+  "content_encoding": "gzip",
+  "content_type": "text/html",
+  "discovered_commented_table_ids": [],
+  "discovered_table_ids": [],
+  "discovered_visible_table_ids": [],
+  "downloaded_at": "2026-06-13T22:11:43.658526+00:00",
+  "expected_miss_404": false,
+  "final_url": "https://www.basketball-reference.com/teams/ATL/numbers.html",
+  "librarian_row": 15,
+  "page_family": "franchise_uniform_numbers",
+  "primary_table_id_s_csv": "unknown (needs page fetch)",
+  "raw_byte_count": 53833,
+  "resembles_endpoint": "league_uniform_numbers",
+  "robots_status": "allowed",
+  "sha256": "7e457fa4cb6d253a5d3fead453b56f2e274623b990d1523412a3545871a898b2",
+  "status_code": 200,
+  "tier": "P2_new",
+  "tool": "courtside-data:scouting:1.0",
+  "url": "https://www.basketball-reference.com/teams/ATL/numbers.html",
+  "wallclock_ms": 8567
+}

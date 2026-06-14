@@ -1,0 +1,19 @@
+{
+  "allowed_statuses": [
+    200
+  ],
+  "byte_count": 402095,
+  "content_encoding": "gzip",
+  "content_type": "text/html",
+  "downloaded_at": "2026-06-13T09:17:42.515376+00:00",
+  "final_url": "https://www.basketball-reference.com/leagues/NBA_1980_games-march.html",
+  "raw_byte_count": 402095,
+  "sha256": "a54f5655a57ecd10f5fa3521194a13ce0433458fc5f6b2804a6addfa6b910732",
+  "status_code": 200,
+  "table_ids": [
+    "schedule"
+  ],
+  "tool": "courtside-data:5.0.0a1",
+  "url": "https://www.basketball-reference.com/leagues/NBA_1980_games-march.html",
+  "wallclock_ms": 6607
+}

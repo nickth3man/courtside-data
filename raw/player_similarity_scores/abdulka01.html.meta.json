@@ -1,0 +1,19 @@
+{
+  "allowed_statuses": [
+    200
+  ],
+  "byte_count": 1382280,
+  "content_encoding": "gzip",
+  "content_type": "text/html",
+  "downloaded_at": "2026-06-13T08:35:23.223990+00:00",
+  "final_url": "https://www.basketball-reference.com/players/a/abdulka01.html",
+  "raw_byte_count": 1382280,
+  "sha256": "e3e95d17fbf3fdea79eb4dcd6a21bc1beb6d06dd568b5db52ce9dcd9f8be19ef",
+  "status_code": 200,
+  "table_ids": [
+    "sims-career"
+  ],
+  "tool": "courtside-data:5.0.0a1",
+  "url": "https://www.basketball-reference.com/players/a/abdulka01.html",
+  "wallclock_ms": 6022
+}

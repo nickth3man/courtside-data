@@ -1,0 +1,19 @@
+{
+  "allowed_statuses": [
+    200
+  ],
+  "byte_count": 1003050,
+  "content_encoding": "gzip",
+  "content_type": "text/html",
+  "downloaded_at": "2026-06-13T08:44:31.525418+00:00",
+  "final_url": "https://www.basketball-reference.com/leagues/NBA_1980_totals.html",
+  "raw_byte_count": 1003050,
+  "sha256": "d62aa2933d8aba7a4548216e361b12fd6223369796045051f261e4cac079252d",
+  "status_code": 200,
+  "table_ids": [
+    "totals_stats"
+  ],
+  "tool": "courtside-data:5.0.0a1",
+  "url": "https://www.basketball-reference.com/leagues/NBA_1980_totals.html",
+  "wallclock_ms": 7005
+}

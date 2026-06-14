@@ -1,0 +1,28 @@
+{
+  "allowed_statuses": [
+    200
+  ],
+  "byte_count": 401895,
+  "content_encoding": "gzip",
+  "content_type": "text/html; charset=UTF-8",
+  "discovered_commented_table_ids": [],
+  "discovered_table_ids": [
+    "player_game_log_post",
+    "player_game_log_reg"
+  ],
+  "discovered_visible_table_ids": [
+    "player_game_log_post",
+    "player_game_log_reg"
+  ],
+  "downloaded_at": "2026-06-14T05:16:13.034286+00:00",
+  "final_url": "https://www.basketball-reference.com/players/w/westbru01/gamelog/2019",
+  "raw_byte_count": 401895,
+  "sha256": "eb6562a6717dd87070cc809066eb90adb215a8403bd71141e9897270ca538df4",
+  "status_code": 200,
+  "table_ids": [
+    "player_game_log_post"
+  ],
+  "tool": "courtside-data:5.0.0a1",
+  "url": "https://www.basketball-reference.com/players/w/westbru01/gamelog/2019",
+  "wallclock_ms": 8228
+}

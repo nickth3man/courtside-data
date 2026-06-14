@@ -1,0 +1,26 @@
+{
+  "allowed_statuses": [
+    200
+  ],
+  "byte_count": 407350,
+  "content_encoding": "gzip",
+  "content_type": "text/html",
+  "discovered_commented_table_ids": [],
+  "discovered_table_ids": [
+    "schedule"
+  ],
+  "discovered_visible_table_ids": [
+    "schedule"
+  ],
+  "downloaded_at": "2026-06-13T23:30:34.794774+00:00",
+  "final_url": "https://www.basketball-reference.com/leagues/NBA_2020_games-february.html",
+  "raw_byte_count": 407350,
+  "sha256": "1ad59972fd6484ba054fe01974e5edc51078f6ecfac00aba8d0b066c1b18c621",
+  "status_code": 200,
+  "table_ids": [
+    "schedule"
+  ],
+  "tool": "courtside-data:5.0.0a1",
+  "url": "https://www.basketball-reference.com/leagues/NBA_2020_games-february.html",
+  "wallclock_ms": 6750
+}

@@ -1,0 +1,28 @@
+{
+  "allowed_statuses": [
+    200
+  ],
+  "byte_count": 1496678,
+  "content_encoding": "gzip",
+  "content_type": "text/html",
+  "discovered_commented_table_ids": [],
+  "discovered_table_ids": [
+    "totals_stats",
+    "totals_stats_post"
+  ],
+  "discovered_visible_table_ids": [
+    "totals_stats",
+    "totals_stats_post"
+  ],
+  "downloaded_at": "2026-06-14T05:10:34.781443+00:00",
+  "final_url": "https://www.basketball-reference.com/leagues/NBA_2006_totals.html",
+  "raw_byte_count": 1496678,
+  "sha256": "4ae8c512b25fda141a986f5bcb0468068f6cdf145f1361d3d925bbb3137d84e5",
+  "status_code": 200,
+  "table_ids": [
+    "totals_stats"
+  ],
+  "tool": "courtside-data:5.0.0a1",
+  "url": "https://www.basketball-reference.com/leagues/NBA_2006_totals.html",
+  "wallclock_ms": 6081
+}

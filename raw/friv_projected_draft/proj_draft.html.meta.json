@@ -1,0 +1,27 @@
+{
+  "allowed_statuses": [
+    200,
+    404
+  ],
+  "byte_count": 224389,
+  "content_encoding": "gzip",
+  "content_type": "text/html",
+  "discovered_commented_table_ids": [],
+  "discovered_table_ids": [
+    "post_lottery_draft_position",
+    "pre_lottery_draft_position"
+  ],
+  "discovered_visible_table_ids": [
+    "post_lottery_draft_position",
+    "pre_lottery_draft_position"
+  ],
+  "downloaded_at": "2026-06-13T22:44:30.961669+00:00",
+  "final_url": "https://www.basketball-reference.com/friv/proj_draft.html",
+  "raw_byte_count": 224389,
+  "sha256": "7a447ff5f8fc90c22247862ad3b29ed9f693a03ce733690e5bc9bf83fc2243dc",
+  "status_code": 200,
+  "table_ids": [],
+  "tool": "courtside-data:5.0.0a1",
+  "url": "https://www.basketball-reference.com/friv/proj_draft.html",
+  "wallclock_ms": 7058
+}

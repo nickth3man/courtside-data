@@ -1,0 +1,25 @@
+{
+  "allowed_statuses": [
+    200,
+    404
+  ],
+  "byte_count": 1176532,
+  "content_encoding": "gzip",
+  "content_type": "text/html",
+  "discovered_commented_table_ids": [],
+  "discovered_table_ids": [
+    "playoffs_series"
+  ],
+  "discovered_visible_table_ids": [
+    "playoffs_series"
+  ],
+  "downloaded_at": "2026-06-13T22:46:57.929251+00:00",
+  "final_url": "https://www.basketball-reference.com/playoffs/series.html",
+  "raw_byte_count": 1176532,
+  "sha256": "35d1339438704f276121c7bc9fef721de08e6d6d184f999623c2af7128649f58",
+  "status_code": 200,
+  "table_ids": [],
+  "tool": "courtside-data:5.0.0a1",
+  "url": "https://www.basketball-reference.com/playoffs/series.html",
+  "wallclock_ms": 8003
+}

@@ -1,0 +1,25 @@
+{
+  "allowed_statuses": [
+    200,
+    404
+  ],
+  "byte_count": 149129,
+  "content_encoding": "gzip",
+  "content_type": "text/html",
+  "discovered_commented_table_ids": [],
+  "discovered_table_ids": [
+    "players"
+  ],
+  "discovered_visible_table_ids": [
+    "players"
+  ],
+  "downloaded_at": "2026-06-13T22:37:51.437328+00:00",
+  "final_url": "https://www.basketball-reference.com/friv/mvp.html",
+  "raw_byte_count": 149129,
+  "sha256": "2e64db57247d13a60abf2a42221b71114966e545ffa7ac971c9d582f50b37577",
+  "status_code": 200,
+  "table_ids": [],
+  "tool": "courtside-data:5.0.0a1",
+  "url": "https://www.basketball-reference.com/friv/mvp.html",
+  "wallclock_ms": 6942
+}

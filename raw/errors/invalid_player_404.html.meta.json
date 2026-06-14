@@ -1,0 +1,17 @@
+{
+  "allowed_statuses": [
+    404
+  ],
+  "byte_count": 91100,
+  "content_encoding": "gzip",
+  "content_type": "text/html",
+  "downloaded_at": "2026-06-13T09:14:15.651144+00:00",
+  "final_url": "https://www.basketball-reference.com/players/x/xyzabc01.html",
+  "raw_byte_count": 91100,
+  "sha256": "a4b0300466911b961cc89e6879a421dc54c7d715ed9d8b6b19c252c5b65a5d0f",
+  "status_code": 404,
+  "table_ids": [],
+  "tool": "courtside-data:5.0.0a1",
+  "url": "https://www.basketball-reference.com/players/x/xyzabc01.html",
+  "wallclock_ms": 7688
+}

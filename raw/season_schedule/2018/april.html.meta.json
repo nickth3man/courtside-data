@@ -1,0 +1,19 @@
+{
+  "allowed_statuses": [
+    200
+  ],
+  "byte_count": 355976,
+  "content_encoding": "gzip",
+  "content_type": "text/html",
+  "downloaded_at": "2026-06-13T09:16:43.492630+00:00",
+  "final_url": "https://www.basketball-reference.com/leagues/NBA_2018_games-april.html",
+  "raw_byte_count": 355976,
+  "sha256": "435a785d5cc8c1085bdbfc2adefc7b6c3ae3bc26caa9fa8f77fadb4749ddcf99",
+  "status_code": 200,
+  "table_ids": [
+    "schedule"
+  ],
+  "tool": "courtside-data:5.0.0a1",
+  "url": "https://www.basketball-reference.com/leagues/NBA_2018_games-april.html",
+  "wallclock_ms": 6862
+}

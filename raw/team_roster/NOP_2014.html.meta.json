@@ -1,0 +1,49 @@
+{
+  "allowed_statuses": [
+    200
+  ],
+  "byte_count": 651712,
+  "content_encoding": "gzip",
+  "content_type": "text/html",
+  "discovered_commented_table_ids": [
+    "adj_shooting",
+    "advanced",
+    "pbp_stats",
+    "per_poss",
+    "salaries2",
+    "shooting",
+    "team_and_opponent",
+    "team_misc",
+    "totals_stats"
+  ],
+  "discovered_table_ids": [
+    "adj_shooting",
+    "advanced",
+    "pbp_stats",
+    "per_game_stats",
+    "per_minute_stats",
+    "per_poss",
+    "roster",
+    "salaries2",
+    "shooting",
+    "team_and_opponent",
+    "team_misc",
+    "totals_stats"
+  ],
+  "discovered_visible_table_ids": [
+    "per_game_stats",
+    "per_minute_stats",
+    "roster"
+  ],
+  "downloaded_at": "2026-06-13T23:34:43.569880+00:00",
+  "final_url": "https://www.basketball-reference.com/teams/NOP/2014.html",
+  "raw_byte_count": 651712,
+  "sha256": "116b993cd8b991d4378b1a023bf7cd5d2d230b5b8e1cd1f14a010fa4e1593e97",
+  "status_code": 200,
+  "table_ids": [
+    "roster"
+  ],
+  "tool": "courtside-data:5.0.0a1",
+  "url": "https://www.basketball-reference.com/teams/NOP/2014.html",
+  "wallclock_ms": 120
+}

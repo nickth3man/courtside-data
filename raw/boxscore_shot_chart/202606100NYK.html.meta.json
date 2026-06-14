@@ -1,0 +1,35 @@
+{
+  "allowed_statuses": [
+    200,
+    404
+  ],
+  "byte_count": 180709,
+  "canonical_pattern": "/boxscores/shot-chart/{YYYYMMDD}{AWAY}.html",
+  "category": "Boxscore",
+  "content_encoding": "gzip",
+  "content_type": "text/html",
+  "discovered_commented_table_ids": [],
+  "discovered_table_ids": [
+    "shooting-NYK",
+    "shooting-SAS"
+  ],
+  "discovered_visible_table_ids": [
+    "shooting-NYK",
+    "shooting-SAS"
+  ],
+  "downloaded_at": "2026-06-13T22:12:38.049980+00:00",
+  "expected_miss_404": false,
+  "final_url": "https://www.basketball-reference.com/boxscores/shot-chart/202606100NYK.html",
+  "librarian_row": 23,
+  "page_family": "boxscore_shot_chart",
+  "primary_table_id_s_csv": "unknown (SVG + tables)",
+  "raw_byte_count": 46570,
+  "resembles_endpoint": "player_shot_charts",
+  "robots_status": "allowed",
+  "sha256": "5bef00fa3a20ffcfd265c0855abee80cf332556a2015c0366406b1bb32c54efe",
+  "status_code": 200,
+  "tier": "P2_new",
+  "tool": "courtside-data:scouting:1.0",
+  "url": "https://www.basketball-reference.com/boxscores/shot-chart/202606100NYK.html",
+  "wallclock_ms": 8448
+}

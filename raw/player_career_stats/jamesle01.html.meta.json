@@ -1,0 +1,19 @@
+{
+  "allowed_statuses": [
+    200
+  ],
+  "byte_count": 1948467,
+  "content_encoding": "gzip",
+  "content_type": "text/html",
+  "downloaded_at": "2026-06-13T08:33:54.359192+00:00",
+  "final_url": "https://www.basketball-reference.com/players/j/jamesle01.html",
+  "raw_byte_count": 1948467,
+  "sha256": "699320d24406dcee37464c9f030b436afb235d20a1aa7831e38c8b6c3711d47c",
+  "status_code": 200,
+  "table_ids": [
+    "per_game_stats"
+  ],
+  "tool": "courtside-data:5.0.0a1",
+  "url": "https://www.basketball-reference.com/players/j/jamesle01.html",
+  "wallclock_ms": 6678
+}

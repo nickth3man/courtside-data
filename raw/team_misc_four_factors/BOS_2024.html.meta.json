@@ -1,0 +1,19 @@
+{
+  "allowed_statuses": [
+    200
+  ],
+  "byte_count": 928111,
+  "content_encoding": "gzip",
+  "content_type": "text/html",
+  "downloaded_at": "2026-06-13T08:37:02.846230+00:00",
+  "final_url": "https://www.basketball-reference.com/teams/BOS/2024.html",
+  "raw_byte_count": 928111,
+  "sha256": "7bc390a99c79e39161da935238238de78ef44fce0e3128d755a0bd9b2bb01de8",
+  "status_code": 200,
+  "table_ids": [
+    "team_misc"
+  ],
+  "tool": "courtside-data:5.0.0a1",
+  "url": "https://www.basketball-reference.com/teams/BOS/2024.html",
+  "wallclock_ms": 7429
+}

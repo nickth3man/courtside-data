@@ -1,0 +1,19 @@
+{
+  "allowed_statuses": [
+    200
+  ],
+  "byte_count": 391843,
+  "content_encoding": "gzip",
+  "content_type": "text/html; charset=UTF-8",
+  "downloaded_at": "2026-06-13T08:40:01.572637+00:00",
+  "final_url": "https://www.basketball-reference.com/players/c/curryst01/gamelog/2023",
+  "raw_byte_count": 391843,
+  "sha256": "f2267acb0979d81e9a96a1fb158c01eb4f619edb24b97b5e60cf95d7283c1a16",
+  "status_code": 200,
+  "table_ids": [
+    "player_game_log_post"
+  ],
+  "tool": "courtside-data:5.0.0a1",
+  "url": "https://www.basketball-reference.com/players/c/curryst01/gamelog/2023",
+  "wallclock_ms": 7582
+}

@@ -1,0 +1,19 @@
+{
+  "allowed_statuses": [
+    200
+  ],
+  "byte_count": 145743,
+  "content_encoding": "gzip",
+  "content_type": "text/html",
+  "downloaded_at": "2026-06-13T09:17:56.121661+00:00",
+  "final_url": "https://www.basketball-reference.com/leagues/NBA_1980_games-may.html",
+  "raw_byte_count": 145743,
+  "sha256": "7e404b5744ac8a6c5cdec870211cff6195ae09ff17a95014c63df9e0ad3a634a",
+  "status_code": 200,
+  "table_ids": [
+    "schedule"
+  ],
+  "tool": "courtside-data:5.0.0a1",
+  "url": "https://www.basketball-reference.com/leagues/NBA_1980_games-may.html",
+  "wallclock_ms": 6686
+}

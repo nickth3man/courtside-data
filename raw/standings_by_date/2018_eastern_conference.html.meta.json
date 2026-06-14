@@ -1,0 +1,19 @@
+{
+  "allowed_statuses": [
+    200
+  ],
+  "byte_count": 444920,
+  "content_encoding": "gzip",
+  "content_type": "text/html",
+  "downloaded_at": "2026-06-13T07:54:00.545488+00:00",
+  "final_url": "https://www.basketball-reference.com/leagues/NBA_2018_standings_by_date_eastern_conference.html",
+  "raw_byte_count": 444920,
+  "sha256": "1a7f3b9d38bfa03ddcb830011fb8a2cb6dead8948fd49c97ee4e8ea22acd16de",
+  "status_code": 200,
+  "table_ids": [
+    "standings_by_date"
+  ],
+  "tool": "courtside-data:5.0.0a1",
+  "url": "https://www.basketball-reference.com/leagues/NBA_2018_standings_by_date_eastern_conference.html",
+  "wallclock_ms": 6273
+}

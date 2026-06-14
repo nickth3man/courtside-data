@@ -1,0 +1,26 @@
+{
+  "allowed_statuses": [
+    200
+  ],
+  "byte_count": 209088,
+  "content_encoding": "gzip",
+  "content_type": "text/html",
+  "discovered_commented_table_ids": [],
+  "discovered_table_ids": [
+    "schedule"
+  ],
+  "discovered_visible_table_ids": [
+    "schedule"
+  ],
+  "downloaded_at": "2026-06-13T23:31:58.887648+00:00",
+  "final_url": "https://www.basketball-reference.com/leagues/NBA_2021_games-june.html",
+  "raw_byte_count": 209088,
+  "sha256": "016278acc52701e9f17af9cb7bf1e01cf261547c7285ddd6851f9d764ec0adae",
+  "status_code": 200,
+  "table_ids": [
+    "schedule"
+  ],
+  "tool": "courtside-data:5.0.0a1",
+  "url": "https://www.basketball-reference.com/leagues/NBA_2021_games-june.html",
+  "wallclock_ms": 7054
+}

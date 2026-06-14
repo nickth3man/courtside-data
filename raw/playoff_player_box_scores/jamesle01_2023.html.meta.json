@@ -1,0 +1,19 @@
+{
+  "allowed_statuses": [
+    200
+  ],
+  "byte_count": 411587,
+  "content_encoding": "gzip",
+  "content_type": "text/html; charset=UTF-8",
+  "downloaded_at": "2026-06-13T08:39:53.976850+00:00",
+  "final_url": "https://www.basketball-reference.com/players/j/jamesle01/gamelog/2023",
+  "raw_byte_count": 411587,
+  "sha256": "64bb53ccea67967d1419568001bbc4b5f15a495a00bc575760b67d97605c8173",
+  "status_code": 200,
+  "table_ids": [
+    "player_game_log_post"
+  ],
+  "tool": "courtside-data:5.0.0a1",
+  "url": "https://www.basketball-reference.com/players/j/jamesle01/gamelog/2023",
+  "wallclock_ms": 6257
+}

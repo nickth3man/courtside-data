@@ -1,0 +1,19 @@
+{
+  "allowed_statuses": [
+    200
+  ],
+  "byte_count": 548460,
+  "content_encoding": "gzip",
+  "content_type": "text/html",
+  "downloaded_at": "2026-06-13T08:49:20.747233+00:00",
+  "final_url": "https://www.basketball-reference.com/teams/BOS/1974.html",
+  "raw_byte_count": 548460,
+  "sha256": "816ff7bef8d4d1f80181f91028da1c6efe0f6501fa9003e70977a9ac09c9bcd8",
+  "status_code": 200,
+  "table_ids": [
+    "team_and_opponent"
+  ],
+  "tool": "courtside-data:5.0.0a1",
+  "url": "https://www.basketball-reference.com/teams/BOS/1974.html",
+  "wallclock_ms": 6093
+}

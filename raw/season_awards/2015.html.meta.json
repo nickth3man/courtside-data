@@ -1,0 +1,19 @@
+{
+  "allowed_statuses": [
+    200
+  ],
+  "byte_count": 462614,
+  "content_encoding": "gzip",
+  "content_type": "text/html",
+  "downloaded_at": "2026-06-13T08:33:47.633173+00:00",
+  "final_url": "https://www.basketball-reference.com/awards/awards_2015.html",
+  "raw_byte_count": 462614,
+  "sha256": "c9af6f0ad96245a957a112d2169ded7513ef3d7e100b3c6fc8d32efb40339a88",
+  "status_code": 200,
+  "table_ids": [
+    "mvp"
+  ],
+  "tool": "courtside-data:5.0.0a1",
+  "url": "https://www.basketball-reference.com/awards/awards_2015.html",
+  "wallclock_ms": 6696
+}

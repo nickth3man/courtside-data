@@ -1,0 +1,33 @@
+{
+  "allowed_statuses": [
+    200,
+    404
+  ],
+  "byte_count": 145432,
+  "canonical_pattern": "/leagues/NBA_{YEAR}_preseason_odds.html",
+  "category": "League",
+  "content_encoding": "gzip",
+  "content_type": "text/html",
+  "discovered_commented_table_ids": [],
+  "discovered_table_ids": [
+    "NBA_preseason_odds"
+  ],
+  "discovered_visible_table_ids": [
+    "NBA_preseason_odds"
+  ],
+  "downloaded_at": "2026-06-13T22:16:35.847769+00:00",
+  "expected_miss_404": false,
+  "final_url": "https://www.basketball-reference.com/leagues/NBA_2026_preseason_odds.html",
+  "librarian_row": 50,
+  "page_family": "league_preseason_odds",
+  "primary_table_id_s_csv": "unknown (needs page fetch)",
+  "raw_byte_count": 41452,
+  "resembles_endpoint": "",
+  "robots_status": "allowed",
+  "sha256": "7e40a1ed76b16bf2f11093e873b2ed795f1dc9e07a162b51de76cbd0ea7a4944",
+  "status_code": 200,
+  "tier": "P2_new",
+  "tool": "courtside-data:scouting:1.0",
+  "url": "https://www.basketball-reference.com/leagues/NBA_2026_preseason_odds.html",
+  "wallclock_ms": 9757
+}

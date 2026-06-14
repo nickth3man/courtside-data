@@ -1,0 +1,19 @@
+{
+  "allowed_statuses": [
+    200
+  ],
+  "byte_count": 481710,
+  "content_encoding": "gzip",
+  "content_type": "text/html; charset=utf-8",
+  "downloaded_at": "2026-06-13T08:36:20.538405+00:00",
+  "final_url": "https://www.basketball-reference.com/players/c/curryst01/shooting/2024",
+  "raw_byte_count": 481710,
+  "sha256": "52d34493d8bf4f64f9e84f1ba6ef32d6e487a415bd1a7f17a1aac51da9fc545e",
+  "status_code": 200,
+  "table_ids": [
+    "shooting"
+  ],
+  "tool": "courtside-data:5.0.0a1",
+  "url": "https://www.basketball-reference.com/players/c/curryst01/shooting/2024",
+  "wallclock_ms": 6392
+}

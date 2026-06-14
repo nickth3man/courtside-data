@@ -1,0 +1,27 @@
+{
+  "allowed_statuses": [
+    200,
+    404
+  ],
+  "byte_count": 169053,
+  "content_encoding": "gzip",
+  "content_type": "text/html",
+  "discovered_commented_table_ids": [],
+  "discovered_table_ids": [
+    "projected_standings_e",
+    "projected_standings_w"
+  ],
+  "discovered_visible_table_ids": [
+    "projected_standings_e",
+    "projected_standings_w"
+  ],
+  "downloaded_at": "2026-06-13T22:37:58.320140+00:00",
+  "final_url": "https://www.basketball-reference.com/friv/playoff_prob.html",
+  "raw_byte_count": 169053,
+  "sha256": "1896a57b2caa6f66590581ebab1d3e7976e6971d2869e011b20e42a077c129de",
+  "status_code": 200,
+  "table_ids": [],
+  "tool": "courtside-data:5.0.0a1",
+  "url": "https://www.basketball-reference.com/friv/playoff_prob.html",
+  "wallclock_ms": 6873
+}

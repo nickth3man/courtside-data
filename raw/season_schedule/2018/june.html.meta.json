@@ -1,0 +1,19 @@
+{
+  "allowed_statuses": [
+    200
+  ],
+  "byte_count": 142247,
+  "content_encoding": "gzip",
+  "content_type": "text/html",
+  "downloaded_at": "2026-06-13T09:16:58.355694+00:00",
+  "final_url": "https://www.basketball-reference.com/leagues/NBA_2018_games-june.html",
+  "raw_byte_count": 142247,
+  "sha256": "c523ff7ec79e3130072e87e61c8dfe60a19465ccc47354eb3c2d193db800cb30",
+  "status_code": 200,
+  "table_ids": [
+    "schedule"
+  ],
+  "tool": "courtside-data:5.0.0a1",
+  "url": "https://www.basketball-reference.com/leagues/NBA_2018_games-june.html",
+  "wallclock_ms": 8029
+}

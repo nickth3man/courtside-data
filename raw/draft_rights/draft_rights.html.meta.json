@@ -1,0 +1,25 @@
+{
+  "allowed_statuses": [
+    200,
+    404
+  ],
+  "byte_count": 157537,
+  "content_encoding": "gzip",
+  "content_type": "text/html",
+  "discovered_commented_table_ids": [],
+  "discovered_table_ids": [
+    "draft_rights"
+  ],
+  "discovered_visible_table_ids": [
+    "draft_rights"
+  ],
+  "downloaded_at": "2026-06-13T22:36:32.449460+00:00",
+  "final_url": "https://www.basketball-reference.com/draft/draft_rights.html",
+  "raw_byte_count": 157537,
+  "sha256": "bfa4944d473654e4c8645aba309a159bf63524f1b810690bf219ae1a26dda8a8",
+  "status_code": 200,
+  "table_ids": [],
+  "tool": "courtside-data:5.0.0a1",
+  "url": "https://www.basketball-reference.com/draft/draft_rights.html",
+  "wallclock_ms": 8014
+}

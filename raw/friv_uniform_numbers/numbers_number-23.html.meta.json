@@ -1,0 +1,25 @@
+{
+  "allowed_statuses": [
+    200,
+    404
+  ],
+  "byte_count": 240123,
+  "content_encoding": "gzip",
+  "content_type": "text/html; charset=utf-8",
+  "discovered_commented_table_ids": [],
+  "discovered_table_ids": [
+    "numbers"
+  ],
+  "discovered_visible_table_ids": [
+    "numbers"
+  ],
+  "downloaded_at": "2026-06-13T22:37:22.803571+00:00",
+  "final_url": "https://www.basketball-reference.com/friv/numbers.cgi?number=23",
+  "raw_byte_count": 240123,
+  "sha256": "2790fe5b94d53ff1d7e76b19d1e8c2fb60fc44902c8a1d3405b165bbbe869952",
+  "status_code": 200,
+  "table_ids": [],
+  "tool": "courtside-data:5.0.0a1",
+  "url": "https://www.basketball-reference.com/friv/numbers.cgi?number=23",
+  "wallclock_ms": 6091
+}

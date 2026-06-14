@@ -1,0 +1,19 @@
+{
+  "allowed_statuses": [
+    200
+  ],
+  "byte_count": 1490493,
+  "content_encoding": "gzip",
+  "content_type": "text/html",
+  "downloaded_at": "2026-06-13T08:31:29.988679+00:00",
+  "final_url": "https://www.basketball-reference.com/leagues/NBA_2012_totals.html",
+  "raw_byte_count": 1490493,
+  "sha256": "e0f717ee4c47bb7ac2db0fa9b8d2b54b7b1b11fe4b8d9676f9c9b1eaeed42629",
+  "status_code": 200,
+  "table_ids": [
+    "totals_stats"
+  ],
+  "tool": "courtside-data:5.0.0a1",
+  "url": "https://www.basketball-reference.com/leagues/NBA_2012_totals.html",
+  "wallclock_ms": 6764
+}

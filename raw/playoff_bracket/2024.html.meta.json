@@ -1,0 +1,19 @@
+{
+  "allowed_statuses": [
+    200
+  ],
+  "byte_count": 555812,
+  "content_encoding": "gzip",
+  "content_type": "text/html",
+  "downloaded_at": "2026-06-13T08:33:12.527766+00:00",
+  "final_url": "https://www.basketball-reference.com/playoffs/NBA_2024.html",
+  "raw_byte_count": 555812,
+  "sha256": "6a96d24f1523618b08fb57a3df09b49677d23afa3bb6aa7d6bb5f7c80d90a346",
+  "status_code": 200,
+  "table_ids": [
+    "all_playoffs"
+  ],
+  "tool": "courtside-data:5.0.0a1",
+  "url": "https://www.basketball-reference.com/playoffs/NBA_2024.html",
+  "wallclock_ms": 6298
+}

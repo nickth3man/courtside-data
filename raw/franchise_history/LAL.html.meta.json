@@ -1,0 +1,19 @@
+{
+  "allowed_statuses": [
+    200
+  ],
+  "byte_count": 248133,
+  "content_encoding": "gzip",
+  "content_type": "text/html",
+  "downloaded_at": "2026-06-13T08:38:32.796736+00:00",
+  "final_url": "https://www.basketball-reference.com/teams/LAL/",
+  "raw_byte_count": 248133,
+  "sha256": "d365a7c703b3a69d3c282f63ebdd046d9df88eb032483ebdf8c2769ba6dd6012",
+  "status_code": 200,
+  "table_ids": [
+    "LAL"
+  ],
+  "tool": "courtside-data:5.0.0a1",
+  "url": "https://www.basketball-reference.com/teams/LAL/",
+  "wallclock_ms": 7440
+}

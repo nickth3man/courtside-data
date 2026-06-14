@@ -1,0 +1,19 @@
+{
+  "allowed_statuses": [
+    200
+  ],
+  "byte_count": 1522587,
+  "content_encoding": "gzip",
+  "content_type": "text/html",
+  "downloaded_at": "2026-06-13T08:46:10.344403+00:00",
+  "final_url": "https://www.basketball-reference.com/leagues/NBA_1990_advanced.html",
+  "raw_byte_count": 1522587,
+  "sha256": "08b0c684842a12690ce21b6397ac76f56ed25659aee4d084220547b9cca46d82",
+  "status_code": 200,
+  "table_ids": [
+    "advanced"
+  ],
+  "tool": "courtside-data:5.0.0a1",
+  "url": "https://www.basketball-reference.com/leagues/NBA_1990_advanced.html",
+  "wallclock_ms": 7028
+}

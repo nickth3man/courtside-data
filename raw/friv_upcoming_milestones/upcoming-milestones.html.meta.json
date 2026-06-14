@@ -1,0 +1,27 @@
+{
+  "allowed_statuses": [
+    200,
+    404
+  ],
+  "byte_count": 165133,
+  "content_encoding": "gzip",
+  "content_type": "text/html",
+  "discovered_commented_table_ids": [],
+  "discovered_table_ids": [
+    "upcoming_leaderboards",
+    "upcoming_milestones"
+  ],
+  "discovered_visible_table_ids": [
+    "upcoming_leaderboards",
+    "upcoming_milestones"
+  ],
+  "downloaded_at": "2026-06-13T22:45:33.182191+00:00",
+  "final_url": "https://www.basketball-reference.com/friv/upcoming-milestones.html",
+  "raw_byte_count": 165133,
+  "sha256": "52e8a400a65daed261b58104dadb9f1a7871665d84c9639d713ac07f09cf3dc6",
+  "status_code": 200,
+  "table_ids": [],
+  "tool": "courtside-data:5.0.0a1",
+  "url": "https://www.basketball-reference.com/friv/upcoming-milestones.html",
+  "wallclock_ms": 7307
+}

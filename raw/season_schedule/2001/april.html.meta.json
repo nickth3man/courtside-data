@@ -1,0 +1,26 @@
+{
+  "allowed_statuses": [
+    200
+  ],
+  "byte_count": 396953,
+  "content_encoding": "gzip",
+  "content_type": "text/html",
+  "discovered_commented_table_ids": [],
+  "discovered_table_ids": [
+    "schedule"
+  ],
+  "discovered_visible_table_ids": [
+    "schedule"
+  ],
+  "downloaded_at": "2026-06-14T05:14:00.857324+00:00",
+  "final_url": "https://www.basketball-reference.com/leagues/NBA_2001_games-april.html",
+  "raw_byte_count": 396953,
+  "sha256": "7b28282bfd7d5b2a36f3ab10d88f020f182f6251b2bc7884194f55a0b42d329a",
+  "status_code": 200,
+  "table_ids": [
+    "schedule"
+  ],
+  "tool": "courtside-data:5.0.0a1",
+  "url": "https://www.basketball-reference.com/leagues/NBA_2001_games-april.html",
+  "wallclock_ms": 6373
+}

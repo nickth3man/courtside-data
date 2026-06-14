@@ -1,0 +1,27 @@
+{
+  "allowed_statuses": [
+    200,
+    404
+  ],
+  "byte_count": 444703,
+  "content_encoding": "gzip",
+  "content_type": "text/html; charset=utf-8",
+  "discovered_commented_table_ids": [],
+  "discovered_table_ids": [
+    "drafted_nba_aba_players",
+    "drafted_wnba_players"
+  ],
+  "discovered_visible_table_ids": [
+    "drafted_nba_aba_players",
+    "drafted_wnba_players"
+  ],
+  "downloaded_at": "2026-06-13T22:36:39.623580+00:00",
+  "final_url": "https://www.basketball-reference.com/friv/draft.fcgi?college=duke",
+  "raw_byte_count": 444703,
+  "sha256": "51725153f6b88f968a29b0f621e44d223dfdfa94ab52b21e123183668088884b",
+  "status_code": 200,
+  "table_ids": [],
+  "tool": "courtside-data:5.0.0a1",
+  "url": "https://www.basketball-reference.com/friv/draft.fcgi?college=duke",
+  "wallclock_ms": 7148
+}

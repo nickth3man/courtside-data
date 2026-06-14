@@ -1,0 +1,33 @@
+{
+  "allowed_statuses": [
+    200,
+    404
+  ],
+  "byte_count": 324996,
+  "canonical_pattern": "/leagues/NBA_{YEAR}_rookies.html",
+  "category": "League",
+  "content_encoding": "gzip",
+  "content_type": "text/html",
+  "discovered_commented_table_ids": [],
+  "discovered_table_ids": [
+    "rookies"
+  ],
+  "discovered_visible_table_ids": [
+    "rookies"
+  ],
+  "downloaded_at": "2026-06-13T22:16:08.799211+00:00",
+  "expected_miss_404": false,
+  "final_url": "https://www.basketball-reference.com/leagues/NBA_2026_rookies.html",
+  "librarian_row": 47,
+  "page_family": "league_rookies",
+  "primary_table_id_s_csv": "rookies (suspected)",
+  "raw_byte_count": 60314,
+  "resembles_endpoint": "rookie_stats",
+  "robots_status": "allowed",
+  "sha256": "c5e5b0096b089751b60e36b04ce620b6577660226d56eded289700e86d909921",
+  "status_code": 200,
+  "tier": "P2_new",
+  "tool": "courtside-data:scouting:1.0",
+  "url": "https://www.basketball-reference.com/leagues/NBA_2026_rookies.html",
+  "wallclock_ms": 8984
+}

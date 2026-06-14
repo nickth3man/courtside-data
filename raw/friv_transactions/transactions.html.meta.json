@@ -1,0 +1,21 @@
+{
+  "allowed_statuses": [
+    200,
+    404
+  ],
+  "byte_count": 131282,
+  "content_encoding": "gzip",
+  "content_type": "text/html; charset=utf-8",
+  "discovered_commented_table_ids": [],
+  "discovered_table_ids": [],
+  "discovered_visible_table_ids": [],
+  "downloaded_at": "2026-06-13T22:46:36.918796+00:00",
+  "final_url": "https://www.basketball-reference.com/friv/transactions.fcgi",
+  "raw_byte_count": 131282,
+  "sha256": "ebf34b6571965ee1933a9a79701da60de4a36eb885214f3eac5cca9bb164dc55",
+  "status_code": 200,
+  "table_ids": [],
+  "tool": "courtside-data:5.0.0a1",
+  "url": "https://www.basketball-reference.com/friv/transactions.fcgi",
+  "wallclock_ms": 7663
+}

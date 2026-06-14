@@ -1,0 +1,17 @@
+{
+  "allowed_statuses": [
+    200
+  ],
+  "byte_count": 159230,
+  "content_encoding": "gzip",
+  "content_type": "text/html; charset=utf-8",
+  "downloaded_at": "2026-06-13T08:39:25.979299+00:00",
+  "final_url": "https://www.basketball-reference.com/boxscores/?day=29&month=10&year=2003",
+  "raw_byte_count": 159230,
+  "sha256": "aab591dcd2928c1813038e043213dfea1e8ac5e08cb09fbeb7be0eb8c114bcc2",
+  "status_code": 200,
+  "table_ids": [],
+  "tool": "courtside-data:5.0.0a1",
+  "url": "https://www.basketball-reference.com/boxscores/?day=29&month=10&year=2003",
+  "wallclock_ms": 6502
+}

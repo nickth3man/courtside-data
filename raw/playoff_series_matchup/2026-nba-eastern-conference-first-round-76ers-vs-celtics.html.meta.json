@@ -1,0 +1,44 @@
+{
+  "allowed_statuses": [
+    200,
+    404
+  ],
+  "byte_count": 263112,
+  "canonical_pattern": "/playoffs/{YEAR}-nba-{ROUND}-{TEAM_A}-vs-{TEAM_B}.html",
+  "category": "Playoffs",
+  "content_encoding": "gzip",
+  "content_type": "text/html",
+  "discovered_commented_table_ids": [
+    "BOSadvanced",
+    "PHIadvanced",
+    "all_playoffs",
+    "four_factors"
+  ],
+  "discovered_table_ids": [
+    "BOS",
+    "BOSadvanced",
+    "PHI",
+    "PHIadvanced",
+    "all_playoffs",
+    "four_factors"
+  ],
+  "discovered_visible_table_ids": [
+    "BOS",
+    "PHI"
+  ],
+  "downloaded_at": "2026-06-13T22:14:19.324945+00:00",
+  "expected_miss_404": false,
+  "final_url": "https://www.basketball-reference.com/playoffs/2026-nba-eastern-conference-first-round-76ers-vs-celtics.html",
+  "librarian_row": 35,
+  "page_family": "playoff_series_matchup",
+  "primary_table_id_s_csv": "all_other_scores, all_all_playoffs, all_four_factors, all_PHI, all_PHIadvanced, all_BOS, all_BOSadvanced",
+  "raw_byte_count": 53118,
+  "resembles_endpoint": "",
+  "robots_status": "allowed",
+  "sha256": "40ce5a981026a0835785af55d36bb771a79ed43e18fc3ba56fc7ed56bc3acd9a",
+  "status_code": 200,
+  "tier": "P2_new",
+  "tool": "courtside-data:scouting:1.0",
+  "url": "https://www.basketball-reference.com/playoffs/2026-nba-eastern-conference-first-round-76ers-vs-celtics.html",
+  "wallclock_ms": 9658
+}

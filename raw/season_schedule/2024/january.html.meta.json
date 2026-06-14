@@ -1,0 +1,19 @@
+{
+  "allowed_statuses": [
+    200
+  ],
+  "byte_count": 508075,
+  "content_encoding": "gzip",
+  "content_type": "text/html",
+  "downloaded_at": "2026-06-13T09:15:17.871494+00:00",
+  "final_url": "https://www.basketball-reference.com/leagues/NBA_2024_games-january.html",
+  "raw_byte_count": 508075,
+  "sha256": "88fc1bffc208fabc46dcb5b300b47f5b2dd1f40c3a5fc9614d9a541b3f14bea5",
+  "status_code": 200,
+  "table_ids": [
+    "schedule"
+  ],
+  "tool": "courtside-data:5.0.0a1",
+  "url": "https://www.basketball-reference.com/leagues/NBA_2024_games-january.html",
+  "wallclock_ms": 7010
+}

@@ -1,0 +1,35 @@
+{
+  "allowed_statuses": [
+    200,
+    404
+  ],
+  "byte_count": 161641,
+  "canonical_pattern": "/leaders/{hof_prob,nba_mvp_shares,game_score,50-point-game-most-times,quadruple-double-most-times,most_championships,most_franchises,most_times_{leading,top_3,top_5,top_10}}.html",
+  "category": "Leaders",
+  "content_encoding": "gzip",
+  "content_type": "text/html",
+  "discovered_commented_table_ids": [],
+  "discovered_table_ids": [
+    "stats_active_hof_prob",
+    "tot"
+  ],
+  "discovered_visible_table_ids": [
+    "stats_active_hof_prob",
+    "tot"
+  ],
+  "downloaded_at": "2026-06-13T22:17:38.727129+00:00",
+  "expected_miss_404": false,
+  "final_url": "https://www.basketball-reference.com/leaders/hof_prob.html",
+  "librarian_row": 57,
+  "page_family": "leaders_specialty_boards",
+  "primary_table_id_s_csv": "single table per page",
+  "raw_byte_count": 45600,
+  "resembles_endpoint": "",
+  "robots_status": "allowed",
+  "sha256": "b71428cf04028374198fd36e087c95144954989c21a7a0b4d0e6548fe7c3f170",
+  "status_code": 200,
+  "tier": "P2_new",
+  "tool": "courtside-data:scouting:1.0",
+  "url": "https://www.basketball-reference.com/leaders/hof_prob.html",
+  "wallclock_ms": 9518
+}

@@ -1,0 +1,37 @@
+{
+  "allowed_statuses": [
+    200,
+    404
+  ],
+  "byte_count": 172785,
+  "canonical_pattern": "/allstar/NBA_{YEAR}.html",
+  "category": "All-Star",
+  "content_encoding": "gzip",
+  "content_type": "text/html",
+  "discovered_commented_table_ids": [],
+  "discovered_table_ids": [
+    "Team Chuck",
+    "Team Shaq",
+    "line_score"
+  ],
+  "discovered_visible_table_ids": [
+    "Team Chuck",
+    "Team Shaq",
+    "line_score"
+  ],
+  "downloaded_at": "2026-06-13T22:14:46.056806+00:00",
+  "expected_miss_404": false,
+  "final_url": "https://www.basketball-reference.com/allstar/NBA_2025.html",
+  "librarian_row": 38,
+  "page_family": "allstar_game_index",
+  "primary_table_id_s_csv": "per-team box tables",
+  "raw_byte_count": 43723,
+  "resembles_endpoint": "player_all_star",
+  "robots_status": "allowed",
+  "sha256": "34ebb0b8599b162a80ea99fe6a865f7522027a9f7a5620713ddfcf01f9f45d70",
+  "status_code": 200,
+  "tier": "P2_new",
+  "tool": "courtside-data:scouting:1.0",
+  "url": "https://www.basketball-reference.com/allstar/NBA_2025.html",
+  "wallclock_ms": 8723
+}

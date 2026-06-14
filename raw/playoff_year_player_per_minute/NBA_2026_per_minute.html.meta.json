@@ -1,0 +1,33 @@
+{
+  "allowed_statuses": [
+    200,
+    404
+  ],
+  "byte_count": 584176,
+  "canonical_pattern": "/playoffs/NBA_{YEAR}_per_minute.html",
+  "category": "Playoffs",
+  "content_encoding": "gzip",
+  "content_type": "text/html",
+  "discovered_commented_table_ids": [],
+  "discovered_table_ids": [
+    "per_minute_stats"
+  ],
+  "discovered_visible_table_ids": [
+    "per_minute_stats"
+  ],
+  "downloaded_at": "2026-06-13T22:13:51.240867+00:00",
+  "expected_miss_404": false,
+  "final_url": "https://www.basketball-reference.com/playoffs/NBA_2026_per_minute.html",
+  "librarian_row": 32,
+  "page_family": "playoff_year_player_per_minute",
+  "primary_table_id_s_csv": "unknown (needs page fetch)",
+  "raw_byte_count": 79390,
+  "resembles_endpoint": "league_per_36_minutes",
+  "robots_status": "allowed",
+  "sha256": "6b1a52e7dc15157e6a02fa26b5ea739899be2c0669d13e76a70241cd550bb1a8",
+  "status_code": 200,
+  "tier": "P2_new",
+  "tool": "courtside-data:scouting:1.0",
+  "url": "https://www.basketball-reference.com/playoffs/NBA_2026_per_minute.html",
+  "wallclock_ms": 10023
+}

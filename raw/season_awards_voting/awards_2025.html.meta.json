@@ -1,0 +1,52 @@
+{
+  "allowed_statuses": [
+    200,
+    404
+  ],
+  "byte_count": 383682,
+  "canonical_pattern": "/awards/awards_{YEAR}.html",
+  "category": "Awards",
+  "content_encoding": "gzip",
+  "content_type": "text/html",
+  "discovered_commented_table_ids": [
+    "clutch_poy",
+    "coy",
+    "dpoy",
+    "mip",
+    "smoy"
+  ],
+  "discovered_table_ids": [
+    "clutch_poy",
+    "coy",
+    "dpoy",
+    "leading_all_defense",
+    "leading_all_nba",
+    "leading_all_rookie",
+    "mip",
+    "mvp",
+    "roy",
+    "smoy"
+  ],
+  "discovered_visible_table_ids": [
+    "leading_all_defense",
+    "leading_all_nba",
+    "leading_all_rookie",
+    "mvp",
+    "roy"
+  ],
+  "downloaded_at": "2026-06-13T22:14:27.413093+00:00",
+  "expected_miss_404": false,
+  "final_url": "https://www.basketball-reference.com/awards/awards_2025.html",
+  "librarian_row": 36,
+  "page_family": "season_awards_voting",
+  "primary_table_id_s_csv": "all_mvp, all_roy, all_dpoy, all_smoy, all_mip, all_clutch_poy, all_coy, all_leading_all_nba, all_leading_all_defense, all_leading_all_rookie",
+  "raw_byte_count": 62440,
+  "resembles_endpoint": "season_awards",
+  "robots_status": "allowed",
+  "sha256": "f27c4e7cd0fbc2b096a3137b3ac7fbb8018af0b1a13564f247d2a69a4e26f059",
+  "status_code": 200,
+  "tier": "P1_duplicate",
+  "tool": "courtside-data:scouting:1.0",
+  "url": "https://www.basketball-reference.com/awards/awards_2025.html",
+  "wallclock_ms": 8071
+}

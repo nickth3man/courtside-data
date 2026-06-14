@@ -1,0 +1,33 @@
+{
+  "allowed_statuses": [
+    200,
+    404
+  ],
+  "byte_count": 223355,
+  "canonical_pattern": "/allstar/NBA_{YEAR}_voting.html",
+  "category": "All-Star",
+  "content_encoding": "gzip",
+  "content_type": "text/html",
+  "discovered_commented_table_ids": [],
+  "discovered_table_ids": [
+    "bc-w"
+  ],
+  "discovered_visible_table_ids": [
+    "bc-w"
+  ],
+  "downloaded_at": "2026-06-13T22:15:04.627977+00:00",
+  "expected_miss_404": false,
+  "final_url": "https://www.basketball-reference.com/allstar/NBA_2025_voting.html",
+  "librarian_row": 40,
+  "page_family": "allstar_voting",
+  "primary_table_id_s_csv": "unknown (per-conference/position)",
+  "raw_byte_count": 45313,
+  "resembles_endpoint": "",
+  "robots_status": "allowed",
+  "sha256": "4381ce6747bc2145440bc789c59ac129610379438bdd74ee9ac4ba83e7ce55be",
+  "status_code": 200,
+  "tier": "P2_new",
+  "tool": "courtside-data:scouting:1.0",
+  "url": "https://www.basketball-reference.com/allstar/NBA_2025_voting.html",
+  "wallclock_ms": 9859
+}

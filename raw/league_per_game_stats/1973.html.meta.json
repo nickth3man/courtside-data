@@ -1,0 +1,19 @@
+{
+  "allowed_statuses": [
+    200
+  ],
+  "byte_count": 686791,
+  "content_encoding": "gzip",
+  "content_type": "text/html",
+  "downloaded_at": "2026-06-13T08:43:43.430046+00:00",
+  "final_url": "https://www.basketball-reference.com/leagues/NBA_1973_per_game.html",
+  "raw_byte_count": 686791,
+  "sha256": "5a5cc500cd59d907b35e42cdb83f2cc7de59a2b582f3a6d8af8ba28ab7d24e2e",
+  "status_code": 200,
+  "table_ids": [
+    "per_game_stats"
+  ],
+  "tool": "courtside-data:5.0.0a1",
+  "url": "https://www.basketball-reference.com/leagues/NBA_1973_per_game.html",
+  "wallclock_ms": 7889
+}

@@ -1,0 +1,28 @@
+{
+  "allowed_statuses": [
+    200
+  ],
+  "byte_count": 1367268,
+  "content_encoding": "gzip",
+  "content_type": "text/html",
+  "discovered_commented_table_ids": [],
+  "discovered_table_ids": [
+    "totals_stats",
+    "totals_stats_post"
+  ],
+  "discovered_visible_table_ids": [
+    "totals_stats",
+    "totals_stats_post"
+  ],
+  "downloaded_at": "2026-06-14T05:10:07.399602+00:00",
+  "final_url": "https://www.basketball-reference.com/leagues/NBA_2002_totals.html",
+  "raw_byte_count": 1367268,
+  "sha256": "f9de70213d542abfc511de90d0fb589c90a31429dad23a4a2274b9d66e92f5bc",
+  "status_code": 200,
+  "table_ids": [
+    "totals_stats"
+  ],
+  "tool": "courtside-data:5.0.0a1",
+  "url": "https://www.basketball-reference.com/leagues/NBA_2002_totals.html",
+  "wallclock_ms": 6835
+}

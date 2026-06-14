@@ -1,0 +1,20 @@
+{
+  "allowed_statuses": [
+    200
+  ],
+  "byte_count": 152553,
+  "content_encoding": "gzip",
+  "content_type": "text/html; charset=utf-8",
+  "discovered_commented_table_ids": [],
+  "discovered_table_ids": [],
+  "discovered_visible_table_ids": [],
+  "downloaded_at": "2026-06-14T05:18:00.586219+00:00",
+  "final_url": "https://www.basketball-reference.com/search/search.fcgi?search=ja&i=players&offset=700",
+  "raw_byte_count": 152553,
+  "sha256": "0cf5f99e8d992c586a9c28a4bfb308185039c4d191937af8024c8bd313c2d6c6",
+  "status_code": 200,
+  "table_ids": [],
+  "tool": "courtside-data:5.0.0a1",
+  "url": "https://www.basketball-reference.com/search/search.fcgi?search=ja&i=players&offset=700",
+  "wallclock_ms": 7095
+}

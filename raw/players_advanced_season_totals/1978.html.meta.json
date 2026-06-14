@@ -1,0 +1,19 @@
+{
+  "allowed_statuses": [
+    200
+  ],
+  "byte_count": 1173555,
+  "content_encoding": "gzip",
+  "content_type": "text/html",
+  "downloaded_at": "2026-06-13T08:45:55.335394+00:00",
+  "final_url": "https://www.basketball-reference.com/leagues/NBA_1978_advanced.html",
+  "raw_byte_count": 1173555,
+  "sha256": "ae76d48d9dbede9bfae34b348eef41478a8e666a943bde32a0f65d9ea8a88dad",
+  "status_code": 200,
+  "table_ids": [
+    "advanced"
+  ],
+  "tool": "courtside-data:5.0.0a1",
+  "url": "https://www.basketball-reference.com/leagues/NBA_1978_advanced.html",
+  "wallclock_ms": 6538
+}

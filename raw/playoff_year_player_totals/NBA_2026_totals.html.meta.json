@@ -1,0 +1,33 @@
+{
+  "allowed_statuses": [
+    200,
+    404
+  ],
+  "byte_count": 537773,
+  "canonical_pattern": "/playoffs/NBA_{YEAR}_totals.html",
+  "category": "Playoffs",
+  "content_encoding": "gzip",
+  "content_type": "text/html",
+  "discovered_commented_table_ids": [],
+  "discovered_table_ids": [
+    "totals_stats"
+  ],
+  "discovered_visible_table_ids": [
+    "totals_stats"
+  ],
+  "downloaded_at": "2026-06-13T22:13:32.721074+00:00",
+  "expected_miss_404": false,
+  "final_url": "https://www.basketball-reference.com/playoffs/NBA_2026_totals.html",
+  "librarian_row": 30,
+  "page_family": "playoff_year_player_totals",
+  "primary_table_id_s_csv": "unknown (needs page fetch)",
+  "raw_byte_count": 77370,
+  "resembles_endpoint": "players_season_totals",
+  "robots_status": "allowed",
+  "sha256": "855d388713c9d13b018f17e89968926baf9980a8c58b06d10df0d2077c3e7846",
+  "status_code": 200,
+  "tier": "P2_new",
+  "tool": "courtside-data:scouting:1.0",
+  "url": "https://www.basketball-reference.com/playoffs/NBA_2026_totals.html",
+  "wallclock_ms": 8169
+}

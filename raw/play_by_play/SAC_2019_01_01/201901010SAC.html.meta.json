@@ -1,0 +1,26 @@
+{
+  "allowed_statuses": [
+    200
+  ],
+  "byte_count": 261299,
+  "content_encoding": "gzip",
+  "content_type": "text/html",
+  "discovered_commented_table_ids": [],
+  "discovered_table_ids": [
+    "pbp"
+  ],
+  "discovered_visible_table_ids": [
+    "pbp"
+  ],
+  "downloaded_at": "2026-06-14T05:14:51.257754+00:00",
+  "final_url": "https://www.basketball-reference.com/boxscores/pbp/201901010SAC.html",
+  "raw_byte_count": 261299,
+  "sha256": "c118d40686b5d254c28b890fd7dcae08daa5d8911c62bef5f2759ef52e04ec78",
+  "status_code": 200,
+  "table_ids": [
+    "pbp"
+  ],
+  "tool": "courtside-data:5.0.0a1",
+  "url": "https://www.basketball-reference.com/boxscores/pbp/201901010SAC.html",
+  "wallclock_ms": 6538
+}

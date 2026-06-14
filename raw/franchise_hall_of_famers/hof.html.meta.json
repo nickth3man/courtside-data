@@ -1,0 +1,29 @@
+{
+  "allowed_statuses": [
+    200,
+    404
+  ],
+  "byte_count": 155806,
+  "canonical_pattern": "/teams/{ID}/hof.html",
+  "category": "Team",
+  "content_encoding": "gzip",
+  "content_type": "text/html",
+  "discovered_commented_table_ids": [],
+  "discovered_table_ids": [],
+  "discovered_visible_table_ids": [],
+  "downloaded_at": "2026-06-13T22:11:35.079785+00:00",
+  "expected_miss_404": false,
+  "final_url": "https://www.basketball-reference.com/teams/ATL/hof.html",
+  "librarian_row": 14,
+  "page_family": "franchise_hall_of_famers",
+  "primary_table_id_s_csv": "unknown (needs page fetch)",
+  "raw_byte_count": 41793,
+  "resembles_endpoint": "",
+  "robots_status": "allowed",
+  "sha256": "d48142789d72766dd0ce0acb61e98badc586b3d382986c6056f36b03d191ba43",
+  "status_code": 200,
+  "tier": "P2_new",
+  "tool": "courtside-data:scouting:1.0",
+  "url": "https://www.basketball-reference.com/teams/ATL/hof.html",
+  "wallclock_ms": 9007
+}

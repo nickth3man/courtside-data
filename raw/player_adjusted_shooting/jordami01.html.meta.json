@@ -1,0 +1,19 @@
+{
+  "allowed_statuses": [
+    200
+  ],
+  "byte_count": 1241355,
+  "content_encoding": "gzip",
+  "content_type": "text/html",
+  "downloaded_at": "2026-06-13T08:47:56.419643+00:00",
+  "final_url": "https://www.basketball-reference.com/players/j/jordami01.html",
+  "raw_byte_count": 1241355,
+  "sha256": "4e0655d9f6086d5be1caab13f0012d70cd2eaf0f5a2086ef64ecd478e09d1354",
+  "status_code": 200,
+  "table_ids": [
+    "adj_shooting"
+  ],
+  "tool": "courtside-data:5.0.0a1",
+  "url": "https://www.basketball-reference.com/players/j/jordami01.html",
+  "wallclock_ms": 6597
+}

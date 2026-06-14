@@ -1,0 +1,19 @@
+{
+  "allowed_statuses": [
+    200
+  ],
+  "byte_count": 1955595,
+  "content_encoding": "gzip",
+  "content_type": "text/html",
+  "downloaded_at": "2026-06-13T08:45:00.688497+00:00",
+  "final_url": "https://www.basketball-reference.com/leagues/NBA_2014_shooting.html",
+  "raw_byte_count": 1955595,
+  "sha256": "426d89993f5cfffbb75fe0529e3154f2d28d8db7d957cdbbeb270815d5ff61d5",
+  "status_code": 200,
+  "table_ids": [
+    "shooting"
+  ],
+  "tool": "courtside-data:5.0.0a1",
+  "url": "https://www.basketball-reference.com/leagues/NBA_2014_shooting.html",
+  "wallclock_ms": 7307
+}

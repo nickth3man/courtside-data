@@ -1,0 +1,19 @@
+{
+  "allowed_statuses": [
+    200
+  ],
+  "byte_count": 392443,
+  "content_encoding": "gzip",
+  "content_type": "text/html; charset=utf-8",
+  "downloaded_at": "2026-06-13T08:38:18.177317+00:00",
+  "final_url": "https://www.basketball-reference.com/teams/MIL/2023/on-off/",
+  "raw_byte_count": 392443,
+  "sha256": "3d9625016ada9f071d92366eafd5b01b7aa232f35f15da3a8ef6c5ec6a9ea07c",
+  "status_code": 200,
+  "table_ids": [
+    "on_off"
+  ],
+  "tool": "courtside-data:5.0.0a1",
+  "url": "https://www.basketball-reference.com/teams/MIL/2023/on-off/",
+  "wallclock_ms": 7383
+}

@@ -1,0 +1,28 @@
+{
+  "allowed_statuses": [
+    200
+  ],
+  "byte_count": 1702926,
+  "content_encoding": "gzip",
+  "content_type": "text/html",
+  "discovered_commented_table_ids": [],
+  "discovered_table_ids": [
+    "advanced",
+    "advanced_post"
+  ],
+  "discovered_visible_table_ids": [
+    "advanced",
+    "advanced_post"
+  ],
+  "downloaded_at": "2026-06-14T05:12:06.752159+00:00",
+  "final_url": "https://www.basketball-reference.com/leagues/NBA_2001_advanced.html",
+  "raw_byte_count": 1702926,
+  "sha256": "857fca3a0ebbe0dd8edd672bdbd9acd82ace18329401bf2ff3ebc32d3cc302ba",
+  "status_code": 200,
+  "table_ids": [
+    "advanced"
+  ],
+  "tool": "courtside-data:5.0.0a1",
+  "url": "https://www.basketball-reference.com/leagues/NBA_2001_advanced.html",
+  "wallclock_ms": 7112
+}

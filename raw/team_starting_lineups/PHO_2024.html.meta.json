@@ -1,0 +1,19 @@
+{
+  "allowed_statuses": [
+    200
+  ],
+  "byte_count": 261041,
+  "content_encoding": "gzip",
+  "content_type": "text/html",
+  "downloaded_at": "2026-06-13T08:01:00.997636+00:00",
+  "final_url": "https://www.basketball-reference.com/teams/PHO/2024_start.html",
+  "raw_byte_count": 261041,
+  "sha256": "e9e25d8374c6057ce716a72947dfcd2cc63bcd3fd11aa18f959b83610640a377",
+  "status_code": 200,
+  "table_ids": [
+    "starting_lineups_po0"
+  ],
+  "tool": "courtside-data:5.0.0a1",
+  "url": "https://www.basketball-reference.com/teams/PHO/2024_start.html",
+  "wallclock_ms": 7968
+}

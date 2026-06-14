@@ -1,0 +1,33 @@
+{
+  "allowed_statuses": [
+    200,
+    404
+  ],
+  "byte_count": 319781,
+  "canonical_pattern": "/teams/{ID}/stats_{basic,per_game,opp_basic,opp_per_game}_yr_yr.html",
+  "category": "Team",
+  "content_encoding": "gzip",
+  "content_type": "text/html",
+  "discovered_commented_table_ids": [],
+  "discovered_table_ids": [
+    "stats"
+  ],
+  "discovered_visible_table_ids": [
+    "stats"
+  ],
+  "downloaded_at": "2026-06-13T22:06:29.452501+00:00",
+  "expected_miss_404": false,
+  "final_url": "https://www.basketball-reference.com/teams/ATL/stats_basic_yr_yr.html",
+  "librarian_row": 7,
+  "page_family": "franchise_year_over_year",
+  "primary_table_id_s_csv": "unknown (needs page fetch)",
+  "raw_byte_count": 53292,
+  "resembles_endpoint": "",
+  "robots_status": "allowed",
+  "sha256": "e551a6800ea505447a342183947f3569189f2600c41fe53386ec88088ebccc0f",
+  "status_code": 200,
+  "tier": "P2_new",
+  "tool": "courtside-data:scouting:1.0",
+  "url": "https://www.basketball-reference.com/teams/ATL/stats_basic_yr_yr.html",
+  "wallclock_ms": 99
+}

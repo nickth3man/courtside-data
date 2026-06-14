@@ -1,0 +1,37 @@
+{
+  "allowed_statuses": [
+    200,
+    404
+  ],
+  "byte_count": 262957,
+  "canonical_pattern": "/awards/{slug}.html",
+  "category": "Awards",
+  "content_encoding": "gzip",
+  "content_type": "text/html",
+  "discovered_commented_table_ids": [],
+  "discovered_table_ids": [
+    "mvp_ABA",
+    "mvp_NBA",
+    "mvp_summary"
+  ],
+  "discovered_visible_table_ids": [
+    "mvp_ABA",
+    "mvp_NBA",
+    "mvp_summary"
+  ],
+  "downloaded_at": "2026-06-13T22:14:37.325523+00:00",
+  "expected_miss_404": false,
+  "final_url": "https://www.basketball-reference.com/awards/mvp.html",
+  "librarian_row": 37,
+  "page_family": "awards_index",
+  "primary_table_id_s_csv": "one <table> per slug",
+  "raw_byte_count": 52563,
+  "resembles_endpoint": "season_awards",
+  "robots_status": "allowed",
+  "sha256": "7256e18f8c908d47acbaa5ae0d7ddb029e8b286f24dbf922b82ddf65c16eaa77",
+  "status_code": 200,
+  "tier": "P2_new",
+  "tool": "courtside-data:scouting:1.0",
+  "url": "https://www.basketball-reference.com/awards/mvp.html",
+  "wallclock_ms": 9898
+}

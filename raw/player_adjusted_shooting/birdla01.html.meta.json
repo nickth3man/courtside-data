@@ -1,0 +1,19 @@
+{
+  "allowed_statuses": [
+    200
+  ],
+  "byte_count": 1025778,
+  "content_encoding": "gzip",
+  "content_type": "text/html",
+  "downloaded_at": "2026-06-13T08:34:28.355180+00:00",
+  "final_url": "https://www.basketball-reference.com/players/b/birdla01.html",
+  "raw_byte_count": 1025778,
+  "sha256": "448df53a0a281b2f9c0b40aaa02ffdd1cec36bd05a98f50047788bd1451bd537",
+  "status_code": 200,
+  "table_ids": [
+    "adj_shooting"
+  ],
+  "tool": "courtside-data:5.0.0a1",
+  "url": "https://www.basketball-reference.com/players/b/birdla01.html",
+  "wallclock_ms": 6415
+}

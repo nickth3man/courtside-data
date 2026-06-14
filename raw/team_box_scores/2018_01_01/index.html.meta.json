@@ -1,0 +1,26 @@
+{
+  "allowed_statuses": [
+    200
+  ],
+  "byte_count": 150054,
+  "content_encoding": "gzip",
+  "content_type": "text/html; charset=utf-8",
+  "discovered_commented_table_ids": [],
+  "discovered_table_ids": [
+    "confs_standings_E",
+    "confs_standings_W"
+  ],
+  "discovered_visible_table_ids": [
+    "confs_standings_E",
+    "confs_standings_W"
+  ],
+  "downloaded_at": "2026-06-14T05:15:09.926055+00:00",
+  "final_url": "https://www.basketball-reference.com/boxscores/?day=1&month=1&year=2018",
+  "raw_byte_count": 150054,
+  "sha256": "9a1cca46d4e6779010509e291cb196dce6c73a91c84cdcea1bc15022cd304767",
+  "status_code": 200,
+  "table_ids": [],
+  "tool": "courtside-data:5.0.0a1",
+  "url": "https://www.basketball-reference.com/boxscores/?day=1&month=1&year=2018",
+  "wallclock_ms": 11233
+}

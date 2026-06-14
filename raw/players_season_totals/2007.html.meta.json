@@ -1,0 +1,28 @@
+{
+  "allowed_statuses": [
+    200
+  ],
+  "byte_count": 1406673,
+  "content_encoding": "gzip",
+  "content_type": "text/html",
+  "discovered_commented_table_ids": [],
+  "discovered_table_ids": [
+    "totals_stats",
+    "totals_stats_post"
+  ],
+  "discovered_visible_table_ids": [
+    "totals_stats",
+    "totals_stats_post"
+  ],
+  "downloaded_at": "2026-06-14T05:10:41.741510+00:00",
+  "final_url": "https://www.basketball-reference.com/leagues/NBA_2007_totals.html",
+  "raw_byte_count": 1406673,
+  "sha256": "92ec79b0c02aacd93bf066954878c739e93a2b343c517dfc85adb992d169a444",
+  "status_code": 200,
+  "table_ids": [
+    "totals_stats"
+  ],
+  "tool": "courtside-data:5.0.0a1",
+  "url": "https://www.basketball-reference.com/leagues/NBA_2007_totals.html",
+  "wallclock_ms": 6787
+}

@@ -1,0 +1,19 @@
+{
+  "allowed_statuses": [
+    200
+  ],
+  "byte_count": 498696,
+  "content_encoding": "gzip",
+  "content_type": "text/html",
+  "downloaded_at": "2026-06-13T09:19:33.749945+00:00",
+  "final_url": "https://www.basketball-reference.com/leagues/NBA_2012_games-april.html",
+  "raw_byte_count": 498696,
+  "sha256": "15e494b9585c413c2c6cdb6cd8f614069d40fc045791b27364d1c74f712082c7",
+  "status_code": 200,
+  "table_ids": [
+    "schedule"
+  ],
+  "tool": "courtside-data:5.0.0a1",
+  "url": "https://www.basketball-reference.com/leagues/NBA_2012_games-april.html",
+  "wallclock_ms": 6366
+}

@@ -1,0 +1,26 @@
+{
+  "allowed_statuses": [
+    200
+  ],
+  "byte_count": 480411,
+  "content_encoding": "gzip",
+  "content_type": "text/html",
+  "discovered_commented_table_ids": [],
+  "discovered_table_ids": [
+    "schedule"
+  ],
+  "discovered_visible_table_ids": [
+    "schedule"
+  ],
+  "downloaded_at": "2026-06-14T05:13:40.077956+00:00",
+  "final_url": "https://www.basketball-reference.com/leagues/NBA_2001_games-january.html",
+  "raw_byte_count": 480411,
+  "sha256": "cc2a33f4ea9364f46657b7a8e6286dd78413e11a672554b2ef18512150348e78",
+  "status_code": 200,
+  "table_ids": [
+    "schedule"
+  ],
+  "tool": "courtside-data:5.0.0a1",
+  "url": "https://www.basketball-reference.com/leagues/NBA_2001_games-january.html",
+  "wallclock_ms": 7697
+}

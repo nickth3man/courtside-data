@@ -1,0 +1,26 @@
+{
+  "allowed_statuses": [
+    200
+  ],
+  "byte_count": 492943,
+  "content_encoding": "gzip",
+  "content_type": "text/html",
+  "discovered_commented_table_ids": [],
+  "discovered_table_ids": [
+    "schedule"
+  ],
+  "discovered_visible_table_ids": [
+    "schedule"
+  ],
+  "downloaded_at": "2026-06-13T23:31:23.343229+00:00",
+  "final_url": "https://www.basketball-reference.com/leagues/NBA_2021_games-january.html",
+  "raw_byte_count": 492943,
+  "sha256": "96dd352709d4e5258de86a7311098ad9d7fb2a1fcb8ec351420efbd055c30a97",
+  "status_code": 200,
+  "table_ids": [
+    "schedule"
+  ],
+  "tool": "courtside-data:5.0.0a1",
+  "url": "https://www.basketball-reference.com/leagues/NBA_2021_games-january.html",
+  "wallclock_ms": 7647
+}

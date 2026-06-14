@@ -1,0 +1,19 @@
+{
+  "allowed_statuses": [
+    200
+  ],
+  "byte_count": 445758,
+  "content_encoding": "gzip",
+  "content_type": "text/html",
+  "downloaded_at": "2026-06-13T07:54:07.286988+00:00",
+  "final_url": "https://www.basketball-reference.com/leagues/NBA_2018_standings_by_date_western_conference.html",
+  "raw_byte_count": 445758,
+  "sha256": "0d61fcea8427567f82e19625f997e99e8b93e4eed3b7aba214a45aa2c75f9557",
+  "status_code": 200,
+  "table_ids": [
+    "standings_by_date"
+  ],
+  "tool": "courtside-data:5.0.0a1",
+  "url": "https://www.basketball-reference.com/leagues/NBA_2018_standings_by_date_western_conference.html",
+  "wallclock_ms": 6725
+}

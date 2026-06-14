@@ -1,0 +1,33 @@
+{
+  "allowed_statuses": [
+    200,
+    404
+  ],
+  "byte_count": 239782,
+  "canonical_pattern": "/teams/{ID}/{YEAR}_referees.html",
+  "category": "Team",
+  "content_encoding": "gzip",
+  "content_type": "text/html",
+  "discovered_commented_table_ids": [],
+  "discovered_table_ids": [
+    "refs-summary"
+  ],
+  "discovered_visible_table_ids": [
+    "refs-summary"
+  ],
+  "downloaded_at": "2026-06-13T22:12:03.251753+00:00",
+  "expected_miss_404": false,
+  "final_url": "https://www.basketball-reference.com/teams/BOS/2026_referees.html",
+  "librarian_row": 18,
+  "page_family": "team_referees",
+  "primary_table_id_s_csv": "unknown (needs page fetch)",
+  "raw_byte_count": 49340,
+  "resembles_endpoint": "",
+  "robots_status": "allowed",
+  "sha256": "6906b7410f03800a9314268b60954bc44d5f42aa3a2a9d9688cc8f8aedffe638",
+  "status_code": 200,
+  "tier": "P2_new",
+  "tool": "courtside-data:scouting:1.0",
+  "url": "https://www.basketball-reference.com/teams/BOS/2026_referees.html",
+  "wallclock_ms": 9653
+}

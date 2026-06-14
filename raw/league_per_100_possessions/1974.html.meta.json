@@ -1,0 +1,19 @@
+{
+  "allowed_statuses": [
+    200
+  ],
+  "byte_count": 752473,
+  "content_encoding": "gzip",
+  "content_type": "text/html",
+  "downloaded_at": "2026-06-13T08:44:45.749808+00:00",
+  "final_url": "https://www.basketball-reference.com/leagues/NBA_1974_per_poss.html",
+  "raw_byte_count": 752473,
+  "sha256": "6151b2c197bdf8cc58214b928baf275cd97be04b797e0133d6b922eae5587fc0",
+  "status_code": 200,
+  "table_ids": [
+    "per_poss"
+  ],
+  "tool": "courtside-data:5.0.0a1",
+  "url": "https://www.basketball-reference.com/leagues/NBA_1974_per_poss.html",
+  "wallclock_ms": 7292
+}

@@ -1,0 +1,20 @@
+{
+  "allowed_statuses": [
+    200,
+    404
+  ],
+  "byte_count": 304788,
+  "content_encoding": "gzip",
+  "content_type": "text/html",
+  "downloaded_at": "2026-06-13T08:41:27.006411+00:00",
+  "final_url": "https://www.basketball-reference.com/leagues/NBA_2018_games-october.html",
+  "raw_byte_count": 304788,
+  "sha256": "cdc5876b3eee3625a9391a0755eb58561d81ba17cabd335c20d293db45ecdf3f",
+  "status_code": 200,
+  "table_ids": [
+    "schedule"
+  ],
+  "tool": "courtside-data:5.0.0a1",
+  "url": "https://www.basketball-reference.com/leagues/NBA_2018_games-october.html",
+  "wallclock_ms": 7472
+}

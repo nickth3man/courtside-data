@@ -1,0 +1,26 @@
+{
+  "allowed_statuses": [
+    200
+  ],
+  "byte_count": 190916,
+  "content_encoding": "gzip",
+  "content_type": "text/html; charset=utf-8",
+  "discovered_commented_table_ids": [],
+  "discovered_table_ids": [
+    "stats"
+  ],
+  "discovered_visible_table_ids": [
+    "stats"
+  ],
+  "downloaded_at": "2026-06-14T05:14:22.728465+00:00",
+  "final_url": "https://www.basketball-reference.com/friv/dailyleaders.cgi?month=1&day=1&year=2001",
+  "raw_byte_count": 190916,
+  "sha256": "7fe10fbf982dc6b0e9a6b4ef1f7c5b2145d694616eb377352c8818ca4512f4f7",
+  "status_code": 200,
+  "table_ids": [
+    "stats"
+  ],
+  "tool": "courtside-data:5.0.0a1",
+  "url": "https://www.basketball-reference.com/friv/dailyleaders.cgi?month=1&day=1&year=2001",
+  "wallclock_ms": 8013
+}

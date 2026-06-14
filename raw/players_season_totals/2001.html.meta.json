@@ -1,0 +1,28 @@
+{
+  "allowed_statuses": [
+    200
+  ],
+  "byte_count": 1441250,
+  "content_encoding": "gzip",
+  "content_type": "text/html",
+  "discovered_commented_table_ids": [],
+  "discovered_table_ids": [
+    "totals_stats",
+    "totals_stats_post"
+  ],
+  "discovered_visible_table_ids": [
+    "totals_stats",
+    "totals_stats_post"
+  ],
+  "downloaded_at": "2026-06-14T05:10:00.392612+00:00",
+  "final_url": "https://www.basketball-reference.com/leagues/NBA_2001_totals.html",
+  "raw_byte_count": 1441250,
+  "sha256": "fad55ce225cf033adf4e3b3edee7caef29628dbc82275c7904dc5478f4e273ff",
+  "status_code": 200,
+  "table_ids": [
+    "totals_stats"
+  ],
+  "tool": "courtside-data:5.0.0a1",
+  "url": "https://www.basketball-reference.com/leagues/NBA_2001_totals.html",
+  "wallclock_ms": 167
+}

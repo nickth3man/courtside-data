@@ -1,0 +1,19 @@
+{
+  "allowed_statuses": [
+    200
+  ],
+  "byte_count": 382190,
+  "content_encoding": "gzip",
+  "content_type": "text/html",
+  "downloaded_at": "2026-06-13T09:17:20.833530+00:00",
+  "final_url": "https://www.basketball-reference.com/leagues/NBA_1980_games-december.html",
+  "raw_byte_count": 382190,
+  "sha256": "8dba640fdf5cc6b3b6066faab136aed904eb5e29304e514565f584afddd0eff6",
+  "status_code": 200,
+  "table_ids": [
+    "schedule"
+  ],
+  "tool": "courtside-data:5.0.0a1",
+  "url": "https://www.basketball-reference.com/leagues/NBA_1980_games-december.html",
+  "wallclock_ms": 6687
+}

@@ -1,0 +1,37 @@
+{
+  "allowed_statuses": [
+    200,
+    404
+  ],
+  "byte_count": 258100,
+  "canonical_pattern": "/trailers/{STAT}_{VIEW}.html, _p.html (playoffs)",
+  "category": "Leaders",
+  "content_encoding": "gzip",
+  "content_type": "text/html",
+  "discovered_commented_table_ids": [],
+  "discovered_table_ids": [
+    "stats_ABA",
+    "stats_NBA",
+    "stats_TOT"
+  ],
+  "discovered_visible_table_ids": [
+    "stats_ABA",
+    "stats_NBA",
+    "stats_TOT"
+  ],
+  "downloaded_at": "2026-06-13T22:20:47.701390+00:00",
+  "expected_miss_404": false,
+  "final_url": "https://www.basketball-reference.com/trailers/per_season.html",
+  "librarian_row": 58,
+  "page_family": "trailers",
+  "primary_table_id_s_csv": "single leader table per page",
+  "raw_byte_count": 55594,
+  "resembles_endpoint": "",
+  "robots_status": "allowed",
+  "sha256": "7e9d3f0f797b51c10a0eb8d7a0a477bb0153c6c28793d2903a9e5ef484feb9ce",
+  "status_code": 200,
+  "tier": "P2_new",
+  "tool": "courtside-data:scouting:1.0",
+  "url": "https://www.basketball-reference.com/trailers/per_season.html",
+  "wallclock_ms": 110
+}

@@ -1,0 +1,19 @@
+{
+  "allowed_statuses": [
+    200
+  ],
+  "byte_count": 560444,
+  "content_encoding": "gzip",
+  "content_type": "text/html; charset=utf-8",
+  "downloaded_at": "2026-06-13T08:48:52.898350+00:00",
+  "final_url": "https://www.basketball-reference.com/players/j/jordami01/shooting/1997",
+  "raw_byte_count": 560444,
+  "sha256": "ef5e6f6964ff2abfa238573653da101b281c3d2c0c16c061aee7aec361e5fbbd",
+  "status_code": 200,
+  "table_ids": [
+    "shooting"
+  ],
+  "tool": "courtside-data:5.0.0a1",
+  "url": "https://www.basketball-reference.com/players/j/jordami01/shooting/1997",
+  "wallclock_ms": 8122
+}

@@ -1,0 +1,19 @@
+{
+  "allowed_statuses": [
+    200
+  ],
+  "byte_count": 242493,
+  "content_encoding": "gzip",
+  "content_type": "text/html",
+  "downloaded_at": "2026-06-13T08:33:27.393730+00:00",
+  "final_url": "https://www.basketball-reference.com/draft/NBA_2024.html",
+  "raw_byte_count": 242493,
+  "sha256": "fd921e7fba0be84cc654bb49bb3aed811ce84ca1f19cc31ec4ad8833e4849ec2",
+  "status_code": 200,
+  "table_ids": [
+    "stats"
+  ],
+  "tool": "courtside-data:5.0.0a1",
+  "url": "https://www.basketball-reference.com/draft/NBA_2024.html",
+  "wallclock_ms": 6837
+}

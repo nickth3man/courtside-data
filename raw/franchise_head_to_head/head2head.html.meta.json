@@ -1,0 +1,33 @@
+{
+  "allowed_statuses": [
+    200,
+    404
+  ],
+  "byte_count": 158656,
+  "canonical_pattern": "/teams/{ID}/head2head.html",
+  "category": "Team",
+  "content_encoding": "gzip",
+  "content_type": "text/html",
+  "discovered_commented_table_ids": [],
+  "discovered_table_ids": [
+    "head2head"
+  ],
+  "discovered_visible_table_ids": [
+    "head2head"
+  ],
+  "downloaded_at": "2026-06-13T22:11:53.587587+00:00",
+  "expected_miss_404": false,
+  "final_url": "https://www.basketball-reference.com/teams/ATL/head2head.html",
+  "librarian_row": 16,
+  "page_family": "franchise_head_to_head",
+  "primary_table_id_s_csv": "unknown (needs page fetch)",
+  "raw_byte_count": 43177,
+  "resembles_endpoint": "",
+  "robots_status": "allowed",
+  "sha256": "94c3ad7732fc14047adc3b295d8f4695e347814dcb741560eaf9013e3884ab28",
+  "status_code": 200,
+  "tier": "P2_new",
+  "tool": "courtside-data:scouting:1.0",
+  "url": "https://www.basketball-reference.com/teams/ATL/head2head.html",
+  "wallclock_ms": 9922
+}

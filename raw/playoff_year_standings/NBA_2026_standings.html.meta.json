@@ -1,0 +1,35 @@
+{
+  "allowed_statuses": [
+    200,
+    404
+  ],
+  "byte_count": 178520,
+  "canonical_pattern": "/playoffs/NBA_{YEAR}_standings.html",
+  "category": "Playoffs",
+  "content_encoding": "gzip",
+  "content_type": "text/html",
+  "discovered_commented_table_ids": [
+    "expanded_standings",
+    "team_vs_team"
+  ],
+  "discovered_table_ids": [
+    "expanded_standings",
+    "team_vs_team"
+  ],
+  "discovered_visible_table_ids": [],
+  "downloaded_at": "2026-06-13T22:13:05.516939+00:00",
+  "expected_miss_404": false,
+  "final_url": "https://www.basketball-reference.com/playoffs/NBA_2026_standings.html",
+  "librarian_row": 27,
+  "page_family": "playoff_year_standings",
+  "primary_table_id_s_csv": "standings (suspected)",
+  "raw_byte_count": 44133,
+  "resembles_endpoint": "standings",
+  "robots_status": "allowed",
+  "sha256": "c98d2958a5c9297e19b349899cf90689960f25f29c9dad8ad2e8534eb33d6d6e",
+  "status_code": 200,
+  "tier": "P2_new",
+  "tool": "courtside-data:scouting:1.0",
+  "url": "https://www.basketball-reference.com/playoffs/NBA_2026_standings.html",
+  "wallclock_ms": 9553
+}

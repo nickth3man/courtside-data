@@ -1,0 +1,33 @@
+{
+  "allowed_statuses": [
+    200,
+    404
+  ],
+  "byte_count": 225845,
+  "canonical_pattern": "/playoffs/NBA_{YEAR}_games.html",
+  "category": "Playoffs",
+  "content_encoding": "gzip",
+  "content_type": "text/html",
+  "discovered_commented_table_ids": [],
+  "discovered_table_ids": [
+    "schedule"
+  ],
+  "discovered_visible_table_ids": [
+    "schedule"
+  ],
+  "downloaded_at": "2026-06-13T22:13:15.392012+00:00",
+  "expected_miss_404": false,
+  "final_url": "https://www.basketball-reference.com/playoffs/NBA_2026_games.html",
+  "librarian_row": 28,
+  "page_family": "playoff_year_games",
+  "primary_table_id_s_csv": "games (suspected)",
+  "raw_byte_count": 46312,
+  "resembles_endpoint": "season_schedule",
+  "robots_status": "allowed",
+  "sha256": "6dc882ef041dadaf811f0cd6a4f58e1c8abeefffb90f33bf1ae85abd83939ae2",
+  "status_code": 200,
+  "tier": "P2_new",
+  "tool": "courtside-data:scouting:1.0",
+  "url": "https://www.basketball-reference.com/playoffs/NBA_2026_games.html",
+  "wallclock_ms": 9864
+}

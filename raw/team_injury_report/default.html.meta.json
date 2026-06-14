@@ -1,0 +1,19 @@
+{
+  "allowed_statuses": [
+    200
+  ],
+  "byte_count": 145417,
+  "content_encoding": "gzip",
+  "content_type": "text/html; charset=utf-8",
+  "downloaded_at": "2026-06-13T08:36:41.876498+00:00",
+  "final_url": "https://www.basketball-reference.com/friv/injuries.fcgi",
+  "raw_byte_count": 145417,
+  "sha256": "f72e48a07d6a1f70b4b818524c4c18a227a0129dd7ea5744795f5706329f5afc",
+  "status_code": 200,
+  "table_ids": [
+    "injuries"
+  ],
+  "tool": "courtside-data:5.0.0a1",
+  "url": "https://www.basketball-reference.com/friv/injuries.fcgi",
+  "wallclock_ms": 7271
+}

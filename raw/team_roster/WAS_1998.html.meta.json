@@ -1,0 +1,49 @@
+{
+  "allowed_statuses": [
+    200
+  ],
+  "byte_count": 583353,
+  "content_encoding": "gzip",
+  "content_type": "text/html",
+  "discovered_commented_table_ids": [
+    "adj_shooting",
+    "advanced",
+    "pbp_stats",
+    "per_poss",
+    "salaries2",
+    "shooting",
+    "team_and_opponent",
+    "team_misc",
+    "totals_stats"
+  ],
+  "discovered_table_ids": [
+    "adj_shooting",
+    "advanced",
+    "pbp_stats",
+    "per_game_stats",
+    "per_minute_stats",
+    "per_poss",
+    "roster",
+    "salaries2",
+    "shooting",
+    "team_and_opponent",
+    "team_misc",
+    "totals_stats"
+  ],
+  "discovered_visible_table_ids": [
+    "per_game_stats",
+    "per_minute_stats",
+    "roster"
+  ],
+  "downloaded_at": "2026-06-13T23:33:45.786805+00:00",
+  "final_url": "https://www.basketball-reference.com/teams/WAS/1998.html",
+  "raw_byte_count": 583353,
+  "sha256": "8cbc30bd493830b7f8e4a88b9a7942d604ce6b2ac1cc6ba05e53d8192661775c",
+  "status_code": 200,
+  "table_ids": [
+    "roster"
+  ],
+  "tool": "courtside-data:5.0.0a1",
+  "url": "https://www.basketball-reference.com/teams/WAS/1998.html",
+  "wallclock_ms": 7473
+}

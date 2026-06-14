@@ -1,0 +1,26 @@
+{
+  "allowed_statuses": [
+    200
+  ],
+  "byte_count": 155486,
+  "content_encoding": "gzip",
+  "content_type": "text/html",
+  "discovered_commented_table_ids": [],
+  "discovered_table_ids": [
+    "schedule"
+  ],
+  "discovered_visible_table_ids": [
+    "schedule"
+  ],
+  "downloaded_at": "2026-06-13T23:30:01.891838+00:00",
+  "final_url": "https://www.basketball-reference.com/leagues/NBA_1999_games-june.html",
+  "raw_byte_count": 155486,
+  "sha256": "851d9271c3be10c97f183950cf77178c810696e7102fcc4aa2155618077895cf",
+  "status_code": 200,
+  "table_ids": [
+    "schedule"
+  ],
+  "tool": "courtside-data:5.0.0a1",
+  "url": "https://www.basketball-reference.com/leagues/NBA_1999_games-june.html",
+  "wallclock_ms": 6285
+}

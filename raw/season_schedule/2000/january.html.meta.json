@@ -1,0 +1,19 @@
+{
+  "allowed_statuses": [
+    200
+  ],
+  "byte_count": 452241,
+  "content_encoding": "gzip",
+  "content_type": "text/html",
+  "downloaded_at": "2026-06-13T09:18:19.257607+00:00",
+  "final_url": "https://www.basketball-reference.com/leagues/NBA_2000_games-january.html",
+  "raw_byte_count": 452241,
+  "sha256": "b956815240f71ad486326efb8799dee1b2565e433d342e14e573fd936f7d6dfa",
+  "status_code": 200,
+  "table_ids": [
+    "schedule"
+  ],
+  "tool": "courtside-data:5.0.0a1",
+  "url": "https://www.basketball-reference.com/leagues/NBA_2000_games-january.html",
+  "wallclock_ms": 7450
+}

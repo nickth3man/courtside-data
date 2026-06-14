@@ -1,0 +1,19 @@
+{
+  "allowed_statuses": [
+    200
+  ],
+  "byte_count": 884055,
+  "content_encoding": "gzip",
+  "content_type": "text/html",
+  "downloaded_at": "2026-06-13T07:59:29.421249+00:00",
+  "final_url": "https://www.basketball-reference.com/teams/DEN/2024.html",
+  "raw_byte_count": 884055,
+  "sha256": "b20a57da17f909ccafdcb1aff57deb2c816ff12b11a51b3fa4802ba39e2506ea",
+  "status_code": 200,
+  "table_ids": [
+    "team_and_opponent"
+  ],
+  "tool": "courtside-data:5.0.0a1",
+  "url": "https://www.basketball-reference.com/teams/DEN/2024.html",
+  "wallclock_ms": 7071
+}

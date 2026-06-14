@@ -1,0 +1,17 @@
+{
+  "allowed_statuses": [
+    200
+  ],
+  "byte_count": 328661,
+  "content_encoding": "gzip",
+  "content_type": "text/html",
+  "downloaded_at": "2026-06-13T08:32:06.075067+00:00",
+  "final_url": "https://www.basketball-reference.com/leagues/NBA_2024_transactions.html",
+  "raw_byte_count": 328661,
+  "sha256": "2d1185af83ed90b1bac0b0df9b194e053c29482a547f2b730e80367cf0106e06",
+  "status_code": 200,
+  "table_ids": [],
+  "tool": "courtside-data:5.0.0a1",
+  "url": "https://www.basketball-reference.com/leagues/NBA_2024_transactions.html",
+  "wallclock_ms": 6748
+}

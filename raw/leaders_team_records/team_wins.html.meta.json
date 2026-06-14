@@ -1,0 +1,58 @@
+{
+  "allowed_statuses": [
+    200,
+    404
+  ],
+  "byte_count": 180125,
+  "canonical_pattern": "/leaders/team_{pts,ast,trb,...}_wins.html, team_post_*.html",
+  "category": "Leaders",
+  "content_encoding": "gzip",
+  "content_type": "text/html",
+  "discovered_commented_table_ids": [
+    "team-lowest-win_loss_pct-season",
+    "team-most-cons-home-wins",
+    "team-most-cons-home-wins-end-season",
+    "team-most-cons-home-wins-start-season",
+    "team-most-cons-road-wins",
+    "team-most-cons-road-wins-end-season",
+    "team-most-cons-road-wins-start-season",
+    "team-most-cons-wins",
+    "team-most-cons-wins-end-season",
+    "team-most-cons-wins-one-season",
+    "team-most-cons-wins-start-season",
+    "team-most-wins-season"
+  ],
+  "discovered_table_ids": [
+    "team-highest-win_loss_pct-season",
+    "team-lowest-win_loss_pct-season",
+    "team-most-cons-home-wins",
+    "team-most-cons-home-wins-end-season",
+    "team-most-cons-home-wins-start-season",
+    "team-most-cons-road-wins",
+    "team-most-cons-road-wins-end-season",
+    "team-most-cons-road-wins-start-season",
+    "team-most-cons-wins",
+    "team-most-cons-wins-end-season",
+    "team-most-cons-wins-one-season",
+    "team-most-cons-wins-start-season",
+    "team-most-wins-season"
+  ],
+  "discovered_visible_table_ids": [
+    "team-highest-win_loss_pct-season"
+  ],
+  "downloaded_at": "2026-06-13T22:17:20.750763+00:00",
+  "expected_miss_404": false,
+  "final_url": "https://www.basketball-reference.com/leaders/team_wins.html",
+  "librarian_row": 55,
+  "page_family": "leaders_team_records",
+  "primary_table_id_s_csv": "unknown (needs page fetch)",
+  "raw_byte_count": 43123,
+  "resembles_endpoint": "",
+  "robots_status": "allowed",
+  "sha256": "fa12e53e71237d7e9af176b9cbf0d00a188e9df6f1ef097387212ad4389eeee3",
+  "status_code": 200,
+  "tier": "P2_new",
+  "tool": "courtside-data:scouting:1.0",
+  "url": "https://www.basketball-reference.com/leaders/team_wins.html",
+  "wallclock_ms": 9691
+}

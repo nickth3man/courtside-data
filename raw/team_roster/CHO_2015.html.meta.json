@@ -1,0 +1,49 @@
+{
+  "allowed_statuses": [
+    200
+  ],
+  "byte_count": 583915,
+  "content_encoding": "gzip",
+  "content_type": "text/html",
+  "discovered_commented_table_ids": [
+    "adj_shooting",
+    "advanced",
+    "pbp_stats",
+    "per_poss",
+    "salaries2",
+    "shooting",
+    "team_and_opponent",
+    "team_misc",
+    "totals_stats"
+  ],
+  "discovered_table_ids": [
+    "adj_shooting",
+    "advanced",
+    "pbp_stats",
+    "per_game_stats",
+    "per_minute_stats",
+    "per_poss",
+    "roster",
+    "salaries2",
+    "shooting",
+    "team_and_opponent",
+    "team_misc",
+    "totals_stats"
+  ],
+  "discovered_visible_table_ids": [
+    "per_game_stats",
+    "per_minute_stats",
+    "roster"
+  ],
+  "downloaded_at": "2026-06-13T23:33:31.970133+00:00",
+  "final_url": "https://www.basketball-reference.com/teams/CHO/2015.html",
+  "raw_byte_count": 583915,
+  "sha256": "7ec98952b7ee51a7a934f2ee3b44911b5fb067381c31e9763e399d4283090cd2",
+  "status_code": 200,
+  "table_ids": [
+    "roster"
+  ],
+  "tool": "courtside-data:5.0.0a1",
+  "url": "https://www.basketball-reference.com/teams/CHO/2015.html",
+  "wallclock_ms": 6827
+}

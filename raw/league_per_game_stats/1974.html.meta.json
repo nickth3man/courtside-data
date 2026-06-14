@@ -1,0 +1,19 @@
+{
+  "allowed_statuses": [
+    200
+  ],
+  "byte_count": 719880,
+  "content_encoding": "gzip",
+  "content_type": "text/html",
+  "downloaded_at": "2026-06-13T08:43:51.015828+00:00",
+  "final_url": "https://www.basketball-reference.com/leagues/NBA_1974_per_game.html",
+  "raw_byte_count": 719880,
+  "sha256": "974ce23e1c4197ce585c104914f76ad072ce2bb99905f619259f2376924faf0f",
+  "status_code": 200,
+  "table_ids": [
+    "per_game_stats"
+  ],
+  "tool": "courtside-data:5.0.0a1",
+  "url": "https://www.basketball-reference.com/leagues/NBA_1974_per_game.html",
+  "wallclock_ms": 7556
+}

@@ -1,0 +1,20 @@
+{
+  "allowed_statuses": [
+    200
+  ],
+  "byte_count": 90705,
+  "content_encoding": "gzip",
+  "content_type": "text/html; charset=utf-8",
+  "discovered_commented_table_ids": [],
+  "discovered_table_ids": [],
+  "discovered_visible_table_ids": [],
+  "downloaded_at": "2026-06-14T05:17:14.892781+00:00",
+  "final_url": "https://www.basketball-reference.com/search/search.fcgi?search=jaebaebae",
+  "raw_byte_count": 90705,
+  "sha256": "6cc661a916b82c98cd4f594b29cff484b2e2017f2b2f89b51e02bbf4de72250f",
+  "status_code": 200,
+  "table_ids": [],
+  "tool": "courtside-data:5.0.0a1",
+  "url": "https://www.basketball-reference.com/search/search.fcgi?search=jaebaebae",
+  "wallclock_ms": 7830
+}

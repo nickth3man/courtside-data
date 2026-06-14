@@ -1,0 +1,19 @@
+{
+  "allowed_statuses": [
+    200
+  ],
+  "byte_count": 1892702,
+  "content_encoding": "gzip",
+  "content_type": "text/html",
+  "downloaded_at": "2026-06-13T08:44:53.299282+00:00",
+  "final_url": "https://www.basketball-reference.com/leagues/NBA_2013_shooting.html",
+  "raw_byte_count": 1892702,
+  "sha256": "850d9dc27f21442e916469e720ace5ca1036b256e2f26ff2254f17c0bc24ad25",
+  "status_code": 200,
+  "table_ids": [
+    "shooting"
+  ],
+  "tool": "courtside-data:5.0.0a1",
+  "url": "https://www.basketball-reference.com/leagues/NBA_2013_shooting.html",
+  "wallclock_ms": 7451
+}

@@ -1,0 +1,35 @@
+{
+  "allowed_statuses": [
+    200,
+    404
+  ],
+  "byte_count": 209400,
+  "canonical_pattern": "/leaders/franchise.html",
+  "category": "Leaders",
+  "content_encoding": "gzip",
+  "content_type": "text/html",
+  "discovered_commented_table_ids": [],
+  "discovered_table_ids": [
+    "leaders_active",
+    "leaders_defunct"
+  ],
+  "discovered_visible_table_ids": [
+    "leaders_active",
+    "leaders_defunct"
+  ],
+  "downloaded_at": "2026-06-13T22:17:11.050139+00:00",
+  "expected_miss_404": false,
+  "final_url": "https://www.basketball-reference.com/leaders/franchise.html",
+  "librarian_row": 54,
+  "page_family": "leaders_franchise",
+  "primary_table_id_s_csv": "unknown (needs page fetch)",
+  "raw_byte_count": 44841,
+  "resembles_endpoint": "",
+  "robots_status": "allowed",
+  "sha256": "08f6bfe4e67a8dfe04f29a1684edd7a67cfe32f6500bdfed2fa94096c117517e",
+  "status_code": 200,
+  "tier": "P2_new",
+  "tool": "courtside-data:scouting:1.0",
+  "url": "https://www.basketball-reference.com/leaders/franchise.html",
+  "wallclock_ms": 9077
+}

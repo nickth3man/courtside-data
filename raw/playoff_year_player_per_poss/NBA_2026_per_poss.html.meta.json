@@ -1,0 +1,33 @@
+{
+  "allowed_statuses": [
+    200,
+    404
+  ],
+  "byte_count": 633716,
+  "canonical_pattern": "/playoffs/NBA_{YEAR}_per_poss.html",
+  "category": "Playoffs",
+  "content_encoding": "gzip",
+  "content_type": "text/html",
+  "discovered_commented_table_ids": [],
+  "discovered_table_ids": [
+    "per_poss_stats"
+  ],
+  "discovered_visible_table_ids": [
+    "per_poss_stats"
+  ],
+  "downloaded_at": "2026-06-13T22:13:59.789246+00:00",
+  "expected_miss_404": false,
+  "final_url": "https://www.basketball-reference.com/playoffs/NBA_2026_per_poss.html",
+  "librarian_row": 33,
+  "page_family": "playoff_year_player_per_poss",
+  "primary_table_id_s_csv": "unknown (needs page fetch)",
+  "raw_byte_count": 83193,
+  "resembles_endpoint": "league_per_100_possessions",
+  "robots_status": "allowed",
+  "sha256": "0d8ea086635cd6a9288ac6be289a1a773eef5bf71f459346f2555651b45de95f",
+  "status_code": 200,
+  "tier": "P2_new",
+  "tool": "courtside-data:scouting:1.0",
+  "url": "https://www.basketball-reference.com/playoffs/NBA_2026_per_poss.html",
+  "wallclock_ms": 8509
+}

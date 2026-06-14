@@ -1,0 +1,19 @@
+{
+  "allowed_statuses": [
+    200
+  ],
+  "byte_count": 329645,
+  "content_encoding": "gzip",
+  "content_type": "text/html; charset=utf-8",
+  "downloaded_at": "2026-06-13T08:49:43.500453+00:00",
+  "final_url": "https://www.basketball-reference.com/teams/CHI/1997/on-off/",
+  "raw_byte_count": 329645,
+  "sha256": "ae228abee9d445e0b20550bd74e60559cfa2d96c4c1594ecba5019e1b55faf9b",
+  "status_code": 200,
+  "table_ids": [
+    "on_off"
+  ],
+  "tool": "courtside-data:5.0.0a1",
+  "url": "https://www.basketball-reference.com/teams/CHI/1997/on-off/",
+  "wallclock_ms": 7607
+}

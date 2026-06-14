@@ -1,0 +1,19 @@
+{
+  "allowed_statuses": [
+    200
+  ],
+  "byte_count": 2329531,
+  "content_encoding": "gzip",
+  "content_type": "text/html",
+  "downloaded_at": "2026-06-13T08:32:45.892165+00:00",
+  "final_url": "https://www.basketball-reference.com/leagues/NBA_2024_per_game.html",
+  "raw_byte_count": 2329531,
+  "sha256": "40e4e1697f857fb86098b7ecc69021f21f44880e6d440f51bf4b89c6588f6d47",
+  "status_code": 200,
+  "table_ids": [
+    "per_game_stats_post"
+  ],
+  "tool": "courtside-data:5.0.0a1",
+  "url": "https://www.basketball-reference.com/leagues/NBA_2024_per_game.html",
+  "wallclock_ms": 5975
+}

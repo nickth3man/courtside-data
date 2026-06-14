@@ -1,0 +1,19 @@
+{
+  "allowed_statuses": [
+    200
+  ],
+  "byte_count": 1314216,
+  "content_encoding": "gzip",
+  "content_type": "text/html",
+  "downloaded_at": "2026-06-13T08:46:03.256875+00:00",
+  "final_url": "https://www.basketball-reference.com/leagues/NBA_1985_advanced.html",
+  "raw_byte_count": 1314216,
+  "sha256": "fc2b69dd28ccd3f68147be28d98e94105ddceecdf31511b6c6de3dc42d01a2f6",
+  "status_code": 200,
+  "table_ids": [
+    "advanced"
+  ],
+  "tool": "courtside-data:5.0.0a1",
+  "url": "https://www.basketball-reference.com/leagues/NBA_1985_advanced.html",
+  "wallclock_ms": 7862
+}

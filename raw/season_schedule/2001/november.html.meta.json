@@ -1,0 +1,26 @@
+{
+  "allowed_statuses": [
+    200
+  ],
+  "byte_count": 472496,
+  "content_encoding": "gzip",
+  "content_type": "text/html",
+  "discovered_commented_table_ids": [],
+  "discovered_table_ids": [
+    "schedule"
+  ],
+  "discovered_visible_table_ids": [
+    "schedule"
+  ],
+  "downloaded_at": "2026-06-14T05:13:24.887101+00:00",
+  "final_url": "https://www.basketball-reference.com/leagues/NBA_2001_games-november.html",
+  "raw_byte_count": 472496,
+  "sha256": "243e7327b1a97562eadfcc628a2c394d9476d159a949cfc75462b33edf05e082",
+  "status_code": 200,
+  "table_ids": [
+    "schedule"
+  ],
+  "tool": "courtside-data:5.0.0a1",
+  "url": "https://www.basketball-reference.com/leagues/NBA_2001_games-november.html",
+  "wallclock_ms": 6406
+}
