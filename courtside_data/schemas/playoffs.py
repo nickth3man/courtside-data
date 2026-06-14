@@ -23,6 +23,7 @@ from courtside_data.schemas._fields import (
     BRIntOrNone,
     BRPercentage,
     PositionsField,
+    StrOrNone,
     _is_empty,
     _team_field,
 )
@@ -123,6 +124,8 @@ class PlayoffPerGameRow(BRRow, PlayoffPerGameStats):
     is unidentifiable.
     """
 
+    awards: StrOrNone = Field(default=None, validation_alias="awards")
+
 
 register("playoff_per_game", PlayoffPerGameRow)
 
@@ -148,6 +151,8 @@ class PlayoffTotalsRow(BRRow, PlayoffTotalStats):
     three_point_field_goal_percentage: BRPercentage = Field(default=None, validation_alias="fg3_pct")
     free_throw_percentage: BRPercentage = Field(default=None, validation_alias="ft_pct")
     effective_field_goal_percentage: BRPercentage = Field(default=None, validation_alias="efg_pct")
+    triple_doubles: BRIntOrNone = Field(default=None, validation_alias="tpl_dbl")
+    awards: StrOrNone = Field(default=None, validation_alias="awards")
 
 
 register("playoff_totals", PlayoffTotalsRow)

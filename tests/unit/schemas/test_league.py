@@ -221,27 +221,29 @@ def _full_per_36_row() -> dict[str, str]:
         "games": "74",
         "games_started": "74",
         "mp": "2728",
-        "fg_per_36_min": "9.6",
-        "fga_per_36_min": "20.1",
+        "fg_per_minute_36": "9.6",
+        "fga_per_minute_36": "20.1",
         "fg_pct": ".477",
-        "fg3_per_36_min": "3.1",
-        "fg3a_per_36_min": "7.4",
+        "fg3_per_minute_36": "3.1",
+        "fg3a_per_minute_36": "7.4",
         "fg3_pct": ".421",
-        "fg2_per_36_min": "6.4",
-        "fg2a_per_36_min": "12.7",
+        "fg2_per_minute_36": "6.4",
+        "fg2a_per_minute_36": "12.7",
         "fg2_pct": ".508",
-        "ft_per_36_min": "5.5",
-        "fta_per_36_min": "6.5",
+        "ft_per_minute_36": "5.5",
+        "fta_per_minute_36": "6.5",
         "ft_pct": ".836",
-        "orb_per_36_min": "1.1",
-        "drb_per_36_min": "7.3",
-        "trb_per_36_min": "8.4",
-        "ast_per_36_min": "4.4",
-        "stl_per_36_min": "1.1",
-        "blk_per_36_min": "0.5",
-        "tov_per_36_min": "2.6",
-        "pf_per_36_min": "2.1",
-        "pts_per_36_min": "27.7",
+        "orb_per_minute_36": "1.1",
+        "drb_per_minute_36": "7.3",
+        "trb_per_minute_36": "8.4",
+        "ast_per_minute_36": "4.4",
+        "stl_per_minute_36": "1.1",
+        "blk_per_minute_36": "0.5",
+        "tov_per_minute_36": "2.6",
+        "pf_per_minute_36": "2.1",
+        "pts_per_minute_36": "27.7",
+        "efg_pct": ".553",
+        "awards": "AS,NBA1",
     }
 
 
@@ -284,27 +286,31 @@ def _full_per_100_row() -> dict[str, str]:
         "games": "66",
         "games_started": "66",
         "mp": "2304",
-        "fg_per_100_poss": "13.1",
-        "fga_per_100_poss": "25.4",
+        "fg_per_poss": "13.1",
+        "fga_per_poss": "25.4",
         "fg_pct": ".516",
-        "fg3_per_100_poss": "1.6",
-        "fg3a_per_100_poss": "4.7",
+        "fg3_per_poss": "1.6",
+        "fg3a_per_poss": "4.7",
         "fg3_pct": ".342",
-        "fg2_per_100_poss": "11.5",
-        "fg2a_per_100_poss": "20.6",
+        "fg2_per_poss": "11.5",
+        "fg2a_per_poss": "20.6",
         "fg2_pct": ".556",
-        "ft_per_100_poss": "12.2",
-        "fta_per_100_poss": "14.7",
+        "ft_per_poss": "12.2",
+        "fta_per_poss": "14.7",
         "ft_pct": ".831",
-        "orb_per_100_poss": "2.7",
-        "drb_per_100_poss": "11.6",
-        "trb_per_100_poss": "14.3",
-        "ast_per_100_poss": "6.4",
-        "stl_per_100_poss": "1.6",
-        "blk_per_100_poss": "2.3",
-        "tov_per_100_poss": "4.6",
-        "pf_per_100_poss": "4.4",
-        "pts_per_100_poss": "40.0",
+        "orb_per_poss": "2.7",
+        "drb_per_poss": "11.6",
+        "trb_per_poss": "14.3",
+        "ast_per_poss": "6.4",
+        "stl_per_poss": "1.6",
+        "blk_per_poss": "2.3",
+        "tov_per_poss": "4.6",
+        "pf_per_poss": "4.4",
+        "pts_per_poss": "40.0",
+        "efg_pct": ".548",
+        "off_rtg": "123",
+        "def_rtg": "110",
+        "awards": "AS,MVP-2",
     }
 
 
@@ -344,27 +350,35 @@ class TestLeaguePer100PossessionsRow:
 def _full_shooting_row() -> dict[str, str]:
     return {
         "name_display": "Stephen Curry",
-        "pos": "PG",
         "age": "35",
         "team_name_abbr": "GSW",
+        "pos": "PG",
         "games": "56",
+        "games_started": "56",
         "mp": "1941",
-        "fg_pct_from_0_3_ft": ".700",
-        "fg_pct_from_3_10_ft": ".476",
-        "fg_pct_from_10_16_ft": ".510",
-        "fg_pct_from_16_3p": ".420",
-        "fg_pct_from_3p": ".427",
-        "pct_fga_from_0_3_ft": ".121",
-        "pct_fga_from_3_10_ft": ".094",
-        "pct_fga_from_10_16_ft": ".083",
-        "pct_fga_from_16_3p": ".281",
-        "pct_fga_from_3p": ".421",
-        "fg_pct_from_2p": ".560",
-        "fg_pct_from_0_3_ft_2": ".725",
-        "fg_pct_from_corner_3": ".486",
-        "pct_fga_from_corner_3": ".119",
-        "num_shots_heaved": "1",
-        "pct_shots_heaved": ".002",
+        "fg_pct": ".427",
+        "avg_dist": "16.7",
+        "pct_fga_fg2a": ".421",
+        "pct_fga_00_03": ".121",
+        "pct_fga_03_10": ".094",
+        "pct_fga_10_16": ".083",
+        "pct_fga_16_xx": ".281",
+        "pct_fga_fg3a": ".579",
+        "fg_pct_fg2a": ".560",
+        "fg_pct_00_03": ".700",
+        "fg_pct_03_10": ".476",
+        "fg_pct_10_16": ".510",
+        "fg_pct_16_xx": ".420",
+        "fg_pct_fg3a": ".427",
+        "pct_ast_fg2": ".512",
+        "pct_ast_fg3": ".823",
+        "pct_fga_dunk": ".004",
+        "fg_dunk": "3",
+        "pct_fg3a_corner3": ".119",
+        "fg_pct_corner3": ".486",
+        "fg3a_heave": "5",
+        "fg3_heave": "1",
+        "awards": "AS",
     }
 
 
@@ -373,14 +387,17 @@ class TestLeagueShootingRow:
         row = LeagueShootingRow.model_validate(_full_shooting_row())
         assert row.team == Team.GOLDEN_STATE_WARRIORS
         assert row.positions == [Position.POINT_GUARD]
-        assert row.number_of_shots_heaved == 1
-        assert row.field_goal_percentage_from_corner_three == pytest.approx(0.486)
-        assert row.percentage_of_shots_heaved == pytest.approx(0.002)
+        assert row.attempted_heaves == 5
+        assert row.made_heaves == 1
+        assert row.made_dunks == 3
+        assert row.field_goal_percentage_on_corner_three_pointers == pytest.approx(0.486)
+        assert row.field_goal_percentage_from_zero_to_three_feet == pytest.approx(0.700)
+        assert row.awards == "AS"
 
     def test_empty_optional_cells_become_none(self):
         raw = _full_shooting_row()
         raw["games"] = ""
-        raw["fg_pct_from_0_3_ft"] = ""
+        raw["fg_pct_00_03"] = ""
         row = LeagueShootingRow.model_validate(raw)
         assert row.games_played is None
         assert row.field_goal_percentage_from_zero_to_three_feet is None

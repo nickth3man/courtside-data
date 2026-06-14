@@ -22,6 +22,7 @@ from courtside_data.schemas._fields import (
     BRIntOrNone,
     BRPercentage,
     PositionsField,
+    StrOrNone,
     _is_empty,
     _team_field,
 )
@@ -122,6 +123,8 @@ class LeaguePerGameStatsRow(BRRow, LeaguePerGameStats):
     column — without it the row is unidentifiable.
     """
 
+    awards: StrOrNone = Field(default=None, validation_alias="awards")
+
 
 register("league_per_game_stats", LeaguePerGameStatsRow)
 
@@ -146,6 +149,8 @@ class LeagueTotalsRow(BRRow, LeagueTotalStats):
     three_point_field_goal_percentage: BRPercentage = Field(default=None, validation_alias="fg3_pct")
     free_throw_percentage: BRPercentage = Field(default=None, validation_alias="ft_pct")
     effective_field_goal_percentage: BRPercentage = Field(default=None, validation_alias="efg_pct")
+    triple_doubles: BRIntOrNone = Field(default=None, validation_alias="tpl_dbl")
+    awards: StrOrNone = Field(default=None, validation_alias="awards")
 
 
 register("league_totals", LeagueTotalsRow)
@@ -183,29 +188,33 @@ class LeaguePer36MinutesRow(BRRow):
     games_played: BRIntOrNone = Field(default=None, validation_alias="games")
     games_started: BRIntOrNone = Field(default=None, validation_alias="games_started")
     minutes_played: BRIntOrNone = Field(default=None, validation_alias="mp")
-    made_field_goals_per_36_min: BRFloatOrNone = Field(default=None, validation_alias="fg_per_36_min")
-    attempted_field_goals_per_36_min: BRFloatOrNone = Field(default=None, validation_alias="fga_per_36_min")
+    made_field_goals_per_36_min: BRFloatOrNone = Field(default=None, validation_alias="fg_per_minute_36")
+    attempted_field_goals_per_36_min: BRFloatOrNone = Field(default=None, validation_alias="fga_per_minute_36")
     field_goal_percentage: BRPercentage = Field(default=None, validation_alias="fg_pct")
-    made_three_point_field_goals_per_36_min: BRFloatOrNone = Field(default=None, validation_alias="fg3_per_36_min")
+    made_three_point_field_goals_per_36_min: BRFloatOrNone = Field(default=None, validation_alias="fg3_per_minute_36")
     attempted_three_point_field_goals_per_36_min: BRFloatOrNone = Field(
-        default=None, validation_alias="fg3a_per_36_min"
+        default=None, validation_alias="fg3a_per_minute_36"
     )
     three_point_field_goal_percentage: BRPercentage = Field(default=None, validation_alias="fg3_pct")
-    made_two_point_field_goals_per_36_min: BRFloatOrNone = Field(default=None, validation_alias="fg2_per_36_min")
-    attempted_two_point_field_goals_per_36_min: BRFloatOrNone = Field(default=None, validation_alias="fg2a_per_36_min")
+    made_two_point_field_goals_per_36_min: BRFloatOrNone = Field(default=None, validation_alias="fg2_per_minute_36")
+    attempted_two_point_field_goals_per_36_min: BRFloatOrNone = Field(
+        default=None, validation_alias="fg2a_per_minute_36"
+    )
     two_point_field_goal_percentage: BRPercentage = Field(default=None, validation_alias="fg2_pct")
-    made_free_throws_per_36_min: BRFloatOrNone = Field(default=None, validation_alias="ft_per_36_min")
-    attempted_free_throws_per_36_min: BRFloatOrNone = Field(default=None, validation_alias="fta_per_36_min")
+    effective_field_goal_percentage: BRPercentage = Field(default=None, validation_alias="efg_pct")
+    made_free_throws_per_36_min: BRFloatOrNone = Field(default=None, validation_alias="ft_per_minute_36")
+    attempted_free_throws_per_36_min: BRFloatOrNone = Field(default=None, validation_alias="fta_per_minute_36")
     free_throw_percentage: BRPercentage = Field(default=None, validation_alias="ft_pct")
-    offensive_rebounds_per_36_min: BRFloatOrNone = Field(default=None, validation_alias="orb_per_36_min")
-    defensive_rebounds_per_36_min: BRFloatOrNone = Field(default=None, validation_alias="drb_per_36_min")
-    total_rebounds_per_36_min: BRFloatOrNone = Field(default=None, validation_alias="trb_per_36_min")
-    assists_per_36_min: BRFloatOrNone = Field(default=None, validation_alias="ast_per_36_min")
-    steals_per_36_min: BRFloatOrNone = Field(default=None, validation_alias="stl_per_36_min")
-    blocks_per_36_min: BRFloatOrNone = Field(default=None, validation_alias="blk_per_36_min")
-    turnovers_per_36_min: BRFloatOrNone = Field(default=None, validation_alias="tov_per_36_min")
-    personal_fouls_per_36_min: BRFloatOrNone = Field(default=None, validation_alias="pf_per_36_min")
-    points_per_36_min: BRFloatOrNone = Field(default=None, validation_alias="pts_per_36_min")
+    offensive_rebounds_per_36_min: BRFloatOrNone = Field(default=None, validation_alias="orb_per_minute_36")
+    defensive_rebounds_per_36_min: BRFloatOrNone = Field(default=None, validation_alias="drb_per_minute_36")
+    total_rebounds_per_36_min: BRFloatOrNone = Field(default=None, validation_alias="trb_per_minute_36")
+    assists_per_36_min: BRFloatOrNone = Field(default=None, validation_alias="ast_per_minute_36")
+    steals_per_36_min: BRFloatOrNone = Field(default=None, validation_alias="stl_per_minute_36")
+    blocks_per_36_min: BRFloatOrNone = Field(default=None, validation_alias="blk_per_minute_36")
+    turnovers_per_36_min: BRFloatOrNone = Field(default=None, validation_alias="tov_per_minute_36")
+    personal_fouls_per_36_min: BRFloatOrNone = Field(default=None, validation_alias="pf_per_minute_36")
+    points_per_36_min: BRFloatOrNone = Field(default=None, validation_alias="pts_per_minute_36")
+    awards: StrOrNone = Field(default=None, validation_alias="awards")
 
 
 register("league_per_36_minutes", LeaguePer36MinutesRow)
@@ -225,35 +234,37 @@ class LeaguePer100PossessionsRow(BRRow):
     games_played: BRIntOrNone = Field(default=None, validation_alias="games")
     games_started: BRIntOrNone = Field(default=None, validation_alias="games_started")
     minutes_played: BRIntOrNone = Field(default=None, validation_alias="mp")
-    made_field_goals_per_100_possessions: BRFloatOrNone = Field(default=None, validation_alias="fg_per_100_poss")
-    attempted_field_goals_per_100_possessions: BRFloatOrNone = Field(default=None, validation_alias="fga_per_100_poss")
+    made_field_goals_per_100_possessions: BRFloatOrNone = Field(default=None, validation_alias="fg_per_poss")
+    attempted_field_goals_per_100_possessions: BRFloatOrNone = Field(default=None, validation_alias="fga_per_poss")
     field_goal_percentage: BRPercentage = Field(default=None, validation_alias="fg_pct")
     made_three_point_field_goals_per_100_possessions: BRFloatOrNone = Field(
-        default=None, validation_alias="fg3_per_100_poss"
+        default=None, validation_alias="fg3_per_poss"
     )
     attempted_three_point_field_goals_per_100_possessions: BRFloatOrNone = Field(
-        default=None, validation_alias="fg3a_per_100_poss"
+        default=None, validation_alias="fg3a_per_poss"
     )
     three_point_field_goal_percentage: BRPercentage = Field(default=None, validation_alias="fg3_pct")
-    made_two_point_field_goals_per_100_possessions: BRFloatOrNone = Field(
-        default=None, validation_alias="fg2_per_100_poss"
-    )
+    made_two_point_field_goals_per_100_possessions: BRFloatOrNone = Field(default=None, validation_alias="fg2_per_poss")
     attempted_two_point_field_goals_per_100_possessions: BRFloatOrNone = Field(
-        default=None, validation_alias="fg2a_per_100_poss"
+        default=None, validation_alias="fg2a_per_poss"
     )
     two_point_field_goal_percentage: BRPercentage = Field(default=None, validation_alias="fg2_pct")
-    made_free_throws_per_100_possessions: BRFloatOrNone = Field(default=None, validation_alias="ft_per_100_poss")
-    attempted_free_throws_per_100_possessions: BRFloatOrNone = Field(default=None, validation_alias="fta_per_100_poss")
+    effective_field_goal_percentage: BRPercentage = Field(default=None, validation_alias="efg_pct")
+    made_free_throws_per_100_possessions: BRFloatOrNone = Field(default=None, validation_alias="ft_per_poss")
+    attempted_free_throws_per_100_possessions: BRFloatOrNone = Field(default=None, validation_alias="fta_per_poss")
     free_throw_percentage: BRPercentage = Field(default=None, validation_alias="ft_pct")
-    offensive_rebounds_per_100_possessions: BRFloatOrNone = Field(default=None, validation_alias="orb_per_100_poss")
-    defensive_rebounds_per_100_possessions: BRFloatOrNone = Field(default=None, validation_alias="drb_per_100_poss")
-    total_rebounds_per_100_possessions: BRFloatOrNone = Field(default=None, validation_alias="trb_per_100_poss")
-    assists_per_100_possessions: BRFloatOrNone = Field(default=None, validation_alias="ast_per_100_poss")
-    steals_per_100_possessions: BRFloatOrNone = Field(default=None, validation_alias="stl_per_100_poss")
-    blocks_per_100_possessions: BRFloatOrNone = Field(default=None, validation_alias="blk_per_100_poss")
-    turnovers_per_100_possessions: BRFloatOrNone = Field(default=None, validation_alias="tov_per_100_poss")
-    personal_fouls_per_100_possessions: BRFloatOrNone = Field(default=None, validation_alias="pf_per_100_poss")
-    points_per_100_possessions: BRFloatOrNone = Field(default=None, validation_alias="pts_per_100_poss")
+    offensive_rebounds_per_100_possessions: BRFloatOrNone = Field(default=None, validation_alias="orb_per_poss")
+    defensive_rebounds_per_100_possessions: BRFloatOrNone = Field(default=None, validation_alias="drb_per_poss")
+    total_rebounds_per_100_possessions: BRFloatOrNone = Field(default=None, validation_alias="trb_per_poss")
+    assists_per_100_possessions: BRFloatOrNone = Field(default=None, validation_alias="ast_per_poss")
+    steals_per_100_possessions: BRFloatOrNone = Field(default=None, validation_alias="stl_per_poss")
+    blocks_per_100_possessions: BRFloatOrNone = Field(default=None, validation_alias="blk_per_poss")
+    turnovers_per_100_possessions: BRFloatOrNone = Field(default=None, validation_alias="tov_per_poss")
+    personal_fouls_per_100_possessions: BRFloatOrNone = Field(default=None, validation_alias="pf_per_poss")
+    points_per_100_possessions: BRFloatOrNone = Field(default=None, validation_alias="pts_per_poss")
+    offensive_rating: BRFloatOrNone = Field(default=None, validation_alias="off_rtg")
+    defensive_rating: BRFloatOrNone = Field(default=None, validation_alias="def_rtg")
+    awards: StrOrNone = Field(default=None, validation_alias="awards")
 
 
 register("league_per_100_possessions", LeaguePer100PossessionsRow)
@@ -262,10 +273,10 @@ register("league_per_100_possessions", LeaguePer100PossessionsRow)
 class LeagueShootingRow(BRRow):
     """Row from a league shooting table (``/leagues/NBA_{year}_shooting.html``).
 
-    The shooting table exposes shot-distance buckets
-    (``fg_pct_from_0_3_ft`` ... ``pct_fga_from_3p``), a corner-3 pair, and a
-    ``heaves`` pair. Every column shares its BR data-stat key with the field
-    name.
+    Field ``validation_alias`` values are the table's real ``data-stat`` keys:
+    the distance buckets ``*_00_03`` / ``*_03_10`` / ``*_10_16`` / ``*_16_xx``,
+    the two-point/three-point splits ``*_fg2a`` / ``*_fg3a``, the assisted,
+    dunk, corner-three, and heave columns.
     """
 
     name_display: str = Field(validation_alias="name_display")
@@ -273,45 +284,51 @@ class LeagueShootingRow(BRRow):
     positions: PositionsField = Field(default_factory=list, validation_alias="pos")
     age: BRIntOrNone = Field(default=None, validation_alias="age")
     games_played: BRIntOrNone = Field(default=None, validation_alias="games")
+    games_started: BRIntOrNone = Field(default=None, validation_alias="games_started")
     minutes_played: BRIntOrNone = Field(default=None, validation_alias="mp")
-    field_goal_percentage_from_zero_to_three_feet: BRPercentage = Field(
-        default=None, validation_alias="fg_pct_from_0_3_ft"
+    field_goal_percentage: BRPercentage = Field(default=None, validation_alias="fg_pct")
+    average_shot_distance: BRFloatOrNone = Field(default=None, validation_alias="avg_dist")
+    percentage_of_field_goal_attempts_from_two_point_range: BRPercentage = Field(
+        default=None, validation_alias="pct_fga_fg2a"
     )
-    field_goal_percentage_from_three_to_ten_feet: BRPercentage = Field(
-        default=None, validation_alias="fg_pct_from_3_10_ft"
-    )
-    field_goal_percentage_from_ten_to_sixteen_feet: BRPercentage = Field(
-        default=None, validation_alias="fg_pct_from_10_16_ft"
-    )
-    field_goal_percentage_from_sixteen_to_three_point: BRPercentage = Field(
-        default=None, validation_alias="fg_pct_from_16_3p"
-    )
-    field_goal_percentage_from_three_point: BRPercentage = Field(default=None, validation_alias="fg_pct_from_3p")
     percentage_of_field_goal_attempts_from_zero_to_three_feet: BRPercentage = Field(
-        default=None, validation_alias="pct_fga_from_0_3_ft"
+        default=None, validation_alias="pct_fga_00_03"
     )
     percentage_of_field_goal_attempts_from_three_to_ten_feet: BRPercentage = Field(
-        default=None, validation_alias="pct_fga_from_3_10_ft"
+        default=None, validation_alias="pct_fga_03_10"
     )
     percentage_of_field_goal_attempts_from_ten_to_sixteen_feet: BRPercentage = Field(
-        default=None, validation_alias="pct_fga_from_10_16_ft"
+        default=None, validation_alias="pct_fga_10_16"
     )
-    percentage_of_field_goal_attempts_from_sixteen_to_three_point: BRPercentage = Field(
-        default=None, validation_alias="pct_fga_from_16_3p"
+    percentage_of_field_goal_attempts_from_sixteen_feet_to_three_point: BRPercentage = Field(
+        default=None, validation_alias="pct_fga_16_xx"
     )
-    percentage_of_field_goal_attempts_from_three_point: BRPercentage = Field(
-        default=None, validation_alias="pct_fga_from_3p"
+    percentage_of_field_goal_attempts_from_three_point_range: BRPercentage = Field(
+        default=None, validation_alias="pct_fga_fg3a"
     )
-    field_goal_percentage_from_two_point: BRPercentage = Field(default=None, validation_alias="fg_pct_from_2p")
-    field_goal_percentage_from_zero_to_three_feet_assisted: BRPercentage = Field(
-        default=None, validation_alias="fg_pct_from_0_3_ft_2"
+    field_goal_percentage_from_two_point_range: BRPercentage = Field(default=None, validation_alias="fg_pct_fg2a")
+    field_goal_percentage_from_zero_to_three_feet: BRPercentage = Field(default=None, validation_alias="fg_pct_00_03")
+    field_goal_percentage_from_three_to_ten_feet: BRPercentage = Field(default=None, validation_alias="fg_pct_03_10")
+    field_goal_percentage_from_ten_to_sixteen_feet: BRPercentage = Field(default=None, validation_alias="fg_pct_10_16")
+    field_goal_percentage_from_sixteen_feet_to_three_point: BRPercentage = Field(
+        default=None, validation_alias="fg_pct_16_xx"
     )
-    field_goal_percentage_from_corner_three: BRPercentage = Field(default=None, validation_alias="fg_pct_from_corner_3")
-    percentage_of_field_goal_attempts_from_corner_three: BRPercentage = Field(
-        default=None, validation_alias="pct_fga_from_corner_3"
+    field_goal_percentage_from_three_point_range: BRPercentage = Field(default=None, validation_alias="fg_pct_fg3a")
+    percentage_of_two_point_field_goals_assisted: BRPercentage = Field(default=None, validation_alias="pct_ast_fg2")
+    percentage_of_three_point_field_goals_assisted: BRPercentage = Field(default=None, validation_alias="pct_ast_fg3")
+    percentage_of_field_goal_attempts_that_are_dunks: BRPercentage = Field(
+        default=None, validation_alias="pct_fga_dunk"
     )
-    number_of_shots_heaved: BRIntOrNone = Field(default=None, validation_alias="num_shots_heaved")
-    percentage_of_shots_heaved: BRPercentage = Field(default=None, validation_alias="pct_shots_heaved")
+    made_dunks: BRIntOrNone = Field(default=None, validation_alias="fg_dunk")
+    percentage_of_three_point_attempts_from_corner: BRPercentage = Field(
+        default=None, validation_alias="pct_fg3a_corner3"
+    )
+    field_goal_percentage_on_corner_three_pointers: BRPercentage = Field(
+        default=None, validation_alias="fg_pct_corner3"
+    )
+    attempted_heaves: BRIntOrNone = Field(default=None, validation_alias="fg3a_heave")
+    made_heaves: BRIntOrNone = Field(default=None, validation_alias="fg3_heave")
+    awards: StrOrNone = Field(default=None, validation_alias="awards")
 
 
 register("league_shooting", LeagueShootingRow)

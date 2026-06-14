@@ -35,6 +35,13 @@ def _is_empty(value: object) -> bool:
     return s in _EMPTY_VALUES or s == ""
 
 
+def _str_or_none(value: object) -> str | None:
+    """Free-form text cell coerced to ``None`` when empty (e.g. ``awards``)."""
+    if _is_empty(value):
+        return None
+    return str(value).strip()
+
+
 def _br_int(value: object) -> int:
     if isinstance(value, int) and not isinstance(value, bool):
         return value
@@ -310,6 +317,7 @@ def _br_decimal(value: object) -> Decimal:
         raise ValueError(f"Invalid decimal value: {value!r}") from exc
 
 
+StrOrNone = Annotated[str | None, BeforeValidator(_str_or_none)]
 BRInt = Annotated[int, BeforeValidator(_br_int)]
 BRIntOrNone = Annotated[int | None, BeforeValidator(_br_int_or_none)]
 BRFloat = Annotated[float, BeforeValidator(_br_float)]
