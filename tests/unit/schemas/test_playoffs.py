@@ -7,6 +7,7 @@ from pydantic import ValidationError
 
 from courtside_data.data import Position, Team
 from courtside_data.output.columns import (
+    FRIV_7_GAME_PLAYOFF_SERIES_OUTCOMES_COLUMN_NAMES,
     PLAYOFF_BRACKET_COLUMN_NAMES,
     PLAYOFF_PER_GAME_COLUMN_NAMES,
     PLAYOFF_TOTALS_COLUMN_NAMES,
@@ -15,6 +16,7 @@ from courtside_data.schemas.playoffs import (
     PlayoffBracketRow,
     PlayoffPerGameRow,
     PlayoffTotalsRow,
+    SevenGamePlayoffSeriesOutcomesRow,
 )
 
 # ---------------------------------------------------------------------------
@@ -212,3 +214,28 @@ class TestPlayoffBracketRow:
 
     def test_field_count_matches_column_constant(self):
         assert len(PlayoffBracketRow.model_fields) == len(PLAYOFF_BRACKET_COLUMN_NAMES)
+
+
+# ---------------------------------------------------------------------------
+# Seven-game playoff series outcome matrices
+# ---------------------------------------------------------------------------
+
+
+class TestSevenGamePlayoffSeriesOutcomesRow:
+    def test_happy_path(self):
+        row = SevenGamePlayoffSeriesOutcomesRow.model_validate(
+            {"record": "3-3", "gameslist": "AAHHAA", "wl": "8-9"}
+        )
+
+        assert row.record == "3-3"
+        assert row.gameslist == "AAHHAA"
+        assert row.wl == "8-9"
+
+    def test_missing_required_record_raises(self):
+        with pytest.raises(ValidationError):
+            SevenGamePlayoffSeriesOutcomesRow.model_validate({"gameslist": "All series", "wl": "349-115"})
+
+    def test_field_count_matches_column_constant(self):
+        assert len(SevenGamePlayoffSeriesOutcomesRow.model_fields) == len(
+            FRIV_7_GAME_PLAYOFF_SERIES_OUTCOMES_COLUMN_NAMES
+        )

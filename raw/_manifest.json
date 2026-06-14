@@ -3,8 +3,8 @@
   "tool": "courtside-data:5.0.0a1",
   "corpus_root": "raw",
   "stats": {
-    "total_fixtures": 422,
-    "endpoints_covered": 145,
+    "total_fixtures": 425,
+    "endpoints_covered": 148,
     "fetched": 4,
     "skipped": 3,
     "failed": 0,
@@ -55,6 +55,9 @@
     "franchise_year_by_year_stats_per_game": 1,
     "franchise_year_by_year_stats_totals": 1,
     "franchise_year_over_year": 1,
+    "friv_7_game_playoff_series_outcomes": 1,
+    "friv_7_game_playoff_series_outcomes_team_is_tied": 1,
+    "friv_7_game_playoff_series_outcomes_team_is_up": 1,
     "friv_birthdays": 1,
     "friv_birthplaces": 1,
     "friv_birthyears": 1,
@@ -515,6 +518,27 @@
       "url": "https://www.basketball-reference.com/teams/ATL/stats_basic_yr_yr.html",
       "sha256": "e551a6800ea505447a342183947f3569189f2600c41fe53386ec88088ebccc0f",
       "byte_count": 319781,
+      "status_code": 200
+    },
+    {
+      "path": "friv_7_game_playoff_series_outcomes/7-game-playoff-series-outcomes-22111.html",
+      "url": "https://www.basketball-reference.com/friv/7-game-playoff-series-outcomes-22111.html",
+      "sha256": "f3d0c8dc5b73794bfe78b8a8e8ae2157f2ce4b7e097ea0828a0dbbf28b75eded",
+      "byte_count": 197359,
+      "status_code": 200
+    },
+    {
+      "path": "friv_7_game_playoff_series_outcomes_team_is_tied/7-game-playoff-series-outcomes-22111.html",
+      "url": "https://www.basketball-reference.com/friv/7-game-playoff-series-outcomes-22111.html",
+      "sha256": "f3d0c8dc5b73794bfe78b8a8e8ae2157f2ce4b7e097ea0828a0dbbf28b75eded",
+      "byte_count": 197359,
+      "status_code": 200
+    },
+    {
+      "path": "friv_7_game_playoff_series_outcomes_team_is_up/7-game-playoff-series-outcomes-22111.html",
+      "url": "https://www.basketball-reference.com/friv/7-game-playoff-series-outcomes-22111.html",
+      "sha256": "f3d0c8dc5b73794bfe78b8a8e8ae2157f2ce4b7e097ea0828a0dbbf28b75eded",
+      "byte_count": 197359,
       "status_code": 200
     },
     {

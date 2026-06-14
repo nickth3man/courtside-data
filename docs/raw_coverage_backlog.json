@@ -692,20 +692,6 @@
     {
       "bespoke": false,
       "category": "Friv",
-      "description": "Historical 7-game series win/loss outcomes - breakdown by which team won each game 1-7.",
-      "discovered_table_ids": [],
-      "family": "friv_7_game_playoff_series_outcomes",
-      "html_files": 0,
-      "in_csv": true,
-      "parser_requirements": "Trivial table scrape.",
-      "resembles_endpoint": "",
-      "robots_status": "allowed",
-      "status_200_files": 0,
-      "tier": "P2_new"
-    },
-    {
-      "bespoke": false,
-      "category": "Friv",
       "description": "All players born on a given date.",
       "discovered_table_ids": [
         "nba_aba_players",

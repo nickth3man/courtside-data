@@ -6,10 +6,10 @@
 
 | Metric | Value |
 |---|---|
-| served endpoints | 341 |
-| corpus dirs | 147 |
-| unserved families | 1 |
-| unserved families trivial | 1 |
+| served endpoints | 344 |
+| corpus dirs | 149 |
+| unserved families | 0 |
+| unserved families trivial | 0 |
 | unserved families bespoke | 0 |
 | endpoints with dropped columns | 11 |
 | endpoints with dropped columns actionable | 0 |
@@ -20,13 +20,7 @@
 
 ## §A — Unserved page families (downloaded, no endpoint)
 
-1 directories under `raw/` hold fixtures but have no entry in `ENDPOINTS`. Each was fetched from the page-family inventory. **1** are trivial single-table scrapes; **0** need bespoke multi-table parsers.
-
-### Trivial table scrapes (1)
-
-| Family | Category | Files | Discovered table ids | Resembles |
-|---|---|---|---|---|
-| `friv_7_game_playoff_series_outcomes` | Friv | 0 | — | — |
+0 directories under `raw/` hold fixtures but have no entry in `ENDPOINTS`. Each was fetched from the page-family inventory. **0** are trivial single-table scrapes; **0** need bespoke multi-table parsers.
 
 ## §B — Dropped columns on served endpoints
 

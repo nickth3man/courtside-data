@@ -514,32 +514,17 @@
   },
   "orphan_tables": [],
   "summary": {
-    "corpus_dirs": 147,
+    "corpus_dirs": 149,
     "disallowed_or_off_domain_families": 18,
     "endpoints_with_dropped_columns": 11,
     "endpoints_with_dropped_columns_actionable": 0,
     "page_groups_with_orphan_tables": 0,
-    "served_endpoints": 341,
+    "served_endpoints": 344,
     "total_dropped_columns": 259,
     "total_orphan_tables": 0,
-    "unserved_families": 1,
+    "unserved_families": 0,
     "unserved_families_bespoke": 0,
-    "unserved_families_trivial": 1
+    "unserved_families_trivial": 0
   },
-  "unserved_families": [
-    {
-      "bespoke": false,
-      "category": "Friv",
-      "description": "Historical 7-game series win/loss outcomes - breakdown by which team won each game 1-7.",
-      "discovered_table_ids": [],
-      "family": "friv_7_game_playoff_series_outcomes",
-      "html_files": 0,
-      "in_csv": true,
-      "parser_requirements": "Trivial table scrape.",
-      "resembles_endpoint": "",
-      "robots_status": "allowed",
-      "status_200_files": 0,
-      "tier": "P2_new"
-    }
-  ]
+  "unserved_families": []
 }
