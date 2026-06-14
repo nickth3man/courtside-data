@@ -12,31 +12,71 @@ import re
 import sys
 import time
 import traceback
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlparse
 
-import courtside_data  # noqa: F401  — the 50 endpoint functions (importable)
-from courtside_data import client
-from courtside_data.data import TEAM_ABBREVIATIONS_TO_TEAM, Team
-from courtside_data.endpoints import ENDPOINTS
-from courtside_data import errors as cderrors
+REPO_ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(REPO_ROOT))
 
-import httpx
+import httpx  # noqa: E402  — sys.path must be bootstrapped first
+
+import courtside_data  # noqa: E402,F401  — endpoint functions (importable)
+from courtside_data import client  # noqa: E402
+from courtside_data import errors as cderrors  # noqa: E402
+from courtside_data.data import TEAM_ABBREVIATIONS_TO_TEAM, Team  # noqa: E402
+from courtside_data.endpoints import ENDPOINTS  # noqa: E402
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # Verified query pools — DO NOT CHANGE
 # ═══════════════════════════════════════════════════════════════════════════════
 SEASONS = [2018, 2019, 2020, 2021, 2022, 2023, 2024]
 TEAMS = [
-    "ATL", "BOS", "BRK", "CHI", "CHO", "CLE", "DAL", "DEN", "DET", "GSW",
-    "HOU", "IND", "LAC", "LAL", "MEM", "MIA", "MIL", "MIN", "NOP", "NYK",
-    "OKC", "ORL", "PHI", "PHO", "POR", "SAC", "SAS", "TOR", "UTA", "WAS",
+    "ATL",
+    "BOS",
+    "BRK",
+    "CHI",
+    "CHO",
+    "CLE",
+    "DAL",
+    "DEN",
+    "DET",
+    "GSW",
+    "HOU",
+    "IND",
+    "LAC",
+    "LAL",
+    "MEM",
+    "MIA",
+    "MIL",
+    "MIN",
+    "NOP",
+    "NYK",
+    "OKC",
+    "ORL",
+    "PHI",
+    "PHO",
+    "POR",
+    "SAC",
+    "SAS",
+    "TOR",
+    "UTA",
+    "WAS",
 ]
 PLAYERS = [
-    "jordami01", "curryst01", "duranke01", "antetgi01", "embiijo01",
-    "doncilu01", "tatumja01", "willizi01", "hardeja01", "westbru01",
-    "leonaka01", "lillada01",
+    "jordami01",
+    "curryst01",
+    "duranke01",
+    "antetgi01",
+    "embiijo01",
+    "doncilu01",
+    "tatumja01",
+    "willizi01",
+    "hardeja01",
+    "westbru01",
+    "leonaka01",
+    "lillada01",
 ]
 SEARCH_TERMS = ["Jordan", "Curry", "LeBron", "Wilt"]
 
@@ -46,6 +86,9 @@ SEARCH_TERMS = ["Jordan", "Curry", "LeBron", "Wilt"]
 DEFAULT_DAY = 25
 DEFAULT_MONTH = 12
 DEFAULT_YEAR = 2024
+
+RAW_ROOT = REPO_ROOT / "raw"
+_CORPUS_PARAM_CACHE: dict[str, list[dict[str, Any]]] = {}
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # Hardcoded overrides for endpoints that need a curated query (override the
@@ -66,6 +109,7 @@ HARDCODED_PARAMS: dict[str, dict[str, Any]] = {
 # Helpers
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 def _serialize_params(params: dict[str, Any]) -> dict[str, Any]:
     """Return a copy of *params* with Team enums stringified to ``.name``."""
     out: dict[str, Any] = {}
@@ -77,7 +121,100 @@ def _serialize_params(params: dict[str, Any]) -> dict[str, Any]:
     return out
 
 
-def build_params(endpoint: Any) -> dict[str, Any]:
+def _clean_path_template(path: str) -> str:
+    return path.strip().split(",", 1)[0].split(None, 1)[0].split("#", 1)[0]
+
+
+def _field_regex(param_name: str) -> str:
+    if param_name == "game_date":
+        return r"\d{8,9}"
+    if param_name in {"day", "month"}:
+        return r"\d{1,2}"
+    if param_name in {"year", "season_end_year"}:
+        return r"\d{4}"
+    if param_name in {"game_code", "away", "team_abbreviation", "team_a", "team_b"}:
+        return r"[A-Za-z0-9]+"
+    if param_name in {"player_identifier", "slug", "round", "stat", "view"}:
+        return r"[A-Za-z0-9_-]+"
+    return r"[^/&]+"
+
+
+def _path_template_regex(path_template: str) -> tuple[re.Pattern[str], dict[str, str]]:
+    template = _clean_path_template(path_template)
+    parts: list[str] = []
+    group_params: dict[str, str] = {}
+    group_counts: dict[str, int] = {}
+    cursor = 0
+    for match in re.finditer(r"\{([^{}]+)\}", template):
+        parts.append(re.escape(template[cursor : match.start()]))
+        raw_param_name = match.group(1)
+        param_name = re.sub(r"\[[^\]]*\]", "", raw_param_name)
+        group_counts[param_name] = group_counts.get(param_name, 0) + 1
+        group_name = f"{param_name}__{group_counts[param_name]}"
+        if "[" not in raw_param_name:
+            group_params[group_name] = param_name
+        parts.append(f"(?P<{group_name}>{_field_regex(param_name)})")
+        cursor = match.end()
+    parts.append(re.escape(template[cursor:]))
+    return re.compile("^" + "".join(parts) + "$"), group_params
+
+
+_FAMILIES_CACHE: list[str] | None = None
+
+
+def _endpoint_family(name: str) -> str | None:
+    global _FAMILIES_CACHE
+    if not RAW_ROOT.is_dir():
+        return None
+    if _FAMILIES_CACHE is None:
+        _FAMILIES_CACHE = sorted(
+            (path.name for path in RAW_ROOT.iterdir() if path.is_dir()),
+            key=len,
+            reverse=True,
+        )
+    for family in _FAMILIES_CACHE:
+        if name == family or name.startswith(f"{family}_"):
+            return family
+    return None
+
+
+def _corpus_param_sets(name: str, endpoint: Any) -> list[dict[str, Any]]:
+    family = _endpoint_family(name)
+    if not family:
+        return []
+    cache_key = f"{family}:{endpoint.path}"
+    if cache_key in _CORPUS_PARAM_CACHE:
+        return _CORPUS_PARAM_CACHE[cache_key]
+
+    family_dir = RAW_ROOT / family
+    path_re, group_params = _path_template_regex(endpoint.path)
+    candidates: list[dict[str, Any]] = []
+    for sidecar in sorted(family_dir.rglob("*.html.meta.json")):
+        try:
+            meta = json.loads(sidecar.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            continue
+        if meta.get("status_code", 200) != 200:
+            continue
+        parsed = urlparse(str(meta.get("final_url") or meta.get("url") or ""))
+        url_to_match = parsed.path + (f"?{parsed.query}" if parsed.query else "")
+        match = path_re.fullmatch(url_to_match)
+        if not match:
+            continue
+        groups = match.groupdict()
+        params = {
+            param_name: groups[group_name]
+            for group_name, param_name in group_params.items()
+            if param_name in endpoint.params
+        }
+        if params:
+            candidates.append(params)
+
+    _CORPUS_PARAM_CACHE[cache_key] = candidates
+    return candidates
+
+
+def build_params(name: str, endpoint: Any) -> dict[str, Any]:
     """Build a random-but-valid param dict for *endpoint*.
 
     Rules (per param name):
@@ -88,13 +225,15 @@ def build_params(endpoint: Any) -> dict[str, Any]:
     - day / month / year   → Christmas 2024 defaults (not randomized)
     - include_inactive_games → False (bool)
     - include_combined_values → False (bool)
-
-    Endpoints that need a curated (home_team, date) pairing (currently
-    ``play_by_play``) are handled in :func:`main` via
-    :func:`_resolve_play_by_play_params` rather than this builder.
     """
     params: dict[str, Any] = {}
+    corpus_params = _corpus_param_sets(name, endpoint)
+    if corpus_params:
+        params.update(corpus_params[0])
+
     for param_name in endpoint.params:
+        if param_name in params:
+            continue
         if param_name == "season_end_year":
             params[param_name] = random.choice(SEASONS)
         elif param_name == "team_abbreviation":
@@ -203,10 +342,11 @@ def build_url(endpoint: Any, params: dict[str, Any]) -> str:
     contains ``{conference}`` that is *not* in params) fall back to the raw
     template string.  Prefix with ``https://www.basketball-reference.com``.
     """
+    path = _clean_path_template(endpoint.path)
     try:
-        formatted = endpoint.path.format(**params)
+        formatted = path.format(**params)
     except (KeyError, IndexError, ValueError, TypeError):
-        formatted = endpoint.path
+        formatted = path
     return f"https://www.basketball-reference.com{formatted}"
 
 
@@ -252,9 +392,7 @@ def capture_result(
     if isinstance(result, list):
         entry["row_count"] = len(result)
     elif isinstance(result, dict):
-        entry["row_count"] = sum(
-            len(v) for v in result.values() if isinstance(v, list)
-        )
+        entry["row_count"] = sum(len(v) for v in result.values() if isinstance(v, list))
     else:
         entry["row_count"] = 0
 
@@ -328,6 +466,7 @@ def md_escape(text: str) -> str:
 # Main
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 def main() -> int:
     parser = argparse.ArgumentParser(
         description="Smoke-test every courtside-data endpoint against live BBR."
@@ -338,14 +477,27 @@ def main() -> int:
         default=20260614,
         help="RNG seed for reproducible random-query selection (default: 20260614)",
     )
+    parser.add_argument(
+        "--param",
+        action="append",
+        default=[],
+        help="Only run endpoints whose signature includes this parameter. Repeatable.",
+    )
     args = parser.parse_args()
 
     seed: int = args.seed
     random.seed(seed)
 
-    started_at = datetime.now(timezone.utc)
-    total = len(ENDPOINTS)
+    started_at = datetime.now(UTC)
     endpoint_items = list(ENDPOINTS.items())  # insertion-order snapshot
+    if args.param:
+        selected_params = set(args.param)
+        endpoint_items = [
+            (name, endpoint)
+            for name, endpoint in endpoint_items
+            if selected_params.intersection(endpoint.params)
+        ]
+    total = len(endpoint_items)
 
     results: list[dict[str, Any]] = []
     jailed = False
@@ -359,11 +511,13 @@ def main() -> int:
     for i, (name, endpoint) in enumerate(endpoint_items, 1):
         # ── Already jailed → skip ──
         if jailed:
-            results.append({
-                "name": name,
-                "status": "skipped",
-                "reason": "rate_limit_jailed_earlier",
-            })
+            results.append(
+                {
+                    "name": name,
+                    "status": "skipped",
+                    "reason": "rate_limit_jailed_earlier",
+                }
+            )
             print(
                 f"[{i:2d}/{total}] {name} ... SKIPPED  (rate_limit_jailed_earlier)",
                 flush=True,
@@ -376,7 +530,7 @@ def main() -> int:
         elif name in HARDCODED_PARAMS:
             params = dict(HARDCODED_PARAMS[name])
         else:
-            params = build_params(endpoint)
+            params = build_params(name, endpoint)
 
         url = build_url(endpoint, params)
 
@@ -385,17 +539,19 @@ def main() -> int:
             func = getattr(client, name)
         except AttributeError:
             # Shouldn't happen if registry ↔ client exports stay in sync
-            results.append({
-                "name": name,
-                "status": "error",
-                "duration_s": 0.0,
-                "params": _serialize_params(params),
-                "url": url,
-                "error_type": "AttributeError",
-                "error_message": f"Function '{name}' not found on client module",
-                "error_category": "other",
-                "traceback": "",
-            })
+            results.append(
+                {
+                    "name": name,
+                    "status": "error",
+                    "duration_s": 0.0,
+                    "params": _serialize_params(params),
+                    "url": url,
+                    "error_type": "AttributeError",
+                    "error_message": f"Function '{name}' not found on client module",
+                    "error_category": "other",
+                    "traceback": "",
+                }
+            )
             print(
                 f"[{i:2d}/{total}] {name} ... ERROR other  (func not found, 0.0s)",
                 flush=True,
@@ -444,6 +600,7 @@ def main() -> int:
     meta = {
         "started_at_utc": started_at.isoformat(),
         "seed": seed,
+        "selected_params": args.param,
         "total_endpoints": total,
         "elapsed_s": round(elapsed, 2),
         "play_by_play_params": _serialize_params(play_by_play_params),
@@ -470,6 +627,8 @@ def main() -> int:
     md_lines.append("")
     md_lines.append(f"- **Started**: {meta['started_at_utc']}")
     md_lines.append(f"- **Seed**: {meta['seed']}")
+    if args.param:
+        md_lines.append(f"- **Selected params**: {', '.join(args.param)}")
     md_lines.append(f"- **Elapsed**: {meta['elapsed_s']:.1f}s")
     md_lines.append(f"- **Total endpoints**: {meta['total_endpoints']}")
     md_lines.append(f"- **OK**: {meta['summary']['ok']}")
@@ -517,14 +676,18 @@ def main() -> int:
         name = r.get("name", "?")
         md_lines.append(f"### {name}")
         md_lines.append("")
-        md_lines.append(f"- **Params**: `{json.dumps(r.get('params', {}), default=str)}`")
+        md_lines.append(
+            f"- **Params**: `{json.dumps(r.get('params', {}), default=str)}`"
+        )
         md_lines.append(f"- **URL**: `{r.get('url', '')}`")
         md_lines.append(f"- **Status**: {r['status']}")
 
         if r["status"] == "ok":
             md_lines.append(f"- **Duration**: {r.get('duration_s', 0):.3f}s")
             md_lines.append(f"- **Row count**: {r.get('row_count', 0)}")
-            md_lines.append(f"- **Columns**: `{json.dumps(r.get('keys_or_columns', []))}`")
+            md_lines.append(
+                f"- **Columns**: `{json.dumps(r.get('keys_or_columns', []))}`"
+            )
             md_lines.append("")
             md_lines.append("**Sample**:")
             md_lines.append("```json")
