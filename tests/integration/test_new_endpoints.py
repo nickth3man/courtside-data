@@ -17,6 +17,7 @@ from courtside_data.client import (
     league_per_100_possessions,
     # League endpoints
     league_per_game_stats,
+    league_play_by_play,
     league_shooting,
     league_totals,
     league_transactions,
@@ -99,6 +100,7 @@ ATTENDANCE_URL = "https://www.basketball-reference.com/leagues/NBA_{year}.html"
 TRANSACTIONS_URL = "https://www.basketball-reference.com/leagues/NBA_{year}_transactions.html"
 PER_POSS_URL = "https://www.basketball-reference.com/leagues/NBA_{year}_per_poss.html"
 SHOOTING_URL = "https://www.basketball-reference.com/leagues/NBA_{year}_shooting.html"
+PLAY_BY_PLAY_URL = "https://www.basketball-reference.com/leagues/NBA_{year}_play-by-play.html"
 DRAFT_URL = "https://www.basketball-reference.com/draft/NBA_{year}.html"
 SEASON_LEADERS_URL = "https://www.basketball-reference.com/leaders/per_season.html"
 CAREER_LEADERS_URL = "https://www.basketball-reference.com/leaders/"
@@ -210,6 +212,22 @@ class TestLeagueEndpoints:
                 _mock_url(m, SHOOTING_URL.format(year=2024), html)
                 result = league_shooting(2024, raw=True)
                 assert isinstance(result, list)
+
+    def test_league_play_by_play_from_raw_fixture(self):
+        from tests.integration.client import raw_fixtures
+
+        html = raw_fixtures.read("league_play_by_play/2024.html")
+        with patch("time.sleep"):
+            with requests_mock.Mocker() as m:
+                _mock_url(m, PLAY_BY_PLAY_URL.format(year=2024), html)
+                result = league_play_by_play(2024)
+
+        assert len(result) > 0
+        assert result[0].name_display == "DeMar DeRozan"
+        assert result[0].team_name_abbr.value == "CHICAGO BULLS"
+        assert result[0].pos[0].value == "SMALL FORWARD"
+        assert result[0].games == 79
+        assert result[0].pct_3 == 52.0
 
 
 # ===================================================================

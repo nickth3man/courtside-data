@@ -352,6 +352,33 @@ LEAGUE_SHOOTING_COLUMN_NAMES = [
     "awards",
 ]
 
+LEAGUE_PLAY_BY_PLAY_COLUMN_NAMES = [
+    "name_display",
+    "age",
+    "team_name_abbr",
+    "pos",
+    "games",
+    "games_started",
+    "mp",
+    "pct_1",
+    "pct_2",
+    "pct_3",
+    "pct_4",
+    "pct_5",
+    "plus_minus_on",
+    "plus_minus_net",
+    "tov_bad_pass",
+    "tov_lost_ball",
+    "fouls_shooting",
+    "fouls_offensive",
+    "drawn_shooting",
+    "drawn_offensive",
+    "astd_pts",
+    "and1s",
+    "own_shots_blk",
+    "awards",
+]
+
 PLAYOFF_PER_GAME_COLUMN_NAMES = [
     "name_display",
     "age",
