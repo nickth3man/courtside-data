@@ -17,6 +17,7 @@ import random
 import re
 import threading
 import time
+from collections import OrderedDict
 from collections.abc import Callable
 from datetime import UTC
 from pathlib import Path
@@ -48,6 +49,13 @@ _DEFAULT_RATE_LIMIT_INTERVAL = 6.0  # 10 req/min ceiling — matches pybaseball'
 _DEFAULT_RATE_LIMIT_JITTER = 1.0  # uniform(0, 1.0) — average ~8.6 req/min with comfortable headroom
 _DEFAULT_TIMEOUT = httpx.Timeout(30.0, connect=10.0)
 _RETRY_ATTEMPTS = 3
+
+# Pages like the 7-game playoff series outcomes matrix host multiple tables
+# that are exposed as separate endpoints. Cache parsed selectors per URL so
+# fetching several tables from the same page only makes one HTTP request and
+# only parses the HTML once. The cache is per-instance and bounded to avoid
+# unbounded growth for long-lived clients.
+_SELECTOR_CACHE_SIZE = 16
 # Basketball-Reference can send Retry-After values of an hour or more when a
 # session is jailed. stamina uses a hook-returned float verbatim (wait_max
 # does not apply to it), so cap it to keep a single request from sleeping
@@ -313,6 +321,10 @@ class HTTPService:
         self._sleep = sleep if sleep is not None else time.sleep
         self._random = random_func if random_func is not None else random.uniform
 
+        # Bounded per-instance selector cache so multiple endpoints that scrape
+        # the same URL share one fetch and one parse.
+        self._selector_cache: OrderedDict[str, Selector] = OrderedDict()
+
     def _apply_rate_limiting(self) -> None:
         with self._rate_limit_lock:
             trace = current_debug_trace()
@@ -429,7 +441,19 @@ class HTTPService:
         return response
 
     def _get_selector(self, url: str) -> Selector:
-        """Fetch a page (no redirects) and wrap the body in a parsel Selector."""
+        """Fetch a page (no redirects) and wrap the body in a parsel Selector.
+
+        Parsed selectors are cached per URL on this instance, so callers that
+        extract several tables from the same page (e.g. the three 7-game
+        playoff series outcome matrices) reuse one request and one parse.
+        """
+        if url in self._selector_cache:
+            self._selector_cache.move_to_end(url)
+            trace = current_debug_trace()
+            if trace is not None:
+                trace.record("http", "selector_cache_hit", url=url)
+            return self._selector_cache[url]
+
         response = self._get(url=url, follow_redirects=False)
         response.raise_for_status()
         trace = current_debug_trace()
@@ -441,7 +465,11 @@ class HTTPService:
                 response_text_length=len(response.text),
                 response_text_sha256=hashlib.sha256(response.text.encode("utf-8", errors="replace")).hexdigest(),
             )
-        return Selector(text=response.text)
+        selector = Selector(text=response.text)
+        self._selector_cache[url] = selector
+        if len(self._selector_cache) > _SELECTOR_CACHE_SIZE:
+            self._selector_cache.popitem(last=False)
+        return selector
 
     def _get_html(self, url: str, **kwargs: Any) -> html.HtmlElement:
         """Fetch a page, raise on HTTP errors, and parse the body with lxml."""

@@ -181,3 +181,27 @@ class PlayoffBracketRow(BRRow):
 
 
 register("playoff_bracket", PlayoffBracketRow)
+
+
+# ---------------------------------------------------------------------------
+# Seven-game playoff series outcome matrices
+# ---------------------------------------------------------------------------
+
+
+class SevenGamePlayoffSeriesOutcomesRow(BRRow):
+    """Row from one outcome matrix on ``/friv/7-game-playoff-series-outcomes-22111.html``.
+
+    The page repeats the same three-column table for teams that are down, tied,
+    or up in a seven-game playoff series. ``record`` is the current series
+    score, ``gameslist`` is Basketball-Reference's home/away pattern label, and
+    ``wl`` is the historical series outcome record for that state.
+    """
+
+    record: str = Field(validation_alias="record")
+    gameslist: str = Field(validation_alias="gameslist")
+    wl: str = Field(validation_alias="wl")
+
+
+register("friv_7_game_playoff_series_outcomes_team_is_down", SevenGamePlayoffSeriesOutcomesRow)
+register("friv_7_game_playoff_series_outcomes_team_is_tied", SevenGamePlayoffSeriesOutcomesRow)
+register("friv_7_game_playoff_series_outcomes_team_is_up", SevenGamePlayoffSeriesOutcomesRow)

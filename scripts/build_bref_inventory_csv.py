@@ -1367,7 +1367,7 @@ ROWS: list[tuple[str, str, str, str, str, str, str, str, str, str, int]] = [
         109,
     ),
     (
-        "friv_7_game_playoff_series_outcomes",
+        "friv_7_game_playoff_series_outcomes_team_is_down",
         "Friv",
         "P2_new",
         "allowed",

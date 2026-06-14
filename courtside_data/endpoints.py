@@ -36,6 +36,7 @@ from courtside_data.output.columns import (
     CAREER_LEADERS_COLUMN_NAMES,
     DRAFT_PICKS_COLUMN_NAMES,
     FRANCHISE_HISTORY_COLUMN_NAMES,
+    FRIV_7_GAME_PLAYOFF_SERIES_OUTCOMES_COLUMN_NAMES,
     LEAGUE_PER_36_COLUMN_NAMES,
     LEAGUE_PER_100_POSSESSIONS_COLUMN_NAMES,
     LEAGUE_PER_GAME_COLUMN_NAMES,
@@ -309,6 +310,24 @@ ENDPOINTS: dict[str, TableEndpoint] = {
         use_header_fallback=True,
         row_model=playoffs.PlayoffBracketRow,
         csv_columns=PLAYOFF_BRACKET_COLUMN_NAMES,
+    ),
+    "friv_7_game_playoff_series_outcomes_team_is_down": TableEndpoint(
+        path="/friv/7-game-playoff-series-outcomes-22111.html",
+        table_id="team-is-down",
+        row_model=playoffs.SevenGamePlayoffSeriesOutcomesRow,
+        csv_columns=FRIV_7_GAME_PLAYOFF_SERIES_OUTCOMES_COLUMN_NAMES,
+    ),
+    "friv_7_game_playoff_series_outcomes_team_is_tied": TableEndpoint(
+        path="/friv/7-game-playoff-series-outcomes-22111.html",
+        table_id="team-is-tied",
+        row_model=playoffs.SevenGamePlayoffSeriesOutcomesRow,
+        csv_columns=FRIV_7_GAME_PLAYOFF_SERIES_OUTCOMES_COLUMN_NAMES,
+    ),
+    "friv_7_game_playoff_series_outcomes_team_is_up": TableEndpoint(
+        path="/friv/7-game-playoff-series-outcomes-22111.html",
+        table_id="team-is-up",
+        row_model=playoffs.SevenGamePlayoffSeriesOutcomesRow,
+        csv_columns=FRIV_7_GAME_PLAYOFF_SERIES_OUTCOMES_COLUMN_NAMES,
     ),
     # ── Draft, awards, leaders ──
     "draft_picks": _season(
