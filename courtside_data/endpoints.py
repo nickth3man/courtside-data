@@ -120,6 +120,7 @@ class TableEndpoint:
     commented_table_id: str | None = None
     use_header_fallback: bool = False
     transaction_list_fallback: bool = False
+    exclude_summary_rows: bool = False
     # True for endpoints with a bespoke HTTPService method (e.g. multi-request);
     # fetch_table() must not be used for these.
     custom: bool = False
@@ -160,6 +161,7 @@ def _endpoint(
     commented_table_id: str | None = None,
     use_header_fallback: bool = False,
     transaction_list_fallback: bool = False,
+    exclude_summary_rows: bool = False,
     custom: bool = False,
     row_model: type[BRRow] | None = None,
     projection: tuple[str, ...] | None = None,
@@ -173,6 +175,7 @@ def _endpoint(
         commented_table_id=commented_table_id,
         use_header_fallback=use_header_fallback,
         transaction_list_fallback=transaction_list_fallback,
+        exclude_summary_rows=exclude_summary_rows,
         custom=custom,
         row_model=row_model,
         projection=projection,
@@ -222,36 +225,42 @@ ENDPOINTS: dict[str, TableEndpoint] = {
     "league_per_game_stats": _season(
         "/leagues/NBA_{season_end_year}_per_game.html",
         table_id="per_game_stats",
+        exclude_summary_rows=True,
         row_model=league.LeaguePerGameStatsRow,
         csv_columns=LEAGUE_PER_GAME_COLUMN_NAMES,
     ),
     "league_per_36_minutes": _season(
         "/leagues/NBA_{season_end_year}_per_minute.html",
         table_id="per_minute_stats",
+        exclude_summary_rows=True,
         row_model=league.LeaguePer36MinutesRow,
         csv_columns=LEAGUE_PER_36_COLUMN_NAMES,
     ),
     "league_totals": _season(
         "/leagues/NBA_{season_end_year}_totals.html",
         table_id="totals_stats",
+        exclude_summary_rows=True,
         row_model=league.LeagueTotalsRow,
         csv_columns=LEAGUE_TOTALS_COLUMN_NAMES,
     ),
     "league_per_100_possessions": _season(
         "/leagues/NBA_{season_end_year}_per_poss.html",
         table_id="per_poss",
+        exclude_summary_rows=True,
         row_model=league.LeaguePer100PossessionsRow,
         csv_columns=LEAGUE_PER_100_POSSESSIONS_COLUMN_NAMES,
     ),
     "league_shooting": _season(
         "/leagues/NBA_{season_end_year}_shooting.html",
         table_id="shooting",
+        exclude_summary_rows=True,
         row_model=league.LeagueShootingRow,
         csv_columns=LEAGUE_SHOOTING_COLUMN_NAMES,
     ),
     "league_play_by_play": _season(
         "/leagues/NBA_{season_end_year}_play-by-play.html",
         table_id="pbp_stats",
+        exclude_summary_rows=True,
         row_model=league.LeaguePlayByPlayRow,
         csv_columns=LEAGUE_PLAY_BY_PLAY_COLUMN_NAMES,
     ),
@@ -294,6 +303,7 @@ ENDPOINTS: dict[str, TableEndpoint] = {
         "/leagues/NBA_{season_end_year}_per_game.html",
         table_id="per_game_stats_post",
         commented_table_id="per_game_stats_post",
+        exclude_summary_rows=True,
         row_model=playoffs.PlayoffPerGameRow,
         csv_columns=PLAYOFF_PER_GAME_COLUMN_NAMES,
     ),
@@ -301,13 +311,13 @@ ENDPOINTS: dict[str, TableEndpoint] = {
         "/leagues/NBA_{season_end_year}_totals.html",
         table_id="totals_stats_post",
         commented_table_id="totals_stats_post",
+        exclude_summary_rows=True,
         row_model=playoffs.PlayoffTotalsRow,
         csv_columns=PLAYOFF_TOTALS_COLUMN_NAMES,
     ),
     "playoff_bracket": _season(
         "/playoffs/NBA_{season_end_year}.html",
-        table_id="all_playoffs",
-        use_header_fallback=True,
+        custom=True,
         row_model=playoffs.PlayoffBracketRow,
         csv_columns=PLAYOFF_BRACKET_COLUMN_NAMES,
     ),

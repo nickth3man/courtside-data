@@ -6,16 +6,16 @@
 
 | Metric | Value |
 |---|---|
-| served endpoints | 344 |
+| served endpoints | 343 |
 | corpus dirs | 147 |
 | unserved families | 0 |
 | unserved families trivial | 0 |
 | unserved families bespoke | 0 |
-| endpoints with dropped columns | 11 |
+| endpoints with dropped columns | 10 |
 | endpoints with dropped columns actionable | 0 |
-| total dropped columns | 259 |
-| page groups with orphan tables | 1 |
-| total orphan tables | 1 |
+| total dropped columns | 359 |
+| page groups with orphan tables | 2 |
+| total orphan tables | 2 |
 | disallowed or off domain families | 18 |
 
 ## §A — Unserved page families (downloaded, no endpoint)
@@ -24,7 +24,7 @@
 
 ## §B — Dropped columns on served endpoints
 
-11 served endpoints have `data-stat` columns present in the HTML but absent from their contract (`csv_columns ∪ row_model aliases`); the runtime discards them via `extra="ignore"`. Computed by `audit_table_coverage.py` (its MISSING set).
+10 served endpoints have `data-stat` columns present in the HTML but absent from their contract (`csv_columns ∪ row_model aliases`); the runtime discards them via `extra="ignore"`. Computed by `audit_table_coverage.py` (its MISSING set).
 
 **0 are actionable.** Endpoints tagged `custom` (the audit scans every table on their multi-table page, so most of these keys belong to tables the endpoint never parses), `header_fallback`, `transaction_list`, or `intentional_subset` are advisory — their wider key set is by design. A `0` actionable count means the declarative endpoints' column contracts are already complete for the corpus; the real coverage gap lives in §A (whole families) and §C (orphan tables).
 
@@ -33,8 +33,7 @@
 | `attendance` _(intentional_subset)_ | 23 | `age`, `def_rtg`, `drb_pct`, `efg_pct`, `fg3a_per_fga_pct`, `ft_rate`, `fta_per_fga_pct`, `losses`, `losses_pyth`, `mov`, `net_rtg`, `off_rtg`… |
 | `play_by_play` _(custom)_ | 25 | `Atlanta`, `Charlotte`, `Denver`, `Golden State`, `Milwaukee`, `New Jersey`, `New York`, `Oklahoma City`, `Orlando`, `Portland`, `Sacramento`, `San Antonio`… |
 | `player_box_scores` _(custom)_ | 1 | `trb` |
-| `players_advanced_season_totals` _(custom)_ | 2 | `awards`, `games_started` |
-| `players_season_totals` _(custom)_ | 10 | `awards`, `efg_pct`, `fg2`, `fg2_pct`, `fg2a`, `fg3_pct`, `fg_pct`, `ft_pct`, `tpl_dbl`, `trb` |
+| `playoff_bracket` _(custom)_ | 112 | `age`, `ast`, `astd`, `avg_dist`, `blk`, `def_rtg`, `drb`, `drb_pct`, `dunks`, `efg_pct`, `ff_def`, `ff_off`… |
 | `playoff_player_box_scores` _(custom)_ | 8 | `efg_pct`, `fg2`, `fg2_pct`, `fg2a`, `is_starter`, `player_game_num_career`, `team_game_num_season`, `trb` |
 | `regular_season_player_box_scores` _(custom)_ | 8 | `efg_pct`, `fg2`, `fg2_pct`, `fg2a`, `is_starter`, `player_game_num_career`, `team_game_num_season`, `trb` |
 | `season_schedule` _(custom)_ | 8 | `arena_name`, `attendance`, `box_score_text`, `date_game`, `game_duration`, `game_remarks`, `game_start_time`, `overtimes` |
@@ -44,13 +43,19 @@
 
 ## §C — Orphan tables on already-downloaded pages
 
-1 `<table id>`s appear on pages we already download for a served endpoint but are declared by **no** endpoint (1 page templates affected). Grouped by page. **Caveat:** an orphan may still be reachable through a bespoke `custom=True` parser that does not declare its table id — verify before treating it as a hard gap.
+2 `<table id>`s appear on pages we already download for a served endpoint but are declared by **no** endpoint (2 page templates affected). Grouped by page. **Caveat:** an orphan may still be reachable through a bespoke `custom=True` parser that does not declare its table id — verify before treating it as a hard gap.
 
 ### `/leagues/NBA_{season_end_year}_play-by-play.html`
 
 - Served via: `league_play_by_play`
 - Claimed tables: `pbp_stats`
 - **Orphan tables (1):** `pbp_stats_post`
+
+### `/playoffs/NBA_{season_end_year}.html`
+
+- Served via: `playoff_bracket`
+- Claimed tables: `advanced-team`, `per_game-opponent`, `per_game-team`, `per_poss-opponent`, `per_poss-team`, `shooting-opponent`, `shooting-team`, `totals-opponent`, `totals-team`
+- **Orphan tables (1):** `all_playoffs`
 
 ## §D — Disallowed / off-domain families (no fixtures)
 

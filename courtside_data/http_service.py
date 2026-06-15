@@ -40,7 +40,7 @@ from courtside_data.data import (
 )
 from courtside_data.debug import current_debug_trace
 from courtside_data.endpoints import ENDPOINTS, TableEndpoint
-from courtside_data.errors import InvalidDate, InvalidPlayerAndSeason, RateLimitJailed
+from courtside_data.errors import InvalidDate, InvalidPlayerAndSeason, MissingPlayerSlug, RateLimitJailed
 from courtside_data.tables import GenericTable, extract_commented_table, parse_transaction_list
 
 logger = logging.getLogger(__name__)
@@ -509,6 +509,7 @@ class HTTPService:
                 commented_table_id=endpoint.commented_table_id,
                 transaction_list_fallback=endpoint.transaction_list_fallback,
                 use_header_fallback=endpoint.use_header_fallback,
+                exclude_summary_rows=endpoint.exclude_summary_rows,
             )
         selector = self._get_selector(url=url)
 
@@ -574,7 +575,11 @@ class HTTPService:
                 trace.record("table_resolution", "no_table_found", returned_row_count=0)
             return []
 
-        table = GenericTable(table_selector, use_header_fallback=endpoint.use_header_fallback)
+        table = GenericTable(
+            table_selector,
+            use_header_fallback=endpoint.use_header_fallback,
+            exclude_summary_rows=endpoint.exclude_summary_rows,
+        )
         rows = [row.to_dict() for row in table.rows]
         if trace is not None:
             raw_table_html = table_selector.get() or ""
@@ -654,6 +659,13 @@ class HTTPService:
         return metadata.get(stat_name, {}).get("data-append-csv", "")
 
     @staticmethod
+    def _require_slug(endpoint_name: str, row: dict[str, Any], row_index: int) -> None:
+        if row.get("slug"):
+            return
+        player = row.get("name_display") or row.get("player") or row.get("name") or "<unknown>"
+        raise MissingPlayerSlug(endpoint_name=endpoint_name, row_index=row_index, player=str(player))
+
+    @staticmethod
     def _is_combined_team(row: dict[str, Any]) -> bool:
         return str(row.get("team_name_abbr", "")).endswith("TM")
 
@@ -729,12 +741,14 @@ class HTTPService:
             return []
 
         rows: list[dict[str, Any]] = []
-        for row, metadata in self._raw_rows_from_table(table_selector):
+        endpoint_name = "players_advanced_season_totals" if table_id == "advanced" else "players_season_totals"
+        for row_index, (row, metadata) in enumerate(self._raw_rows_from_table(table_selector)):
             if not row.get("name_display") or not row.get("team_name_abbr"):
                 continue
             if not include_combined and self._is_combined_team(row):
                 continue
             row["slug"] = self._slug_from_metadata(metadata, "name_display")
+            self._require_slug(endpoint_name, row, row_index)
             if table_id == "advanced":
                 row["is_combined_totals"] = self._is_combined_team(row)
             rows.append(row)
@@ -837,8 +851,9 @@ class HTTPService:
             if table is None:
                 raise InvalidDate(day=day, month=month, year=year)
             rows = []
-            for row, metadata in self._raw_rows_from_table(table):
+            for row_index, (row, metadata) in enumerate(self._raw_rows_from_table(table)):
                 row["slug"] = self._slug_from_metadata(metadata, "player")
+                self._require_slug("player_box_scores", row, row_index)
                 rows.append(row)
             if not rows:
                 raise InvalidDate(day=day, month=month, year=year)
@@ -927,6 +942,38 @@ class HTTPService:
                     "away_score": scores,
                     "home_score": scores,
                     "description": away_description if is_away_play else home_description,
+                }
+            )
+        return rows
+
+    def playoff_bracket(self, season_end_year: int) -> list[dict[str, Any]]:
+        url = f"{HTTPService.BASE_URL}/playoffs/NBA_{season_end_year}.html"
+
+        selector = self._get_selector(url=url)
+        table = self._find_table(selector, "all_playoffs")
+        if table is None:
+            return []
+
+        rows: list[dict[str, Any]] = []
+        for row in table.xpath("./tbody/tr"):
+            classes = row.attrib.get("class", "").split()
+            if "thead" in classes or "toggleable" in classes or row.css("table"):
+                continue
+            cells = row.xpath("./td|./th")
+            if len(cells) != 3:
+                continue
+
+            series = self._cell_text(cells[0])
+            matchup = re.sub(r"\s+", " ", self._cell_text(cells[1])).strip()
+            if not series or not matchup:
+                continue
+
+            team, separator, result = matchup.partition(" over ")
+            rows.append(
+                {
+                    "series": series,
+                    "team": team.strip(),
+                    "result": f"over {result.strip()}" if separator else matchup,
                 }
             )
         return rows

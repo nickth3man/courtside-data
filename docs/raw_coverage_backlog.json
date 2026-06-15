@@ -325,23 +325,6 @@
   "unserved_families": [
     {
       "bespoke": false,
-      "category": "",
-      "description": "",
-      "discovered_table_ids": [
-        "pbp_stats",
-        "pbp_stats_post"
-      ],
-      "family": "league_play_by_play",
-      "html_files": 2,
-      "in_csv": false,
-      "parser_requirements": "",
-      "resembles_endpoint": "",
-      "robots_status": "",
-      "status_200_files": 2,
-      "tier": ""
-    },
-    {
-      "bespoke": false,
       "category": "All-Star",
       "description": "Career All-Star stat leaders.",
       "discovered_table_ids": [],

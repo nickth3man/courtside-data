@@ -60,6 +60,20 @@ class RateLimitJailed(CourtsideDataError):
         super().__init__(message)
 
 
+class MissingPlayerSlug(CourtsideDataError):
+    """Raised when a custom player parser fails to inject the required player slug."""
+
+    def __init__(self, endpoint_name: str, row_index: int, player: str) -> None:
+        self.endpoint_name = endpoint_name
+        self.row_index = row_index
+        self.player = player
+        message = (
+            f"Missing player slug while parsing endpoint '{endpoint_name}' "
+            f"at row {row_index} for player {player!r}"
+        )
+        super().__init__(message)
+
+
 def _extract_missing_field(pydantic_errors: list[dict]) -> str:
     """Return the location of the first missing field/alias, or 'unknown'."""
     for error in pydantic_errors:

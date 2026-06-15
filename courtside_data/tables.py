@@ -57,11 +57,22 @@ class GenericTable:
     instances for each data row.
     """
 
-    def __init__(self, table_selector: Selector, use_header_fallback: bool = False) -> None:
+    def __init__(
+        self,
+        table_selector: Selector,
+        use_header_fallback: bool = False,
+        exclude_summary_rows: bool = False,
+    ) -> None:
         self.rows: list[GenericTableRow] = []
-        row_selectors = table_selector.css("tbody tr:not(.thead)")
+        row_filter = "tbody tr:not(.thead)"
+        if exclude_summary_rows:
+            row_filter += ":not(.norank)"
+        row_selectors = table_selector.css(row_filter)
         if not row_selectors:
-            row_selectors = table_selector.css("tr:not(.thead)")
+            row_filter = "tr:not(.thead)"
+            if exclude_summary_rows:
+                row_filter += ":not(.norank)"
+            row_selectors = table_selector.css(row_filter)
         fallback_headers = self._fallback_headers(table_selector) if use_header_fallback else None
 
         for row in row_selectors:
@@ -137,7 +148,12 @@ def parse_transaction_list(selector: Selector) -> list[dict[str, Any]]:
     transactions = []
     for day in selector.css("ul.page_index > li"):
         date = _clean_text(day.xpath("./span//text()").getall())
-        for transaction in day.xpath("./p[normalize-space()]"):
+        transaction_nodes = day.xpath(
+            './p[contains(concat(" ", normalize-space(@class), " "), " transaction ")]'
+        )
+        if not transaction_nodes:
+            transaction_nodes = day.xpath("./p[normalize-space()]")
+        for transaction in transaction_nodes:
             linked_resources = []
             from_team_abbreviations = []
             to_team_abbreviations = []

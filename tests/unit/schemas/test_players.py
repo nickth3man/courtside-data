@@ -594,18 +594,28 @@ def _season_totals_row(**overrides: object) -> dict[str, object]:
         "mp": "2506",
         "fg": "696",
         "fga": "1392",
+        "fg_pct": ".500",
         "fg3": "149",
         "fg3a": "362",
+        "fg3_pct": ".412",
+        "fg2": "547",
+        "fg2a": "1030",
+        "fg2_pct": ".531",
+        "efg_pct": ".554",
         "ft": "241",
         "fta": "320",
+        "ft_pct": ".753",
         "orb": "57",
         "drb": "391",
+        "trb": "448",
         "ast": "589",
         "stl": "92",
         "blk": "36",
         "tov": "206",
         "pf": "78",
         "pts": "1782",
+        "tpl_dbl": "5",
+        "awards": "All-NBA",
     }
     base.update(overrides)
     return base
@@ -623,7 +633,15 @@ class TestPlayerSeasonTotalsRow:
         assert row.games_started == 71
         assert row.minutes_played == 2506
         assert row.made_field_goals == 696
+        assert row.field_goal_percentage == pytest.approx(0.500)
+        assert row.three_point_field_goal_percentage == pytest.approx(0.412)
+        assert row.made_two_point_field_goals == 547
+        assert row.effective_field_goal_percentage == pytest.approx(0.554)
+        assert row.free_throw_percentage == pytest.approx(0.753)
+        assert row.total_rebounds == 448
         assert row.points == 1782
+        assert row.triple_doubles == 5
+        assert row.awards == "All-NBA"
         dumped = row.model_dump()
         # Stable Python attribute names are used as dump keys (no aliases).
         assert set(dumped.keys()) == set(PLAYER_SEASON_TOTALS_COLUMN_NAMES)
@@ -640,18 +658,28 @@ class TestPlayerSeasonTotalsRow:
                 mp="",
                 fg="0",
                 fga="",
+                fg_pct="",
                 fg3="",
                 fg3a="",
+                fg3_pct="",
+                fg2="",
+                fg2a="",
+                fg2_pct="",
+                efg_pct="",
                 ft="",
                 fta="",
+                ft_pct="",
                 orb="",
                 drb="",
+                trb="",
                 ast="",
                 stl="",
                 blk="",
                 tov="",
                 pf="",
                 pts="0",
+                tpl_dbl="",
+                awards="",
             )
         )
         assert row.age is None
@@ -660,7 +688,10 @@ class TestPlayerSeasonTotalsRow:
         assert row.points == 0
         assert row.made_field_goals == 0
         assert row.attempted_field_goals is None
+        assert row.field_goal_percentage is None
+        assert row.total_rebounds is None
         assert row.assists is None
+        assert row.awards is None
 
     def test_alias_acceptance(self):
         # Pass the row by its raw ``data-stat`` keys (the validation_alias
@@ -701,6 +732,7 @@ def _advanced_season_totals_row(**overrides: object) -> dict[str, object]:
         "age": "39",
         "team_name_abbr": "LAL",
         "games": "71",
+        "games_started": "71",
         "mp": "2506",
         "per": "25.0",
         "ts_pct": ".620",
@@ -722,6 +754,7 @@ def _advanced_season_totals_row(**overrides: object) -> dict[str, object]:
         "dbpm": "1.5",
         "bpm": "8.3",
         "vorp": "5.7",
+        "awards": "All-NBA",
         "is_combined_totals": "False",
     }
     base.update(overrides)
@@ -737,6 +770,7 @@ class TestPlayerAdvancedSeasonTotalsRow:
         assert row.age == 39
         assert row.team == Team.LOS_ANGELES_LAKERS
         assert row.games_played == 71
+        assert row.games_started == 71
         assert row.minutes_played == 2506
         assert row.player_efficiency_rating == pytest.approx(25.0)
         assert row.true_shooting_percentage == pytest.approx(0.620)
@@ -747,6 +781,7 @@ class TestPlayerAdvancedSeasonTotalsRow:
         assert row.win_shares == pytest.approx(10.3)
         assert row.box_plus_minus == pytest.approx(8.3)
         assert row.value_over_replacement_player == pytest.approx(5.7)
+        assert row.awards == "All-NBA"
         # ``is_combined_totals`` arrives as the string ``"False"`` and is
         # coerced by Pydantic's bool validator.
         assert row.is_combined_totals is False
@@ -764,16 +799,20 @@ class TestPlayerAdvancedSeasonTotalsRow:
                 "age": "",
                 "team_name_abbr": "LAL",
                 "games": "0",
+                "games_started": "",
                 "mp": "0",
+                "awards": "",
             }
         )
         assert row.age is None
         assert row.positions == []
         assert row.games_played == 0
+        assert row.games_started is None
         assert row.minutes_played == 0
         assert row.player_efficiency_rating is None
         assert row.true_shooting_percentage is None
         assert row.value_over_replacement_player is None
+        assert row.awards is None
         assert row.is_combined_totals is False
 
     def test_alias_acceptance(self):

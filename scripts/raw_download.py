@@ -1654,6 +1654,7 @@ def write_manifest(
     """Write a corpus-level manifest from on-disk sidecars."""
     fixtures: list[dict[str, Any]] = []
     endpoint_counts: dict[str, int] = {}
+    persistent_failures = len(list((output_root / "_failures").glob("*.failed.html")))
 
     for meta_path in sorted(output_root.rglob("*.meta.json")):
         rel_meta = meta_path.relative_to(output_root)
@@ -1662,6 +1663,8 @@ def write_manifest(
         try:
             meta = json.loads(meta_path.read_text(encoding="utf-8"))
         except (OSError, ValueError):
+            continue
+        if meta.get("category") == "negative":
             continue
         fixture_path = rel_meta.with_suffix("").with_suffix("")  # strips .meta.json
         endpoint = fixture_path.parts[0]
@@ -1682,10 +1685,11 @@ def write_manifest(
         "corpus_root": str(output_root),
         "stats": {
             "total_fixtures": len(fixtures),
-            "endpoints_covered": len(endpoint_counts),
+            "endpoint_names_with_fixtures": len(endpoint_counts),
             "fetched": stats.fetched,
             "skipped": stats.skipped,
             "failed": stats.failed,
+            "persistent_failures": persistent_failures,
             "total_bytes": stats.total_bytes,
             "wallclock_seconds": round(stats.wallclock_seconds, 2),
             "effective_rps": round(len(fixtures) / stats.wallclock_seconds, 3) if stats.wallclock_seconds else 0.0,

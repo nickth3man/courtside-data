@@ -166,3 +166,8 @@ def seven_game_playoff_series_outcomes_page() -> str:
         if path.is_file():
             return path.read_text(encoding="utf8")
     pytest.skip("raw corpus missing 7-game-playoff-series-outcomes page; run scripts.raw_download to add it")
+
+
+def playoff_bracket(year: int) -> str:
+    """Playoff bracket page for ``year`` (raw: ``playoff_bracket/<year>.html``)."""
+    return read(f"playoff_bracket/{year}.html")
