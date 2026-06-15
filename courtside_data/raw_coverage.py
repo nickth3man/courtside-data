@@ -56,9 +56,13 @@ def extend_endpoints(endpoints: dict[str, Any], endpoint_cls: type[Any]) -> None
         table_ids = _ordered_table_ids(family, metas)
         if table_ids:
             for index, table_id in enumerate(table_ids):
-                endpoint_name = family_name if index == 0 else _dedupe_name(
-                    endpoints,
-                    f"{family_name}_{_normalize_identifier(table_id)}",
+                endpoint_name = (
+                    family_name
+                    if index == 0
+                    else _dedupe_name(
+                        endpoints,
+                        f"{family_name}_{_normalize_identifier(table_id)}",
+                    )
                 )
                 if endpoint_name in endpoints:
                     continue

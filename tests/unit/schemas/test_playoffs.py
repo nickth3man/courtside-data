@@ -223,9 +223,7 @@ class TestPlayoffBracketRow:
 
 class TestSevenGamePlayoffSeriesOutcomesRow:
     def test_happy_path(self):
-        row = SevenGamePlayoffSeriesOutcomesRow.model_validate(
-            {"record": "3-3", "gameslist": "AAHHAA", "wl": "8-9"}
-        )
+        row = SevenGamePlayoffSeriesOutcomesRow.model_validate({"record": "3-3", "gameslist": "AAHHAA", "wl": "8-9"})
 
         assert row.record == "3-3"
         assert row.gameslist == "AAHHAA"

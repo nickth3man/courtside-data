@@ -24,13 +24,13 @@ import inspect
 from typing import Any
 
 from courtside_data.client._runner import _run_endpoint
-from courtside_data.client.draft import (
+from courtside_data.client.draft import (  # noqa: F401
     career_leaders,
     draft_picks,
     season_awards,
     season_leaders,
 )
-from courtside_data.client.games import (
+from courtside_data.client.games import (  # noqa: F401
     play_by_play,
     player_box_scores,
     players_advanced_season_totals,
@@ -41,7 +41,7 @@ from courtside_data.client.games import (
     season_schedule,
     team_box_scores,
 )
-from courtside_data.client.league import (
+from courtside_data.client.league import (  # noqa: F401
     attendance,
     league_per_36_minutes,
     league_per_100_possessions,
@@ -54,7 +54,7 @@ from courtside_data.client.league import (
     standings,
     standings_by_date,
 )
-from courtside_data.client.players import (
+from courtside_data.client.players import (  # noqa: F401
     player_adjusted_shooting,
     player_all_star,
     player_career_stats,
@@ -67,12 +67,12 @@ from courtside_data.client.players import (
     player_similarity_scores,
     player_splits,
 )
-from courtside_data.client.playoffs import (
+from courtside_data.client.playoffs import (  # noqa: F401
     playoff_bracket,
     playoff_per_game,
     playoff_totals,
 )
-from courtside_data.client.teams import (
+from courtside_data.client.teams import (  # noqa: F401
     franchise_history,
     team_and_opponent,
     team_contracts,
@@ -119,7 +119,9 @@ def _make_dynamic_endpoint(name: str):
                 params[param] = kwargs.pop(param)
             elif param not in params:
                 raise TypeError(f"{name}() missing required argument: {param!r}")
-        options = {option: kwargs.pop(option, False if option in {"raw", "debug"} else None) for option in _OUTPUT_OPTION_NAMES}
+        options = {
+            option: kwargs.pop(option, False if option in {"raw", "debug"} else None) for option in _OUTPUT_OPTION_NAMES
+        }
         if kwargs:
             unexpected = next(iter(kwargs))
             raise TypeError(f"{name}() got an unexpected keyword argument {unexpected!r}")
@@ -127,9 +129,7 @@ def _make_dynamic_endpoint(name: str):
 
     endpoint_func.__name__ = name
     endpoint_func.__doc__ = f"{name.replace('_', ' ').capitalize()}.\n\nURL: {endpoint.path}"
-    parameters = [
-        inspect.Parameter(param, inspect.Parameter.POSITIONAL_OR_KEYWORD) for param in endpoint.params
-    ] + [
+    parameters = [inspect.Parameter(param, inspect.Parameter.POSITIONAL_OR_KEYWORD) for param in endpoint.params] + [
         inspect.Parameter("output_type", inspect.Parameter.POSITIONAL_OR_KEYWORD, default=None),
         inspect.Parameter("output_file_path", inspect.Parameter.POSITIONAL_OR_KEYWORD, default=None),
         inspect.Parameter("output_write_option", inspect.Parameter.POSITIONAL_OR_KEYWORD, default=None),
@@ -137,7 +137,7 @@ def _make_dynamic_endpoint(name: str):
         inspect.Parameter("raw", inspect.Parameter.POSITIONAL_OR_KEYWORD, default=False),
         inspect.Parameter("debug", inspect.Parameter.POSITIONAL_OR_KEYWORD, default=False),
     ]
-    endpoint_func.__signature__ = inspect.Signature(parameters)  # type: ignore[attr-defined]
+    setattr(endpoint_func, "__signature__", inspect.Signature(parameters))  # noqa: B010
     return endpoint_func
 
 
@@ -153,7 +153,7 @@ ENDPOINT_FUNCTION_NAMES: tuple[str, ...] = tuple(ENDPOINTS)
 
 # Imported after the endpoint functions exist: CourtsideClient resolves its
 # methods through this module at call time.
-from courtside_data.client.courtside_client import CourtsideClient  # noqa: E402
+from courtside_data.client.courtside_client import CourtsideClient  # noqa: E402,F401
 
 _EXPLICIT_EXPORTS = [
     "CourtsideClient",

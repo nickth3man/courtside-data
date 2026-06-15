@@ -79,7 +79,6 @@ courtside_data/output/codemap.md
 # Local analysis / sample data
 endpoint_samples.csv
 missing_datapoints.md
-.plans/
 
 # Debug trace logs (debug=True writes one JSON per call; override dir with COURTSIDE_DEBUG_LOG_DIR)
 logs/

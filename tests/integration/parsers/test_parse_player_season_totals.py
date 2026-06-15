@@ -9,10 +9,11 @@ from tests.integration.client import raw_fixtures
 
 
 class BasePlayerSeasonTotalsTestCase(TestCase):
-    _season_end_year = None
+    _season_end_year: int | None = None
 
     @classmethod
     def setUpClass(cls):
+        assert cls._season_end_year is not None
         _html = raw_fixtures.players_season_totals(cls._season_end_year)
         cls._parsed_season_totals = PlayerSeasonTotalsParser(
             position_abbreviation_parser=PositionAbbreviationParser(

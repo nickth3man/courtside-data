@@ -12,7 +12,6 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 
-import requests
 from lxml import html
 
 DEFAULT_OUTPUT_ROOT = Path("staged_fixtures")
@@ -47,7 +46,11 @@ class RefreshResult:
     sha256: str
 
 
-def refresh_fixture(fixture, output_root, get=requests.get, sleep=time.sleep):
+def refresh_fixture(fixture, output_root, get=None, sleep=time.sleep):
+    if get is None:
+        import requests
+
+        get = requests.get
     headers = {"User-Agent": USER_AGENT}
     response = get(url=fixture.url, timeout=DEFAULT_TIMEOUT_SECONDS, headers=headers)
     validate_response(response=response, fixture=fixture)
@@ -264,12 +267,6 @@ _RAW_FIXTURES = {
         path=Path("tests/integration/files/schedule/not-found.html"),
         checks=(),
         allowed_statuses=(404,),
-    ),
-    "season_schedule_upcoming": Fixture(
-        key="season_schedule_upcoming",
-        url="https://www.basketball-reference.com/boxscores/",
-        path=Path("tests/integration/files/schedule/upcoming-games.html"),
-        checks=(),
     ),
     "search_kobe": Fixture(
         key="search_kobe",

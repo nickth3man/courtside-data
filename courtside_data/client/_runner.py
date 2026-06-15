@@ -23,6 +23,7 @@ from typing import Any, cast
 
 import httpx
 from pydantic import ValidationError
+from pydantic_core import InitErrorDetails
 
 from courtside_data.data import OutputType, OutputWriteOption
 from courtside_data.debug import DebugTrace, debug_trace_context
@@ -412,7 +413,7 @@ def _validate_row_model_rows(row_model: Any, raw_rows: list[dict[str, Any]]) -> 
                 enriched["row_index"] = index
                 drift_errors.append(enriched)
     if drift_errors and not values:
-        raise ValidationError.from_exception_data(row_model.__name__, drift_errors)
+        raise ValidationError.from_exception_data(row_model.__name__, cast(list[InitErrorDetails], drift_errors))
     return values
 
 

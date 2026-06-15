@@ -118,11 +118,8 @@ def team_box_score_game(year: int, month: int, day: int, game_id: str) -> str:
 def schedule_page(legacy_path: str) -> str:
     """Resolve a legacy ``files/schedule/<path>`` reference to the raw corpus.
 
-    ``"<year>/<year>.html"`` maps to ``season_schedule/<year>/index.html``;
-    ``"upcoming-games.html"`` maps to the (optional) upcoming-games snapshot.
+    ``"<year>/<year>.html"`` maps to ``season_schedule/<year>/index.html``.
     """
-    if legacy_path.endswith("upcoming-games.html"):
-        return read("season_schedule/upcoming-games.html")
     parts = legacy_path.split("/")
     if len(parts) == 2:
         return read(f"season_schedule/{parts[0]}/index.html")
@@ -168,7 +165,4 @@ def seven_game_playoff_series_outcomes_page() -> str:
         path = RAW_ROOT / endpoint_dir / "7-game-playoff-series-outcomes-22111.html"
         if path.is_file():
             return path.read_text(encoding="utf8")
-    pytest.skip(
-        "raw corpus missing 7-game-playoff-series-outcomes page; "
-        "run scripts.raw_download to add it"
-    )
+    pytest.skip("raw corpus missing 7-game-playoff-series-outcomes page; run scripts.raw_download to add it")

@@ -468,9 +468,7 @@ def md_escape(text: str) -> str:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(
-        description="Smoke-test every courtside-data endpoint against live BBR."
-    )
+    parser = argparse.ArgumentParser(description="Smoke-test every courtside-data endpoint against live BBR.")
     parser.add_argument(
         "--seed",
         type=int,
@@ -493,9 +491,7 @@ def main() -> int:
     if args.param:
         selected_params = set(args.param)
         endpoint_items = [
-            (name, endpoint)
-            for name, endpoint in endpoint_items
-            if selected_params.intersection(endpoint.params)
+            (name, endpoint) for name, endpoint in endpoint_items if selected_params.intersection(endpoint.params)
         ]
     total = len(endpoint_items)
 
@@ -664,9 +660,7 @@ def main() -> int:
             cat_disp = r.get("error_category", "")
             msg = r.get("error_message", "")
             note = (msg[:80] + "…") if len(msg) > 80 else msg
-        md_lines.append(
-            f"| {ep_name} | {status} | {rows_disp} | {time_disp} | {cat_disp} | {md_escape(note)} |"
-        )
+        md_lines.append(f"| {ep_name} | {status} | {rows_disp} | {time_disp} | {cat_disp} | {md_escape(note)} |")
     md_lines.append("")
 
     # Per-endpoint detail
@@ -676,18 +670,14 @@ def main() -> int:
         name = r.get("name", "?")
         md_lines.append(f"### {name}")
         md_lines.append("")
-        md_lines.append(
-            f"- **Params**: `{json.dumps(r.get('params', {}), default=str)}`"
-        )
+        md_lines.append(f"- **Params**: `{json.dumps(r.get('params', {}), default=str)}`")
         md_lines.append(f"- **URL**: `{r.get('url', '')}`")
         md_lines.append(f"- **Status**: {r['status']}")
 
         if r["status"] == "ok":
             md_lines.append(f"- **Duration**: {r.get('duration_s', 0):.3f}s")
             md_lines.append(f"- **Row count**: {r.get('row_count', 0)}")
-            md_lines.append(
-                f"- **Columns**: `{json.dumps(r.get('keys_or_columns', []))}`"
-            )
+            md_lines.append(f"- **Columns**: `{json.dumps(r.get('keys_or_columns', []))}`")
             md_lines.append("")
             md_lines.append("**Sample**:")
             md_lines.append("```json")
