@@ -266,6 +266,9 @@ class TeamTransactionsRow(BRRow):
 
     date: str = Field(validation_alias="date")
     transaction: str = Field(validation_alias="transaction")
+    from_team_abbreviations: list[str] = Field(default_factory=list, validation_alias="from_team_abbreviations")
+    to_team_abbreviations: list[str] = Field(default_factory=list, validation_alias="to_team_abbreviations")
+    linked_resources: list[dict[str, str]] = Field(default_factory=list, validation_alias="linked_resources")
 
 
 register("team_transactions", TeamTransactionsRow)

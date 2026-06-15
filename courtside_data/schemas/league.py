@@ -25,6 +25,7 @@ from courtside_data.schemas._fields import (
     StrOrNone,
     _is_empty,
     _team_field,
+    _team_name_field,
 )
 
 # ---------------------------------------------------------------------------
@@ -48,6 +49,16 @@ def _team_or_aggregate_field_or_none(value: object) -> Team | str | None:
 
 
 TeamOrAggregateFieldOrNone = Annotated[Team | str | None, BeforeValidator(_team_or_aggregate_field_or_none)]
+
+
+def _team_name_or_abbreviation_field(value: object) -> Team:
+    try:
+        return _team_field(value)
+    except ValueError:
+        return _team_name_field(value)
+
+
+TeamNameOrAbbreviationField = Annotated[Team, BeforeValidator(_team_name_or_abbreviation_field)]
 
 
 class LeaguePerGameStats:
@@ -439,7 +450,7 @@ class AttendanceRow(BRRow):
     intentionally not modelled here.
     """
 
-    team: Annotated[Team, BeforeValidator(_team_field)] = Field(validation_alias="team")
+    team: TeamNameOrAbbreviationField = Field(validation_alias="team")
     arena_name: str = Field(validation_alias="arena_name")
     attendance: BRIntOrNone = Field(default=None, validation_alias="attendance")
     attendance_per_game: BRIntOrNone = Field(default=None, validation_alias="attendance_per_g")

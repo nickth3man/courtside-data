@@ -11,9 +11,9 @@
 | unserved families | 0 |
 | unserved families trivial | 0 |
 | unserved families bespoke | 0 |
-| endpoints with dropped columns | 10 |
+| endpoints with dropped columns | 6 |
 | endpoints with dropped columns actionable | 0 |
-| total dropped columns | 359 |
+| total dropped columns | 329 |
 | page groups with orphan tables | 2 |
 | total orphan tables | 2 |
 | disallowed or off domain families | 18 |
@@ -24,7 +24,7 @@
 
 ## §B — Dropped columns on served endpoints
 
-10 served endpoints have `data-stat` columns present in the HTML but absent from their contract (`csv_columns ∪ row_model aliases`); the runtime discards them via `extra="ignore"`. Computed by `audit_table_coverage.py` (its MISSING set).
+6 served endpoints have `data-stat` columns present in the HTML but absent from their contract (`csv_columns ∪ row_model aliases`); the runtime discards them via `extra="ignore"`. Computed by `audit_table_coverage.py` (its MISSING set).
 
 **0 are actionable.** Endpoints tagged `custom` (the audit scans every table on their multi-table page, so most of these keys belong to tables the endpoint never parses), `header_fallback`, `transaction_list`, or `intentional_subset` are advisory — their wider key set is by design. A `0` actionable count means the declarative endpoints' column contracts are already complete for the corpus; the real coverage gap lives in §A (whole families) and §C (orphan tables).
 
@@ -32,14 +32,10 @@
 |---|---|---|
 | `attendance` _(intentional_subset)_ | 23 | `age`, `def_rtg`, `drb_pct`, `efg_pct`, `fg3a_per_fga_pct`, `ft_rate`, `fta_per_fga_pct`, `losses`, `losses_pyth`, `mov`, `net_rtg`, `off_rtg`… |
 | `play_by_play` _(custom)_ | 25 | `Atlanta`, `Charlotte`, `Denver`, `Golden State`, `Milwaukee`, `New Jersey`, `New York`, `Oklahoma City`, `Orlando`, `Portland`, `Sacramento`, `San Antonio`… |
-| `player_box_scores` _(custom)_ | 1 | `trb` |
 | `playoff_bracket` _(custom)_ | 112 | `age`, `ast`, `astd`, `avg_dist`, `blk`, `def_rtg`, `drb`, `drb_pct`, `dunks`, `efg_pct`, `ff_def`, `ff_off`… |
-| `playoff_player_box_scores` _(custom)_ | 8 | `efg_pct`, `fg2`, `fg2_pct`, `fg2a`, `is_starter`, `player_game_num_career`, `team_game_num_season`, `trb` |
-| `regular_season_player_box_scores` _(custom)_ | 8 | `efg_pct`, `fg2`, `fg2_pct`, `fg2a`, `is_starter`, `player_game_num_career`, `team_game_num_season`, `trb` |
-| `season_schedule` _(custom)_ | 8 | `arena_name`, `attendance`, `box_score_text`, `date_game`, `game_duration`, `game_remarks`, `game_start_time`, `overtimes` |
 | `standings` _(custom)_ | 122 | `age`, `arena_name`, `ast`, `astd`, `attendance`, `attendance_per_g`, `avg_dist`, `blk`, `def_rtg`, `drb`, `drb_pct`, `dunks`… |
 | `standings_by_date` _(custom)_ | 16 | `10th`, `11th`, `12th`, `13th`, `14th`, `15th`, `1st`, `2nd`, `3rd`, `4th`, `5th`, `6th`… |
-| `team_box_scores` _(custom)_ | 36 | `1`, `1OT`, `2`, `3`, `4`, `OT`, `T`, `ast_pct`, `blk_pct`, `bpm`, `def_rtg`, `drb_pct`… |
+| `team_box_scores` _(custom)_ | 31 | `1`, `1OT`, `2`, `3`, `4`, `OT`, `T`, `ast_pct`, `blk_pct`, `bpm`, `def_rtg`, `drb_pct`… |
 
 ## §C — Orphan tables on already-downloaded pages
 

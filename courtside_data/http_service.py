@@ -581,6 +581,8 @@ class HTTPService:
             exclude_summary_rows=endpoint.exclude_summary_rows,
         )
         rows = [row.to_dict() for row in table.rows]
+        if endpoint.projection is not None:
+            rows = [{key: row.get(key, "") for key in endpoint.projection} for row in rows]
         if trace is not None:
             raw_table_html = table_selector.get() or ""
             row_class_counts: dict[str, int] = {}

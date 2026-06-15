@@ -228,15 +228,6 @@
         "custom"
       ]
     },
-    "player_box_scores": {
-      "actionable": false,
-      "missing": [
-        "trb"
-      ],
-      "tags": [
-        "custom"
-      ]
-    },
     "playoff_bracket": {
       "actionable": false,
       "missing": [
@@ -352,54 +343,6 @@
         "win_loss_pct",
         "wins",
         "wins_pyth"
-      ],
-      "tags": [
-        "custom"
-      ]
-    },
-    "playoff_player_box_scores": {
-      "actionable": false,
-      "missing": [
-        "efg_pct",
-        "fg2",
-        "fg2_pct",
-        "fg2a",
-        "is_starter",
-        "player_game_num_career",
-        "team_game_num_season",
-        "trb"
-      ],
-      "tags": [
-        "custom"
-      ]
-    },
-    "regular_season_player_box_scores": {
-      "actionable": false,
-      "missing": [
-        "efg_pct",
-        "fg2",
-        "fg2_pct",
-        "fg2a",
-        "is_starter",
-        "player_game_num_career",
-        "team_game_num_season",
-        "trb"
-      ],
-      "tags": [
-        "custom"
-      ]
-    },
-    "season_schedule": {
-      "actionable": false,
-      "missing": [
-        "arena_name",
-        "attendance",
-        "box_score_text",
-        "date_game",
-        "game_duration",
-        "game_remarks",
-        "game_start_time",
-        "overtimes"
       ],
       "tags": [
         "custom"
@@ -574,25 +517,20 @@
         "bpm",
         "def_rtg",
         "drb_pct",
-        "efg_pct",
         "fg3a_per_fga_pct",
         "ft_rate",
         "fta_per_fga_pct",
-        "game_score",
         "gb",
         "losses",
         "off_rtg",
         "opp_pts_per_g",
         "orb_pct",
         "pace",
-        "player",
-        "plus_minus",
         "pts_per_g",
         "reason",
         "stl_pct",
         "team_name",
         "tov_pct",
-        "trb",
         "trb_pct",
         "ts_pct",
         "usg_pct",
@@ -641,11 +579,11 @@
   "summary": {
     "corpus_dirs": 147,
     "disallowed_or_off_domain_families": 18,
-    "endpoints_with_dropped_columns": 10,
+    "endpoints_with_dropped_columns": 6,
     "endpoints_with_dropped_columns_actionable": 0,
     "page_groups_with_orphan_tables": 2,
     "served_endpoints": 343,
-    "total_dropped_columns": 359,
+    "total_dropped_columns": 329,
     "total_orphan_tables": 2,
     "unserved_families": 0,
     "unserved_families_bespoke": 0,

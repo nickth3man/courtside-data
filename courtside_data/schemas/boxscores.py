@@ -24,6 +24,7 @@ from courtside_data.schemas._fields import (
     LocationField,
     OutcomeField,
     SecondsPlayedOrNone,
+    StrOrNone,
     TeamField,
     TeamNameField,
 )
@@ -51,6 +52,7 @@ class _BoxScoreCountingStats:
     attempted_free_throws: BRIntOrNone = Field(default=None, validation_alias="fta")
     offensive_rebounds: BRIntOrNone = Field(default=None, validation_alias="orb")
     defensive_rebounds: BRIntOrNone = Field(default=None, validation_alias="drb")
+    total_rebounds: BRIntOrNone = Field(default=None, validation_alias="trb")
     assists: BRIntOrNone = Field(default=None, validation_alias="ast")
     steals: BRIntOrNone = Field(default=None, validation_alias="stl")
     blocks: BRIntOrNone = Field(default=None, validation_alias="blk")
@@ -78,6 +80,7 @@ class _BoxScoreTeamCountingStats:
     attempted_free_throws: BRIntOrNone = Field(default=None, validation_alias="fta")
     offensive_rebounds: BRIntOrNone = Field(default=None, validation_alias="orb")
     defensive_rebounds: BRIntOrNone = Field(default=None, validation_alias="drb")
+    total_rebounds: BRIntOrNone = Field(default=None, validation_alias="trb")
     assists: BRIntOrNone = Field(default=None, validation_alias="ast")
     steals: BRIntOrNone = Field(default=None, validation_alias="stl")
     blocks: BRIntOrNone = Field(default=None, validation_alias="blk")
@@ -92,6 +95,10 @@ class _BoxScorePctStats:
     field_goal_percentage: BRPercentage = Field(default=None, validation_alias="fg_pct")
     three_point_field_goal_percentage: BRPercentage = Field(default=None, validation_alias="fg3_pct")
     free_throw_percentage: BRPercentage = Field(default=None, validation_alias="ft_pct")
+    made_two_point_field_goals: BRIntOrNone = Field(default=None, validation_alias="fg2")
+    attempted_two_point_field_goals: BRIntOrNone = Field(default=None, validation_alias="fg2a")
+    two_point_field_goal_percentage: BRPercentage = Field(default=None, validation_alias="fg2_pct")
+    effective_field_goal_percentage: BRPercentage = Field(default=None, validation_alias="efg_pct")
 
 
 # ── Per-day leaders (``friv/dailyleaders.cgi``) ──────────────────────────
@@ -133,6 +140,9 @@ class _PlayerSeasonBoxScoreRow(BRRow, _BoxScoreCountingStats, _BoxScorePctStats)
 
     active: bool = Field(validation_alias="active")
     date: BRDate = Field(validation_alias=AliasChoices("date_game", "date"))
+    player_game_number_career: BRIntOrNone = Field(default=None, validation_alias="player_game_num_career")
+    team_game_number_season: BRIntOrNone = Field(default=None, validation_alias="team_game_num_season")
+    is_starter: StrOrNone = Field(default=None, validation_alias="is_starter")
     points_scored: BRIntOrNone = Field(default=None, validation_alias=AliasChoices("pts", "points_scored"))
     team: TeamField = Field(validation_alias=AliasChoices("team_name_abbr", "team_id"))
     location: LocationField = Field(validation_alias="game_location")
@@ -173,6 +183,9 @@ class TeamBoxScoreRow(BRRow, _BoxScoreTeamCountingStats, _BoxScorePctStats):
 
     team: TeamNameField = Field(validation_alias=AliasChoices("team_name_abbr", "team_id"))
     outcome: OutcomeField | None = Field(default=None, validation_alias="outcome")
+    player: StrOrNone = Field(default=None, validation_alias="player")
+    game_score: BRFloatOrNone = Field(default=None, validation_alias="game_score")
+    plus_minus: BRIntOrNone = Field(default=None, validation_alias="plus_minus")
 
 
 register("team_box_scores", TeamBoxScoreRow)

@@ -56,10 +56,18 @@ class SeasonScheduleRow(BRRow):
     """Row from the league season schedule (``table#schedule`` on ``/leagues/NBA_{season_end_year}_games.html``)."""
 
     start_time: BRDatetime = Field(validation_alias="start_time")
+    date_game: StrOrNone = Field(default=None, validation_alias="date_game")
+    game_start_time: StrOrNone = Field(default=None, validation_alias="game_start_time")
     away_team: TeamNameField = Field(validation_alias=AliasChoices("away_team_name", "visitor_team_name"))
     away_team_score: BRIntOrNone = Field(default=None, validation_alias=AliasChoices("away_team_score", "visitor_pts"))
     home_team: TeamNameField = Field(validation_alias=AliasChoices("home_team_name", "home_team"))
     home_team_score: BRIntOrNone = Field(default=None, validation_alias=AliasChoices("home_team_score", "home_pts"))
+    box_score_text: StrOrNone = Field(default=None, validation_alias="box_score_text")
+    overtimes: StrOrNone = Field(default=None, validation_alias="overtimes")
+    attendance: BRIntOrNone = Field(default=None, validation_alias="attendance")
+    game_duration: StrOrNone = Field(default=None, validation_alias="game_duration")
+    arena_name: StrOrNone = Field(default=None, validation_alias="arena_name")
+    game_remarks: StrOrNone = Field(default=None, validation_alias="game_remarks")
 
     @model_validator(mode="before")
     @classmethod
