@@ -72,16 +72,12 @@ packages = ["courtside_data"]
 [tool.pytest.ini_options]
 pythonpath = ["."]
 testpaths = "tests"
-# --timeout=300: backstop so no single test can hang indefinitely; sized above
-# the slowest legitimate live e2e test (season schedule: ~8 requests at 15s spacing)
-#
+# --timeout=300: backstop so no single test can hang indefinitely.
 # pytest-xdist is installed but intentionally NOT enabled by default here.
-# Run the mocked suites in parallel on demand for a ~3x speedup, e.g.
-#   uv run pytest tests/integration -n auto
-# Do NOT add -n to addopts: (1) the CI coverage job runs `coverage run -m pytest`
-# and would not measure xdist worker subprocesses, collapsing coverage; (2) the
-# live tests/e2e suite must stay serial — parallel workers would exceed
-# Basketball-Reference's rate limit and trigger an IP ban.
+# Run the offline suite in parallel on demand, e.g.
+#   uv run pytest tests -n auto
+# Do NOT add -n to addopts: the CI coverage job runs `coverage run -m pytest`
+# and would not measure xdist worker subprocesses, collapsing coverage.
 addopts = ["--disable-socket", "--timeout=300"]
 
 [tool.ruff]

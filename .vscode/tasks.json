@@ -3,17 +3,17 @@
   "tasks": [
     {
       "label": "test",
-      "detail": "Run unit + integration tests via uv",
+      "detail": "Full offline suite (parallel, preferred)",
       "type": "shell",
-      "command": "uv run pytest tests/unit tests/integration -q",
+      "command": "uv run --extra dev pytest tests -n auto -q",
       "group": { "kind": "test", "isDefault": true },
       "problemMatcher": []
     },
     {
-      "label": "test: all",
-      "detail": "Full test tree (e2e skips unless RUN_LIVE_BASKETBALL_REFERENCE_TESTS=1)",
+      "label": "test: serial",
+      "detail": "Full offline suite without xdist workers",
       "type": "shell",
-      "command": "uv run pytest tests -q",
+      "command": "uv run --extra dev pytest tests -q",
       "group": "test",
       "problemMatcher": []
     },
