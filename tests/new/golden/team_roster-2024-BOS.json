@@ -1,0 +1,249 @@
+[
+  {
+    "birth_date": "November 7, 1999",
+    "college": "Nebraska",
+    "flag": "ca CA",
+    "height": "6-8",
+    "number": "45",
+    "player": "Dalano Banton",
+    "positions": [
+      "POINT GUARD"
+    ],
+    "weight": 203,
+    "years_experience": "2"
+  },
+  {
+    "birth_date": "June 20, 1998",
+    "college": "Syracuse",
+    "flag": "ca CA",
+    "height": "6-7",
+    "number": "12",
+    "player": "Oshae Brissett",
+    "positions": [
+      "SMALL FORWARD"
+    ],
+    "weight": 210,
+    "years_experience": "4"
+  },
+  {
+    "birth_date": "October 24, 1996",
+    "college": "California",
+    "flag": "us US",
+    "height": "6-6",
+    "number": "7",
+    "player": "Jaylen Brown",
+    "positions": [
+      "SMALL FORWARD"
+    ],
+    "weight": 223,
+    "years_experience": "7"
+  },
+  {
+    "birth_date": "October 3, 2002",
+    "college": "Alabama",
+    "flag": "us US",
+    "height": "6-1",
+    "number": "20",
+    "player": "JD Davison",
+    "positions": [
+      "SHOOTING GUARD"
+    ],
+    "weight": 195,
+    "years_experience": "1"
+  },
+  {
+    "birth_date": "December 8, 1997",
+    "college": "Marquette , Virginia",
+    "flag": "us US",
+    "height": "6-7",
+    "number": "30",
+    "player": "Sam Hauser",
+    "positions": [
+      "SMALL FORWARD"
+    ],
+    "weight": 217,
+    "years_experience": "2"
+  },
+  {
+    "birth_date": "June 12, 1990",
+    "college": "UCLA",
+    "flag": "us US",
+    "height": "6-4",
+    "number": "4",
+    "player": "Jrue Holiday",
+    "positions": [
+      "POINT GUARD"
+    ],
+    "weight": 220,
+    "years_experience": "14"
+  },
+  {
+    "birth_date": "June 3, 1986",
+    "college": "Florida",
+    "flag": "do DO",
+    "height": "6-8",
+    "number": "42",
+    "player": "Al Horford",
+    "positions": [
+      "CENTER"
+    ],
+    "weight": 240,
+    "years_experience": "16"
+  },
+  {
+    "birth_date": "July 15, 1995",
+    "college": "Vanderbilt",
+    "flag": "us US",
+    "height": "7-1",
+    "number": "40",
+    "player": "Luke Kornet",
+    "positions": [
+      "CENTER"
+    ],
+    "weight": 250,
+    "years_experience": "6"
+  },
+  {
+    "birth_date": "June 10, 1997",
+    "college": "Kansas",
+    "flag": "ua UA",
+    "height": "6-7",
+    "number": "50",
+    "player": "Svi Mykhailiuk",
+    "positions": [
+      "SMALL FORWARD"
+    ],
+    "weight": 205,
+    "years_experience": "5"
+  },
+  {
+    "birth_date": "November 9, 1999",
+    "college": "Rice University , USC",
+    "flag": "us US",
+    "height": "6-8",
+    "number": "13",
+    "player": "Drew Peterson",
+    "positions": [
+      "POWER FORWARD"
+    ],
+    "weight": 205,
+    "years_experience": "R"
+  },
+  {
+    "birth_date": "August 2, 1995",
+    "college": "",
+    "flag": "lv LV",
+    "height": "7-2",
+    "number": "8",
+    "player": "Kristaps Porzi\u0146\u0123is",
+    "positions": [
+      "CENTER"
+    ],
+    "weight": 240,
+    "years_experience": "7"
+  },
+  {
+    "birth_date": "January 28, 1998",
+    "college": "Oregon",
+    "flag": "us US",
+    "height": "6-1",
+    "number": "11",
+    "player": "Payton Pritchard",
+    "positions": [
+      "POINT GUARD"
+    ],
+    "weight": 195,
+    "years_experience": "3"
+  },
+  {
+    "birth_date": "July 13, 1999",
+    "college": "Utah State University",
+    "flag": "pt PT",
+    "height": "7-0",
+    "number": "88",
+    "player": "Neemias Queta",
+    "positions": [
+      "CENTER"
+    ],
+    "weight": 248,
+    "years_experience": "2"
+  },
+  {
+    "birth_date": "September 25, 2002",
+    "college": "Tennessee",
+    "flag": "us US",
+    "height": "6-4",
+    "number": "44",
+    "player": "Jaden Springer",
+    "positions": [
+      "SHOOTING GUARD"
+    ],
+    "weight": 202,
+    "years_experience": "2"
+  },
+  {
+    "birth_date": "July 9, 1997",
+    "college": "Penn State",
+    "flag": "us US",
+    "height": "6-7",
+    "number": "77",
+    "player": "Lamar Stevens",
+    "positions": [
+      "POWER FORWARD"
+    ],
+    "weight": 230,
+    "years_experience": "3"
+  },
+  {
+    "birth_date": "March 3, 1998",
+    "college": "Duke",
+    "flag": "us US",
+    "height": "6-8",
+    "number": "0",
+    "player": "Jayson Tatum",
+    "positions": [
+      "POWER FORWARD"
+    ],
+    "weight": 210,
+    "years_experience": "6"
+  },
+  {
+    "birth_date": "January 12, 1999",
+    "college": "Michigan State",
+    "flag": "us US",
+    "height": "6-8",
+    "number": "26",
+    "player": "Xavier Tillman Sr.",
+    "positions": [
+      "POWER FORWARD"
+    ],
+    "weight": 245,
+    "years_experience": "3"
+  },
+  {
+    "birth_date": "March 3, 2004",
+    "college": "Arkansas",
+    "flag": "us US",
+    "height": "6-6",
+    "number": "27",
+    "player": "Jordan Walsh",
+    "positions": [
+      "SMALL FORWARD"
+    ],
+    "weight": 205,
+    "years_experience": "R"
+  },
+  {
+    "birth_date": "July 2, 1994",
+    "college": "Colorado-Colorado Springs , Colorado",
+    "flag": "us US",
+    "height": "6-4",
+    "number": "9",
+    "player": "Derrick White",
+    "positions": [
+      "SHOOTING GUARD"
+    ],
+    "weight": 190,
+    "years_experience": "6"
+  }
+]

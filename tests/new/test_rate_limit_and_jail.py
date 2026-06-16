@@ -25,9 +25,8 @@ Coverage:
 6. **Recovery** — once the monotonic clock advances past ``_jailed_until``,
    the next ``_apply_rate_limiting()`` call succeeds.
 
-No transport, no manifest, no conftest dependency. The autouse
-``stamina.set_testing`` fixture and a function-scoped autouse fixture that
-resets the HTTPService ClassVars keep the tests fully isolated and hermetic.
+No transport and no manifest. Shared autouse fixtures live in
+:mod:`tests.new.conftest`.
 """
 
 from __future__ import annotations
@@ -36,7 +35,6 @@ import os
 
 import httpx
 import pytest
-import stamina
 
 from courtside_data.errors import RateLimitJailed
 from courtside_data.http_service import (
@@ -44,35 +42,6 @@ from courtside_data.http_service import (
     _jail_state_path,
     _persist_jail,
 )
-
-# ─── Autouse fixtures (self-contained; do not depend on tests/new/conftest.py) ───
-
-
-@pytest.fixture(autouse=True, scope="module")
-def _enable_stamina_testing():
-    """Run stamina in test mode for the whole module (no real backoff sleeps).
-
-    Idempotent — stacking with the future session-scoped conftest fixture is safe.
-    """
-    stamina.set_testing(True, attempts=3)
-    yield
-    stamina.set_testing(False)
-
-
-@pytest.fixture(autouse=True)
-def _reset_http_service_classvars():
-    """Critical isolation guard: clear the ClassVars mutated by rate-limit code paths.
-
-    ClassVar leakage between tests is the #1 risk in the retry/jail test plan;
-    the session-scoped rate-limit env var (``BASKETBALL_REF_RATE_LIMIT_INTERVAL=0``)
-    set by the parent conftest does not reset the module-level time-tracking
-    state. Resetting after each test keeps tests fully independent.
-    """
-    yield
-    HTTPService._last_request_time = float("-inf")
-    HTTPService._jailed_until = 0.0
-    HTTPService._jail_state_loaded = False
-
 
 # ─── Helpers ─────────────────────────────────────────────────────────────────
 

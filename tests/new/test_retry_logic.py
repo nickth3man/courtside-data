@@ -7,12 +7,9 @@ These tests cover two private functions:
   a given exception should be retried, how long to wait, or whether the
   session is considered "jailed" and the caller should bail out.
 
-They are pure-function tests, so they need no HTTPService, no transport, no
-manifest, no conftest. Each file is self-contained: an autouse
-``stamina.set_testing`` fixture plus a function-scoped autouse fixture that
-resets the HTTPService ClassVars (``_last_request_time``, ``_jailed_until``,
-``_jail_state_loaded``) after each test so leakage between tests cannot
-poison the rate-limit state for neighbouring modules.
+They are pure-function tests, so they need no HTTPService, no transport, and
+no manifest. Shared autouse fixtures (stamina testing mode and ClassVar
+reset) live in :mod:`tests.new.conftest`.
 """
 
 from __future__ import annotations
@@ -21,44 +18,13 @@ from datetime import UTC, datetime, timedelta
 
 import httpx
 import pytest
-import stamina
 
 from courtside_data.http_service import (
     _JAIL_THRESHOLD_SECONDS,
     _MAX_RETRY_AFTER_WAIT,
-    HTTPService,
     _parse_retry_after,
     _should_retry,
 )
-
-# ─── Autouse fixtures (self-contained; do not depend on tests/new/conftest.py) ───
-
-
-@pytest.fixture(autouse=True, scope="module")
-def _enable_stamina_testing():
-    """Run stamina in test mode for the whole module (no real backoff sleeps).
-
-    Idempotent — stacking with the future session-scoped conftest fixture is safe.
-    """
-    stamina.set_testing(True, attempts=3)
-    yield
-    stamina.set_testing(False)
-
-
-@pytest.fixture(autouse=True)
-def _reset_http_service_classvars():
-    """Critical isolation guard: clear the ClassVars mutated by rate-limit code paths.
-
-    ClassVar leakage between tests is the #1 risk in the retry/jail test plan;
-    the session-scoped rate-limit env var (``BASKETBALL_REF_RATE_LIMIT_INTERVAL=0``)
-    set by the parent conftest does not reset the module-level time-tracking
-    state. Resetting after each test keeps tests fully independent.
-    """
-    yield
-    HTTPService._last_request_time = float("-inf")
-    HTTPService._jailed_until = 0.0
-    HTTPService._jail_state_loaded = False
-
 
 # ─── Helpers ─────────────────────────────────────────────────────────────────
 
