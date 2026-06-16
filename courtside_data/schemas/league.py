@@ -496,6 +496,29 @@ class SeasonAwardsRow(BRRow):
 register("season_awards", SeasonAwardsRow)
 
 
+class SeasonAwardsVotingRow(SeasonAwardsRow):
+    """Row from a season award voting table (``/awards/awards_{year}.html``)."""
+
+    wins: BRIntOrNone = Field(default=None, validation_alias="wins")
+    losses: BRIntOrNone = Field(default=None, validation_alias="losses")
+    win_loss_pct: BRPercentage = Field(default=None, validation_alias="win_loss_pct")
+    coach: StrOrNone = Field(default=None, validation_alias="coach")
+    tm_id: StrOrNone = Field(default=None, validation_alias="tm_id")
+    pos: PositionsField = Field(default_factory=list, validation_alias="pos")
+    first_team_votes: BRIntOrNone = Field(default=None, validation_alias="first_team_votes")
+    second_team_votes: BRIntOrNone = Field(default=None, validation_alias="second_team_votes")
+    third_team_votes: BRIntOrNone = Field(default=None, validation_alias="third_team_votes")
+    all_nba_team: StrOrNone = Field(default=None, validation_alias="all_nba_team")
+    all_defense_team: StrOrNone = Field(default=None, validation_alias="all_defense_team")
+    all_rookie_team: StrOrNone = Field(default=None, validation_alias="all_rookie_team")
+    dws: BRFloatOrNone = Field(default=None, validation_alias="dws")
+    dbpm: BRFloatOrNone = Field(default=None, validation_alias="dbpm")
+    def_rtg: BRFloatOrNone = Field(default=None, validation_alias="def_rtg")
+
+
+register("season_awards_voting", SeasonAwardsVotingRow)
+
+
 class SeasonLeadersRow(BRRow):
     """Row from the per-season statistical leaders index (``/leaders/per_season.html``).
 

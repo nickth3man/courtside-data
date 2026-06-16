@@ -282,7 +282,25 @@ ROOKIE_STATS_COLUMN_NAMES = [
     "blk_per_g",
 ]
 
-STANDINGS_BY_DATE_COLUMN_NAMES = ["team", "wins", "losses", "win_loss_pct", "gb", "pts_per_g", "opp_pts_per_g", "srs"]
+STANDINGS_BY_DATE_COLUMN_NAMES = [
+    "conference",
+    "date",
+    "first",
+    "second",
+    "third",
+    "fourth",
+    "fifth",
+    "sixth",
+    "seventh",
+    "eighth",
+    "ninth",
+    "tenth",
+    "eleventh",
+    "twelfth",
+    "thirteenth",
+    "fourteenth",
+    "fifteenth",
+]
 
 ATTENDANCE_COLUMN_NAMES = [
     "team",
@@ -511,6 +529,44 @@ SEASON_AWARDS_COLUMN_NAMES = [
     "ft_pct",
     "ws",
     "ws_per_48",
+]
+
+SEASON_AWARDS_VOTING_COLUMN_NAMES = [
+    "rank",
+    "player",
+    "age",
+    "team_id",
+    "votes_first",
+    "points_won",
+    "points_max",
+    "award_share",
+    "g",
+    "mp_per_g",
+    "pts_per_g",
+    "trb_per_g",
+    "ast_per_g",
+    "stl_per_g",
+    "blk_per_g",
+    "fg_pct",
+    "fg3_pct",
+    "ft_pct",
+    "ws",
+    "ws_per_48",
+    "wins",
+    "losses",
+    "win_loss_pct",
+    "coach",
+    "tm_id",
+    "pos",
+    "first_team_votes",
+    "second_team_votes",
+    "third_team_votes",
+    "all_nba_team",
+    "all_defense_team",
+    "all_rookie_team",
+    "dws",
+    "dbpm",
+    "def_rtg",
 ]
 
 PLAYER_CAREER_STATS_COLUMN_NAMES = [

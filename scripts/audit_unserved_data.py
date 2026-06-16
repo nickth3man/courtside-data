@@ -39,6 +39,7 @@ from __future__ import annotations
 import argparse
 import csv
 import json
+import re
 import sys
 from collections import defaultdict
 from dataclasses import dataclass, field
@@ -113,6 +114,12 @@ def _is_bespoke(parser_requirements: str) -> bool:
     return any(marker in text for marker in _BESPOKE_MARKERS)
 
 
+def _normalize_table_id(value: str) -> str:
+    """Normalize known corpus/report table-id spelling drift."""
+
+    return re.sub(r"(-man_)_p$", r"\1p", value)
+
+
 # ── Corpus helpers ───────────────────────────────────────────────────────────
 def list_corpus_dirs(corpus_root: Path) -> list[str]:
     """Endpoint/page-family directory names that hold fixtures (top level)."""
@@ -136,13 +143,13 @@ def _family_table_ids(corpus_root: Path, family: str) -> tuple[list[str], int, i
             ok += 1
         sidecar_ids = sidecar.get("discovered_table_ids") or []
         if sidecar_ids:
-            ids.update(tid for tid in sidecar_ids if tid)
+            ids.update(_normalize_table_id(tid) for tid in sidecar_ids if tid)
             continue
         try:
             html_text = html_path.read_text(encoding="utf-8", errors="replace")
         except OSError:
             continue
-        ids.update(ata._discover_table_ids_from_html(html_text))
+        ids.update(_normalize_table_id(tid) for tid in ata._discover_table_ids_from_html(html_text))
     return sorted(ids), len(fixtures), ok
 
 
@@ -158,14 +165,14 @@ def build_claimed_by_path(corpus_root: Path) -> dict[str, set[str]]:
         # Static (non-templated) declared ids.
         for tid in (ep.table_id, ep.commented_table_id, *ep.fallback_table_ids):
             if tid and "{" not in tid:
-                bucket.add(tid)
-        bucket |= CUSTOM_PARSED_TABLE_IDS.get(name, set())
+                bucket.add(_normalize_table_id(tid))
+        bucket |= {_normalize_table_id(tid) for tid in CUSTOM_PARSED_TABLE_IDS.get(name, set())}
         # Templated ids (e.g. franchise_history "{team_abbreviation}") rendered
         # from each downloaded fixture's recorded URL.
         for html_path in ata.discover_fixtures(corpus_root, name):
             sidecar = ata._sidecar_for(html_path)
             params = ata._extract_params_from_url(sidecar.get("final_url") or sidecar.get("url", ""), ep.path)
-            bucket |= ata._declared_table_ids(ep, params)
+            bucket |= {_normalize_table_id(tid) for tid in ata._declared_table_ids(ep, params)}
     return claimed
 
 
@@ -205,7 +212,7 @@ def find_orphan_tables(corpus_root: Path) -> list[OrphanGroup]:
                     html_text = html_path.read_text(encoding="utf-8", errors="replace")
                 except OSError:
                     continue
-                discovered |= ata._discover_table_ids_from_html(html_text)
+                discovered |= {_normalize_table_id(tid) for tid in ata._discover_table_ids_from_html(html_text)}
         orphans = sorted(tid for tid in discovered - claimed if not ata._is_dropped_key(tid))
         if orphans:
             groups.append(

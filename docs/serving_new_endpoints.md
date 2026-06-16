@@ -6,12 +6,11 @@ serves. `scripts/audit_unserved_data.py` quantifies the gap and writes
 companion that shows **how to turn any item in that report into a served
 endpoint**.
 
-The library is built for exactly this. `courtside_data/endpoints.py` says it
-plainly: *"adding a new endpoint is a single registry entry."* The client
-wrapper and the `courtside-data` CLI subcommand are generated from the registry,
-so once the four pieces below exist, the endpoint is fully wired — public API,
-CLI, JSON/CSV/DataFrame output, and the rate-limited HTTP path — with no extra
-code.
+The library is built for exactly this. A new typed endpoint needs an
+`ENDPOINTS` registry entry, a row model, output columns, an explicit client
+wrapper, and tests. The `courtside-data` CLI subcommand is generated from the
+registry; the Python API remains explicit so public functions are searchable,
+typed, and intentional.
 
 ---
 

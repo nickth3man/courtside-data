@@ -647,6 +647,15 @@ class HTTPService:
             )
         return rows
 
+    def season_awards_voting(self, season_end_year: int, award: str) -> list[dict[str, Any]]:
+        """Return one award voting table from ``/awards/awards_{year}.html``."""
+        table_id = award.strip().lower().replace("-", "_")
+        selector = self._get_selector(f"{HTTPService.BASE_URL}/awards/awards_{season_end_year}.html")
+        table = self._find_table(selector, table_id)
+        if table is None:
+            return []
+        return [row for row, _ in self._raw_rows_from_table(table)]
+
     @staticmethod
     def _cell_text(selector: Any) -> str:
         text = (
@@ -1105,7 +1114,10 @@ class HTTPService:
     def standings_by_date(self, season_end_year: int) -> list[dict[str, Any]]:
         endpoint = ENDPOINTS["standings_by_date"]
         standings: list[dict[str, Any]] = []
-        for conference in ["eastern_conference", "western_conference"]:
+        for conference, conference_name in [
+            ("eastern_conference", "Eastern"),
+            ("western_conference", "Western"),
+        ]:
             url = (
                 f"{HTTPService.BASE_URL}{endpoint.path.format(season_end_year=season_end_year, conference=conference)}"
             )
@@ -1113,5 +1125,6 @@ class HTTPService:
             table_selector = selector.css(f"table#{endpoint.table_id}")
             if table_selector:
                 table = GenericTable(table_selector[0])
-                standings.extend(row.to_dict() for row in table.rows)
+                for row in table.rows:
+                    standings.append({"conference": conference_name, **row.to_dict()})
         return standings

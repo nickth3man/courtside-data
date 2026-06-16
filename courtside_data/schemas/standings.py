@@ -14,7 +14,7 @@ from pydantic import Field
 from courtside_data.data import Conference, Division, Team
 from courtside_data.schemas import register
 from courtside_data.schemas._base import BRRow
-from courtside_data.schemas._fields import BRFloatOrNone, BRInt, TeamField
+from courtside_data.schemas._fields import BRInt, ConferenceField, StrOrNone
 
 # ---------------------------------------------------------------------------
 # Standings (custom endpoint — typed values from the legacy parser)
@@ -43,30 +43,37 @@ register("standings", StandingsRow)
 
 
 # ---------------------------------------------------------------------------
-# Standings by date (custom endpoint — raw data-stat-keyed string dicts)
+# Standings by date (custom endpoint — date/rank snapshot rows)
 # ---------------------------------------------------------------------------
 
 
 class StandingsByDateRow(BRRow):
     """Row from a day-by-day standings table.
 
-    The ``standings_by_date`` endpoint is custom but routes through
-    :func:`courtside_data.tables.GenericTable` for extraction, so the row
-    dict is keyed by the raw ``data-stat`` keys the table emits
-    (``team_name_abbr``, ``wins``, ``losses``, ``win_loss_pct``, ``gb``,
-    ``pts_per_g``, ``opp_pts_per_g``, ``srs``). ``team`` uses
-    :data:`TeamField` because the BR value is the team abbreviation
-    (e.g. ``"BOS"``), not the full enum member.
+    Basketball-Reference publishes this as a pivot table: each row is a date,
+    with ordinal rank columns (``1st`` through ``15th``) whose values contain
+    team abbreviation and record snapshots, such as ``"BOS (1-0) T1"``.
+    ``conference`` is injected by the custom fetcher because the endpoint
+    combines the conference-scoped source pages.
     """
 
-    team: TeamField = Field(validation_alias="team_name_abbr")
-    wins: BRInt = Field(validation_alias="wins")
-    losses: BRInt = Field(validation_alias="losses")
-    win_loss_percentage: BRFloatOrNone = Field(default=None, validation_alias="win_loss_pct")
-    games_back: BRFloatOrNone = Field(default=None, validation_alias="gb")
-    points_per_game: BRFloatOrNone = Field(default=None, validation_alias="pts_per_g")
-    opponent_points_per_game: BRFloatOrNone = Field(default=None, validation_alias="opp_pts_per_g")
-    simple_rating_system: BRFloatOrNone = Field(default=None, validation_alias="srs")
+    conference: ConferenceField = Field(validation_alias="conference")
+    date: str = Field(validation_alias="date")
+    first: StrOrNone = Field(default=None, validation_alias="1st")
+    second: StrOrNone = Field(default=None, validation_alias="2nd")
+    third: StrOrNone = Field(default=None, validation_alias="3rd")
+    fourth: StrOrNone = Field(default=None, validation_alias="4th")
+    fifth: StrOrNone = Field(default=None, validation_alias="5th")
+    sixth: StrOrNone = Field(default=None, validation_alias="6th")
+    seventh: StrOrNone = Field(default=None, validation_alias="7th")
+    eighth: StrOrNone = Field(default=None, validation_alias="8th")
+    ninth: StrOrNone = Field(default=None, validation_alias="9th")
+    tenth: StrOrNone = Field(default=None, validation_alias="10th")
+    eleventh: StrOrNone = Field(default=None, validation_alias="11th")
+    twelfth: StrOrNone = Field(default=None, validation_alias="12th")
+    thirteenth: StrOrNone = Field(default=None, validation_alias="13th")
+    fourteenth: StrOrNone = Field(default=None, validation_alias="14th")
+    fifteenth: StrOrNone = Field(default=None, validation_alias="15th")
 
 
 register("standings_by_date", StandingsByDateRow)

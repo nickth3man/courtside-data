@@ -65,6 +65,7 @@ from courtside_data.output.columns import (
     ROOKIE_STATS_COLUMN_NAMES,
     SCHEDULE_COLUMN_NAMES,
     SEASON_AWARDS_COLUMN_NAMES,
+    SEASON_AWARDS_VOTING_COLUMN_NAMES,
     SEASON_LEADERS_COLUMN_NAMES,
     STANDINGS_BY_DATE_COLUMN_NAMES,
     STANDINGS_COLUMNS_NAMES,
@@ -353,6 +354,26 @@ ENDPOINTS: dict[str, TableEndpoint] = {
         row_model=league.SeasonAwardsRow,
         csv_columns=SEASON_AWARDS_COLUMN_NAMES,
     ),
+    "season_awards_voting": _season(
+        "/awards/awards_{season_end_year}.html",
+        params=("season_end_year", "award"),
+        table_id="{award}",
+        fallback_table_ids=(
+            "mvp",
+            "roy",
+            "dpoy",
+            "smoy",
+            "mip",
+            "clutch_poy",
+            "coy",
+            "leading_all_nba",
+            "leading_all_defense",
+            "leading_all_rookie",
+        ),
+        custom=True,
+        row_model=league.SeasonAwardsVotingRow,
+        csv_columns=SEASON_AWARDS_VOTING_COLUMN_NAMES,
+    ),
     "season_leaders": TableEndpoint(
         path="/leaders/per_season.html",
         table_id="stats_TOT",
@@ -602,8 +623,3 @@ ENDPOINTS: dict[str, TableEndpoint] = {
         row_model=search.SearchResultRow,
     ),
 }
-
-
-from courtside_data.raw_coverage import extend_endpoints  # noqa: E402
-
-extend_endpoints(ENDPOINTS, TableEndpoint)

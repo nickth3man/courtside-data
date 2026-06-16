@@ -1,5 +1,7 @@
+from pathlib import Path
 from unittest import TestCase
 
+import pytest
 from parsel import Selector
 
 from courtside_data.tables import GenericTable, GenericTableRow, extract_commented_table
@@ -238,3 +240,46 @@ class TestExtractCommentedTextBox(TestCase):
         selector = Selector(text=html)
         result = extract_commented_table(selector, "anything")
         self.assertIsNone(result)
+
+
+def test_raw_team_lineup_combination_tables_parse_expected_shape():
+    fixture = Path(__file__).resolve().parents[3] / "raw" / "team_lineups" / "BOS_2024.html"
+    if not fixture.exists():
+        pytest.skip("raw/team_lineups fixture is not available")
+
+    selector = Selector(text=fixture.read_text(encoding="utf-8"))
+    expected_keys = {
+        "ranker",
+        "lineup",
+        "mp",
+        "diff_pts",
+        "diff_fg",
+        "diff_fga",
+        "diff_fg_pct",
+        "diff_fg3",
+        "diff_fg3a",
+        "diff_fg3_pct",
+        "diff_efg_pct",
+        "diff_ft",
+        "diff_fta",
+        "diff_ft_pct",
+        "diff_orb",
+        "diff_orb_pct",
+        "diff_drb",
+        "diff_drb_pct",
+        "diff_trb",
+        "diff_trb_pct",
+        "diff_ast",
+        "diff_stl",
+        "diff_blk",
+        "diff_tov",
+        "diff_pf",
+    }
+
+    for table_id in ("lineups_2-man_", "lineups_3-man_", "lineups_4-man_", "lineups_5-man_"):
+        table = extract_commented_table(selector, table_id)
+        assert table is not None
+        row = GenericTable(table, use_header_fallback=True).rows[0].to_dict()
+        assert set(row) == expected_keys
+        assert row["lineup"]
+        assert ":" in row["mp"]

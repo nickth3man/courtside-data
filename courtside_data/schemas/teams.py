@@ -12,6 +12,7 @@ from courtside_data.schemas._fields import (
     BRIntOrNone,
     BRPercentage,
     PositionsField,
+    SecondsPlayedOrNone,
     StrOrNone,
 )
 
@@ -350,7 +351,7 @@ class TeamLineupsRow(BRRow):
     """Row from a team's ``#lineups_5-man_`` table."""
 
     lineup: StrOrNone = Field(default=None, validation_alias="lineup")
-    mp: BRFloatOrNone = Field(default=None, validation_alias="mp")
+    mp: SecondsPlayedOrNone = Field(default=None, validation_alias="mp")
     diff_pts: BRFloatOrNone = Field(default=None, validation_alias="diff_pts")
     diff_fg: BRFloatOrNone = Field(default=None, validation_alias="diff_fg")
     diff_fga: BRFloatOrNone = Field(default=None, validation_alias="diff_fga")

@@ -6,10 +6,13 @@ Handles columns that can be None (e.g., empty cells for age, combined-totals row
 
 from __future__ import annotations
 
+import re
 from collections.abc import Sequence
 from typing import Any
 
 from courtside_data.output.field_types import get_coercion
+
+_CLOCK_RE = re.compile(r"^\d+:\d{2}$")
 
 # ─── Expected type extraction ─────────────────────────────────────────
 
@@ -24,7 +27,7 @@ def _get_target_type(column_name: str) -> type | tuple[type, ...] | None:
     name = getattr(fn, "__name__", "")
 
     # coerce_int, coerce_float, coerce_int_or_none, coerce_float_or_none
-    if name == "coerce_int":
+    if name in {"coerce_int", "coerce_int_or_clock"}:
         return int
     elif name == "coerce_float":
         return (int, float)  # int is acceptable for float columns
@@ -113,6 +116,8 @@ def validate_rows(
                     continue
 
             if not isinstance(value, target_type):
+                if col == "mp" and isinstance(value, str) and _CLOCK_RE.fullmatch(value.strip()):
+                    continue
                 expected_name = _type_name(target_type)
                 actual_name = type(value).__name__
                 err = ValidationError(i, col, expected_name, actual_name, value)

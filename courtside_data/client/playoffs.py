@@ -81,3 +81,75 @@ def playoff_bracket(
         raw=raw,
         debug=debug,
     )
+
+
+def friv_7_game_playoff_series_outcomes_team_is_down(
+    output_type: OutputType | None = None,
+    output_file_path: str | None = None,
+    output_write_option: OutputWriteOption | None = None,
+    json_options: dict[str, Any] | None = None,
+    raw: bool = False,
+    debug: bool = False,
+) -> Any:
+    """Seven-game playoff series outcomes for teams trailing in the series.
+
+    URL: /friv/7-game-playoff-series-outcomes-22111.html
+    """
+    return _run_endpoint(
+        "friv_7_game_playoff_series_outcomes_team_is_down",
+        {},
+        output_type=output_type,
+        output_file_path=output_file_path,
+        output_write_option=output_write_option,
+        json_options=json_options,
+        raw=raw,
+        debug=debug,
+    )
+
+
+def friv_7_game_playoff_series_outcomes_team_is_tied(
+    output_type: OutputType | None = None,
+    output_file_path: str | None = None,
+    output_write_option: OutputWriteOption | None = None,
+    json_options: dict[str, Any] | None = None,
+    raw: bool = False,
+    debug: bool = False,
+) -> Any:
+    """Seven-game playoff series outcomes for teams tied in the series.
+
+    URL: /friv/7-game-playoff-series-outcomes-22111.html
+    """
+    return _run_endpoint(
+        "friv_7_game_playoff_series_outcomes_team_is_tied",
+        {},
+        output_type=output_type,
+        output_file_path=output_file_path,
+        output_write_option=output_write_option,
+        json_options=json_options,
+        raw=raw,
+        debug=debug,
+    )
+
+
+def friv_7_game_playoff_series_outcomes_team_is_up(
+    output_type: OutputType | None = None,
+    output_file_path: str | None = None,
+    output_write_option: OutputWriteOption | None = None,
+    json_options: dict[str, Any] | None = None,
+    raw: bool = False,
+    debug: bool = False,
+) -> Any:
+    """Seven-game playoff series outcomes for teams leading in the series.
+
+    URL: /friv/7-game-playoff-series-outcomes-22111.html
+    """
+    return _run_endpoint(
+        "friv_7_game_playoff_series_outcomes_team_is_up",
+        {},
+        output_type=output_type,
+        output_file_path=output_file_path,
+        output_write_option=output_write_option,
+        json_options=json_options,
+        raw=raw,
+        debug=debug,
+    )

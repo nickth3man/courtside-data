@@ -81,6 +81,7 @@ def _required_args(name):
     endpoint = ENDPOINTS[name]
     values = {
         "away": "LAL",
+        "award": "mvp",
         "season_end_year": "2024",
         "day": "1",
         "game_code": "NBA",

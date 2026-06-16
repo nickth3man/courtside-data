@@ -202,7 +202,7 @@ error) are listed in the [Endpoint Reference](reference.md).
 ## Methods
 
 A representative sample is shown below — see the
-[Endpoint Reference](reference.md) for all 50+ endpoints.
+[Endpoint Reference](reference.md) for all 50+ typed endpoints.
 
 ### Player Box Scores For A Given Day
 

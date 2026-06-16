@@ -53,6 +53,17 @@ coerce_int_or_none = _make_coercion("coerce_int_or_none", int, None)
 coerce_float_or_none = _make_coercion("coerce_float_or_none", float, None)
 
 
+def coerce_int_or_clock(value: Any) -> Any:
+    """Coerce numeric minutes while preserving Basketball-Reference clock strings."""
+
+    if isinstance(value, str) and ":" in value.strip():
+        return value
+    return coerce_int(value)
+
+
+coerce_int_or_clock.__name__ = "coerce_int_or_clock"
+
+
 # ─── Column → type mapping ─────────────────────────────────────────────
 
 # Explicit column-type registry. Keys are the raw data-stat / dict key names
@@ -111,7 +122,7 @@ _COLUMN_TYPE_MAP: dict[str, Callable] = {
     "games": coerce_int,
     "games_played": coerce_int,
     "games_started": coerce_int,
-    "mp": coerce_int,  # total minutes
+    "mp": coerce_int_or_clock,  # total minutes or lineup/box-score clock strings
     "minutes_played": coerce_int,
     "seconds_played": coerce_int,
     "fg": coerce_int,
@@ -315,7 +326,11 @@ def _infer_coercion(column_name: str) -> Callable:
 
     # Explicit int patterns
     if name in ("g", "mp"):
-        return coerce_int
+        return coerce_int_or_clock if name == "mp" else coerce_int
+
+    # Lineup combination tables expose on/off differentials like ``+7.7``.
+    if name.startswith("diff_"):
+        return coerce_float
 
     # Percentage / rate patterns → float
     if (

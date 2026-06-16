@@ -1,6 +1,6 @@
 # Courtside Data
 
-A comprehensive Python client for [Basketball Reference](https://www.basketball-reference.com) with 50+ endpoints, rate limiting, and offline fixture testing.
+A comprehensive Python client for [Basketball Reference](https://www.basketball-reference.com) with 50+ typed endpoints, rate limiting, and offline fixture testing.
 
 ## Installation
 
@@ -106,7 +106,7 @@ courtside-data team_roster --team-abbreviation BOS --season-end-year 2024 \
 | **Playoffs**  | `playoff_per_game`               | Playoff per-game stats                   |
 |             | `playoff_totals`                 | Playoff totals                           |
 
-See [REFERENCE.md](REFERENCE.md) for detailed endpoint documentation including URL patterns and table IDs.
+See [REFERENCE.md](REFERENCE.md) for detailed endpoint documentation including URL patterns and table IDs. The public API is intentionally limited to typed endpoints backed by explicit schemas; additional `raw/` corpus pages are tracked as backlog until they are promoted into typed endpoints.
 
 ## Rate Limiting
 
@@ -147,8 +147,8 @@ licensed under the [MIT License](LICENSE).
 
 The original project provided the initial package structure, core NBA endpoints,
 parsing pipeline, output writers, and test approach. This project is independently
-maintained and extends that foundation with ~40 additional endpoints, generic table
-parsing, rate limiting, fixture tooling, and updated packaging.
+maintained and extends that foundation with typed endpoint schemas, generic table
+parsing primitives, rate limiting, fixture tooling, and updated packaging.
 
 ### Original Project Contributors
 

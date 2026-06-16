@@ -14,20 +14,16 @@ table (``league``, ``playoffs``, ``draft``, ``players``, ``teams``,
 X`` and ``client.X`` keep working regardless of which module defines ``X``.
 
 :class:`CourtsideClient` wraps the same functions as methods bound to a
-dedicated HTTP session.  Broad raw-corpus endpoints are generated at registry
-load time and exposed lazily through ``__getattr__``.
+dedicated HTTP session.
 """
 
 from __future__ import annotations
 
-import inspect
-from typing import Any
-
-from courtside_data.client._runner import _run_endpoint
 from courtside_data.client.draft import (  # noqa: F401
     career_leaders,
     draft_picks,
     season_awards,
+    season_awards_voting,
     season_leaders,
 )
 from courtside_data.client.games import (  # noqa: F401
@@ -68,6 +64,9 @@ from courtside_data.client.players import (  # noqa: F401
     player_splits,
 )
 from courtside_data.client.playoffs import (  # noqa: F401
+    friv_7_game_playoff_series_outcomes_team_is_down,
+    friv_7_game_playoff_series_outcomes_team_is_tied,
+    friv_7_game_playoff_series_outcomes_team_is_up,
     playoff_bracket,
     playoff_per_game,
     playoff_totals,
@@ -93,62 +92,6 @@ from courtside_data.client.teams import (  # noqa: F401
 from courtside_data.endpoints import ENDPOINTS
 from courtside_data.http_service import HTTPService  # noqa: F401
 
-_OUTPUT_OPTION_NAMES = (
-    "output_type",
-    "output_file_path",
-    "output_write_option",
-    "json_options",
-    "raw",
-    "debug",
-)
-
-
-def _make_dynamic_endpoint(name: str):
-    endpoint = ENDPOINTS[name]
-
-    def endpoint_func(*args: Any, **kwargs: Any) -> Any:
-        params: dict[str, Any] = {}
-        for index, value in enumerate(args):
-            if index >= len(endpoint.params):
-                raise TypeError(f"{name}() takes {len(endpoint.params)} positional arguments but more were given")
-            params[endpoint.params[index]] = value
-        for param in endpoint.params:
-            if param in kwargs:
-                if param in params:
-                    raise TypeError(f"{name}() got multiple values for argument {param!r}")
-                params[param] = kwargs.pop(param)
-            elif param not in params:
-                raise TypeError(f"{name}() missing required argument: {param!r}")
-        options = {
-            option: kwargs.pop(option, False if option in {"raw", "debug"} else None) for option in _OUTPUT_OPTION_NAMES
-        }
-        if kwargs:
-            unexpected = next(iter(kwargs))
-            raise TypeError(f"{name}() got an unexpected keyword argument {unexpected!r}")
-        return _run_endpoint(name, params, **options)
-
-    endpoint_func.__name__ = name
-    endpoint_func.__doc__ = f"{name.replace('_', ' ').capitalize()}.\n\nURL: {endpoint.path}"
-    parameters = [inspect.Parameter(param, inspect.Parameter.POSITIONAL_OR_KEYWORD) for param in endpoint.params] + [
-        inspect.Parameter("output_type", inspect.Parameter.POSITIONAL_OR_KEYWORD, default=None),
-        inspect.Parameter("output_file_path", inspect.Parameter.POSITIONAL_OR_KEYWORD, default=None),
-        inspect.Parameter("output_write_option", inspect.Parameter.POSITIONAL_OR_KEYWORD, default=None),
-        inspect.Parameter("json_options", inspect.Parameter.POSITIONAL_OR_KEYWORD, default=None),
-        inspect.Parameter("raw", inspect.Parameter.POSITIONAL_OR_KEYWORD, default=False),
-        inspect.Parameter("debug", inspect.Parameter.POSITIONAL_OR_KEYWORD, default=False),
-    ]
-    setattr(endpoint_func, "__signature__", inspect.Signature(parameters))  # noqa: B010
-    return endpoint_func
-
-
-def __getattr__(name: str) -> Any:
-    if name not in ENDPOINTS:
-        raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
-    func = _make_dynamic_endpoint(name)
-    globals()[name] = func
-    return func
-
-
 ENDPOINT_FUNCTION_NAMES: tuple[str, ...] = tuple(ENDPOINTS)
 
 # Imported after the endpoint functions exist: CourtsideClient resolves its
@@ -162,6 +105,9 @@ _EXPLICIT_EXPORTS = [
     "career_leaders",
     "draft_picks",
     "franchise_history",
+    "friv_7_game_playoff_series_outcomes_team_is_down",
+    "friv_7_game_playoff_series_outcomes_team_is_tied",
+    "friv_7_game_playoff_series_outcomes_team_is_up",
     "league_per_36_minutes",
     "league_per_100_possessions",
     "league_per_game_stats",
@@ -192,6 +138,7 @@ _EXPLICIT_EXPORTS = [
     "rookie_stats",
     "search",
     "season_awards",
+    "season_awards_voting",
     "season_leaders",
     "season_schedule",
     "standings",

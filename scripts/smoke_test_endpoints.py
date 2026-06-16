@@ -127,7 +127,7 @@ def _clean_path_template(path: str) -> str:
 
 def _field_regex(param_name: str) -> str:
     if param_name == "game_date":
-        return r"\d{8,9}"
+        return r"\d{8}"
     if param_name in {"day", "month"}:
         return r"\d{1,2}"
     if param_name in {"year", "season_end_year"}:
@@ -248,6 +248,10 @@ def build_params(name: str, endpoint: Any) -> dict[str, Any]:
             params[param_name] = DEFAULT_MONTH
         elif param_name == "year":
             params[param_name] = DEFAULT_YEAR
+        elif param_name == "game_date":
+            params[param_name] = f"{DEFAULT_YEAR:04d}{DEFAULT_MONTH:02d}{DEFAULT_DAY:02d}"
+        elif param_name == "game_code":
+            params[param_name] = "0NYK"
         elif param_name in ("include_inactive_games", "include_combined_values"):
             params[param_name] = False
     return params

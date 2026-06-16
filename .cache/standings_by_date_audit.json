@@ -1,0 +1,104 @@
+{
+  "endpoints": {
+    "standings_by_date": {
+      "custom": true,
+      "declared_keys": [
+        "10th",
+        "11th",
+        "12th",
+        "13th",
+        "14th",
+        "15th",
+        "1st",
+        "2nd",
+        "3rd",
+        "4th",
+        "5th",
+        "6th",
+        "7th",
+        "8th",
+        "9th",
+        "conference",
+        "date",
+        "eighth",
+        "eleventh",
+        "fifteenth",
+        "fifth",
+        "first",
+        "fourteenth",
+        "fourth",
+        "ninth",
+        "second",
+        "seventh",
+        "sixth",
+        "tenth",
+        "third",
+        "thirteenth",
+        "twelfth"
+      ],
+      "extra": [
+        "conference",
+        "eighth",
+        "eleventh",
+        "fifteenth",
+        "fifth",
+        "first",
+        "fourteenth",
+        "fourth",
+        "ninth",
+        "second",
+        "seventh",
+        "sixth",
+        "tenth",
+        "third",
+        "thirteenth",
+        "twelfth"
+      ],
+      "fixtures": [
+        "standings_by_date/2018_eastern_conference.html",
+        "standings_by_date/2018_western_conference.html",
+        "standings_by_date/2024_eastern_conference.html",
+        "standings_by_date/2024_western_conference.html"
+      ],
+      "header_fallback": false,
+      "intentional_subset": false,
+      "missing": [],
+      "real_keys": [
+        "10th",
+        "11th",
+        "12th",
+        "13th",
+        "14th",
+        "15th",
+        "1st",
+        "2nd",
+        "3rd",
+        "4th",
+        "5th",
+        "6th",
+        "7th",
+        "8th",
+        "9th",
+        "date"
+      ],
+      "skipped_reason": null,
+      "table_id_declared": [
+        "standings_by_date"
+      ],
+      "table_id_discovered": [
+        "standings_by_date"
+      ],
+      "table_id_mismatch": false,
+      "transaction_list": false,
+      "unresolved_fixtures": []
+    }
+  },
+  "summary": {
+    "endpoints_audited": 1,
+    "endpoints_skipped_no_fixtures": 0,
+    "endpoints_with_drift": 0,
+    "table_id_mismatches": 0,
+    "total_extra_columns": 16,
+    "total_missing_columns": 0
+  }
+}

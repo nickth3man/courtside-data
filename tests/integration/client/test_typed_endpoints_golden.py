@@ -159,11 +159,6 @@ def _custom_rows(endpoint_name: str, case: dict[str, Any]) -> list[dict[str, Any
         table = service._find_table(selector, table_id)
         assert table is not None
         return service._player_season_box_score_rows(table, include_inactive_games=params.get("include_inactive_games", False))
-    if endpoint_name == "standings_by_date":
-        rows = []
-        for fixture in case["fixtures"]:
-            rows.extend(_generic_rows(ENDPOINTS[endpoint_name], fixture))
-        return rows
     if endpoint_name == "search":
         return service.search(**params)["players"]
 

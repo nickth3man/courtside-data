@@ -42,54 +42,33 @@ class TestStandingsByDateRow:
     def test_happy_path(self):
         row = StandingsByDateRow.model_validate(
             {
-                "team_name_abbr": "BOS",
-                "wins": "30",
-                "losses": "10",
-                "win_loss_pct": ".750",
-                "gb": "0.0",
-                "pts_per_g": "118.4",
-                "opp_pts_per_g": "112.1",
-                "srs": "6.32",
+                "conference": "Eastern Conference",
+                "date": "2024-10-25",
+                "1st": "BOS (2-0)",
+                "2nd": "MIL (1-0)",
             }
         )
-        assert row.team == Team.BOSTON_CELTICS
-        assert row.wins == 30
-        assert row.losses == 10
-        assert row.win_loss_percentage == pytest.approx(0.750)
-        assert row.games_back == pytest.approx(0.0)
-        assert row.points_per_game == pytest.approx(118.4)
-        assert row.opponent_points_per_game == pytest.approx(112.1)
-        assert row.simple_rating_system == pytest.approx(6.32)
+        assert row.conference == Conference.EASTERN
+        assert row.date == "2024-10-25"
+        assert row.first == "BOS (2-0)"
+        assert row.second == "MIL (1-0)"
 
     def test_empty_optional_cells_become_none(self):
         row = StandingsByDateRow.model_validate(
             {
-                "team_name_abbr": "BOS",
-                "wins": "30",
-                "losses": "10",
-                "win_loss_pct": "",
-                "gb": "",
-                "pts_per_g": "",
-                "opp_pts_per_g": "",
-                "srs": "",
+                "conference": "Eastern Conference",
+                "date": "2024-10-25",
+                "1st": "",
+                "2nd": "",
             }
         )
-        assert row.win_loss_percentage is None
-        assert row.games_back is None
-        assert row.points_per_game is None
-        assert row.opponent_points_per_game is None
-        assert row.simple_rating_system is None
+        assert row.first is None
+        assert row.second is None
 
     def test_missing_required_data_stat_raises(self):
         with pytest.raises(ValidationError):
             StandingsByDateRow.model_validate(
                 {
-                    "wins": "30",
-                    "losses": "10",
-                    "win_loss_pct": ".750",
-                    "gb": "0.0",
-                    "pts_per_g": "118.4",
-                    "opp_pts_per_g": "112.1",
-                    "srs": "6.32",
+                    "1st": "BOS (2-0)",
                 }
             )

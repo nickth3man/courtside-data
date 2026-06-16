@@ -158,7 +158,7 @@ Day-by-day standings for both conferences for a season.
 
 <details><summary>CSV columns</summary>
 
-`team`, `wins`, `losses`, `win_loss_pct`, `gb`, `pts_per_g`, `opp_pts_per_g`, `srs`
+`conference`, `date`, `first`, `second`, `third`, `fourth`, `fifth`, `sixth`, `seventh`, `eighth`, `ninth`, `tenth`, `eleventh`, `twelfth`, `thirteenth`, `fourteenth`, `fifteenth`
 
 </details>
 
@@ -215,12 +215,54 @@ Playoff bracket series results for a season.
 
 - **Parameters:** `season_end_year`
 - **URL:** `/playoffs/NBA_{season_end_year}.html`
-- **Table:** `table#all_playoffs`
+- **Table:** bespoke `HTTPService` method
 - **Raises:** `InvalidSeason` on HTTP 404
 
 <details><summary>CSV columns</summary>
 
 `series`, `team`, `result`
+
+</details>
+
+### `friv_7_game_playoff_series_outcomes_team_is_down`
+
+Seven-game playoff series outcomes for teams trailing in the series.
+
+- **Parameters:** —
+- **URL:** `/friv/7-game-playoff-series-outcomes-22111.html`
+- **Table:** `table#team-is-down`
+
+<details><summary>CSV columns</summary>
+
+`record`, `gameslist`, `wl`
+
+</details>
+
+### `friv_7_game_playoff_series_outcomes_team_is_tied`
+
+Seven-game playoff series outcomes for teams tied in the series.
+
+- **Parameters:** —
+- **URL:** `/friv/7-game-playoff-series-outcomes-22111.html`
+- **Table:** `table#team-is-tied`
+
+<details><summary>CSV columns</summary>
+
+`record`, `gameslist`, `wl`
+
+</details>
+
+### `friv_7_game_playoff_series_outcomes_team_is_up`
+
+Seven-game playoff series outcomes for teams leading in the series.
+
+- **Parameters:** —
+- **URL:** `/friv/7-game-playoff-series-outcomes-22111.html`
+- **Table:** `table#team-is-up`
+
+<details><summary>CSV columns</summary>
+
+`record`, `gameslist`, `wl`
 
 </details>
 
@@ -253,6 +295,21 @@ Season award voting results (MVP table).
 <details><summary>CSV columns</summary>
 
 `rank`, `player`, `age`, `team_id`, `votes_first`, `points_won`, `points_max`, `award_share`, `g`, `mp_per_g`, `pts_per_g`, `trb_per_g`, `ast_per_g`, `stl_per_g`, `blk_per_g`, `fg_pct`, `fg3_pct`, `ft_pct`, `ws`, `ws_per_48`
+
+</details>
+
+### `season_awards_voting`
+
+Season award voting results.
+
+- **Parameters:** `season_end_year`, `award`
+- **URL:** `/awards/awards_{season_end_year}.html`
+- **Table:** bespoke `HTTPService` method
+- **Raises:** `InvalidSeason` on HTTP 404
+
+<details><summary>CSV columns</summary>
+
+`rank`, `player`, `age`, `team_id`, `votes_first`, `points_won`, `points_max`, `award_share`, `g`, `mp_per_g`, `pts_per_g`, `trb_per_g`, `ast_per_g`, `stl_per_g`, `blk_per_g`, `fg_pct`, `fg3_pct`, `ft_pct`, `ws`, `ws_per_48`, `wins`, `losses`, `win_loss_pct`, `coach`, `tm_id`, `pos`, `first_team_votes`, `second_team_votes`, `third_team_votes`, `all_nba_team`, `all_defense_team`, `all_rookie_team`, `dws`, `dbpm`, `def_rtg`
 
 </details>
 
@@ -751,7 +808,7 @@ Season total statistics for all players (typed parser chain).
 
 <details><summary>CSV columns</summary>
 
-`slug`, `name`, `positions`, `age`, `team`, `games_played`, `games_started`, `minutes_played`, `made_field_goals`, `attempted_field_goals`, `made_three_point_field_goals`, `attempted_three_point_field_goals`, `made_free_throws`, `attempted_free_throws`, `offensive_rebounds`, `defensive_rebounds`, `assists`, `steals`, `blocks`, `turnovers`, `personal_fouls`, `points`
+`slug`, `name`, `positions`, `age`, `team`, `games_played`, `games_started`, `minutes_played`, `made_field_goals`, `attempted_field_goals`, `field_goal_percentage`, `made_three_point_field_goals`, `attempted_three_point_field_goals`, `three_point_field_goal_percentage`, `made_two_point_field_goals`, `attempted_two_point_field_goals`, `two_point_field_goal_percentage`, `effective_field_goal_percentage`, `made_free_throws`, `attempted_free_throws`, `free_throw_percentage`, `offensive_rebounds`, `defensive_rebounds`, `total_rebounds`, `assists`, `steals`, `blocks`, `turnovers`, `personal_fouls`, `points`, `triple_doubles`, `awards`
 
 </details>
 
@@ -766,7 +823,7 @@ Advanced season statistics for all players.
 
 <details><summary>CSV columns</summary>
 
-`slug`, `name`, `positions`, `age`, `team`, `games_played`, `minutes_played`, `player_efficiency_rating`, `true_shooting_percentage`, `three_point_attempt_rate`, `free_throw_attempt_rate`, `offensive_rebound_percentage`, `defensive_rebound_percentage`, `total_rebound_percentage`, `assist_percentage`, `steal_percentage`, `block_percentage`, `turnover_percentage`, `usage_percentage`, `offensive_win_shares`, `defensive_win_shares`, `win_shares`, `win_shares_per_48_minutes`, `offensive_box_plus_minus`, `defensive_box_plus_minus`, `box_plus_minus`, `value_over_replacement_player`, `is_combined_totals`
+`slug`, `name`, `positions`, `age`, `team`, `games_played`, `games_started`, `minutes_played`, `player_efficiency_rating`, `true_shooting_percentage`, `three_point_attempt_rate`, `free_throw_attempt_rate`, `offensive_rebound_percentage`, `defensive_rebound_percentage`, `total_rebound_percentage`, `assist_percentage`, `steal_percentage`, `block_percentage`, `turnover_percentage`, `usage_percentage`, `offensive_win_shares`, `defensive_win_shares`, `win_shares`, `win_shares_per_48_minutes`, `offensive_box_plus_minus`, `defensive_box_plus_minus`, `box_plus_minus`, `value_over_replacement_player`, `awards`, `is_combined_totals`
 
 </details>
 

@@ -58,6 +58,32 @@ def season_awards(
     )
 
 
+def season_awards_voting(
+    season_end_year: int,
+    award: str = "mvp",
+    output_type: OutputType | None = None,
+    output_file_path: str | None = None,
+    output_write_option: OutputWriteOption | None = None,
+    json_options: dict[str, Any] | None = None,
+    raw: bool = False,
+    debug: bool = False,
+) -> Any:
+    """Season award voting results.
+
+    URL: /awards/awards_{season_end_year}.html
+    """
+    return _run_endpoint(
+        "season_awards_voting",
+        {"season_end_year": season_end_year, "award": award},
+        output_type=output_type,
+        output_file_path=output_file_path,
+        output_write_option=output_write_option,
+        json_options=json_options,
+        raw=raw,
+        debug=debug,
+    )
+
+
 def season_leaders(
     output_type: OutputType | None = None,
     output_file_path: str | None = None,

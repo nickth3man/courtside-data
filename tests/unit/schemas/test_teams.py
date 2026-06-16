@@ -343,7 +343,7 @@ class TestTeamLineupsRow:
         row = TeamLineupsRow.model_validate(
             {
                 "lineup": "A. Davis - L. James - R. Westbrook - M. Monk - C. Anthony",
-                "mp": "200",
+                "mp": "200:00",
                 "diff_pts": "10.5",
                 "diff_fg": "5.0",
                 "diff_fga": "8.0",
@@ -369,7 +369,7 @@ class TestTeamLineupsRow:
             }
         )
         assert row.lineup == "A. Davis - L. James - R. Westbrook - M. Monk - C. Anthony"
-        assert row.mp == pytest.approx(200.0)
+        assert row.mp == pytest.approx(12000.0)
         assert row.diff_pts == pytest.approx(10.5)
         assert row.diff_fg_pct == pytest.approx(0.025)
 

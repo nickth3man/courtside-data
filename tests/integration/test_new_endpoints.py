@@ -39,6 +39,7 @@ from courtside_data.client import (
     playoff_totals,
     rookie_stats,
     season_awards,
+    season_awards_voting,
     season_leaders,
     standings_by_date,
     team_and_opponent,
@@ -304,6 +305,27 @@ class TestDraftAndAwards:
                 _mock_url(m, AWARDS_URL.format(year=2024), html)
                 result = season_awards(2024, raw=True)
                 assert isinstance(result, list)
+
+    def test_season_awards_voting(self):
+        html = MINIMAL_TABLE.format(table_id="mvp")
+        with patch("time.sleep"):
+            with requests_mock.Mocker() as m:
+                _mock_url(m, AWARDS_URL.format(year=2024), html)
+                result = season_awards_voting(2024, raw=True)
+                assert isinstance(result, list)
+
+    def test_season_awards_voting_comment_wrapped_award_from_raw_fixture(self):
+        from tests.integration.client import raw_fixtures
+
+        html = raw_fixtures.read("season_awards_voting/awards_2025.html")
+        with patch("time.sleep"):
+            with requests_mock.Mocker() as m:
+                _mock_url(m, AWARDS_URL.format(year=2025), html)
+                result = season_awards_voting(2025, "dpoy")
+
+        assert len(result) > 0
+        assert result[0].player == "Evan Mobley"
+        assert result[0].points_won == 285
 
 
 # ===================================================================

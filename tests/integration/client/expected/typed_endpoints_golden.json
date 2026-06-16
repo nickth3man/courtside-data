@@ -1133,6 +1133,39 @@
     "row_count": 9,
     "validated_row_count": 9
   },
+  "season_awards_voting": {
+    "columns": [
+      "rank",
+      "player",
+      "age",
+      "team_id",
+      "votes_first",
+      "points_won",
+      "points_max",
+      "award_share",
+      "g",
+      "mp_per_g",
+      "pts_per_g",
+      "trb_per_g",
+      "ast_per_g",
+      "stl_per_g",
+      "blk_per_g",
+      "fg_pct",
+      "fg3_pct",
+      "ft_pct",
+      "ws",
+      "ws_per_48"
+    ],
+    "fixtures": [
+      "season_awards_voting/awards_2025.html"
+    ],
+    "params": {
+      "award": "mvp",
+      "season_end_year": 2025
+    },
+    "row_count": 12,
+    "validated_row_count": 7
+  },
   "season_leaders": {
     "columns": [],
     "fixtures": [
@@ -1193,13 +1226,34 @@
     "validated_row_count": 30
   },
   "standings_by_date": {
-    "columns": [],
-    "fixtures": [
-      "standings_by_date/2018_eastern_conference.html"
+    "columns": [
+      "conference",
+      "date",
+      "1st",
+      "2nd",
+      "3rd",
+      "4th",
+      "5th",
+      "6th",
+      "7th",
+      "8th",
+      "9th",
+      "10th",
+      "11th",
+      "12th",
+      "13th",
+      "14th",
+      "15th"
     ],
-    "row_count": 0,
-    "skip": "custom pivot table: rows are date/rank snapshots, not StandingsByDateRow-shaped team records",
-    "validated_row_count": 0
+    "fixtures": [
+      "standings_by_date/2018_eastern_conference.html",
+      "standings_by_date/2018_western_conference.html"
+    ],
+    "params": {
+      "season_end_year": 2018
+    },
+    "row_count": 336,
+    "validated_row_count": 336
   },
   "team_and_opponent": {
     "columns": [
