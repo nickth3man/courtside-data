@@ -23,6 +23,12 @@ class CourtsideClient:
     process-wide session), a ``CourtsideClient`` owns its session, so callers
     can control caching, headers, TLS impersonation, and timeouts.
 
+    An optional ``service`` keyword lets callers inject a pre-built
+    :class:`~courtside_data.http_service.HTTPService` (e.g. one wired to a
+    fake transport for testing); when provided, the ``cache``, ``headers``,
+    ``impersonate``, and ``timeout`` kwargs are ignored because they only
+    apply to a service the client constructs itself.
+
     Rate limiting is intentionally not configurable: the library-wide pacing
     is tuned to stay safely under Basketball Reference's ban threshold, and
     it is enforced globally across all sessions in the process.
@@ -35,13 +41,21 @@ class CourtsideClient:
         headers: dict[str, str] | None = None,
         impersonate: str | None = "chrome124",
         timeout: httpx.Timeout | None = None,
+        service: HTTPService | None = None,
     ) -> None:
-        self._service = HTTPService(
-            cache=cache,
-            headers=headers,
-            impersonate=impersonate,
-            timeout=timeout,
-        )
+        if service is not None:
+            # When a caller (e.g. the offline test suite) supplies a pre-built
+            # service — typically one wired to a fake transport — use it as-is and
+            # ignore the cache/headers/impersonate/timeout kwargs, which only apply
+            # to a service we construct ourselves.
+            self._service = service
+        else:
+            self._service = HTTPService(
+                cache=cache,
+                headers=headers,
+                impersonate=impersonate,
+                timeout=timeout,
+            )
 
     def __getattr__(self, name: str) -> Any:
         from courtside_data import client as _client

@@ -35,12 +35,17 @@ pandas = [
 dev = [
     "pandas>=2.0",
     "pytest>=8.0",
-    "pytest-freezer>=0.4.2",
     "pytest-socket>=0.7.0",
     "pytest-timeout>=2.4.0",
     "pytest-xdist>=3.6.0",
+    "pytest-randomly>=3.15",
+    "pytest-cov>=6.0",
     "respx>=0.22.0",
+    "deepdiff>=8.0",
+    "selectolax>=0.3",
     "coverage>=7.0",
+    "covdefaults>=2.3",
+    "diff-cover>=9.0",
     "ruff>=0.11.0",
     "ty>=0.0.1a14",
     "mkdocs>=1.5.3",
@@ -77,7 +82,7 @@ testpaths = "tests"
 # and would not measure xdist worker subprocesses, collapsing coverage; (2) the
 # live tests/e2e suite must stay serial — parallel workers would exceed
 # Basketball-Reference's rate limit and trigger an IP ban.
-addopts = ["-p", "no:freezegun", "--disable-socket", "--timeout=300"]
+addopts = ["--disable-socket", "--timeout=300"]
 
 [tool.ruff]
 target-version = "py312"
@@ -85,18 +90,27 @@ line-length = 120
 
 [tool.ruff.lint]
 select = [
-    "E",   # pycodestyle errors
-    "W",   # pycodestyle warnings
-    "F",   # pyflakes
-    "I",   # isort
-    "UP",  # pyupgrade
-    "B",   # flake8-bugbear
+    "E",     # pycodestyle errors
+    "W",     # pycodestyle warnings
+    "F",     # pyflakes
+    "I",     # isort
+    "UP",    # pyupgrade
+    "B",     # flake8-bugbear
+    "PT",    # flake8-pytest-style
+    "ASYNC", # flake8-async
 ]
 
 [tool.ruff.lint.per-file-ignores]
 # Embedded HTML fixtures carry long lines and significant trailing whitespace
-"tests/**" = ["E501", "W291"]
+"tests/**" = ["E501", "W291", "S101", "B011"]
 "scripts/**" = ["E501"]
+
+[tool.coverage.run]
+plugins = ["covdefaults"]
+relative_files = true
+source = ["courtside_data"]
+omit = ["*/__init__.py", "tests/*", "*/conftest.py", "courtside_data/legacy/*"]
+branch = true
 
 [tool.ty.environment]
 python-version = "3.12"
