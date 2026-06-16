@@ -94,4 +94,4 @@ python-version = "3.12"
 extra-paths = ["courtside_data"]
 
 [tool.ty.src]
-exclude = [".venv", "tests/fixtures", "tests/integration/files", "dist", ".slim"]
+exclude = [".venv", "dist", ".slim"]

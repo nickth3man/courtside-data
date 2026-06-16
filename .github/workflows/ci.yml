@@ -70,8 +70,10 @@ jobs:
       - uses: astral-sh/setup-uv@v5
         with:
           python-version: '3.12'
+      - name: Install dependencies
+        run: uv sync --extra dev --frozen
       - name: End-to-end tests
-        run: bash ./scripts/e2e_tests.sh "$(pwd)/dependencies"
+        run: uv run --extra dev pytest tests/e2e
 
   documentation:
     runs-on: ubuntu-latest

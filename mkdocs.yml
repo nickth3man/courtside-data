@@ -5,9 +5,6 @@ repo_name: nickth3man/courtside-data
 repo_url: https://github.com/nickth3man/courtside-data
 nav:
   - Home: index.md
-  - Endpoint Reference: reference.md
-  - Typed Endpoint Backlog: unserved_data_report.md
-  - Serving New Endpoints: serving_new_endpoints.md
 theme: material
 markdown_extensions:
   - admonition

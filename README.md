@@ -2,7 +2,7 @@
 
 A typed Python client for [Basketball Reference](https://www.basketball-reference.com). Courtside Data exposes an explicit, schema-backed API for NBA stats, with process-wide rate limiting, offline HTML fixtures, and JSON / CSV / DataFrame output.
 
-The public API is intentionally typed-only. Raw Basketball-Reference pages in `raw/` are development fixtures and endpoint backlog, not public endpoints.
+The public API is intentionally typed-only. Raw Basketball-Reference pages in `raw/` are development fixtures, not public endpoints.
 
 ## Installation
 
@@ -64,76 +64,17 @@ courtside-data team_roster --team-abbreviation BOS --season-end-year 2024 \
 
 ## Endpoints
 
-Each public endpoint is backed by:
+The authoritative list of served endpoints is the `ENDPOINTS` registry in [`courtside_data/endpoints.py`](courtside_data/endpoints.py), or at runtime:
 
-- a `TableEndpoint` registry entry in `courtside_data/endpoints.py`
-- a Pydantic row model in `courtside_data/schemas/`
-- an explicit client wrapper in `courtside_data/client/`
-- declared output columns in `courtside_data/output/columns.py`
-- offline fixture tests using `raw/`
+```bash
+courtside-data list
+```
 
-| Category    | Endpoint                       | Description                              |
-| ----------- | ------------------------------ | ---------------------------------------- |
-| **League**    | `league_per_game_stats`          | League-wide per-game statistics          |
-|             | `league_per_36_minutes`          | Per-36-minute stats                      |
-|             | `league_per_100_possessions`     | Per-100-possessions stats                |
-|             | `league_totals`                  | Season totals for all players            |
-|             | `league_shooting`                | Shooting by distance                     |
-|             | `league_play_by_play`            | Play-by-play derived stats               |
-|             | `rookie_stats`                   | Rookie season statistics                 |
-|             | `standings_by_date`              | Standings on a specific date             |
-|             | `attendance`                     | Team attendance figures                  |
-|             | `league_transactions`            | League-wide transactions                 |
-| **Player**    | `player_career_stats`            | Career stats for a player                |
-|             | `player_splits`                  | Home/away splits                         |
-|             | `player_on_off`                  | On/off court impact                      |
-|             | `player_shot_charts`             | Shot chart data                          |
-|             | `player_adjusted_shooting`       | Adjusted shooting stats                  |
-|             | `player_play_by_play`            | Play-by-play stats                       |
-|             | `player_game_highs`              | Career game highs                        |
-|             | `player_all_star`                | All-Star game appearances                |
-|             | `player_similarity_scores`       | Similarity scores                        |
-|             | `player_salaries`                | Salary information                       |
-|             | `player_playoff_series`          | Playoff series stats                     |
-| **Team**      | `team_roster`                    | Team roster                              |
-|             | `team_schedule`                  | Full season schedule                     |
-|             | `team_injury_report`             | Current injury report                    |
-|             | `team_and_opponent`              | Team vs opponent stats                   |
-|             | `team_misc_four_factors`         | Four factors and miscellaneous stats     |
-|             | `team_transactions`              | Team transactions                        |
-|             | `team_splits`                    | Team splits                              |
-|             | `team_contracts`                 | Player contracts                         |
-|             | `team_lineups`                   | Lineup data                              |
-|             | `team_starting_lineups`          | Starting lineup data                     |
-|             | `team_on_off`                    | Team on/off court impact                 |
-|             | `team_opponent_stats`            | Opponent statistics                      |
-|             | `franchise_history`              | Franchise history                        |
-| **Draft/Awards** | `draft_picks`                  | Draft pick history                       |
-|             | `season_leaders`                 | Season statistical leaders               |
-|             | `career_leaders`                 | Career statistical leaders               |
-|             | `playoff_bracket`                | Playoff bracket results                  |
-|             | `season_awards`                  | Season awards (MVP, ROY, etc.)           |
-| **Playoffs**  | `playoff_per_game`               | Playoff per-game stats                   |
-|             | `playoff_totals`                 | Playoff totals                           |
-
-See [REFERENCE.md](REFERENCE.md) for detailed endpoint documentation including URL patterns, parameters, table locations, and CSV columns.
+No static list is maintained here — the code is the source of truth. An endpoint name appearing anywhere in this repo outside of `endpoints.py` does not mean it is fully implemented and tested.
 
 ## Raw Fixture Corpus
 
-The `raw/` directory stores downloaded Basketball-Reference HTML and matching `.meta.json` sidecars. These files are used to:
-
-- regression-test typed endpoints without live network calls
-- detect schema drift and dropped source columns
-- identify unserved page families that should become typed endpoints
-- preserve edge cases across old seasons, renamed teams, playoff tables, and unusual page layouts
-
-Use the generated backlog report to choose future typed endpoint work:
-
-```bash
-uv run python scripts/audit_unserved_data.py
-```
-
-The report is written to `docs/unserved_data_report.md` and `docs/unserved_data_report.json`.
+The `raw/` directory stores downloaded Basketball-Reference HTML pages. These fixtures are used to regression-test typed endpoints without live network calls and to preserve edge cases across old seasons, renamed teams, playoff tables, and unusual page layouts.
 
 ## Rate Limiting
 
@@ -161,12 +102,6 @@ uv run pytest
 # Run tests with coverage
 uv run coverage run -m pytest
 uv run coverage report
-
-# Regenerate endpoint reference docs after changing the endpoint registry
-uv run python scripts/generate_reference.py
-
-# Regenerate the raw corpus backlog report
-uv run python scripts/audit_unserved_data.py
 ```
 
 ## Lineage and Attribution
