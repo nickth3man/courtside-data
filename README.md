@@ -1,6 +1,8 @@
 # Courtside Data
 
-A comprehensive Python client for [Basketball Reference](https://www.basketball-reference.com) with 50+ typed endpoints, rate limiting, and offline fixture testing.
+A typed Python client for [Basketball Reference](https://www.basketball-reference.com). Courtside Data exposes an explicit, schema-backed API for NBA stats, with process-wide rate limiting, offline HTML fixtures, and JSON / CSV / DataFrame output.
+
+The public API is intentionally typed-only. Raw Basketball-Reference pages in `raw/` are development fixtures and endpoint backlog, not public endpoints.
 
 ## Installation
 
@@ -62,6 +64,14 @@ courtside-data team_roster --team-abbreviation BOS --season-end-year 2024 \
 
 ## Endpoints
 
+Each public endpoint is backed by:
+
+- a `TableEndpoint` registry entry in `courtside_data/endpoints.py`
+- a Pydantic row model in `courtside_data/schemas/`
+- an explicit client wrapper in `courtside_data/client/`
+- declared output columns in `courtside_data/output/columns.py`
+- offline fixture tests using `raw/`
+
 | Category    | Endpoint                       | Description                              |
 | ----------- | ------------------------------ | ---------------------------------------- |
 | **League**    | `league_per_game_stats`          | League-wide per-game statistics          |
@@ -106,7 +116,24 @@ courtside-data team_roster --team-abbreviation BOS --season-end-year 2024 \
 | **Playoffs**  | `playoff_per_game`               | Playoff per-game stats                   |
 |             | `playoff_totals`                 | Playoff totals                           |
 
-See [REFERENCE.md](REFERENCE.md) for detailed endpoint documentation including URL patterns and table IDs. The public API is intentionally limited to typed endpoints backed by explicit schemas; additional `raw/` corpus pages are tracked as backlog until they are promoted into typed endpoints.
+See [REFERENCE.md](REFERENCE.md) for detailed endpoint documentation including URL patterns, parameters, table locations, and CSV columns.
+
+## Raw Fixture Corpus
+
+The `raw/` directory stores downloaded Basketball-Reference HTML and matching `.meta.json` sidecars. These files are used to:
+
+- regression-test typed endpoints without live network calls
+- detect schema drift and dropped source columns
+- identify unserved page families that should become typed endpoints
+- preserve edge cases across old seasons, renamed teams, playoff tables, and unusual page layouts
+
+Use the generated backlog report to choose future typed endpoint work:
+
+```bash
+uv run python scripts/audit_unserved_data.py
+```
+
+The report is written to `docs/unserved_data_report.md` and `docs/unserved_data_report.json`.
 
 ## Rate Limiting
 
@@ -135,8 +162,11 @@ uv run pytest
 uv run coverage run -m pytest
 uv run coverage report
 
-# Regenerate REFERENCE.md after changing the endpoint registry
+# Regenerate endpoint reference docs after changing the endpoint registry
 uv run python scripts/generate_reference.py
+
+# Regenerate the raw corpus backlog report
+uv run python scripts/audit_unserved_data.py
 ```
 
 ## Lineage and Attribution
