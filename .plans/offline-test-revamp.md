@@ -3,7 +3,7 @@
 **Project:** courtside-data (Python 3.12 httpx scraper of basketball-reference.com, ~50 endpoints)
 **Goal:** Revamp the broken test configuration and build an offline suite that hardens the scraper against rate limits using the 424 saved HTML fixtures in `/raw`. No live network, no rate-limit risk, no e2e changes.
 **PDCA cycle:** 1 (of an expected 2)
-**Status:** Wave 1 (foundation) COMPLETE & verified. Wave 2 (test files) PENDING.
+**Status:** Wave 1 (foundation) COMPLETE &amp; verified. Wave 2 (test files) PENDING.
 **Last updated:** 2026-06-16
 
 ---
@@ -12,7 +12,7 @@
 
 `courtside-data` scrapes basketball-reference.com via `httpx` + `httpx-curl-cffi` (TLS impersonation), `hishel` (HTTP cache), `stamina` (retries), `parsel`/`lxml` (parsing), `pydantic` 2.13 (row validation). The legacy test config was broken: the old `requests-mock`-over-`respx` shim (`tests/http_mock.py`) had zero consumers, the ~160 old `m.get(...)` integration tests were gone, and `tests/new/` was empty. The `/raw` corpus holds **424 HTML files across 146 subdirs** captured from the live site. E2e tests (`tests/e2e/`) are live-only and gated by `RUN_LIVE_BASKETBALL_REFERENCE_TESTS=1` — out of scope.
 
-**Research basis:** @oracle (architecture) + 5 parallel @librarian lanes (awesome-pytest, awesome-web-scraping, data-validation, real-world httpx fixture-replay patterns, modern toolchain). Both converged on one architecture; competitor analysis confirmed **no existing basketball-reference Python scraper has a hermetic offline suite** (the 291★ `vishaalagartha/basketball_reference_scraper` hits the live API per assertion; `pybaseball` uses `sleep(6)` between tests = 15+ min suite).
+**Research basis:** @oracle (architecture) + 5 parallel [@librarian](#openchamber-agent:librarian) lanes (awesome-pytest, awesome-web-scraping, data-validation, real-world httpx fixture-replay patterns, modern toolchain). Both converged on one architecture; competitor analysis confirmed **no existing basketball-reference Python scraper has a hermetic offline suite** (the 291★ `vishaalagartha/basketball_reference_scraper` hits the live API per assertion; `pybaseball` uses `sleep(6)` between tests = 15+ min suite).
 
 ---
 
@@ -29,11 +29,11 @@ A **declarative fixture manifest** (`tests/new/fixture_manifest.py`) is the sing
 ### ADOPT (9)
 1. `pytest-randomly` — catch `HTTPService` ClassVar order-dependence (the #1 risk); CI verification pass, not default addopts.
 2. `deepdiff` — readable Tier-2 golden failures (`DeepDiff(golden, actual, ignore_order=True, …)` instead of useless `assert ==` dumps).
-3. `selectolax` (test-only) — second-parser oracle (Lexbor vs production lxml) to catch selector drift pydantic can't.
+3. `selectolax` (test-only) — second-parser oracle (Lexbor vs production lxml) to catch selector drift pydantic can&#x27;t.
 4. `pytest-cov` + `covdefaults` — make the xdist coverage swap actually work; branch coverage + sane excludes.
 5. `diff-cover` — gate PR coverage on changed lines (`--fail-under=80` vs `origin/main`).
 6. Canonical `stamina.set_testing(True, attempts=3)` session autouse fixture (matches `_RETRY_ATTEMPTS=3`).
-7. Ruff `PT` + `ASYNC` rule families; `tests/**` per-file-ignores `["E501","W291","S101","B011"]`.
+7. Ruff `PT` + `ASYNC` rule families; `tests/**` per-file-ignores `[&quot;E501&quot;,&quot;W291&quot;,&quot;S101&quot;,&quot;B011&quot;]`.
 8. CI: `astral-sh/setup-uv` with `enable-cache: true`, pinned uv version.
 9. Commit JSON Schema contract per endpoint via pydantic `model_json_schema()`; enrich `SchemaDriftError` with `ValidationInfo.field_name`.
 
@@ -58,7 +58,7 @@ Test config old and broken; no offline coverage of the 50 endpoints; any test ru
 
 ### Root causes
 - requests→httpx migration left the `http_mock.py` shim with no callers.
-- curl-cffi's `CurlTransport` is incompatible with respx (asserts `"timeout" in req.extensions`).
+- curl-cffi&#x27;s `CurlTransport` is incompatible with respx (asserts `&quot;timeout&quot; in req.extensions`).
 - `HTTPService` carries 4 `ClassVar` mutable fields (`_last_request_time`, `_jailed_until`, `_jail_state_loaded`, `_rate_limit_lock`) — cross-test leakage risk.
 - `CourtsideClient` had no clean service-injection seam (only the private `_service_override` ContextVar).
 - No drift canary: silent breakage when basketball-reference changes markup.
@@ -68,7 +68,7 @@ Test config old and broken; no offline coverage of the 50 endpoints; any test ru
 
 ### Success criteria (measurable)
 - [ ] ≥ 95% of registered endpoints have ≥1 offline case (Wave 1: 53/55 = 96% ✓).
-- [ ] Full offline suite runs in < 30s, parallel-safe (`-n auto`), no socket access.
+- [ ] Full offline suite runs in &lt; 30s, parallel-safe (`-n auto`), no socket access.
 - [ ] `pytest-randomly --randomly-seed=last` passes (proves no ClassVar order-coupling).
 - [ ] `ruff check` + `ty check` clean under new PT/ASYNC rules.
 - [ ] Tier-1 canary fires `SchemaDriftError` when a fixture is intentionally corrupted.
@@ -91,7 +91,7 @@ Test config old and broken; no offline coverage of the 50 endpoints; any test ru
 ### Wave 2 — Test files (PENDING)
 
 **Wave 2a (parallel):**
-- `fix-conftest` — `tests/new/conftest.py` (session autouse `stamina_testing`; function autouse ClassVar reset; `make_offline_client(case)->CourtsideClient` factory) + **edit the two Wave-1 unit-test files to remove their now-redundant module-level fixtures** (conftest owns them; avoids the stamina-teardown-disables-other-modules hazard).
+- `fix-conftest` — `tests/new/conftest.py` (session autouse `stamina_testing`; function autouse ClassVar reset; `make_offline_client(case)-&gt;CourtsideClient` factory) + **edit the two Wave-1 unit-test files to remove their now-redundant module-level fixtures** (conftest owns them; avoids the stamina-teardown-disables-other-modules hazard).
 - `fix-parser-oracle` — `tests/new/test_parser_oracle.py` (selectolax-vs-parsel selector agreement; independent of conftest — direct file reads).
 
 **Wave 2b (parallel, after 2a — needs real conftest fixture API):**
@@ -120,7 +120,7 @@ Test config old and broken; no offline coverage of the 50 endpoints; any test ru
 
 ### What failed / required adjustment
 - **fix-4 (manifest, attempt 1) returned an empty result and wrote NO file.** Root cause: scope too large for one shot (424 files + multi-request href parsing). **Adjustment:** re-scoped to prioritize robust generic-endpoint coverage with best-effort multi-request and a loud `UNRESOLVED_ENDPOINTS` list; re-dispatched as fix-6 → succeeded (217 cases). **Lesson (→ ACT):** time-box complex discovery tasks; partial + loud-gaps beats over-scoped failure.
-- **`Retry-After: "1000"`** returns `False` (not `60.0`) — the jail-threshold check (`>300`) fires before the cap. Tests pinned to actual code behavior; documented.
+- **`Retry-After: &quot;1000&quot;`** returns `False` (not `60.0`) — the jail-threshold check (`&gt;300`) fires before the cap. Tests pinned to actual code behavior; documented.
 
 ### Known gaps (Wave 2 inputs)
 - 2 endpoints unresolved: `friv_7_game_playoff_series_outcomes_team_is_tied` and `_team_is_up` — **no `/raw` fixture dirs exist** (only `_team_is_down`). Action: download fixtures or xfail.
@@ -155,17 +155,17 @@ Cycle 1 PDCA closes when the full `tests/new/` suite is green, parallel-safe, dr
 
 ```python
 # courtside_data.client.courtside_client.CourtsideClient
-CourtsideClient(*, cache=True, headers=None, impersonate="chrome124",
+CourtsideClient(*, cache=True, headers=None, impersonate=&quot;chrome124&quot;,
                 timeout=None, service: HTTPService | None = None)
 # service= injects a pre-built HTTPService (e.g. fixture-wired); other kwargs ignored.
 
 # tests.new.fixture_transport
 FixtureValue = Path | tuple[int, dict[str, str] | None]
 class FixtureTransport(httpx.BaseTransport):
-    def __init__(self, url_to_path: dict[str, FixtureValue]) -> None: ...
-    def handle_request(self, request: httpx.Request) -> httpx.Response: ...  # loud FileNotFoundError if missing
-def build_client(transport, *, follow_redirects=True) -> httpx.Client
-def build_service(transport) -> HTTPService
+    def __init__(self, url_to_path: dict[str, FixtureValue]) -&gt; None: ...
+    def handle_request(self, request: httpx.Request) -&gt; httpx.Response: ...  # loud FileNotFoundError if missing
+def build_client(transport, *, follow_redirects=True) -&gt; httpx.Client
+def build_service(transport) -&gt; HTTPService
 
 # tests.new.fixture_manifest
 @dataclass(frozen=True, slots=True)
@@ -179,31 +179,5 @@ GENERIC_CASES: list[Case]        # 205 (ALL minus multi-request)
 ERROR_CASES: list[Case]          # 3 (404 injection)
 MULTI_REQUEST_ENDPOINTS: frozenset[str]   # {play_by_play, search, season_schedule, standings_by_date, team_box_scores}
 UNRESOLVED_ENDPOINTS: list[str]  # 2 (friv_7_game_*_tied / _up)
-def transport_map(endpoint_name, **params) -> dict[str, FixtureValue]
-def case_for(endpoint_name, **params) -> Case | None
-```
-
-## Appendix B — Planned `tests/new/` layout
-
-```
-tests/new/
-├── __init__.py                 ✓ (empty)
-├── conftest.py                 ▲ Wave 2a (stamina + ClassVar reset + make_offline_client)
-├── fixture_transport.py        ✓ Wave 1
-├── fixture_manifest.py         ✓ Wave 1
-├── test_retry_logic.py         ✓ Wave 1 (28 tests) — fixture cleanup in 2a
-├── test_rate_limit_and_jail.py ✓ Wave 1 (9 tests) — fixture cleanup in 2a
-├── test_parser_oracle.py       ▲ Wave 2a (selectolax drift canary)
-├── test_endpoint_offline.py    ▲ Wave 2b (Tier-1 parametrized)
-├── test_manifest_coverage.py   ▲ Wave 2b (meta-test)
-├── test_golden_outputs.py      ▲ Wave 2b (minimal Tier-2)
-├── test_error_mapping.py       ▲ Wave 2b (404/429 → domain errors)
-└── golden/                     ▲ Wave 2b (curated expected JSON)
-```
-✓ = landed   ▲ = pending
-
-## Appendix C — Open risks
-1. **ClassVar leakage** — mitigated by function-scoped autouse reset; verified by `--randomly-seed=last`.
-2. **Multi-request fixture completeness** — `team_box_scores`, `season_schedule`, `search` URL sets resolved via parsel href extraction at discovery; loud `FileNotFoundError` surfaces any gap.
-3. **Fixture staleness vs live drift** — offline suite is the canary; e2e is the live backstop. Do not weaken e2e.
-4. **`search` query-string + redirect branching** — manifest keys full URLs incl. query; handler matches path-only as fallback.
+def transport_map(endpoint_name, **params) -&gt; dict[str, FixtureValue]
+def case_for(endpoint_name, **params) -&gt; Case | None
