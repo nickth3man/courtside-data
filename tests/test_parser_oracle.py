@@ -13,7 +13,7 @@ from pathlib import Path
 
 import pytest
 from courtside_data.endpoints import ENDPOINTS
-from courtside_data.http_service import _xpath_literal
+from courtside_data.generic_endpoints import xpath_literal
 from parsel import Selector
 from selectolax.parser import HTMLParser
 
@@ -65,7 +65,7 @@ _ORACLE_TARGETS = _build_oracle_targets()
 def test_table_id_selector_agreement(target: _OracleTarget) -> None:
     html = target.html_path.read_text(encoding="utf-8", errors="replace")
 
-    parsel_tables = Selector(text=html).xpath(f"//table[@id={_xpath_literal(target.table_id)}]")
+    parsel_tables = Selector(text=html).xpath(f"//table[@id={xpath_literal(target.table_id)}]")
     lexbor_root = HTMLParser(html)
     lexbor_table = lexbor_root.css_first(f"table#{target.table_id}")
 

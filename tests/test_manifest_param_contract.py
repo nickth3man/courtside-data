@@ -4,10 +4,10 @@ This test is a regression canary for two classes of offline-replay bugs:
 
 1. **Signature drift** (catches the ``standings_by_date`` /
    ``conference`` class): a manifest case supplies a parameter that the
-   bespoke ``HTTPService`` method does not accept, or the endpoint declares a
+   bespoke ``CustomEndpointHandler`` method does not accept, or the endpoint declares a
    parameter that no method parameter exists for. The test verifies both
    directions against :data:`courtside_data.endpoints.ENDPOINTS` and the
-   live :class:`courtside_data.http_service.HTTPService` method signatures.
+   live :class:`courtside_data.custom_endpoints.CustomEndpointHandler` method signatures.
 
 2. **Year-range drift** (catches the ``league_per_100_possessions`` /
    ``1973`` class): a manifest case supplies a ``season_end_year`` that
@@ -27,22 +27,22 @@ from dataclasses import FrozenInstanceError
 from datetime import date
 
 import pytest
+from courtside_data.custom_endpoints import CustomEndpointHandler
 from courtside_data.data import TEAM_ABBREVIATIONS_TO_TEAM
 from courtside_data.endpoints import ENDPOINTS, TableEndpoint
-from courtside_data.http_service import HTTPService
 
 from tests.fixture_manifest import ALL_CASES, Case
 
 
 def _sig_params(name: str) -> set[str]:
-    """Return the parameter names of ``HTTPService.<name>`` (excluding ``self``).
+    """Return the parameter names of ``CustomEndpointHandler.<name>`` (excluding ``self``).
 
     Uses ``follow_wrapped=False`` so a ``@functools.wraps`` decorator on the
     real method does not mask a parameter that the contract test should see.
     Returns an empty set if the method is missing (the next check raises a
     clearer diagnostic).
     """
-    method = getattr(HTTPService, name, None)
+    method = getattr(CustomEndpointHandler, name, None)
     if method is None:
         return set()
     sig = inspect.signature(method, follow_wrapped=False)
@@ -69,18 +69,18 @@ def test_custom_endpoint_signature_compatible(case: Case) -> None:
     # valid contract: endpoint.params == () ↔ method signature == (self).
     if not sig_params:
         assert not endpoint.params, (
-            f"{case.id}: HTTPService.{case.endpoint_name} takes no arguments but "
+            f"{case.id}: CustomEndpointHandler.{case.endpoint_name} takes no arguments but "
             f"endpoint declares params {sorted(endpoint.params)}"
         )
         assert not case.params, (
-            f"{case.id}: HTTPService.{case.endpoint_name} takes no arguments but case.params={case.params}"
+            f"{case.id}: CustomEndpointHandler.{case.endpoint_name} takes no arguments but case.params={case.params}"
         )
         return
 
     # Direction 1: every endpoint-declared param is accepted by the method.
     missing = set(endpoint.params) - sig_params
     assert not missing, (
-        f"{case.id}: endpoint declares params {sorted(missing)} but HTTPService."
+        f"{case.id}: endpoint declares params {sorted(missing)} but CustomEndpointHandler."
         f"{case.endpoint_name} only accepts {sorted(sig_params)}"
     )
 
@@ -92,7 +92,7 @@ def test_custom_endpoint_signature_compatible(case: Case) -> None:
     # class of bug.
     extra = set(case.params) - sig_params
     assert not extra, (
-        f"{case.id}: case.params contains {sorted(extra)} which HTTPService."
+        f"{case.id}: case.params contains {sorted(extra)} which CustomEndpointHandler."
         f"{case.endpoint_name} does not accept (accepts {sorted(sig_params)})"
     )
 

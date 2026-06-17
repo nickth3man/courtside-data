@@ -5,7 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
-from courtside_data.http_service import HTTPService
+from courtside_data import _parsing
 from courtside_data.schemas.playoffs import SevenGamePlayoffSeriesOutcomesRow
 from parsel import Selector
 
@@ -21,9 +21,7 @@ FIXTURE = (
 def team_is_down_rows() -> list[dict]:
     html = FIXTURE.read_text(encoding="utf-8")
     table = Selector(text=html).css("table#team-is-down")[0]
-    return [
-        HTTPService._parse_friv_playoff_outcomes_row(row) for row in table.css("tbody tr:not(.thead)") if row.css("td")
-    ]
+    return [_parsing.parse_friv_playoff_outcomes_row(row) for row in table.css("tbody tr:not(.thead)") if row.css("td")]
 
 
 def test_aggregate_row(team_is_down_rows: list[dict]) -> None:

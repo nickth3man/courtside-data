@@ -32,11 +32,13 @@ from pydantic import BeforeValidator, ValidationError
 if TYPE_CHECKING:
     from pydantic_core import InitErrorDetails
 
+from courtside_data.custom_endpoints import CustomEndpointHandler, dispatch_custom_endpoint
 from courtside_data.data import OutputType, OutputWriteOption, Team
 from courtside_data.debug import DebugTrace, debug_trace_context
 from courtside_data.debug.sink import debug_log_path, prepare_log_dir
 from courtside_data.endpoints import ENDPOINTS
 from courtside_data.errors import SchemaDriftError
+from courtside_data.generic_endpoints import GenericEndpointHandler
 from courtside_data.http_service import HTTPService
 from courtside_data.output.field_types import coerce_data
 from courtside_data.output.fields import BasketballReferenceJSONEncoder, format_value
@@ -200,134 +202,140 @@ def _endpoint_url_context(endpoint: Any, params: dict[str, Any] | None) -> str:
     return str(path)
 
 
-def _execute(
-    service_call: Callable[[], Any],
-    csv_column_names: Sequence[str] | None = None,
-    error_mappings: dict[int, Callable[[], Exception]] | None = None,
-    output_type: OutputType | None = None,
-    output_file_path: str | None = None,
-    output_write_option: OutputWriteOption | None = None,
-    json_options: dict[str, Any] | None = None,
-    validate_output: bool = True,
-    *,
-    endpoint: Any = None,
-    endpoint_name: str | None = None,
-    endpoint_params: dict[str, Any] | None = None,
-    raw: bool = False,
-    debug: bool = False,
-    trace: DebugTrace | None = None,
-) -> Any:
-    if debug and output_type in (OutputType.CSV, OutputType.DATAFRAME):
-        raise ValueError("debug=True is only supported with Python-returned data or OutputType.JSON.")
+def _make_output_service() -> OutputService:
+    return OutputService(
+        json_writer=JSONWriter(value_formatter=BasketballReferenceJSONEncoder),
+        csv_writer=CSVWriter(value_formatter=format_value),
+    )
 
+
+def _format_output(
+    data: Any,
+    *,
+    output_type: OutputType | None,
+    output_file_path: str | None,
+    output_write_option: OutputWriteOption | None,
+    json_options: dict[str, Any] | None,
+    csv_column_names: Sequence[str] | None,
+) -> Any:
+    options = OutputOptions.of(
+        file_options=FileOptions.of(path=output_file_path, mode=output_write_option),
+        output_type=output_type,
+        json_options=json_options,
+        csv_options={"column_names": csv_column_names},
+    )
+    return _make_output_service().output(data=data, options=options)
+
+
+def _execute_pydantic_pipeline(
+    values: Any,
+    *,
+    row_model: Any,
+    endpoint: Any,
+    endpoint_name: str | None,
+    endpoint_params: dict[str, Any] | None,
+    csv_column_names: Sequence[str] | None,
+    output_type: OutputType | None,
+    output_file_path: str | None,
+    output_write_option: OutputWriteOption | None,
+    json_options: dict[str, Any] | None,
+    raw: bool,
+    debug: bool,
+    trace: DebugTrace | None,
+) -> Any:
+    raw_rows = _extract_raw_rows(values)
     if trace is not None:
-        trace.metric("debug.enabled", True)
         trace.record(
             "runner",
-            "execute_start",
-            output_type=output_type.name if output_type is not None else None,
-            output_file_path=output_file_path,
-            validate_output=validate_output,
-            raw=raw,
+            "row_model_pipeline_start",
+            row_model=row_model.__name__,
+            raw_row_count=len(raw_rows),
+            raw_requested=raw,
         )
+        trace.observe_rows("raw_rows", raw_rows, expected_columns=csv_column_names)
+    if raw:
+        if debug and trace is not None:
+            return _output_debug_result(
+                raw_rows,
+                trace,
+                output_type,
+                output_file_path,
+                output_write_option,
+                json_options,
+            )
+        return raw_rows
 
-    if trace is not None:
-        with trace.span("service_call", stage="runner"):
-            values = _call_with_error_mapping(service_call, error_mappings)
-    else:
-        values = _call_with_error_mapping(service_call, error_mappings)
-    if trace is not None:
-        trace.record("runner", "service_call_complete", value_type=type(values).__name__)
-        trace.artifact("service_values", values)
-        trace.observe_rows("service_values", values, expected_columns=csv_column_names)
-
-    # Row-model endpoints validate the raw Basketball-Reference rows directly.
-    # That intentionally bypasses the legacy coerce_data/validate_rows path.
-    row_model = getattr(endpoint, "row_model", None)
-    if row_model is not None:
-        raw_rows = _extract_raw_rows(values)
+    if ROW_ADAPTERS.get(endpoint_name) is None:
+        raise RuntimeError(
+            f"Endpoint {endpoint_name!r} declares row_model {row_model.__name__!r} but no adapter is registered."
+        )
+    try:
+        if trace is not None:
+            with trace.span("pydantic_validation", stage="validation", row_model=row_model.__name__):
+                validated = _validate_row_model_rows(row_model, raw_rows)
+        else:
+            validated = _validate_row_model_rows(row_model, raw_rows)
         if trace is not None:
             trace.record(
-                "runner",
-                "row_model_pipeline_start",
+                "validation",
+                "pydantic_validation_complete",
+                adapter_registered=True,
                 row_model=row_model.__name__,
-                raw_row_count=len(raw_rows),
-                raw_requested=raw,
+                row_count=len(validated),
             )
-            trace.observe_rows("raw_rows", raw_rows, expected_columns=csv_column_names)
-        if raw:
-            result = raw_rows
-            if debug and trace is not None:
-                return _output_debug_result(
-                    result,
-                    trace,
-                    output_type,
-                    output_file_path,
-                    output_write_option,
-                    json_options,
-                )
-            return result
-
-        adapter = ROW_ADAPTERS.get(endpoint_name)
-        if adapter is None:
-            raise RuntimeError(
-                f"Endpoint {endpoint_name!r} declares row_model {row_model.__name__!r} but no adapter is registered."
-            )
-        try:
-            if trace is not None:
-                with trace.span("pydantic_validation", stage="validation", row_model=row_model.__name__):
-                    values = _validate_row_model_rows(row_model, raw_rows)
-            else:
-                values = _validate_row_model_rows(row_model, raw_rows)
-            if trace is not None:
-                trace.record(
-                    "validation",
-                    "pydantic_validation_complete",
-                    adapter_registered=True,
-                    row_model=row_model.__name__,
-                    row_count=len(values),
-                )
-        except ValidationError as exc:
-            if trace is not None:
-                trace.record(
-                    "validation",
-                    "pydantic_validation_failed",
-                    row_model=row_model.__name__,
-                    errors=exc.errors(),
-                )
-                trace.record_exception(exc, stage="validation")
-            raise SchemaDriftError(
-                endpoint_name=endpoint_name or "<unknown>",
-                url=_endpoint_url_context(endpoint, endpoint_params),
-                # exc.errors() yields Pydantic ErrorDetails TypedDicts;
-                # SchemaDriftError is typed list[dict] (plan-mandated signature),
-                # and the values are dicts at runtime, so cast the type.
-                pydantic_errors=cast("list[dict[str, Any]]", exc.errors()),
-            ) from exc
-
-        if output_type in (OutputType.CSV, OutputType.DATAFRAME):
-            csv_column_names = tuple(row_model.model_fields)
+    except ValidationError as exc:
         if trace is not None:
-            trace.artifact("validated_rows", values)
-            trace.observe_rows("validated_rows", values, expected_columns=tuple(row_model.model_fields))
+            trace.record(
+                "validation",
+                "pydantic_validation_failed",
+                row_model=row_model.__name__,
+                errors=exc.errors(),
+            )
+            trace.record_exception(exc, stage="validation")
+        raise SchemaDriftError(
+            endpoint_name=endpoint_name or "<unknown>",
+            url=_endpoint_url_context(endpoint, endpoint_params),
+            pydantic_errors=cast("list[dict[str, Any]]", exc.errors()),
+        ) from exc
 
-        if debug and trace is not None:
-            return _output_debug_result(values, trace, output_type, output_file_path, output_write_option, json_options)
+    if output_type in (OutputType.CSV, OutputType.DATAFRAME):
+        csv_column_names = tuple(row_model.model_fields)
+    if trace is not None:
+        trace.artifact("validated_rows", validated)
+        trace.observe_rows("validated_rows", validated, expected_columns=tuple(row_model.model_fields))
 
-        options = OutputOptions.of(
-            file_options=FileOptions.of(path=output_file_path, mode=output_write_option),
-            output_type=output_type,
-            json_options=json_options,
-            csv_options={"column_names": csv_column_names},
+    if debug and trace is not None:
+        return _output_debug_result(
+            validated,
+            trace,
+            output_type,
+            output_file_path,
+            output_write_option,
+            json_options,
         )
-        output_service = OutputService(
-            json_writer=JSONWriter(value_formatter=BasketballReferenceJSONEncoder),
-            csv_writer=CSVWriter(value_formatter=format_value),
-        )
-        return output_service.output(data=values, options=options)
 
-    # Coerce raw string values to proper Python types (idempotent for endpoints
-    # whose parser chains already produce typed values)
+    return _format_output(
+        validated,
+        output_type=output_type,
+        output_file_path=output_file_path,
+        output_write_option=output_write_option,
+        json_options=json_options,
+        csv_column_names=csv_column_names,
+    )
+
+
+def _execute_legacy_pipeline(
+    values: Any,
+    *,
+    csv_column_names: Sequence[str] | None,
+    output_type: OutputType | None,
+    output_file_path: str | None,
+    output_write_option: OutputWriteOption | None,
+    json_options: dict[str, Any] | None,
+    validate_output: bool,
+    debug: bool,
+    trace: DebugTrace | None,
+) -> Any:
     if trace is not None:
         trace.record("runner", "coerce_data_start")
     if trace is not None:
@@ -384,19 +392,95 @@ def _execute(
             raise error
 
     if debug and trace is not None:
-        return _output_debug_result(values, trace, output_type, output_file_path, output_write_option, json_options)
+        return _output_debug_result(
+            values,
+            trace,
+            output_type,
+            output_file_path,
+            output_write_option,
+            json_options,
+        )
 
-    options = OutputOptions.of(
-        file_options=FileOptions.of(path=output_file_path, mode=output_write_option),
+    return _format_output(
+        values,
         output_type=output_type,
+        output_file_path=output_file_path,
+        output_write_option=output_write_option,
         json_options=json_options,
-        csv_options={"column_names": csv_column_names},
+        csv_column_names=csv_column_names,
     )
-    output_service = OutputService(
-        json_writer=JSONWriter(value_formatter=BasketballReferenceJSONEncoder),
-        csv_writer=CSVWriter(value_formatter=format_value),
+
+
+def _execute(
+    service_call: Callable[[], Any],
+    csv_column_names: Sequence[str] | None = None,
+    error_mappings: dict[int, Callable[[], Exception]] | None = None,
+    output_type: OutputType | None = None,
+    output_file_path: str | None = None,
+    output_write_option: OutputWriteOption | None = None,
+    json_options: dict[str, Any] | None = None,
+    validate_output: bool = True,
+    *,
+    endpoint: Any = None,
+    endpoint_name: str | None = None,
+    endpoint_params: dict[str, Any] | None = None,
+    raw: bool = False,
+    debug: bool = False,
+    trace: DebugTrace | None = None,
+) -> Any:
+    if debug and output_type in (OutputType.CSV, OutputType.DATAFRAME):
+        raise ValueError("debug=True is only supported with Python-returned data or OutputType.JSON.")
+
+    if trace is not None:
+        trace.metric("debug.enabled", True)
+        trace.record(
+            "runner",
+            "execute_start",
+            output_type=output_type.name if output_type is not None else None,
+            output_file_path=output_file_path,
+            validate_output=validate_output,
+            raw=raw,
+        )
+
+    if trace is not None:
+        with trace.span("service_call", stage="runner"):
+            values = _call_with_error_mapping(service_call, error_mappings)
+    else:
+        values = _call_with_error_mapping(service_call, error_mappings)
+    if trace is not None:
+        trace.record("runner", "service_call_complete", value_type=type(values).__name__)
+        trace.artifact("service_values", values)
+        trace.observe_rows("service_values", values, expected_columns=csv_column_names)
+
+    row_model = getattr(endpoint, "row_model", None)
+    if row_model is not None:
+        return _execute_pydantic_pipeline(
+            values,
+            row_model=row_model,
+            endpoint=endpoint,
+            endpoint_name=endpoint_name,
+            endpoint_params=endpoint_params,
+            csv_column_names=csv_column_names,
+            output_type=output_type,
+            output_file_path=output_file_path,
+            output_write_option=output_write_option,
+            json_options=json_options,
+            raw=raw,
+            debug=debug,
+            trace=trace,
+        )
+
+    return _execute_legacy_pipeline(
+        values,
+        csv_column_names=csv_column_names,
+        output_type=output_type,
+        output_file_path=output_file_path,
+        output_write_option=output_write_option,
+        json_options=json_options,
+        validate_output=validate_output,
+        debug=debug,
+        trace=trace,
     )
-    return output_service.output(data=values, options=options)
 
 
 def _validate_row_model_rows(row_model: Any, raw_rows: list[dict[str, Any]]) -> list[Any]:
@@ -442,17 +526,15 @@ def _output_debug_result(
         json_options=json_options,
     )
     envelope = {"data": data, "debug": trace.to_dict()}
-    output_service = OutputService(
-        json_writer=JSONWriter(value_formatter=BasketballReferenceJSONEncoder),
-        csv_writer=CSVWriter(value_formatter=format_value),
+    return _make_output_service().output(
+        data=envelope,
+        options=OutputOptions.of(
+            file_options=FileOptions.of(path=output_file_path, mode=output_write_option),
+            output_type=output_type,
+            json_options=json_options,
+            csv_options={"column_names": None},
+        ),
     )
-    options = OutputOptions.of(
-        file_options=FileOptions.of(path=output_file_path, mode=output_write_option),
-        output_type=output_type,
-        json_options=json_options,
-        csv_options={"column_names": None},
-    )
-    return output_service.output(data=envelope, options=options)
 
 
 # Annotate ``Team`` parameters so Pydantic coerces raw abbreviations
@@ -475,7 +557,7 @@ def _params_hints(endpoint_name: str) -> dict[str, Any] | None:
     endpoint = ENDPOINTS[endpoint_name]
     if not endpoint.custom:
         return None
-    method = getattr(HTTPService, endpoint_name, None)
+    method = getattr(CustomEndpointHandler, endpoint_name, None)
     if method is None:
         return None
     try:
@@ -568,12 +650,8 @@ def _flush_trace(
         log_path = debug_log_path(trace)
         trace.record("output", "trace_log", path=str(log_path))
         envelope = {"data": data, "debug": trace.to_dict()}
-        output_service = OutputService(
-            json_writer=JSONWriter(value_formatter=BasketballReferenceJSONEncoder),
-            csv_writer=CSVWriter(value_formatter=format_value),
-        )
         if prepare_log_dir(log_path):
-            output_service.output(
+            _make_output_service().output(
                 data=envelope,
                 options=OutputOptions.of(
                     file_options=FileOptions.of(path=str(log_path), mode=OutputWriteOption.WRITE),
@@ -633,10 +711,10 @@ def _run_endpoint(
         if endpoint.custom:
             if trace is not None:
                 trace.record("endpoint", "custom_service_dispatch", method=name)
-            return getattr(service, name)(**coerced_params)
+            return dispatch_custom_endpoint(service, name, **coerced_params)
         if trace is not None:
             trace.record("endpoint", "generic_service_dispatch", method="fetch_table")
-        return service.fetch_table(endpoint, **coerced_params)
+        return GenericEndpointHandler(service).fetch_table(endpoint, **coerced_params)
 
     with debug_trace_context(trace):
         try:
