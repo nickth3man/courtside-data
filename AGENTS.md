@@ -6,7 +6,7 @@ Instructions for AI coding agents working in this repository.
 
 1. Read `codemap.md` for architecture, entry points, and data flow.
 2. For folder-specific work, read that folder’s `codemap.md` if present.
-3. Use `uv` and the `dev` dependency group for linting, type checking, and tests.
+3. Use the PEP 735 dev group via `uv sync --group dev` and run checks with `uv run <tool>`; do not use `--extra dev`.
 
 ```bash
 uv sync
@@ -181,7 +181,8 @@ uv run coverage report
 Optional determinism check after changes to shared state (`HTTPService` class vars, fixtures):
 
 ```bash
-uv run --extra dev pytest tests -n auto --randomly-seed=last
+# If dev dependencies are not installed, run `uv sync --group dev` first.
+uv run pytest tests -n auto --randomly-seed=last
 ```
 
 ---
@@ -461,6 +462,10 @@ uv run python -m courtside_data.debug.probe -o logs/my_probe.json
 ```
 
 Repeat `-e` / `--endpoint` to filter; omit it to probe everything. Unknown endpoint names exit **2**.
+
+If a selected endpoint has no fixture sample in `ALL_CASES`, report that endpoint as missing fixture data and stop with exit 1; do not continue as if the probe succeeded.
+
+If the live probe cannot reach Basketball Reference, times out, or hits rate limiting, stop and report the exact failure for each endpoint; do not retry indefinitely or claim the probe completed.
 
 ### Output
 
