@@ -325,18 +325,21 @@ ENDPOINTS: dict[str, TableEndpoint] = {
     "friv_7_game_playoff_series_outcomes_team_is_down": TableEndpoint(
         path="/friv/7-game-playoff-series-outcomes-22111.html",
         table_id="team-is-down",
+        custom=True,
         row_model=playoffs.SevenGamePlayoffSeriesOutcomesRow,
         csv_columns=FRIV_7_GAME_PLAYOFF_SERIES_OUTCOMES_COLUMN_NAMES,
     ),
     "friv_7_game_playoff_series_outcomes_team_is_tied": TableEndpoint(
         path="/friv/7-game-playoff-series-outcomes-22111.html",
         table_id="team-is-tied",
+        custom=True,
         row_model=playoffs.SevenGamePlayoffSeriesOutcomesRow,
         csv_columns=FRIV_7_GAME_PLAYOFF_SERIES_OUTCOMES_COLUMN_NAMES,
     ),
     "friv_7_game_playoff_series_outcomes_team_is_up": TableEndpoint(
         path="/friv/7-game-playoff-series-outcomes-22111.html",
         table_id="team-is-up",
+        custom=True,
         row_model=playoffs.SevenGamePlayoffSeriesOutcomesRow,
         csv_columns=FRIV_7_GAME_PLAYOFF_SERIES_OUTCOMES_COLUMN_NAMES,
     ),

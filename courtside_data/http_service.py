@@ -22,6 +22,7 @@ from collections.abc import Callable
 from datetime import UTC
 from pathlib import Path
 from typing import Any, ClassVar
+from urllib.parse import parse_qs, urlparse
 
 import httpx
 import stamina
@@ -48,6 +49,9 @@ logger = logging.getLogger(__name__)
 _DEFAULT_RATE_LIMIT_INTERVAL = 6.0  # 10 req/min ceiling — matches pybaseball's proven safe rate
 _DEFAULT_RATE_LIMIT_JITTER = 1.0  # uniform(0, 1.0) — average ~8.6 req/min with comfortable headroom
 _DEFAULT_TIMEOUT = httpx.Timeout(30.0, connect=10.0)
+_FRIV_7_GAME_PLAYOFF_SERIES_OUTCOMES_PATH = "/friv/7-game-playoff-series-outcomes-22111.html"
+_BR_WIN_COLOR = "#080"
+_BR_LOSS_COLOR = "#f00"
 _RETRY_ATTEMPTS = 3
 
 # Pages like the 7-game playoff series outcomes matrix host multiple tables
@@ -646,6 +650,146 @@ class HTTPService:
                 },
             )
         return rows
+
+    @staticmethod
+    def _extract_pattern_from_href(href: str) -> str:
+        if not href:
+            return ""
+        return parse_qs(urlparse(href).query).get("pattern", [""])[0]
+
+    @staticmethod
+    def _pattern_to_games_played(pattern: str) -> list[dict[str, Any]]:
+        games: list[dict[str, Any]] = []
+        index = 0
+        game_number = 1
+        while index < len(pattern):
+            location_char = pattern[index]
+            if location_char not in ("H", "A"):
+                break
+            index += 1
+            if index >= len(pattern) or pattern[index] not in ("0", "1"):
+                break
+            result = "win" if pattern[index] == "1" else "loss"
+            index += 1
+            location = "home" if location_char == "H" else "away"
+            games.append({"game": game_number, "location": location, "result": result})
+            game_number += 1
+        return games
+
+    @staticmethod
+    def _remaining_locations_from_text(text: str) -> list[str]:
+        locations: list[str] = []
+        for char in text.replace(" ", ""):
+            if char == "H":
+                locations.append("home")
+            elif char == "A":
+                locations.append("away")
+        return locations
+
+    @staticmethod
+    def _pattern_from_gameslist_spans(gameslist_cell: Selector) -> str | None:
+        parts: list[str] = []
+        seen_slash = False
+        for span in gameslist_cell.css("span"):
+            text = (span.css("::text").get() or "").strip()
+            if text == "/":
+                seen_slash = True
+                continue
+            if seen_slash or text not in ("H", "A"):
+                continue
+            style = span.attrib.get("style", "")
+            if _BR_WIN_COLOR in style:
+                parts.append(f"{text}1")
+            elif _BR_LOSS_COLOR in style:
+                parts.append(f"{text}0")
+            else:
+                parts.append(text)
+        if not parts:
+            return None
+        return "".join(parts)
+
+    @staticmethod
+    def _remaining_text_from_gameslist(gameslist_cell: Selector) -> str:
+        raw = "".join(gameslist_cell.css("::text").getall())
+        if "/" not in raw:
+            return ""
+        return raw.split("/", 1)[1].strip().replace(" ", "")
+
+    @staticmethod
+    def _parse_friv_playoff_outcomes_row(row: Selector) -> dict[str, Any]:
+        record = HTTPService._cell_text(row.css('[data-stat="record"]'))
+        gameslist_cell = row.css('[data-stat="gameslist"]')
+        wl_cell = row.css('[data-stat="wl"]')
+        gameslist_display = HTTPService._cell_text(gameslist_cell) if gameslist_cell else ""
+        wl = HTTPService._cell_text(wl_cell) if wl_cell else ""
+        href = wl_cell.css("a::attr(href)").get() if wl_cell else ""
+        pattern = HTTPService._extract_pattern_from_href(href or "")
+        aggregate = gameslist_display.strip().casefold() == "all series"
+
+        if aggregate:
+            return {
+                "record": record,
+                "gameslist": gameslist_display,
+                "wl": wl,
+                "aggregate": True,
+                "pattern": pattern,
+                "pattern_from_spans": None,
+                "patterns_agree": None,
+                "games_played": [],
+                "games_remaining": [],
+                "gameslist_display": gameslist_display,
+            }
+
+        gameslist_node = gameslist_cell[0]
+        pattern_from_spans = HTTPService._pattern_from_gameslist_spans(gameslist_node)
+        remaining_text = HTTPService._remaining_text_from_gameslist(gameslist_node)
+        canonical_pattern = pattern or pattern_from_spans or ""
+        games_played = HTTPService._pattern_to_games_played(canonical_pattern)
+        games_remaining = HTTPService._remaining_locations_from_text(remaining_text)
+        if pattern_from_spans is None or not pattern:
+            patterns_agree = None
+        else:
+            patterns_agree = pattern == pattern_from_spans
+
+        return {
+            "record": record,
+            "gameslist": gameslist_display,
+            "wl": wl,
+            "aggregate": False,
+            "pattern": pattern,
+            "pattern_from_spans": pattern_from_spans,
+            "patterns_agree": patterns_agree,
+            "games_played": games_played,
+            "games_remaining": games_remaining,
+            "gameslist_display": gameslist_display,
+        }
+
+    def _friv_7_game_playoff_series_outcomes(self, table_id: str) -> list[dict[str, Any]]:
+        url = f"{HTTPService.BASE_URL}{_FRIV_7_GAME_PLAYOFF_SERIES_OUTCOMES_PATH}"
+        selector = self._get_selector(url=url)
+        table = self._find_table(selector, table_id)
+        if table is None:
+            return []
+        rows = [
+            self._parse_friv_playoff_outcomes_row(row) for row in table.css("tbody tr:not(.thead)") if row.css("td")
+        ]
+        trace = current_debug_trace()
+        if trace is not None:
+            trace.record("parse", "friv_playoff_outcomes_parsed", table_id=table_id, row_count=len(rows))
+            trace.artifact("raw_rows", rows)
+        return rows
+
+    def friv_7_game_playoff_series_outcomes_team_is_down(self) -> list[dict[str, Any]]:
+        """Return the team-is-down matrix from the seven-game series outcomes page."""
+        return self._friv_7_game_playoff_series_outcomes("team-is-down")
+
+    def friv_7_game_playoff_series_outcomes_team_is_tied(self) -> list[dict[str, Any]]:
+        """Return the team-is-tied matrix from the seven-game series outcomes page."""
+        return self._friv_7_game_playoff_series_outcomes("team-is-tied")
+
+    def friv_7_game_playoff_series_outcomes_team_is_up(self) -> list[dict[str, Any]]:
+        """Return the team-is-up matrix from the seven-game series outcomes page."""
+        return self._friv_7_game_playoff_series_outcomes("team-is-up")
 
     def season_awards_voting(self, season_end_year: int, award: str) -> list[dict[str, Any]]:
         """Return one award voting table from ``/awards/awards_{year}.html``."""

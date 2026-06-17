@@ -11,9 +11,9 @@ the fallback layer produces (``series``, ``team``, ``result``) as its
 
 from __future__ import annotations
 
-from typing import Annotated
+from typing import Annotated, Literal
 
-from pydantic import BeforeValidator, Field
+from pydantic import BaseModel, BeforeValidator, Field
 
 from courtside_data.data import Team
 from courtside_data.schemas import register
@@ -188,6 +188,14 @@ register("playoff_bracket", PlayoffBracketRow)
 # ---------------------------------------------------------------------------
 
 
+class PlayedGame(BaseModel):
+    """One completed game in a seven-game playoff series path."""
+
+    game: int
+    location: Literal["home", "away"]
+    result: Literal["win", "loss"]
+
+
 class SevenGamePlayoffSeriesOutcomesRow(BRRow):
     """Row from one outcome matrix on ``/friv/7-game-playoff-series-outcomes-22111.html``.
 
@@ -195,11 +203,21 @@ class SevenGamePlayoffSeriesOutcomesRow(BRRow):
     or up in a seven-game playoff series. ``record`` is the current series
     score, ``gameslist`` is Basketball-Reference's home/away pattern label, and
     ``wl`` is the historical series outcome record for that state.
+
+    Structured fields derive from the W-L link ``pattern`` query parameter
+    (canonical) and from colored ``gameslist`` spans (cross-check).
     """
 
     record: str = Field(validation_alias="record")
     gameslist: str = Field(validation_alias="gameslist")
     wl: str = Field(validation_alias="wl")
+    aggregate: bool = False
+    pattern: str = ""
+    pattern_from_spans: str | None = None
+    patterns_agree: bool | None = None
+    games_played: list[PlayedGame] = Field(default_factory=list)
+    games_remaining: list[Literal["home", "away"]] = Field(default_factory=list)
+    gameslist_display: str = ""
 
 
 register("friv_7_game_playoff_series_outcomes_team_is_down", SevenGamePlayoffSeriesOutcomesRow)

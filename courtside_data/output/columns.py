@@ -506,7 +506,18 @@ CAREER_LEADERS_COLUMN_NAMES = ["rank", "player", "value"]
 
 PLAYOFF_BRACKET_COLUMN_NAMES = ["series", "team", "result"]
 
-FRIV_7_GAME_PLAYOFF_SERIES_OUTCOMES_COLUMN_NAMES = ["record", "gameslist", "wl"]
+FRIV_7_GAME_PLAYOFF_SERIES_OUTCOMES_COLUMN_NAMES = [
+    "record",
+    "gameslist",
+    "wl",
+    "aggregate",
+    "pattern",
+    "pattern_from_spans",
+    "patterns_agree",
+    "gameslist_display",
+    "games_played",
+    "games_remaining",
+]
 
 SEASON_AWARDS_COLUMN_NAMES = [
     "rank",
