@@ -43,6 +43,7 @@ from courtside_data.data import (
 from courtside_data.debug import current_debug_trace
 from courtside_data.endpoints import ENDPOINTS, TableEndpoint
 from courtside_data.errors import InvalidDate, InvalidPlayerAndSeason, MissingPlayerSlug, RateLimitJailed
+from courtside_data.schemas._fields import _team_field
 from courtside_data.tables import GenericTable, extract_commented_table, parse_transaction_list
 
 logger = logging.getLogger(__name__)
@@ -582,6 +583,7 @@ class HTTPService:
             table_selector,
             use_header_fallback=endpoint.use_header_fallback,
             exclude_summary_rows=endpoint.exclude_summary_rows,
+            value_column=endpoint.value_column,
         )
         rows = [row.to_dict() for row in table.rows]
         if endpoint.projection is not None:
@@ -1041,6 +1043,11 @@ class HTTPService:
         return self._player_season_box_score_rows(table, include_inactive_games=include_inactive_games)
 
     def play_by_play(self, home_team: Team, day: int, month: int, year: int) -> list[dict[str, Any]]:
+        # The runner coerces raw abbreviations (``"ATL"``) into :class:`Team`
+        # before dispatch. This guard is a belt-and-suspenders for direct
+        # callers (e.g. tests) that pass the raw string past the runner.
+        if isinstance(home_team, str):
+            home_team = _team_field(home_team)
         # Look up the actual game URL from the daily boxscores page
         # instead of hardcoding the game index (handles doubleheaders).
         boxscores_selector = self._get_selector(

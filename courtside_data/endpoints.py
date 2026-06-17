@@ -136,6 +136,20 @@ class TableEndpoint:
     error: type[Exception] | None = None
     error_params: tuple[str, ...] = ()
     error_status_codes: tuple[int, ...] = NOT_FOUND
+    # Valid ``season_end_year`` range enforced by the contract test. None
+    # means "no constraint declared"; the default ``min_year=1947`` on
+    # :func:`_season` covers most league endpoints. Set per-endpoint when BR
+    # rejects years outside a narrower window (e.g. per-100-possessions
+    # was introduced in 1974). Runtime validation is intentionally NOT added
+    # — this metadata is consumed by ``tests/test_manifest_param_contract.py``
+    # to prevent offline fixtures from drifting below the live floor.
+    min_year: int | None = None
+    max_year: int | None = None
+    # When True, ``fetch_table()`` renames the rightmost non-text column of
+    # each row to ``value`` after extraction. Used by the leaders endpoints
+    # whose stat column header rotates with the active category (e.g. ``per``,
+    # ``pts``, ``ast``). See :meth:`GenericTable._normalize_value_column`.
+    value_column: bool = False
 
     def error_mappings(self, params: dict[str, object]) -> dict[int, Callable[[], Exception]] | None:
         """Build the per-call ``{status_code: exception_factory}`` mapping."""
@@ -167,6 +181,9 @@ def _endpoint(
     row_model: type[BRRow] | None = None,
     projection: tuple[str, ...] | None = None,
     csv_columns: Sequence[str] | None = None,
+    min_year: int | None = None,
+    max_year: int | None = None,
+    value_column: bool = False,
 ) -> TableEndpoint:
     return TableEndpoint(
         path=path,
@@ -184,16 +201,28 @@ def _endpoint(
         error=error,
         error_params=error_params,
         error_status_codes=error_status_codes,
+        min_year=min_year,
+        max_year=max_year,
+        value_column=value_column,
     )
 
 
+# Default floor for the league-wide season endpoints. 1947 is the first
+# BAA/NBA season Basketball-Reference tracks for the historical tables
+# (per-game, totals, per-36); per-100-possessions was introduced in 1974
+# and overrides this with ``min_year=1974`` at its registration.
+_DEFAULT_SEASON_MIN_YEAR = 1947
+
+
 def _season(path: str, params: tuple[str, ...] = ("season_end_year",), **overrides: Any) -> TableEndpoint:
+    defaults: dict[str, Any] = {"min_year": _DEFAULT_SEASON_MIN_YEAR}
+    defaults.update(overrides)
     return _endpoint(
         path,
         params=params,
         error=InvalidSeason,
         error_params=("season_end_year",),
-        **overrides,
+        **defaults,
     )
 
 
@@ -248,6 +277,7 @@ ENDPOINTS: dict[str, TableEndpoint] = {
         "/leagues/NBA_{season_end_year}_per_poss.html",
         table_id="per_poss",
         exclude_summary_rows=True,
+        min_year=1974,
         row_model=league.LeaguePer100PossessionsRow,
         csv_columns=LEAGUE_PER_100_POSSESSIONS_COLUMN_NAMES,
     ),
@@ -287,6 +317,11 @@ ENDPOINTS: dict[str, TableEndpoint] = {
     ),
     "standings_by_date": _season(
         "/leagues/NBA_{season_end_year}_standings_by_date_{conference}.html",
+        # The bespoke HTTPService.standings_by_date fetches both conferences
+        # internally; ``conference`` is an internal template placeholder, not a
+        # call parameter. Declaring only ``season_end_year`` here keeps the
+        # contract-test signature check honest and matches the public API.
+        params=("season_end_year",),
         table_id="standings_by_date",
         custom=True,
         row_model=standings.StandingsByDateRow,
@@ -381,13 +416,25 @@ ENDPOINTS: dict[str, TableEndpoint] = {
         path="/leaders/per_season.html",
         table_id="stats_TOT",
         use_header_fallback=True,
+        # The third column header rotates with the active stat category
+        # (``per``, ``pts``, ``ast`` …). ``value_column`` renames the rightmost
+        # non-text column to a stable ``value`` key so the row model validates.
+        value_column=True,
         row_model=league.SeasonLeadersRow,
         csv_columns=SEASON_LEADERS_COLUMN_NAMES,
     ),
     "career_leaders": TableEndpoint(
-        path="/leaders/",
-        table_id="leaders_index",
+        # Re-registered from ``/leaders/`` (a navigation index) to the
+        # canonical career-points leaderboard at ``/leaders/pts_career.html``.
+        # The previous registration targeted ``table#leaders_index``, a
+        # stat-category navigation page whose rows don't match the
+        # rank/player/value schema. ``/leaders/pts_career.html`` is a real
+        # per-stat leaderboard (``table#tot``, columns Rank/Player/PTS) and
+        # is the default career leaderboard BR surfaces.
+        path="/leaders/pts_career.html",
+        table_id="tot",
         use_header_fallback=True,
+        value_column=True,
         row_model=league.CareerLeadersRow,
         csv_columns=CAREER_LEADERS_COLUMN_NAMES,
     ),

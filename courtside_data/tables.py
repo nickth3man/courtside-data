@@ -50,6 +50,13 @@ class GenericTableRow:
         return dict(self._metadata)
 
 
+# Column keys on the leaders pages that are NEVER the rotating stat value.
+# They are text/identity columns whose header does not rotate with the active
+# stat category. Used by :attr:`GenericTable.value_column` to identify the
+# rightmost non-text column and rename it to ``value``.
+_LEADER_TEXT_COLUMN_KEYS: frozenset[str] = frozenset({"rank", "player", "season", "team", "team_id"})
+
+
 class GenericTable:
     """Extracts rows from any basketball-reference table.
 
@@ -62,6 +69,7 @@ class GenericTable:
         table_selector: Selector,
         use_header_fallback: bool = False,
         exclude_summary_rows: bool = False,
+        value_column: bool = False,
     ) -> None:
         self.rows: list[GenericTableRow] = []
         row_filter = "tbody tr:not(.thead)"
@@ -81,6 +89,8 @@ class GenericTable:
             generic_row = GenericTableRow(row, fallback_headers=fallback_headers)
             if generic_row._data:
                 self.rows.append(generic_row)
+        if value_column:
+            self._normalize_value_column()
 
     def __len__(self) -> int:
         return len(self.rows)
@@ -92,6 +102,39 @@ class GenericTable:
     def _is_header_row(row: Selector) -> bool:
         cells = row.css("td, th")
         return bool(cells) and not row.css("td") and bool(row.css("th"))
+
+    def _normalize_value_column(self) -> None:
+        """Normalize leaderboard rows for downstream row-model validation.
+
+        Two passes per row:
+
+        1. **Rank period strip**: BR renders rank values as ``"1."``,
+           ``"2."`` (trailing period). The shared ``_br_int`` validator
+           rejects ``"1."`` as non-integer, so we strip the trailing
+           period before the row reaches the schema.
+        2. **Value column rename**: the leaders pages emit a column whose
+           header rotates with the active stat category (``per``,
+           ``pts``, ``ast``, ``blk`` …). A static ``validation_alias``
+           cannot cover every category, so this pass renames the rotating
+           column to a stable ``value`` key that downstream row models
+           can match. The rename target is the rightmost key on each row
+           that is NOT one of :data:`_LEADER_TEXT_COLUMN_KEYS`. Rows that
+           already expose a ``value`` key are left untouched.
+        """
+        for row in self.rows:
+            data = row._data
+            # Pass 1: strip the trailing period from rank values.
+            rank_value = data.get("rank")
+            if isinstance(rank_value, str) and rank_value.endswith("."):
+                data["rank"] = rank_value.rstrip(".")
+            # Pass 2: rename the rotating stat column to a stable key.
+            if "value" not in data:
+                value_key = next(
+                    (key for key in reversed(list(data)) if key not in _LEADER_TEXT_COLUMN_KEYS),
+                    None,
+                )
+                if value_key is not None:
+                    data["value"] = data.pop(value_key)
 
     @classmethod
     def _fallback_headers(cls, table_selector: Selector) -> list[str]:

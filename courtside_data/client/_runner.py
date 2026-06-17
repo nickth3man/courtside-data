@@ -16,17 +16,21 @@ and the parser graph are reused across calls.
 from __future__ import annotations
 
 import contextlib
+import inspect
+import sys
 import threading
 import warnings
+import weakref
 from collections.abc import Callable, Sequence
 from contextvars import ContextVar
-from typing import Any, cast
+from functools import lru_cache
+from typing import Annotated, Any, cast, get_type_hints
 
 import httpx
-from pydantic import ValidationError
+from pydantic import BeforeValidator, ValidationError
 from pydantic_core import InitErrorDetails
 
-from courtside_data.data import OutputType, OutputWriteOption
+from courtside_data.data import OutputType, OutputWriteOption, Team
 from courtside_data.debug import DebugTrace, debug_trace_context
 from courtside_data.debug.sink import debug_log_path, prepare_log_dir
 from courtside_data.endpoints import ENDPOINTS
@@ -38,6 +42,7 @@ from courtside_data.output.service import OutputService
 from courtside_data.output.type_validator import validate_rows
 from courtside_data.output.writers import CSVWriter, FileOptions, JSONWriter, OutputOptions
 from courtside_data.schemas import ROW_ADAPTERS
+from courtside_data.schemas._fields import _team_field
 
 _shared_service_lock = threading.Lock()
 _shared_service: HTTPService | None = None
@@ -424,37 +429,21 @@ def _output_debug_result(
     output_write_option: OutputWriteOption | None,
     json_options: dict[str, Any] | None,
 ) -> Any:
-    trace.record("debug", "envelope_created", data_type=type(data).__name__)
-    trace.observe_rows("result_data", data)
-    trace.record(
-        "output",
-        "debug_output_start",
-        output_type=output_type.name if output_type is not None else None,
+    # Persist the envelope to disk (idempotent: a surrounding ``finally`` may
+    # also flush if the call later raises, but only one write happens).
+    _flush_trace(
+        trace,
+        data,
+        output_type=output_type,
         output_file_path=output_file_path,
-        output_write_option=output_write_option.name if output_write_option is not None else None,
+        output_write_option=output_write_option,
+        json_options=json_options,
     )
-    trace.record("output", "debug_output_ready", envelope_keys=["data", "debug"])
-    log_path = debug_log_path(trace)
-    trace.record("output", "trace_log", path=str(log_path))
     envelope = {"data": data, "debug": trace.to_dict()}
     output_service = OutputService(
         json_writer=JSONWriter(value_formatter=BasketballReferenceJSONEncoder),
         csv_writer=CSVWriter(value_formatter=format_value),
     )
-
-    # Always persist the full envelope to ./logs (one JSON file per call),
-    # reusing the JSON writer so row models serialize exactly as the return value.
-    if prepare_log_dir(log_path):
-        output_service.output(
-            data=envelope,
-            options=OutputOptions.of(
-                file_options=FileOptions.of(path=str(log_path), mode=OutputWriteOption.WRITE),
-                output_type=OutputType.JSON,
-                json_options=json_options,
-                csv_options={"column_names": None},
-            ),
-        )
-
     options = OutputOptions.of(
         file_options=FileOptions.of(path=output_file_path, mode=output_write_option),
         output_type=output_type,
@@ -462,6 +451,142 @@ def _output_debug_result(
         csv_options={"column_names": None},
     )
     return output_service.output(data=envelope, options=options)
+
+
+# Annotate ``Team`` parameters so Pydantic coerces raw abbreviations
+# (``"ATL"``) into the :class:`Team` enum before dispatch. Pydantic's default
+# enum coercion matches ``.value`` (``"ATLANTA HAWKS"``), not the abbreviation
+# the registry probe passes, so the runtime validator reuses the abbreviation
+# table from the schemas package.
+_TeamParam = Annotated[Team, BeforeValidator(_team_field)]
+
+
+@lru_cache(maxsize=128)
+def _params_hints(endpoint_name: str) -> dict[str, Any] | None:
+    """Return the cached ``{param_name: annotation}`` for one custom endpoint.
+
+    Returns ``None`` for generic (non-custom) endpoints so the dispatch path
+    stays free of Pydantic overhead. Per-endpoint hints are computed once
+    and reused for every call; the ``@lru_cache`` decorator keeps the
+    ``inspect``/``get_type_hints`` work off the hot path.
+    """
+    endpoint = ENDPOINTS[endpoint_name]
+    if not endpoint.custom:
+        return None
+    method = getattr(HTTPService, endpoint_name, None)
+    if method is None:
+        return None
+    try:
+        sig = inspect.signature(method)
+        hints = get_type_hints(method, include_extras=True)
+    except (TypeError, ValueError, NameError):
+        # Some methods may have unresolvable forward references; skip coercion
+        # rather than break the dispatch path.
+        return None
+    fields: dict[str, Any] = {}
+    for pname, param in sig.parameters.items():
+        if pname == "self":
+            continue
+        ann = hints.get(pname, param.annotation)
+        if ann is inspect.Parameter.empty:
+            continue
+        fields[pname] = ann
+    return fields or None
+
+
+def _coerce_params(endpoint_name: str, params: dict[str, Any]) -> dict[str, Any]:
+    """Coerce raw string params into typed values for custom endpoint methods.
+
+    The probe path passes raw abbreviations (``"ATL"``) to the runner; the
+    typed client path passes :class:`Team` enums. This helper unifies both
+    paths by walking the cached method annotations and running ``_team_field``
+    on any param whose annotation is :class:`Team` and whose value is a raw
+    string. Other params are passed through untouched (the dispatch path
+    already handles ``int``/``str`` idempotently). A fresh dict is returned
+    so the caller's dict is never mutated.
+    """
+    hints = _params_hints(endpoint_name)
+    if hints is None:
+        return params
+    coerced: dict[str, Any] = {}
+    for key, value in params.items():
+        if hints.get(key) is Team and isinstance(value, str):
+            try:
+                coerced[key] = _team_field(value)
+            except ValueError as exc:
+                raise ValueError(f"Invalid param {key!r} for endpoint {endpoint_name!r}: {exc}") from exc
+        else:
+            coerced[key] = value
+    return coerced
+
+
+# Track which traces have already been flushed, so the success path's flush
+# and a surrounding ``finally`` flush don't both write the same envelope.
+# Keyed by the trace's identity; entries are dropped when the trace is GC'd.
+_flushed_traces: weakref.WeakKeyDictionary[DebugTrace, bool] = weakref.WeakKeyDictionary()
+
+
+def _flush_trace(
+    trace: DebugTrace,
+    data: Any,
+    *,
+    output_type: OutputType | None = None,
+    output_file_path: str | None = None,
+    output_write_option: OutputWriteOption | None = None,
+    json_options: dict[str, Any] | None = None,
+) -> None:
+    """Best-effort, idempotent write of the debug trace envelope to disk.
+
+    Mirrors OTel's "SHOULD ignore subsequent calls to End" semantics: a
+    per-trace flag is held in a module-level :class:`weakref.WeakKeyDictionary`
+    so the success path can flush and a surrounding ``finally`` can also
+    flush without double-writing. On disk failure the flush warns and
+    continues (matching :mod:`courtside_data.debug.sink` semantics);
+    ``KeyboardInterrupt`` and ``SystemExit`` are NOT swallowed — only
+    ``Exception`` is caught.
+
+    On the failure path, ``data`` is ``None``; the envelope is written as
+    ``{"data": None, "debug": trace.to_dict()}`` so the full trace
+    (including any ``validation/pydantic_validation_failed`` events with
+    ``exc.errors()``) is recoverable from disk.
+    """
+    if _flushed_traces.get(trace):
+        return
+    try:
+        trace.record("debug", "envelope_created", data_type=type(data).__name__)
+        trace.observe_rows("result_data", data)
+        trace.record(
+            "output",
+            "debug_output_start",
+            output_type=output_type.name if output_type is not None else None,
+            output_file_path=output_file_path,
+            output_write_option=output_write_option.name if output_write_option is not None else None,
+        )
+        trace.record("output", "debug_output_ready", envelope_keys=["data", "debug"])
+        log_path = debug_log_path(trace)
+        trace.record("output", "trace_log", path=str(log_path))
+        envelope = {"data": data, "debug": trace.to_dict()}
+        output_service = OutputService(
+            json_writer=JSONWriter(value_formatter=BasketballReferenceJSONEncoder),
+            csv_writer=CSVWriter(value_formatter=format_value),
+        )
+        if prepare_log_dir(log_path):
+            output_service.output(
+                data=envelope,
+                options=OutputOptions.of(
+                    file_options=FileOptions.of(path=str(log_path), mode=OutputWriteOption.WRITE),
+                    output_type=OutputType.JSON,
+                    json_options=json_options,
+                    csv_options={"column_names": None},
+                ),
+            )
+    except Exception as error:  # best-effort disk write, must not raise
+        warnings.warn(
+            f"Failed to flush debug trace {trace.trace_id} for endpoint {trace.endpoint!r}: {error}",
+            stacklevel=2,
+        )
+        return
+    _flushed_traces[trace] = True
 
 
 def _run_endpoint(
@@ -481,13 +606,18 @@ def _run_endpoint(
     columns, error mapping); the caller supplies an explicit, typed signature.
     """
     endpoint = ENDPOINTS[name]
-    trace = DebugTrace(endpoint=name, params=params) if debug else None
+    # Coerce raw string params (``"ATL"``) into typed values for custom
+    # endpoints so the probe path and the typed-client path dispatch the
+    # same way. Generic (non-custom) endpoints are unaffected; ``str``/``int``
+    # URL params are idempotent.
+    coerced_params = _coerce_params(name, params) if endpoint.custom else params
+    trace = DebugTrace(endpoint=name, params=coerced_params) if debug else None
     if trace is not None:
         trace.record(
             "endpoint",
             "run_endpoint_start",
             endpoint=name,
-            params=params,
+            params=coerced_params,
             custom=endpoint.custom,
             path_template=endpoint.path,
             table_id=endpoint.table_id,
@@ -501,24 +631,46 @@ def _run_endpoint(
         if endpoint.custom:
             if trace is not None:
                 trace.record("endpoint", "custom_service_dispatch", method=name)
-            return getattr(service, name)(**params)
+            return getattr(service, name)(**coerced_params)
         if trace is not None:
             trace.record("endpoint", "generic_service_dispatch", method="fetch_table")
-        return service.fetch_table(endpoint, **params)
+        return service.fetch_table(endpoint, **coerced_params)
 
     with debug_trace_context(trace):
-        return _execute(
-            service_call=service_call,
-            csv_column_names=endpoint.csv_columns,
-            error_mappings=endpoint.error_mappings(params),
-            output_type=output_type,
-            output_file_path=output_file_path,
-            output_write_option=output_write_option,
-            json_options=json_options,
-            endpoint=endpoint,
-            endpoint_name=name,
-            endpoint_params=params,
-            raw=raw,
-            debug=debug,
-            trace=trace,
-        )
+        try:
+            return _execute(
+                service_call=service_call,
+                csv_column_names=endpoint.csv_columns,
+                error_mappings=endpoint.error_mappings(coerced_params),
+                output_type=output_type,
+                output_file_path=output_file_path,
+                output_write_option=output_write_option,
+                json_options=json_options,
+                endpoint=endpoint,
+                endpoint_name=name,
+                endpoint_params=coerced_params,
+                raw=raw,
+                debug=debug,
+                trace=trace,
+            )
+        finally:
+            # Guarantee the trace envelope is persisted to disk on every
+            # code path: when the call succeeds, ``_output_debug_result``
+            # already flushed (idempotent no-op). When the call raises —
+            # e.g. ``SchemaDriftError`` — the in-memory trace (with the
+            # ``validation/pydantic_validation_failed`` event and any
+            # ``exc.errors()`` payload) is flushed here as a last resort
+            # so the failure is recoverable from ``./logs``. The raised
+            # exception is preserved by Python's normal ``finally`` re-raise.
+            if trace is not None:
+                exc_info = sys.exc_info()
+                if exc_info[1] is not None:
+                    trace.record_exception(exc_info[1], stage="runner")
+                _flush_trace(
+                    trace,
+                    data=None,
+                    output_type=output_type,
+                    output_file_path=output_file_path,
+                    output_write_option=output_write_option,
+                    json_options=json_options,
+                )

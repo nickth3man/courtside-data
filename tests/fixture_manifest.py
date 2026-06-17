@@ -191,7 +191,8 @@ def _resolve_season_endpoint(
                     None,
                     f"unexpected fixture name '{stem}.html' (expected 'YYYY.html')",
                 )
-            params = {"season_end_year": int(m.group(1))}
+            year = int(m.group(1))
+            params = {"season_end_year": year}
         else:
             m = _TEAM_YEAR_RE.match(stem)
             if not m:
@@ -199,10 +200,18 @@ def _resolve_season_endpoint(
                     None,
                     f"unexpected fixture name '{stem}.html' (expected 'TEAM_YYYY.html')",
                 )
+            year = int(m.group(2))
             params = {
                 "team_abbreviation": m.group(1),
-                "season_end_year": int(m.group(2)),
+                "season_end_year": year,
             }
+        # Honor the endpoint's declared year range. Skipping a year that the
+        # endpoint declares off-limits is safer than emitting a case the live
+        # site would reject (e.g. league_per_100_possessions pre-1974).
+        if endpoint.min_year is not None and year < endpoint.min_year:
+            continue
+        if endpoint.max_year is not None and year > endpoint.max_year:
+            continue
         # Sanity: declared params must match what we parsed.
         expected = set(endpoint.params)
         actual = set(params)
@@ -644,7 +653,11 @@ def _resolve_standings_by_date() -> tuple[list[Case] | None, str | None]:
             f"{BASE_URL}/leagues/NBA_{year}_standings_by_date_eastern_conference.html": confs["eastern"],
             f"{BASE_URL}/leagues/NBA_{year}_standings_by_date_western_conference.html": confs["western"],
         }
-        params = {"season_end_year": year, "conference": "both"}
+        # ``conference`` is NOT a call parameter for ``standings_by_date``:
+        # the bespoke HTTPService method fetches both conferences internally.
+        # Declaring it here previously masked a contract-test gap (case
+        # params did not match the method's signature).
+        params = {"season_end_year": year}
         return (
             [
                 Case(
@@ -894,8 +907,12 @@ def _resolve_endpoint(endpoint_name: str, endpoint: TableEndpoint) -> tuple[list
     # ── Single-file (no path params) endpoints ──
 
     if endpoint_name == "career_leaders":
+        # Re-pointed to the real career-points leaderboard fixture
+        # (``raw/leaders_record_boards/pts_career.html``). The previous
+        # ``raw/career_leaders/default.html`` was the BR navigation index,
+        # not a rank/player/value leaderboard.
         return _resolve_single_file_endpoint(
-            endpoint_name, endpoint, "career_leaders", fixture_name="default.html", params={}
+            endpoint_name, endpoint, "leaders_record_boards", fixture_name="pts_career.html", params={}
         )
     if endpoint_name == "season_leaders":
         return _resolve_single_file_endpoint(
@@ -1066,9 +1083,6 @@ MULTI_REQUEST_CASES: list[Case] = [c for c in ALL_CASES if c.endpoint_name in MU
 # fixes land; see ``test_tier1_exclusions_documented`` in manifest coverage tests.
 TIER1_EXCLUDED_CASE_IDS: frozenset[str] = frozenset(
     {
-        "career_leaders",
-        "season_leaders",
-        "league_per_100_possessions-1973",
         "player_all_star-chambwi01",
         "player_all_star-jamesle01",
         "player_career_stats-chambwi01",
