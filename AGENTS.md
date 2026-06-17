@@ -186,6 +186,256 @@ uv run --extra dev pytest tests -n auto --randomly-seed=last
 
 ---
 
+## taskipy (task runner)
+
+[taskipy](https://github.com/taskipy/taskipy) reads task definitions from `[tool.taskipy.tasks]` in `pyproject.toml` and exposes them as `uv run task <name>`. The project defines 11 tasks that wrap the underlying tools documented below.
+
+### Commands
+
+```bash
+# List all tasks and the command each expands to
+uv run task --list
+
+# Day-to-day
+uv run task lint        # ruff check .
+uv run task format      # ruff format --check .
+uv run task fix         # ruff check --fix . && ruff format .
+uv run task type        # ty check
+uv run task test        # pytest tests -n auto
+uv run task audit       # lint + format --check + type + test  (the full gate)
+
+# Refactor / ad-hoc audits
+uv run task refactor    # ruff fix + format + flynt
+uv run task vulture     # vulture courtside_data --min-confidence 80
+uv run task deptry      # deptry .
+uv run task bandit      # bandit -r courtside_data -lll
+uv run task test-cov    # coverage run --source=courtside_data --module pytest tests
+
+# Pass extra args through to the underlying command
+uv run task test -k test_foo     # → pytest tests -n auto -k test_foo
+```
+
+CI does **not** call taskipy — workflows invoke the underlying tools directly. taskipy is a local-dev convenience only.
+
+**Exit code:** taskipy propagates the exit code of the underlying command (or the first failing command in a `&&` chain).
+
+> Docs: https://github.com/taskipy/taskipy
+
+---
+
+## flynt (f-string conversion)
+
+[flynt](https://github.com/ikamensh/flynt) auto-converts `%`-formatted and `.format(...)` strings (plus concatenations and static joins) to f-strings in place. Used by the `refactor` task.
+
+### Commands
+
+```bash
+# Convert in place (the `refactor` task's flynt step)
+uv run flynt -tc -tj courtside_data/ tests/ scripts/   # -tc: concats, -tj: joins
+
+# Single file vs directory
+uv run flynt courtside_data/cli.py
+uv run flynt courtside_data/
+
+# Dry-run / verbose / CI fail mode
+uv run flynt -d courtside_data/          # diff, no writes
+uv run flynt -v courtside_data/          # DEBUG logs
+uv run flynt -d -f courtside_data/       # CI: exit 1 if anything would change
+uv run flynt --report courtside_data/    # per-file conversion report
+```
+
+> **Flag-clustering gotcha:** `-tc` and `-tj` are multi-character short options — argparse does **not** auto-cluster them. `flynt -tjc` fails with `unrecognized arguments: -tjc`; always pass them separately as `-tc -tj`.
+
+Config (since v0.71): `[tool.flynt]` in `pyproject.toml`, auto-discovered by walking up from the first `src` argument.
+
+> Docs: https://github.com/ikamensh/flynt
+
+---
+
+## vulture (dead code)
+
+[vulture](https://github.com/jendrikseipp/vulture) finds unused Python code via static AST analysis. Used by the `vulture` task.
+
+### Commands
+
+```bash
+# The `vulture` task — confidence 80 is the sweet spot vs false positives
+uv run vulture courtside_data --min-confidence 80
+
+# Stricter: only 100%-confident dead code
+uv run vulture courtside_data --min-confidence 100
+
+# Triage big reports first
+uv run vulture courtside_data --sort-by-size --min-confidence 60
+
+# Auto-generate a whitelist module for known false positives
+uv run vulture courtside_data --make-whitelist > vulture_whitelist.py
+uv run vulture courtside_data vulture_whitelist.py
+```
+
+**Suppressing false positives** (in order of preference): (1) whitelist module passed as an extra path, (2) `--ignore-names "visit_*,do_*"` for patterns, (3) `# noqa: F401`/`F841` inline. Confidence levels: imports 90 · function args + unreachable code 100 · attributes/classes/functions/variables 60.
+
+### Exit codes
+
+| Code | Meaning |
+|------|---------|
+| 0 | Clean |
+| 1 | Invalid input (missing file, syntax error) |
+| 2 | Bad CLI args |
+| 3 | Dead code found (this is what blocks CI) |
+
+Config: `[tool.vulture]` in `pyproject.toml` (`min_confidence`, `ignore_names`, `paths`, …).
+
+> Docs: https://github.com/jendrikseipp/vulture
+
+---
+
+## deptry (dependency linting)
+
+[deptry](https://deptry.com) statically checks declared dependencies against actual imports — catches missing, unused, transitive-only, and misplaced (dev) deps. Used by the `deptry` task.
+
+### Commands
+
+```bash
+# The `deptry` task
+uv run deptry .
+
+# GitHub Actions annotations
+uv run deptry . --github-output
+
+# Ignore rules / per-rule module exclusions
+uv run deptry . --ignore DEP001,DEP004
+uv run deptry . --per-rule-ignores "DEP001=matplotlib,DEP002=pandas|numpy"
+
+# Extend default excludes (additive; respects .gitignore)
+uv run deptry . --extend-exclude ".*/legacy/*"
+```
+
+### Rules
+
+| Rule | What it flags |
+|------|---------------|
+| `DEP001` | **Missing** — imported but not declared |
+| `DEP002` | **Unused** — declared but not imported (skipped for dev deps) |
+| `DEP003` | **Transitive** — in the dep tree but not declared directly |
+| `DEP004` | **Misplaced** — declared in `[dependency-groups]` (dev) but imported from shipped code |
+| `DEP005` | **Stdlib** — declared but ships with the standard library |
+
+**PEP 735 support:** ✅ since v0.20. Every group under `[dependency-groups]` is treated as dev by default, so DEP002 is not raised for them and DEP004 fires on leaks into runtime code. Use `--non-dev-dependency-groups "server,telemetry"` to opt specific groups back into the runtime bucket.
+
+Inline suppression: `# deptry: ignore[DEP001,DEP003]` on the import line (cannot silence DEP002/DEP005 — those point at `pyproject.toml`).
+
+Config: `[tool.deptry]` in `pyproject.toml`.
+
+> Docs: https://deptry.com/
+
+---
+
+## bandit (security linting)
+
+[bandit](https://bandit.readthedocs.io) is an AST-based security linter — finds `assert` in production code, shell injection, weak crypto, hard-coded secrets, unsafe `yaml.load`, etc. Used by the `bandit` task.
+
+### Commands
+
+```bash
+# The `bandit` task — HIGH severity only
+uv run bandit -r courtside_data -lll
+
+# Lower thresholds during triage
+uv run bandit -r courtside_data -ll      # MEDIUM+
+uv run bandit -r courtside_data          # everything
+
+# Run / skip specific test IDs
+uv run bandit -r courtside_data -t B602,B607
+uv run bandit -r courtside_data -s B101  # skip assert plugin
+
+# Output formats (NO native `github` formatter — use sarif or json)
+uv run bandit -r courtside_data -lll -f sarif -o bandit.sarif   # → github/codeql-action/upload-sarif
+uv run bandit -r courtside_data -lll -f json  -o bandit.json
+uv run bandit -r courtside_data -lll -f html  -o bandit.html
+```
+
+**Severity ladder:** `-l` = LOW+, `-ll` = MEDIUM+, **`-lll` = HIGH+** (the project's choice). Confidence works the same way: `-i`/`-ii`/`-iii`.
+
+> **No `-f github`:** bandit 1.9.x ships `csv, custom, html, json, sarif, screen, txt, xml, yaml`. For GitHub Actions, pair `-f sarif` with `github/codeql-action/upload-sarif@v3`, or `-f json` with an annotator action.
+
+**B101 vs pytest:** `assert_used` fires on every `assert` in `tests/`. The project's `bandit` task only targets `courtside_data/`, avoiding tests entirely. Ruff's `S101` ignore for `tests/**` covers the equivalent lint concern.
+
+**Suppression:** append `# nosec` (or `# nosec B101` to scope) to a line.
+
+Config: `.bandit` INI (auto-discovered with `-r`), or `[tool.bandit]` in `pyproject.toml` (requires `-c pyproject.toml` and `bandit[toml]`).
+
+> Docs: https://bandit.readthedocs.io/en/latest/
+
+---
+
+## diff-cover (PR coverage gate)
+
+[diff-cover](https://github.com/Bachmann1234/diff_cover) gates coverage against the **diff** — how much of the changed code is covered? Enforces "if you touched it, you covered it" on PRs. Declared as a dev dep; **not yet wired into CI**.
+
+### Commands
+
+```bash
+# Canonical 3-step flow (run after `task test-cov`)
+uv run coverage run --source=courtside_data --module pytest tests   # 1. run tests
+uv run coverage xml                                                 # 2. write coverage.xml
+uv run diff-cover coverage.xml                                      # 3. compare vs origin/main
+
+# Hard threshold + explicit base branch (the real PR gate)
+uv run diff-cover coverage.xml --compare-branch=origin/main --fail-under=100
+
+# Reports
+uv run diff-cover coverage.xml --format html:diff-cover.html
+uv run diff-cover coverage.xml --format markdown:diff-cover.md
+uv run diff-cover coverage.xml --show-uncovered
+```
+
+| Flag | Effect |
+|------|--------|
+| `--compare-branch BRANCH` | Default `origin/main`. |
+| `--fail-under PCT` | Non-zero exit when diff coverage < `PCT`. The PR-gate flag. |
+| `--format FMT:file` | `html:…`, `markdown:…`, `json:…`. (Older `--html-report` etc. deprecated.) |
+| `--show-uncovered` | List uncovered diff lines on console. |
+
+> **Requires** a `git` working directory and reachable `origin/main`. In CI: `git fetch origin main:refs/remotes/origin/main` first.
+
+`diff-quality` is the sister tool — runs a linter on the diff (e.g. `uv run diff-quality --violations=ruff.check`).
+
+Config: `[tool.diff_cover]` in a TOML file passed via `-c`.
+
+> Docs: https://github.com/Bachmann1234/diff_cover
+
+---
+
+## mkdocs (docs site)
+
+[mkdocs](https://www.mkdocs.org/) + [mkdocs-material](https://squidfunk.github.io/mkdocs-material/) build the project docs site published to GitHub Pages. Config: `mkdocs.yml` at repo root; content under `docs/`. CI publishes via `mkdocs gh-deploy --force` (see `.github/workflows/ci.yml`).
+
+### Commands
+
+```bash
+# Local dev server with live reload on http://127.0.0.1:8000
+uv run mkdocs serve
+
+# CI build gate — warnings become errors (broken links, unknown config, …)
+uv run mkdocs build --strict
+
+# Publish to the gh-pages branch (this is what CI runs)
+uv run mkdocs gh-deploy
+
+# Inspect / scaffold
+uv run mkdocs --version
+uv run mkdocs get-deps          # list PyPI packages the config requires
+```
+
+> **`--strict` is the CI gate** (added in mkdocs 1.4): broken internal links, unknown config keys, and unknown markdown-extension settings all fail the build. Run it locally before pushing. (Note: current CI only runs `gh-deploy`; adding a `build --strict` step is recommended hardening.)
+
+**pymdown-extensions** are provided by the `pymdown-extensions` package (a dep of mkdocs-material ≥ 9) and enabled by name under `markdown_extensions:` in `mkdocs.yml`.
+
+> Docs: mkdocs — https://www.mkdocs.org/ · material — https://squidfunk.github.io/mkdocs-material/
+
+---
+
 ## Live endpoint probe (debug)
 
 Opt-in debug tracing lives in `courtside_data/debug/`. See that folder’s `codemap.md` for trace schema, sinks, and runner integration.
@@ -244,10 +494,20 @@ uv run courtside-data team_roster --team-abbreviation BOS --season-end-year 2024
 Run these before claiming a task is done:
 
 ```bash
-uv run --extra dev ruff check .
-uv run --extra dev ruff format --check .
-uv run --extra dev ty check
-uv run --extra dev pytest tests -n auto
+# One command — runs lint + format check + type + test (the full gate)
+uv run task audit
+
+# Or individually
+uv run task lint
+uv run task format
+uv run task type
+uv run task test
+
+# Raw tool invocations (equivalent; no taskipy)
+uv run ruff check .
+uv run ruff format --check .
+uv run ty check
+uv run pytest tests -n auto
 ```
 
 ---
@@ -258,6 +518,14 @@ uv run --extra dev pytest tests -n auto
 - Ruff rules: https://docs.astral.sh/ruff/rules/
 - ty: https://docs.astral.sh/ty/
 - ty playground: https://play.astral.sh/ty
+- taskipy: https://github.com/taskipy/taskipy
+- flynt: https://github.com/ikamensh/flynt
+- vulture: https://github.com/jendrikseipp/vulture
+- deptry: https://deptry.com/
+- bandit: https://bandit.readthedocs.io/en/latest/
+- diff-cover: https://github.com/Bachmann1234/diff_cover
+- mkdocs: https://www.mkdocs.org/
+- mkdocs-material: https://squidfunk.github.io/mkdocs-material/
 
 ## Repository Map
 
