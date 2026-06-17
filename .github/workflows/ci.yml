@@ -52,7 +52,7 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       - name: Run tests with coverage
-        run: uv run --extra dev coverage run --source=courtside_data --module pytest --ignore=tests/e2e
+        run: uv run --extra dev coverage run --source=courtside_data --module pytest
       - name: Coverage report
         run: uv run --extra dev coverage xml
       - name: Upload coverage to Codecov
@@ -60,20 +60,6 @@ jobs:
         uses: codecov/codecov-action@v5
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
-
-  e2e:
-    runs-on: ubuntu-latest
-    # Live requests to basketball-reference.com; only on the nightly schedule
-    if: github.event_name == 'schedule'
-    steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v5
-        with:
-          python-version: '3.12'
-      - name: Install dependencies
-        run: uv sync --extra dev --frozen
-      - name: End-to-end tests
-        run: uv run --extra dev pytest tests/e2e
 
   documentation:
     runs-on: ubuntu-latest

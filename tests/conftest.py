@@ -1,13 +1,20 @@
 import os
+from collections.abc import Callable
 from unittest import mock
 
 import pytest
 import pytest_socket
+import stamina
+
+from courtside_data.client.courtside_client import CourtsideClient
+from courtside_data.http_service import HTTPService
+from tests.fixture_manifest import Case
+from tests.fixture_transport import FixtureTransport, build_service
 
 
 @pytest.fixture(autouse=True, scope="session")
 def disable_rate_limiting_and_tls():
-    """Disable Basketball-Reference rate limiting and TLS impersonation for all non-e2e tests.
+    """Disable Basketball-Reference rate limiting and TLS impersonation for tests.
 
     Rate limiting: setting the env vars to 0 makes HTTPService.__init__()
     skip all time.sleep() calls during tests.
@@ -35,6 +42,23 @@ def disable_rate_limiting_and_tls():
         yield
 
 
+@pytest.fixture(autouse=True, scope="session")
+def stamina_testing():
+    """Run stamina in test mode for the whole offline test session."""
+    stamina.set_testing(True, attempts=3)
+    yield
+    stamina.set_testing(False)
+
+
+@pytest.fixture(autouse=True)
+def reset_http_service_classvars():
+    """Clear HTTPService ClassVars mutated by rate-limit code paths after each test."""
+    yield
+    HTTPService._last_request_time = float("-inf")
+    HTTPService._jailed_until = 0.0
+    HTTPService._jail_state_loaded = False
+
+
 @pytest.fixture(autouse=True)
 def isolate_debug_logs(tmp_path_factory):
     """Keep debug trace logs out of the repo: redirect ./logs to a temp dir.
@@ -48,11 +72,18 @@ def isolate_debug_logs(tmp_path_factory):
         os.environ["COURTSIDE_DEBUG_LOG_DIR"] = str(tmp_path_factory.mktemp("debug-logs"))
 
 
-def pytest_runtest_setup(item):
-    """Block all network access in non-e2e tests.
+@pytest.fixture
+def make_offline_client() -> Callable[[Case], CourtsideClient]:
+    """Build a :class:`CourtsideClient` wired to replay ``case.url_to_file``."""
 
-    E2e tests can use @pytest.mark.enable_socket to opt back in.
-    """
-    if item.get_closest_marker("enable_socket"):
-        return
+    def _make(case: Case) -> CourtsideClient:
+        transport = FixtureTransport(case.url_to_file)
+        service = build_service(transport)
+        return CourtsideClient(service=service)
+
+    return _make
+
+
+def pytest_runtest_setup(item):
+    """Block all network access in offline tests."""
     pytest_socket.disable_socket()

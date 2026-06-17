@@ -23,11 +23,11 @@
   },
 
   // ── Testing: pytest ─────────────────────────────────────────────────
-  // e2e tests skip unless RUN_LIVE_BASKETBALL_REFERENCE_TESTS=1 (live-network
-  // policy), so test discovery over the whole tree is safe.
+  // Offline fixture-replay suite; network blocked by tests/conftest.py.
+  // Prefer parallel workers locally (see AGENTS.md); not in pyproject addopts (CI coverage).
   "python.testing.pytestEnabled": true,
   "python.testing.unittestEnabled": false,
-  "python.testing.pytestArgs": ["tests"],
+  "python.testing.pytestArgs": ["tests", "-n", "auto"],
 
   // ── Workspace hygiene ───────────────────────────────────────────────
   "files.exclude": {
