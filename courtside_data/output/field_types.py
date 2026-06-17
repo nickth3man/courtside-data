@@ -334,16 +334,10 @@ def _infer_coercion(column_name: str) -> Callable:
 
     # Percentage / rate patterns → float
     if (
-        name.endswith("_pct")
-        or name.endswith("_rate")
-        or name.endswith("_percentage")
+        name.endswith(("_pct", "_rate", "_percentage", "_per_g", "_vorp", "_bpm", "_ws"))
         or "_per_" in name
-        or name.endswith("_per_g")
         or "win_shares" in name
         or "box_plus_minus" in name
-        or name.endswith("_vorp")
-        or name.endswith("_bpm")
-        or name.endswith("_ws")
     ):
         return coerce_float
 

@@ -18,7 +18,7 @@ from dataclasses import asdict, is_dataclass
 from datetime import date, datetime
 from enum import Enum
 from importlib import metadata
-from typing import Any
+from typing import Any, ClassVar
 
 from courtside_data.debug.config import DebugConfig
 
@@ -28,7 +28,7 @@ _current_trace: ContextVar[DebugTrace | None] = ContextVar("courtside_data_debug
 class DebugTrace:
     """Collect structured, bounded, AI-readable debugging data for one endpoint call."""
 
-    capabilities = [
+    capabilities: ClassVar[list[str]] = [
         "bounded_events",
         "bounded_artifacts",
         "redaction",

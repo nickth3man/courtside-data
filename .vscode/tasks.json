@@ -5,7 +5,7 @@
       "label": "test",
       "detail": "Full offline suite (parallel, preferred)",
       "type": "shell",
-      "command": "uv run --extra dev pytest tests -n auto -q",
+      "command": "uv run pytest tests -n auto -q",
       "group": { "kind": "test", "isDefault": true },
       "problemMatcher": []
     },
@@ -13,7 +13,7 @@
       "label": "test: serial",
       "detail": "Full offline suite without xdist workers",
       "type": "shell",
-      "command": "uv run --extra dev pytest tests -q",
+      "command": "uv run pytest tests -q",
       "group": "test",
       "problemMatcher": []
     },

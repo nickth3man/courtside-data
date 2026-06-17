@@ -23,9 +23,9 @@ SHARED_COLUMN_NAMES = [
     "game_score",
 ]
 
-BOX_SCORE_COLUMN_NAMES = ["slug", "name"] + SHARED_COLUMN_NAMES + ["plus_minus"]
+BOX_SCORE_COLUMN_NAMES = ["slug", "name", *SHARED_COLUMN_NAMES, "plus_minus"]
 
-PLAYER_SEASON_BOX_SCORE_COLUMN_NAMES = ["active", "date", "points_scored", "plus_minus"] + SHARED_COLUMN_NAMES
+PLAYER_SEASON_BOX_SCORE_COLUMN_NAMES = ["active", "date", "points_scored", "plus_minus", *SHARED_COLUMN_NAMES]
 
 SCHEDULE_COLUMN_NAMES = [
     "start_time",

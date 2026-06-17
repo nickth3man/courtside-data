@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from courtside_data.endpoints import ENDPOINTS
+
 from tests.fixture_manifest import (
     ALL_CASES,
     MULTI_REQUEST_ENDPOINTS,
@@ -45,7 +46,7 @@ def test_manifest_meets_coverage_target() -> None:
 
 def test_tier1_exclusions_are_documented_gaps() -> None:
     generic_ids = {case.id for case in ALL_CASES if case.endpoint_name not in MULTI_REQUEST_ENDPOINTS}
-    assert TIER1_EXCLUDED_CASE_IDS <= generic_ids
+    assert generic_ids >= TIER1_EXCLUDED_CASE_IDS
     expected_ids = generic_ids - TIER1_EXCLUDED_CASE_IDS
     assert {case.id for case in TIER1_CASES} == expected_ids
 
@@ -54,7 +55,7 @@ def test_multi_request_exclusions_are_documented_gaps() -> None:
     from tests.test_multi_request_endpoints import MULTI_REQUEST_EXCLUDED_CASE_IDS
 
     multi_ids = {case.id for case in ALL_CASES if case.endpoint_name in MULTI_REQUEST_ENDPOINTS}
-    assert MULTI_REQUEST_EXCLUDED_CASE_IDS <= multi_ids
+    assert multi_ids >= MULTI_REQUEST_EXCLUDED_CASE_IDS
 
 
 def test_tier1_subset_still_substantial() -> None:

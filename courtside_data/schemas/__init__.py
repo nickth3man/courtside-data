@@ -32,15 +32,15 @@ from courtside_data.schemas import (
 from courtside_data.schemas._base import BRRow
 
 __all__ = [
-    "BRRow",
     "ROW_ADAPTERS",
-    "register",
+    "BRRow",
     "boxscores",
     "draft",
     "league",
     "playbyplay",
     "players",
     "playoffs",
+    "register",
     "schedule",
     "search",
     "standings",

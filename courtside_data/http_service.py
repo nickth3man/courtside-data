@@ -9,6 +9,7 @@ which the generated client functions call directly.
 
 from __future__ import annotations
 
+import contextlib
 import hashlib
 import json
 import logging
@@ -225,10 +226,8 @@ def _read_persisted_jail() -> float | None:
     except (OSError, ValueError, KeyError, TypeError):
         return None
     if jailed_until_epoch <= time.time():
-        try:
+        with contextlib.suppress(OSError):
             path.unlink()
-        except OSError:
-            pass
         return None
     return jailed_until_epoch
 
@@ -746,10 +745,7 @@ class HTTPService:
         canonical_pattern = pattern or pattern_from_spans or ""
         games_played = HTTPService._pattern_to_games_played(canonical_pattern)
         games_remaining = HTTPService._remaining_locations_from_text(remaining_text)
-        if pattern_from_spans is None or not pattern:
-            patterns_agree = None
-        else:
-            patterns_agree = pattern == pattern_from_spans
+        patterns_agree = None if pattern_from_spans is None or not pattern else pattern == pattern_from_spans
 
         return {
             "record": record,
@@ -1053,7 +1049,7 @@ class HTTPService:
         abbr = TEAM_TO_TEAM_ABBREVIATION[home_team]
         game_url_path = None
         for path in [link.attrib["href"] for link in boxscores_selector.css("td.gamelink a")]:
-            if path.endswith(f"0{abbr}.html") or path.endswith(f"1{abbr}.html"):
+            if path.endswith((f"0{abbr}.html", f"1{abbr}.html")):
                 game_url_path = path
                 break
         if game_url_path is None:

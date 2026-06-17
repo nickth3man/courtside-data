@@ -283,7 +283,7 @@ class PlayerSeasonBoxScoresParser:
                     {
                         **common,
                         "active": False,
-                        **{key: None for key in active_fields},
+                        **dict.fromkeys(active_fields),
                     }
                 )
 
@@ -377,10 +377,10 @@ class PlayerDataParser:
             "identifier": self.search_result_location_parser.parse_resource_identifier(
                 resource_location=player.resource_location
             ),
-            "leagues": set(
+            "leagues": {
                 self.league_abbreviation_parser.from_abbreviation(abbreviation=abbreviation)
                 for abbreviation in player.league_abbreviations
-            ),
+            },
         }
 
 

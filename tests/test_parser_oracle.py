@@ -12,11 +12,11 @@ from dataclasses import dataclass
 from pathlib import Path
 
 import pytest
+from courtside_data.endpoints import ENDPOINTS
+from courtside_data.http_service import _xpath_literal
 from parsel import Selector
 from selectolax.parser import HTMLParser
 
-from courtside_data.endpoints import ENDPOINTS
-from courtside_data.http_service import _xpath_literal
 from tests.fixture_manifest import ALL_CASES
 from tests.fixture_transport import FixtureValue
 
@@ -86,13 +86,11 @@ def test_table_id_selector_agreement(target: _OracleTarget) -> None:
 
 def test_oracle_targets_cover_generic_endpoints() -> None:
     """Sanity check: every non-custom endpoint with ``table_id`` has an oracle target."""
-    expected = {
-        name
-        for name, endpoint in ENDPOINTS.items()
-        if not endpoint.custom and endpoint.table_id is not None
-    }
+    expected = {name for name, endpoint in ENDPOINTS.items() if not endpoint.custom and endpoint.table_id is not None}
     covered_in_manifest = {case.endpoint_name for case in ALL_CASES if case.endpoint_name in expected}
-    oracle_endpoints = {target.case_id.rsplit("-", 1)[0] if "-" in target.case_id else target.case_id for target in _ORACLE_TARGETS}
+    oracle_endpoints = {
+        target.case_id.rsplit("-", 1)[0] if "-" in target.case_id else target.case_id for target in _ORACLE_TARGETS
+    }
     # Map case ids back to endpoint names via ALL_CASES.
     id_to_endpoint = {case.id: case.endpoint_name for case in ALL_CASES}
     oracle_endpoints = {id_to_endpoint[target.case_id] for target in _ORACLE_TARGETS}

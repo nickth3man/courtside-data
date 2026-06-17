@@ -9,8 +9,8 @@ the drift canary — corrupted fixtures should fail here in CHECK verification.
 from __future__ import annotations
 
 import pytest
-
 from courtside_data.endpoints import ENDPOINTS
+
 from tests.fixture_manifest import TIER1_CASES, Case
 
 

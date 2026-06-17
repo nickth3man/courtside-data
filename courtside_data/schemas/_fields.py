@@ -253,10 +253,7 @@ def _br_datetime(value: object) -> datetime:
         formatted_time_of_day = None
 
     date_s = str(formatted_date).strip()
-    if formatted_time_of_day is None:
-        time_s = ""
-    else:
-        time_s = str(formatted_time_of_day).strip()
+    time_s = "" if formatted_time_of_day is None else str(formatted_time_of_day).strip()
 
     try:
         base_date = datetime.strptime(date_s, "%a, %b %d, %Y")

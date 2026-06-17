@@ -35,13 +35,10 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 from pathlib import Path
-from typing import TYPE_CHECKING
 
 from courtside_data.endpoints import ENDPOINTS, TableEndpoint
-from tests.fixture_transport import FixtureValue
 
-if TYPE_CHECKING:
-    pass
+from tests.fixture_transport import FixtureValue
 
 # ─── Project layout ────────────────────────────────────────────────────────
 
@@ -575,11 +572,7 @@ def _resolve_season_schedule() -> tuple[list[Case] | None, str | None]:
         sel = Selector(text=index.read_text(encoding="utf-8"))
         all_hrefs = sel.css("a::attr(href)").getall()
         # Month filter links: /leagues/NBA_<Y>_games-<month>.html
-        month_hrefs = [
-            h
-            for h in all_hrefs
-            if re.match(rf"^/leagues/NBA_{year}_games-[a-z0-9-]+\.html$", h)
-        ]
+        month_hrefs = [h for h in all_hrefs if re.match(rf"^/leagues/NBA_{year}_games-[a-z0-9-]+\.html$", h)]
         if not month_hrefs:
             continue
 
@@ -648,12 +641,8 @@ def _resolve_standings_by_date() -> tuple[list[Case] | None, str | None]:
         # Explicit annotation widens the value type to satisfy the
         # invariant dict[URL, FixtureValue] constraint in the Case ctor.
         url_to_file: dict[str, FixtureValue] = {
-            f"{BASE_URL}/leagues/NBA_{year}_standings_by_date_eastern_conference.html": confs[
-                "eastern"
-            ],
-            f"{BASE_URL}/leagues/NBA_{year}_standings_by_date_western_conference.html": confs[
-                "western"
-            ],
+            f"{BASE_URL}/leagues/NBA_{year}_standings_by_date_eastern_conference.html": confs["eastern"],
+            f"{BASE_URL}/leagues/NBA_{year}_standings_by_date_western_conference.html": confs["western"],
         }
         params = {"season_end_year": year, "conference": "both"}
         return (
@@ -699,6 +688,7 @@ def _resolve_search() -> tuple[list[Case] | None, str | None]:
 
     # First, find jaebaebae specifically (the only multi-page chain).
     if (raw_dir / "jaebaebae.html").is_file():
+
         def _page_index(p: Path) -> int:
             match = re.search(r"\d+", p.stem)
             assert match is not None, f"ja_page file with no digits: {p.name}"
@@ -773,20 +763,12 @@ def _resolve_endpoint(endpoint_name: str, endpoint: TableEndpoint) -> tuple[list
     # ── Single-URL custom endpoints ──
 
     if endpoint_name == "standings":
-        return _resolve_season_endpoint(
-            endpoint_name, endpoint, "standings", filename_year_only=True
-        )
+        return _resolve_season_endpoint(endpoint_name, endpoint, "standings", filename_year_only=True)
     if endpoint_name == "attendance":
-        return _resolve_season_endpoint(
-            endpoint_name, endpoint, "attendance", filename_year_only=True
-        )
+        return _resolve_season_endpoint(endpoint_name, endpoint, "attendance", filename_year_only=True)
     if endpoint_name == "playoff_bracket":
-        return _resolve_season_endpoint(
-            endpoint_name, endpoint, "playoff_bracket", filename_year_only=True
-        )
+        return _resolve_season_endpoint(endpoint_name, endpoint, "playoff_bracket", filename_year_only=True)
 
-    # player_box_scores: path = /friv/dailyleaders.cgi?month=...&day=...&year=...
-    # Fixtures: raw/player_box_scores/YYYY_MM_DD.html
     if endpoint_name == "player_box_scores":
         raw_dir = RAW_ROOT / "player_box_scores"
         files = _list_html(raw_dir)
@@ -934,9 +916,7 @@ def _resolve_endpoint(endpoint_name: str, endpoint: TableEndpoint) -> tuple[list
         return _resolve_team_only_endpoint(endpoint_name, endpoint, endpoint_name)
 
     # ── Player+season endpoints ──
-    if endpoint.params in (
-        ("player_identifier", "season_end_year"),
-    ):
+    if endpoint.params == ("player_identifier", "season_end_year"):
         return _resolve_player_season_endpoint(endpoint_name, endpoint, endpoint_name)
 
     # ── Player-only endpoints (no season in path) ──
@@ -946,16 +926,12 @@ def _resolve_endpoint(endpoint_name: str, endpoint: TableEndpoint) -> tuple[list
     # ── Default: try the per-year league endpoint convention ──
     # Most season-based endpoints follow YYYY.html or TEAM_YYYY.html.
     # Try YYYY.html first; if no fixtures found, bail.
-    season_result = _resolve_season_endpoint(
-        endpoint_name, endpoint, endpoint_name, filename_year_only=True
-    )
+    season_result = _resolve_season_endpoint(endpoint_name, endpoint, endpoint_name, filename_year_only=True)
     if season_result[0] is not None:
         return season_result
 
     # Try team-season convention.
-    team_season_result = _resolve_season_endpoint(
-        endpoint_name, endpoint, endpoint_name, filename_year_only=False
-    )
+    team_season_result = _resolve_season_endpoint(endpoint_name, endpoint, endpoint_name, filename_year_only=False)
     if team_season_result[0] is not None:
         return team_season_result
 

@@ -6,10 +6,10 @@ from typing import Any
 
 import httpx
 import pytest
-
 from courtside_data.client.courtside_client import CourtsideClient
 from courtside_data.endpoints import ENDPOINTS
 from courtside_data.errors import InvalidPlayer, InvalidSeason, InvalidTeam, RateLimitJailed
+
 from tests.fixture_manifest import ERROR_CASES, Case
 from tests.fixture_transport import FixtureTransport, build_service
 

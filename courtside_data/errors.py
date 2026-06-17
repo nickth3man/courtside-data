@@ -68,8 +68,7 @@ class MissingPlayerSlug(CourtsideDataError):
         self.row_index = row_index
         self.player = player
         message = (
-            f"Missing player slug while parsing endpoint '{endpoint_name}' "
-            f"at row {row_index} for player {player!r}"
+            f"Missing player slug while parsing endpoint '{endpoint_name}' at row {row_index} for player {player!r}"
         )
         super().__init__(message)
 

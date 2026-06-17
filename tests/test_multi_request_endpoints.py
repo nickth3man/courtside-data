@@ -8,9 +8,9 @@ so the multi-request orchestration is validated without live network calls.
 from __future__ import annotations
 
 import pytest
-
 from courtside_data.data import TEAM_ABBREVIATIONS_TO_TEAM, PeriodType
 from courtside_data.endpoints import ENDPOINTS
+
 from tests.fixture_manifest import MULTI_REQUEST_CASES, Case
 
 # Manifest cases with known fixture gaps — tracked separately until fixtures land.
@@ -31,9 +31,7 @@ def _resolved_params(case: Case) -> dict:
     return params
 
 
-@pytest.mark.parametrize(
-    "case", MULTI_REQUEST_OFFLINE_CASES, ids=[case.id for case in MULTI_REQUEST_OFFLINE_CASES]
-)
+@pytest.mark.parametrize("case", MULTI_REQUEST_OFFLINE_CASES, ids=[case.id for case in MULTI_REQUEST_OFFLINE_CASES])
 def test_multi_request_endpoint_offline(case: Case, make_offline_client) -> None:
     client = make_offline_client(case)
     result = getattr(client, case.endpoint_name)(**_resolved_params(case))

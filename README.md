@@ -94,7 +94,7 @@ rate limiting is built in and **not configurable**:
 
 ```bash
 # Install with dev dependencies
-uv sync --extra dev
+uv sync
 
 # Run tests
 uv run pytest

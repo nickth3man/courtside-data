@@ -11,8 +11,8 @@ from dataclasses import dataclass
 from pathlib import Path
 
 import pytest
-
 from courtside_data.data import TEAM_ABBREVIATIONS_TO_TEAM, OutputType, OutputWriteOption
+
 from tests.fixture_manifest import ALL_CASES, MULTI_REQUEST_CASES, Case
 
 GOLDEN_DIR = Path(__file__).parent / "golden" / "writers"

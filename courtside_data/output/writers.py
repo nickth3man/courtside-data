@@ -79,7 +79,7 @@ class Writer:
         self.value_formatter = value_formatter
 
     def write(self, data, options):
-        raise NotImplementedError()
+        raise NotImplementedError
 
 
 def _is_row_model(value: Any) -> bool:
@@ -148,7 +148,7 @@ class CSVWriter(Writer):
 
     def rows(self, data):
         extracted = self._extract_rows(data)
-        return [dict((key, self.value_formatter(value)) for key, value in row.items()) for row in extracted]
+        return [{key: self.value_formatter(value) for key, value in row.items()} for row in extracted]
 
     def write(self, data, options):
         rows = self._extract_rows(data)

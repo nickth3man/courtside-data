@@ -6,7 +6,7 @@ from json import JSONEncoder
 class FieldFormatter:
     @staticmethod
     def can_format(data):
-        raise NotImplementedError()
+        raise NotImplementedError
 
     def __init__(self, data):
         self.data = data
@@ -30,7 +30,7 @@ class ListFormatter(FieldFormatter):
         return isinstance(data, list)
 
     def format(self):
-        return "-".join(map(lambda value: format_value(value=value), self.data))
+        return "-".join(format_value(value=value) for value in self.data)
 
 
 class DictFormatter(FieldFormatter):

@@ -12,9 +12,9 @@ from pathlib import Path
 from typing import Any
 
 import pytest
+from courtside_data.endpoints import ENDPOINTS
 from deepdiff import DeepDiff
 
-from courtside_data.endpoints import ENDPOINTS
 from tests.fixture_manifest import GENERIC_CASES, Case
 
 GOLDEN_DIR = Path(__file__).parent / "golden"

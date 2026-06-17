@@ -15,6 +15,7 @@ and the parser graph are reused across calls.
 
 from __future__ import annotations
 
+import contextlib
 import threading
 import warnings
 from collections.abc import Callable, Sequence
@@ -185,10 +186,8 @@ def _endpoint_url_context(endpoint: Any, params: dict[str, Any] | None) -> str:
         return "<unknown>"
     path = getattr(endpoint, "path", "<unknown>")
     if params:
-        try:
+        with contextlib.suppress(IndexError, KeyError, TypeError, ValueError):
             path = path.format(**params)
-        except (IndexError, KeyError, TypeError, ValueError):
-            pass
     if isinstance(path, str) and path.startswith("/"):
         return f"https://www.basketball-reference.com{path}"
     return str(path)
@@ -413,7 +412,7 @@ def _validate_row_model_rows(row_model: Any, raw_rows: list[dict[str, Any]]) -> 
                 enriched["row_index"] = index
                 drift_errors.append(enriched)
     if drift_errors and not values:
-        raise ValidationError.from_exception_data(row_model.__name__, cast(list[InitErrorDetails], drift_errors))
+        raise ValidationError.from_exception_data(row_model.__name__, cast("list[InitErrorDetails]", drift_errors))
     return values
 
 

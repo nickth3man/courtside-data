@@ -32,8 +32,12 @@ dependencies = [
 pandas = [
     "pandas>=2.0",
 ]
+
+[dependency-groups]
 dev = [
+    # runtime extras mirrored for tests
     "pandas>=2.0",
+    # test framework
     "pytest>=8.0",
     "pytest-socket>=0.7.0",
     "pytest-timeout>=2.4.0",
@@ -43,11 +47,24 @@ dev = [
     "respx>=0.22.0",
     "deepdiff>=8.0",
     "selectolax>=0.3",
+    # coverage / diff
     "coverage>=7.0",
     "covdefaults>=2.3",
     "diff-cover>=9.0",
+    # lint / format / safe refactoring
     "ruff>=0.11.0",
+    "flynt>=1.0.6",
+    # dead-code / dependency / security analysis
+    "vulture>=2.16",
+    "deptry>=0.25",
+    "bandit>=1.7",
+    # type checker
     "ty>=0.0.1a14",
+    # custom structural codemods
+    "libcst>=1.0",
+    # task runner
+    "taskipy>=1.13",
+    # docs
     "mkdocs>=1.5.3",
     "mkdocs-material>=9.0",
     "pymdown-extensions>=10.0",
@@ -83,6 +100,7 @@ addopts = ["--disable-socket", "--timeout=300"]
 [tool.ruff]
 target-version = "py312"
 line-length = 120
+src = ["courtside_data"]
 
 [tool.ruff.lint]
 select = [
@@ -94,6 +112,26 @@ select = [
     "B",     # flake8-bugbear
     "PT",    # flake8-pytest-style
     "ASYNC", # flake8-async
+
+    # --- safe refactoring / cleanup ---
+    "C4",    # flake8-comprehensions
+    "SIM",   # flake8-simplify (nested ifs, redundant booleans, etc.)
+    "PIE",   # flake8-pie (useless pass, range start, etc.)
+    "RSE",   # flake8-raise
+    "RET",   # flake8-return
+    "ISC",   # implicit string concatenation
+    "FLY",   # flynt-style f-string conversion
+    "FURB",  # refurb idiomatic rewrites
+    "RUF",   # ruff-specific
+    "ERA",   # eradicate commented-out code
+]
+
+fixable = ["ALL"]
+unfixable = [
+    "F401",   # unused imports — keep for explicit cleanup
+    "F841",   # unused variables — keep for explicit cleanup
+    "ERA001", # commented-out code — review manually
+    "PIE804", # dict(**kwargs) → dict(kwargs) can break APIs
 ]
 
 [tool.ruff.lint.per-file-ignores]
@@ -114,3 +152,16 @@ extra-paths = ["courtside_data"]
 
 [tool.ty.src]
 exclude = [".venv", "dist", ".slim"]
+
+[tool.taskipy.tasks]
+fix      = "ruff check --fix . && ruff format ."
+lint     = "ruff check ."
+format   = "ruff format --check ."
+type     = "ty check"
+test     = "pytest tests -n auto"
+test-cov = "coverage run --source=courtside_data --module pytest tests"
+audit    = "ruff check . && ruff format --check . && ty check && pytest tests -n auto"
+refactor = "ruff check --fix . && ruff format . && flynt -tjc courtside_data/ tests/ scripts/"
+vulture  = "vulture courtside_data --min-confidence 80"
+deptry   = "deptry ."
+bandit   = "bandit -r courtside_data -lll"

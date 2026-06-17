@@ -69,7 +69,6 @@ pyvenv.cfg
 
 # Local AI tooling artifacts
 .ignore
-AGENTS.md
 
 # Generated codemaps
 codemap.md

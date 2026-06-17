@@ -63,14 +63,14 @@ class PlayByPlayRow:
 
     @property
     def away_team_play_description(self):
-        if 6 == len(self.html):
+        if len(self.html) == 6:
             return self.html[1].text_content().strip()
 
         return ""
 
     @property
     def home_team_play_description(self):
-        if 6 == len(self.html):
+        if len(self.html) == 6:
             return self.html[5].text_content().strip()
 
         return ""
@@ -85,7 +85,7 @@ class PlayByPlayRow:
 
     @property
     def formatted_scores(self):
-        if 6 == len(self.html):
+        if len(self.html) == 6:
             return self.html[3].text_content().strip()
         return ""
 
@@ -103,7 +103,7 @@ class PlayByPlayRow:
         # where there are no event details. Probably a visual bug on Basketball Reference's side of things.
         return (
             not self.is_start_of_period
-            and 2 <= len(self.html)
+            and len(self.html) >= 2
             and self.html[1].get("colspan") != "5"
             and self.timestamp_cell.get("aria-label") != "Time"
         )

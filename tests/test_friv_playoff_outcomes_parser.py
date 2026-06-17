@@ -5,10 +5,9 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
-from parsel import Selector
-
 from courtside_data.http_service import HTTPService
 from courtside_data.schemas.playoffs import SevenGamePlayoffSeriesOutcomesRow
+from parsel import Selector
 
 FIXTURE = (
     Path(__file__).resolve().parents[1]

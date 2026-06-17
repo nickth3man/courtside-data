@@ -18,7 +18,6 @@ from datetime import UTC, datetime, timedelta
 
 import httpx
 import pytest
-
 from courtside_data.http_service import (
     _JAIL_THRESHOLD_SECONDS,
     _MAX_RETRY_AFTER_WAIT,
@@ -103,7 +102,7 @@ def test_parse_retry_after_none_raises_typeerror():
     # and the except clause only catches ``ValueError``. This documents the
     # current behaviour; callers are expected to pass a string.
     with pytest.raises(TypeError):
-        _parse_retry_after(None)  # type: ignore[arg-type]
+        _parse_retry_after(None)  # type: ignore
 
 
 # ─── _should_retry ───────────────────────────────────────────────────────────

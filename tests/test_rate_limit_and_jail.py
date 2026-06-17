@@ -35,7 +35,6 @@ import os
 
 import httpx
 import pytest
-
 from courtside_data.errors import RateLimitJailed
 from courtside_data.http_service import (
     HTTPService,
@@ -97,7 +96,7 @@ class _FakeSession:
         self._response = response
         self.call_count = 0
 
-    def get(self, *, url: str, **kwargs):  # noqa: ARG002
+    def get(self, *, url: str, **kwargs):
         self.call_count += 1
         return self._response
 
@@ -205,7 +204,7 @@ def test_429_with_large_retry_after_activates_jail():
     response = httpx.Response(429, headers={"Retry-After": "600"}, request=request)
     session = _FakeSession(response)
     service = HTTPService(
-        session=session,  # type: ignore[arg-type]
+        session=session,  # type: ignore
         time_func=clock,
         sleep=sleep,
         random_func=_zero_random,
@@ -243,7 +242,7 @@ def test_429_below_threshold_does_not_activate_jail():
     response = httpx.Response(429, headers={"Retry-After": "10"}, request=request)
     session = _FakeSession(response)
     service = HTTPService(
-        session=session,  # type: ignore[arg-type]
+        session=session,  # type: ignore
         time_func=clock,
         sleep=sleep,
         random_func=_zero_random,

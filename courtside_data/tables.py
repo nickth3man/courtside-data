@@ -30,7 +30,7 @@ class GenericTableRow:
                 # Collect all attributes from the cell and its descendants
                 # (e.g., data-append-csv is sometimes on child <a> tags)
                 all_attrs: dict[str, str] = {}
-                for element in [cell] + cell.css("*"):
+                for element in [cell, *cell.css("*")]:
                     for key, value in element.attrib.items():
                         if key != "data-stat":
                             all_attrs[key] = value
@@ -148,9 +148,7 @@ def parse_transaction_list(selector: Selector) -> list[dict[str, Any]]:
     transactions = []
     for day in selector.css("ul.page_index > li"):
         date = _clean_text(day.xpath("./span//text()").getall())
-        transaction_nodes = day.xpath(
-            './p[contains(concat(" ", normalize-space(@class), " "), " transaction ")]'
-        )
+        transaction_nodes = day.xpath('./p[contains(concat(" ", normalize-space(@class), " "), " transaction ")]')
         if not transaction_nodes:
             transaction_nodes = day.xpath("./p[normalize-space()]")
         for transaction in transaction_nodes:

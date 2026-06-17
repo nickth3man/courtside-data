@@ -20,9 +20,9 @@ jobs:
         with:
           python-version: '3.12'
       - name: Ruff lint
-        run: uv run --extra dev ruff check
+        run: uv run ruff check
       - name: Ruff format check
-        run: uv run --extra dev ruff format --check
+        run: uv run ruff format --check
 
   typecheck:
     runs-on: ubuntu-latest
@@ -32,7 +32,7 @@ jobs:
         with:
           python-version: '3.12'
       - name: ty
-        run: uv run --extra dev ty check
+        run: uv run ty check
 
   test:
     strategy:
@@ -52,9 +52,9 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       - name: Run tests with coverage
-        run: uv run --extra dev coverage run --source=courtside_data --module pytest
+        run: uv run coverage run --source=courtside_data --module pytest
       - name: Coverage report
-        run: uv run --extra dev coverage xml
+        run: uv run coverage xml
       - name: Upload coverage to Codecov
         if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.12'
         uses: codecov/codecov-action@v5
@@ -81,4 +81,4 @@ jobs:
           GH_NAME: ${{ secrets.GH_NAME }}
           GH_EMAIL: ${{ secrets.GH_EMAIL }}
       - name: Publish Documentation
-        run: uv run --extra dev mkdocs gh-deploy --force
+        run: uv run mkdocs gh-deploy --force

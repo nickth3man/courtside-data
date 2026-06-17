@@ -5,9 +5,9 @@ from unittest import mock
 import pytest
 import pytest_socket
 import stamina
-
 from courtside_data.client.courtside_client import CourtsideClient
 from courtside_data.http_service import HTTPService
+
 from tests.fixture_manifest import Case
 from tests.fixture_transport import FixtureTransport, build_service
 

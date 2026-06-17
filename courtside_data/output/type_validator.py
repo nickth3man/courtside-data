@@ -29,16 +29,15 @@ def _get_target_type(column_name: str) -> type | tuple[type, ...] | None:
     # coerce_int, coerce_float, coerce_int_or_none, coerce_float_or_none
     if name in {"coerce_int", "coerce_int_or_clock"}:
         return int
-    elif name == "coerce_float":
+    if name == "coerce_float":
         return (int, float)  # int is acceptable for float columns
-    elif name == "coerce_int_or_none":
+    if name == "coerce_int_or_none":
         return (int, type(None))
-    elif name == "coerce_float_or_none":
+    if name == "coerce_float_or_none":
         return (int, float, type(None))
-    else:
-        # lambda v: v or other pass-through — no type expectation (legacy
-        # endpoints may return typed values like Team enums)
-        return None
+    # lambda v: v or other pass-through — no type expectation (legacy
+    # endpoints may return typed values like Team enums)
+    return None
 
 
 # ─── Validation ────────────────────────────────────────────────────────

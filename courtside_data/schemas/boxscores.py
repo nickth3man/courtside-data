@@ -154,16 +154,12 @@ class _PlayerSeasonBoxScoreRow(BRRow, _BoxScoreCountingStats, _BoxScorePctStats)
 class RegularSeasonPlayerBoxScoreRow(_PlayerSeasonBoxScoreRow):
     """Row from a player's regular-season game log (``player_game_log_reg``)."""
 
-    pass
-
 
 register("regular_season_player_box_scores", RegularSeasonPlayerBoxScoreRow)
 
 
 class PlayoffPlayerBoxScoreRow(_PlayerSeasonBoxScoreRow):
     """Row from a player's playoff game log (``player_game_log_post``)."""
-
-    pass
 
 
 register("playoff_player_box_scores", PlayoffPlayerBoxScoreRow)

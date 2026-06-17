@@ -22,11 +22,12 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+from tests.fixture_manifest import ALL_CASES
+
 from courtside_data.client._runner import _run_endpoint
 from courtside_data.debug.sink import resolve_log_dir
 from courtside_data.endpoints import ENDPOINTS
 from courtside_data.errors import RateLimitJailed
-from tests.fixture_manifest import ALL_CASES
 
 
 def _sample_params_per_endpoint() -> dict[str, dict[str, Any]]:
