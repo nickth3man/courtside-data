@@ -23,7 +23,6 @@ from collections.abc import Callable
 from datetime import UTC
 from pathlib import Path
 from typing import Any, ClassVar
-from urllib.parse import parse_qs, urlparse
 
 import httpx
 import stamina
@@ -32,17 +31,16 @@ from hishel.httpx import SyncCacheTransport
 from lxml import html
 from parsel import Selector
 
+from courtside_data import _parsing
 from courtside_data.data import (
     DIVISIONS_TO_CONFERENCES,
-    TEAM_ABBREVIATIONS_TO_TEAM,
-    TEAM_NAME_TO_TEAM,
     TEAM_TO_TEAM_ABBREVIATION,
     Division,
     Team,
 )
 from courtside_data.debug import current_debug_trace
 from courtside_data.endpoints import ENDPOINTS, TableEndpoint
-from courtside_data.errors import InvalidDate, InvalidPlayerAndSeason, MissingPlayerSlug, RateLimitJailed
+from courtside_data.errors import InvalidDate, InvalidPlayerAndSeason, RateLimitJailed
 from courtside_data.schemas._fields import _team_field
 from courtside_data.tables import GenericTable, extract_commented_table, parse_transaction_list
 
@@ -52,8 +50,6 @@ _DEFAULT_RATE_LIMIT_INTERVAL = 6.0  # 10 req/min ceiling — matches pybaseball'
 _DEFAULT_RATE_LIMIT_JITTER = 1.0  # uniform(0, 1.0) — average ~8.6 req/min with comfortable headroom
 _DEFAULT_TIMEOUT = httpx.Timeout(30.0, connect=10.0)
 _FRIV_7_GAME_PLAYOFF_SERIES_OUTCOMES_PATH = "/friv/7-game-playoff-series-outcomes-22111.html"
-_BR_WIN_COLOR = "#080"
-_BR_LOSS_COLOR = "#f00"
 _RETRY_ATTEMPTS = 3
 
 # Pages like the 7-game playoff series outcomes matrix host multiple tables
@@ -329,6 +325,11 @@ class HTTPService:
         # the same URL share one fetch and one parse.
         self._selector_cache: OrderedDict[str, Selector] = OrderedDict()
 
+    @classmethod
+    def _url(cls, path: str = "") -> str:
+        """Join :attr:`BASE_URL` with ``path`` (leading slash optional)."""
+        return f"{cls.BASE_URL}/{path.lstrip('/')}" if path else cls.BASE_URL
+
     def _apply_rate_limiting(self) -> None:
         with self._rate_limit_lock:
             trace = current_debug_trace()
@@ -502,7 +503,7 @@ class HTTPService:
         if endpoint.custom:
             raise ValueError("Endpoint requires its bespoke HTTPService method, not fetch_table()")
         trace = current_debug_trace()
-        url = f"{HTTPService.BASE_URL}{endpoint.path.format(**params)}"
+        url = self._url(endpoint.path.format(**params))
         if trace is not None:
             trace.record(
                 "endpoint",
@@ -652,118 +653,11 @@ class HTTPService:
             )
         return rows
 
-    @staticmethod
-    def _extract_pattern_from_href(href: str) -> str:
-        if not href:
-            return ""
-        return parse_qs(urlparse(href).query).get("pattern", [""])[0]
-
-    @staticmethod
-    def _pattern_to_games_played(pattern: str) -> list[dict[str, Any]]:
-        games: list[dict[str, Any]] = []
-        index = 0
-        game_number = 1
-        while index < len(pattern):
-            location_char = pattern[index]
-            if location_char not in ("H", "A"):
-                break
-            index += 1
-            if index >= len(pattern) or pattern[index] not in ("0", "1"):
-                break
-            result = "win" if pattern[index] == "1" else "loss"
-            index += 1
-            location = "home" if location_char == "H" else "away"
-            games.append({"game": game_number, "location": location, "result": result})
-            game_number += 1
-        return games
-
-    @staticmethod
-    def _remaining_locations_from_text(text: str) -> list[str]:
-        locations: list[str] = []
-        for char in text.replace(" ", ""):
-            if char == "H":
-                locations.append("home")
-            elif char == "A":
-                locations.append("away")
-        return locations
-
-    @staticmethod
-    def _pattern_from_gameslist_spans(gameslist_cell: Selector) -> str | None:
-        parts: list[str] = []
-        seen_slash = False
-        for span in gameslist_cell.css("span"):
-            text = (span.css("::text").get() or "").strip()
-            if text == "/":
-                seen_slash = True
-                continue
-            if seen_slash or text not in ("H", "A"):
-                continue
-            style = span.attrib.get("style", "")
-            if _BR_WIN_COLOR in style:
-                parts.append(f"{text}1")
-            elif _BR_LOSS_COLOR in style:
-                parts.append(f"{text}0")
-            else:
-                parts.append(text)
-        if not parts:
-            return None
-        return "".join(parts)
-
-    @staticmethod
-    def _remaining_text_from_gameslist(gameslist_cell: Selector) -> str:
-        raw = "".join(gameslist_cell.css("::text").getall())
-        if "/" not in raw:
-            return ""
-        return raw.split("/", 1)[1].strip().replace(" ", "")
-
-    @staticmethod
-    def _parse_friv_playoff_outcomes_row(row: Selector) -> dict[str, Any]:
-        record = HTTPService._cell_text(row.css('[data-stat="record"]'))
-        gameslist_cell = row.css('[data-stat="gameslist"]')
-        wl_cell = row.css('[data-stat="wl"]')
-        gameslist_display = HTTPService._cell_text(gameslist_cell) if gameslist_cell else ""
-        wl = HTTPService._cell_text(wl_cell) if wl_cell else ""
-        href = wl_cell.css("a::attr(href)").get() if wl_cell else ""
-        pattern = HTTPService._extract_pattern_from_href(href or "")
-        aggregate = gameslist_display.strip().casefold() == "all series"
-
-        if aggregate:
-            return {
-                "record": record,
-                "gameslist": gameslist_display,
-                "wl": wl,
-                "aggregate": True,
-                "pattern": pattern,
-                "pattern_from_spans": None,
-                "patterns_agree": None,
-                "games_played": [],
-                "games_remaining": [],
-                "gameslist_display": gameslist_display,
-            }
-
-        gameslist_node = gameslist_cell[0]
-        pattern_from_spans = HTTPService._pattern_from_gameslist_spans(gameslist_node)
-        remaining_text = HTTPService._remaining_text_from_gameslist(gameslist_node)
-        canonical_pattern = pattern or pattern_from_spans or ""
-        games_played = HTTPService._pattern_to_games_played(canonical_pattern)
-        games_remaining = HTTPService._remaining_locations_from_text(remaining_text)
-        patterns_agree = None if pattern_from_spans is None or not pattern else pattern == pattern_from_spans
-
-        return {
-            "record": record,
-            "gameslist": gameslist_display,
-            "wl": wl,
-            "aggregate": False,
-            "pattern": pattern,
-            "pattern_from_spans": pattern_from_spans,
-            "patterns_agree": patterns_agree,
-            "games_played": games_played,
-            "games_remaining": games_remaining,
-            "gameslist_display": gameslist_display,
-        }
+    # Static shim for the friv playoff series parser (see :mod:`courtside_data._parsing`).
+    _parse_friv_playoff_outcomes_row = staticmethod(_parsing.parse_friv_playoff_outcomes_row)
 
     def _friv_7_game_playoff_series_outcomes(self, table_id: str) -> list[dict[str, Any]]:
-        url = f"{HTTPService.BASE_URL}{_FRIV_7_GAME_PLAYOFF_SERIES_OUTCOMES_PATH}"
+        url = self._url(_FRIV_7_GAME_PLAYOFF_SERIES_OUTCOMES_PATH)
         selector = self._get_selector(url=url)
         table = self._find_table(selector, table_id)
         if table is None:
@@ -792,95 +686,29 @@ class HTTPService:
     def season_awards_voting(self, season_end_year: int, award: str) -> list[dict[str, Any]]:
         """Return one award voting table from ``/awards/awards_{year}.html``."""
         table_id = award.strip().lower().replace("-", "_")
-        selector = self._get_selector(f"{HTTPService.BASE_URL}/awards/awards_{season_end_year}.html")
+        selector = self._get_selector(self._url(f"/awards/awards_{season_end_year}.html"))
         table = self._find_table(selector, table_id)
         if table is None:
             return []
         return [row for row, _ in self._raw_rows_from_table(table)]
 
-    @staticmethod
-    def _cell_text(selector: Any) -> str:
-        text = (
-            " ".join(value.strip() for value in selector.css("::text").getall() if value.strip())
-            .replace("*", "")
-            .strip()
-        )
-        return re.sub(r"\s+([),.;:])", r"\1", text)
-
-    @staticmethod
-    def _slug_from_metadata(metadata: dict[str, dict[str, str]], stat_name: str) -> str:
-        return metadata.get(stat_name, {}).get("data-append-csv", "")
-
-    @staticmethod
-    def _require_slug(endpoint_name: str, row: dict[str, Any], row_index: int) -> None:
-        if row.get("slug"):
-            return
-        player = row.get("name_display") or row.get("player") or row.get("name") or "<unknown>"
-        raise MissingPlayerSlug(endpoint_name=endpoint_name, row_index=row_index, player=str(player))
-
-    @staticmethod
-    def _is_combined_team(row: dict[str, Any]) -> bool:
-        return str(row.get("team_name_abbr", "")).endswith("TM")
-
-    @staticmethod
-    def _team_abbreviation_from_name(team_name: str) -> str:
-        team = TEAM_NAME_TO_TEAM[team_name.strip().upper()]
-        return TEAM_TO_TEAM_ABBREVIATION[team]
-
-    @staticmethod
-    def _team_name_from_abbreviation(team_abbreviation: str) -> str:
-        return TEAM_ABBREVIATIONS_TO_TEAM[team_abbreviation].value.title()
-
-    @staticmethod
-    def _score_outcome(points: str, opponent_points: str) -> str | None:
-        team_points = int(points)
-        opposing_points = int(opponent_points)
-        if team_points > opposing_points:
-            return "W"
-        if team_points < opposing_points:
-            return "L"
-        return None
-
-    @staticmethod
-    def _period_number(period_count: int) -> int:
-        return period_count if period_count <= 4 else period_count - 4
-
-    @staticmethod
-    def _period_type(period_count: int) -> str:
-        return "QUARTER" if period_count <= 4 else "OVERTIME"
-
-    @staticmethod
-    def _remaining_seconds(timestamp: str) -> float:
-        minutes, seconds = timestamp.split(":", maxsplit=1)
-        return (int(minutes) * 60) + float(seconds)
-
-    @classmethod
-    def _standings_team_value(cls, formatted_name: str) -> str:
-        cleaned = formatted_name.upper().strip()
-        for team in Team:
-            if cleaned.startswith(team.value):
-                return team.value
-        return cleaned
-
-    @staticmethod
-    def _division_value(formatted_name: str) -> str | None:
-        cleaned = formatted_name.upper().strip()
-        for division in Division:
-            if cleaned == f"{division.value} DIVISION":
-                return division.value
-        return None
-
-    @staticmethod
-    def _resource_identifier(resource_location: str | None) -> str:
-        if not resource_location:
-            return ""
-        return resource_location.rstrip("/").rsplit("/", maxsplit=1)[-1].removesuffix(".html")
-
-    @staticmethod
-    def _search_result_name(resource_name: str | None) -> str:
-        if resource_name is None:
-            return ""
-        return resource_name.split("(", maxsplit=1)[0].strip()
+    # Pure parsing helpers live in :mod:`courtside_data._parsing`; exposed here as
+    # static shims so existing ``self._x(...)`` / ``HTTPService._x(...)`` call sites
+    # keep working unchanged.
+    _cell_text = staticmethod(_parsing.cell_text)
+    _slug_from_metadata = staticmethod(_parsing.slug_from_metadata)
+    _require_slug = staticmethod(_parsing.require_slug)
+    _is_combined_team = staticmethod(_parsing.is_combined_team)
+    _team_abbreviation_from_name = staticmethod(_parsing.team_abbreviation_from_name)
+    _team_name_from_abbreviation = staticmethod(_parsing.team_name_from_abbreviation)
+    _score_outcome = staticmethod(_parsing.score_outcome)
+    _period_number = staticmethod(_parsing.period_number)
+    _period_type = staticmethod(_parsing.period_type)
+    _remaining_seconds = staticmethod(_parsing.remaining_seconds)
+    _standings_team_value = staticmethod(_parsing.standings_team_value)
+    _division_value = staticmethod(_parsing.division_value)
+    _resource_identifier = staticmethod(_parsing.resource_identifier)
+    _search_result_name = staticmethod(_parsing.search_result_name)
 
     def _generic_table_rows(self, selector: Selector, table_id: str) -> list[dict[str, Any]]:
         table_selector = self._find_table(selector, table_id)
@@ -959,7 +787,7 @@ class HTTPService:
         return links[1].attrib["href"]
 
     def standings(self, season_end_year: int) -> list[dict[str, Any]]:
-        url = f"{HTTPService.BASE_URL}/leagues/NBA_{season_end_year}.html"
+        url = self._url(f"/leagues/NBA_{season_end_year}.html")
 
         selector = self._get_selector(url=url)
         standings: list[dict[str, Any]] = []
@@ -992,7 +820,7 @@ class HTTPService:
         return standings
 
     def player_box_scores(self, day: int, month: int, year: int) -> list[dict[str, Any]]:
-        url = f"{HTTPService.BASE_URL}/friv/dailyleaders.cgi?month={month}&day={day}&year={year}"
+        url = self._url(f"/friv/dailyleaders.cgi?month={month}&day={day}&year={year}")
 
         response = self._get(url=url, follow_redirects=False)
 
@@ -1018,7 +846,7 @@ class HTTPService:
         # Makes assumption that basketball reference pattern of breaking out player pathing using first character of
         # surname can be derived from the fact that basketball reference also has a pattern of player identifiers
         # starting with first few characters of player's surname
-        url = f"{HTTPService.BASE_URL}/players/{player_identifier[0]}/{player_identifier}/gamelog/{season_end_year}"
+        url = self._url(f"/players/{player_identifier[0]}/{player_identifier}/gamelog/{season_end_year}")
 
         return self._get_selector(url=url)
 
@@ -1051,7 +879,7 @@ class HTTPService:
         # Look up the actual game URL from the daily boxscores page
         # instead of hardcoding the game index (handles doubleheaders).
         boxscores_selector = self._get_selector(
-            url=f"{HTTPService.BASE_URL}/boxscores/?day={day}&month={month}&year={year}",
+            url=self._url(f"/boxscores/?day={day}&month={month}&year={year}"),
         )
         abbr = TEAM_TO_TEAM_ABBREVIATION[home_team]
         game_url_path = None
@@ -1061,7 +889,7 @@ class HTTPService:
                 break
         if game_url_path is None:
             raise InvalidDate(day=day, month=month, year=year)
-        url = f"{HTTPService.BASE_URL}/boxscores/pbp/{game_url_path.split('/')[-1]}"
+        url = self._url(f"/boxscores/pbp/{game_url_path.split('/')[-1]}")
         selector = self._get_selector(url=url)
         team_names = [self._cell_text(team_name) for team_name in selector.css("#content div.scorebox strong a")]
         away_team = self._team_abbreviation_from_name(team_names[0])
@@ -1105,7 +933,7 @@ class HTTPService:
         return rows
 
     def playoff_bracket(self, season_end_year: int) -> list[dict[str, Any]]:
-        url = f"{HTTPService.BASE_URL}/playoffs/NBA_{season_end_year}.html"
+        url = self._url(f"/playoffs/NBA_{season_end_year}.html")
 
         selector = self._get_selector(url=url)
         table = self._find_table(selector, "all_playoffs")
@@ -1139,13 +967,13 @@ class HTTPService:
     def players_advanced_season_totals(
         self, season_end_year: int, include_combined_values: bool = False
     ) -> list[dict[str, Any]]:
-        url = f"{HTTPService.BASE_URL}/leagues/NBA_{season_end_year}_advanced.html"
+        url = self._url(f"/leagues/NBA_{season_end_year}_advanced.html")
 
         selector = self._get_selector(url=url)
         return self._player_totals_rows(selector, "advanced", include_combined=include_combined_values)
 
     def players_season_totals(self, season_end_year: int) -> list[dict[str, Any]]:
-        url = f"{HTTPService.BASE_URL}/leagues/NBA_{season_end_year}_totals.html"
+        url = self._url(f"/leagues/NBA_{season_end_year}_totals.html")
 
         selector = self._get_selector(url=url)
         return self._player_totals_rows(selector, "totals_stats", include_combined=False)
@@ -1154,7 +982,7 @@ class HTTPService:
         return self._schedule_rows(self._get_selector(url=url))
 
     def season_schedule(self, season_end_year: int) -> list[dict[str, Any]]:
-        url = f"{HTTPService.BASE_URL}/leagues/NBA_{season_end_year}_games.html"
+        url = self._url(f"/leagues/NBA_{season_end_year}_games.html")
 
         selector = self._get_selector(url=url)
         season_schedule_values = self._schedule_rows(selector)
@@ -1162,14 +990,14 @@ class HTTPService:
         for month_url_path in [
             link.attrib["href"] for link in selector.css('div#content div.filter div:not([class*="current"]) a')
         ]:
-            url = f"{HTTPService.BASE_URL}{month_url_path}"
+            url = self._url(month_url_path)
             monthly_schedule = self.schedule_for_month(url=url)
             season_schedule_values.extend(monthly_schedule)
 
         return season_schedule_values
 
     def team_box_score(self, game_url_path: str) -> list[dict[str, Any]]:
-        url = f"{HTTPService.BASE_URL}/{game_url_path.lstrip('/')}"
+        url = self._url(game_url_path)
 
         selector = self._get_selector(url=url)
         combined_team_totals: list[dict[str, Any]] = []
@@ -1197,7 +1025,7 @@ class HTTPService:
         return [first_team_totals, second_team_totals]
 
     def team_box_scores(self, day: int, month: int, year: int) -> list[dict[str, Any]]:
-        url = f"{HTTPService.BASE_URL}/boxscores/?day={day}&month={month}&year={year}"
+        url = self._url(f"/boxscores/?day={day}&month={month}&year={year}")
 
         selector = self._get_selector(url=url)
         game_url_paths = [link.attrib["href"] for link in selector.css("td.gamelink a")]
@@ -1211,13 +1039,13 @@ class HTTPService:
         ]
 
     def search(self, term: str) -> dict[str, list[dict[str, Any]]]:
-        response = self._get(url=f"{HTTPService.BASE_URL}/search/search.fcgi", params={"search": term})
+        response = self._get(url=self._url("/search/search.fcgi"), params={"search": term})
 
         response.raise_for_status()
 
         player_results: list[dict[str, Any]] = []
 
-        if str(response.url).startswith(f"{HTTPService.BASE_URL}/search/search.fcgi"):
+        if str(response.url).startswith(self._url("/search/search.fcgi")):
             selector = Selector(text=response.text)
             player_results += self._search_rows(selector)
 
@@ -1265,9 +1093,7 @@ class HTTPService:
             ("eastern_conference", "Eastern"),
             ("western_conference", "Western"),
         ]:
-            url = (
-                f"{HTTPService.BASE_URL}{endpoint.path.format(season_end_year=season_end_year, conference=conference)}"
-            )
+            url = self._url(endpoint.path.format(season_end_year=season_end_year, conference=conference))
             selector = self._get_selector(url=url)
             table_selector = selector.css(f"table#{endpoint.table_id}")
             if table_selector:
