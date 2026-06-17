@@ -40,7 +40,7 @@ class PlayerAdvancedSeasonTotalsTable:
         return player_advanced_season_totals_rows
 
 
-class PlayerSeasonTotalTable:
+class PlayerSeasonTotalsTable:
     def __init__(self, html: HtmlElement) -> None:
         self.html = html
 

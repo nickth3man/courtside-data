@@ -37,27 +37,27 @@ class PlayerContractsRow:
 
     @property
     def first_contract_year_data(self):
-        return self.calculate_contract_year_data(contract_year_data_stat_attribute_value="y1")
+        return self.get_contract_year_data(data_stat="y1")
 
     @property
     def second_contract_year_data(self):
-        return self.calculate_contract_year_data(contract_year_data_stat_attribute_value="y2")
+        return self.get_contract_year_data(data_stat="y2")
 
     @property
     def third_contract_year_data(self):
-        return self.calculate_contract_year_data(contract_year_data_stat_attribute_value="y3")
+        return self.get_contract_year_data(data_stat="y3")
 
     @property
     def fourth_contract_year_data(self):
-        return self.calculate_contract_year_data(contract_year_data_stat_attribute_value="y4")
+        return self.get_contract_year_data(data_stat="y4")
 
     @property
     def fifth_contract_year_data(self):
-        return self.calculate_contract_year_data(contract_year_data_stat_attribute_value="y5")
+        return self.get_contract_year_data(data_stat="y5")
 
     @property
     def sixth_contract_year_data(self):
-        return self.calculate_contract_year_data(contract_year_data_stat_attribute_value="y6")
+        return self.get_contract_year_data(data_stat="y6")
 
     @property
     def guaranteed(self):
@@ -68,8 +68,8 @@ class PlayerContractsRow:
 
         return None
 
-    def calculate_contract_year_data(self, contract_year_data_stat_attribute_value):
-        matching_cells = self.html.xpath(f'.//td[@data-stat="{contract_year_data_stat_attribute_value}"]')
+    def get_contract_year_data(self, data_stat):
+        matching_cells = self.html.xpath(f'.//td[@data-stat="{data_stat}"]')
 
         if len(matching_cells) == 1:
             salary = matching_cells[0].text_content()

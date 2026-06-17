@@ -429,10 +429,10 @@ def coerce_data(data):
             return coerce_rows(data)
     elif isinstance(data, dict):
         result = {}
-        for key, val in data.items():
-            if isinstance(val, list) and val and isinstance(val[0], dict):
-                result[key] = coerce_rows(val)
+        for key, value in data.items():
+            if isinstance(value, list) and value and isinstance(value[0], dict):
+                result[key] = coerce_rows(value)
             else:
-                result[key] = val
+                result[key] = value
         return result
     return data

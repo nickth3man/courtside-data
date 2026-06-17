@@ -46,7 +46,7 @@ from courtside_data.legacy.html.totals import (
     PlayerAdvancedSeasonTotalsRow,
     PlayerAdvancedSeasonTotalsTable,
     PlayerSeasonTotalsRow,
-    PlayerSeasonTotalTable,
+    PlayerSeasonTotalsTable,
 )
 
 __all__ = [
@@ -74,8 +74,8 @@ __all__ = [
     "PlayerSeasonBoxScoresRow",
     "PlayerSeasonBoxScoresTable",
     "PlayerSeasonGameLogRow",
-    "PlayerSeasonTotalTable",
     "PlayerSeasonTotalsRow",
+    "PlayerSeasonTotalsTable",
     "SchedulePage",
     "ScheduleRow",
     "SearchPage",

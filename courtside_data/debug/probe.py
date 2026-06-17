@@ -96,8 +96,8 @@ def _resolve_endpoint_names(names: list[str] | None) -> list[str]:
     unknown = sorted(set(names) - set(ENDPOINTS))
     if unknown:
         known = ", ".join(sorted(ENDPOINTS))
-        msg = f"Unknown endpoint(s): {', '.join(unknown)}. Known endpoints: {known}"
-        raise ValueError(msg)
+        message = f"Unknown endpoint(s): {', '.join(unknown)}. Known endpoints: {known}"
+        raise ValueError(message)
     return sorted(set(names))
 
 

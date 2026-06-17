@@ -60,7 +60,7 @@ def test_golden_output(case: Case, make_offline_client) -> None:
 
     if not golden_path.exists():
         GOLDEN_DIR.mkdir(parents=True, exist_ok=True)
-        golden_path.write_text(json.dumps(actual, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+        golden_path.write_text(f"{json.dumps(actual, indent=2, sort_keys=True)}\n", encoding="utf-8")
         pytest.skip(f"Generated golden fixture: {golden_path.relative_to(Path(__file__).parent)}")
 
     expected = json.loads(golden_path.read_text(encoding="utf-8"))

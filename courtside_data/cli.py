@@ -38,7 +38,7 @@ def _add_endpoint_parser(subparsers: argparse._SubParsersAction, name: str, endp
     summary = doc[0] if doc else name
     parser = subparsers.add_parser(name, help=summary, description=summary)
     for param in endpoint.params:
-        flag = "--" + param.replace("_", "-")
+        flag = f"--{param.replace('_', '-')}"
         if param in _FLAG_PARAMS:
             parser.add_argument(flag, action="store_true")
         elif param in _INT_PARAMS:

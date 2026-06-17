@@ -1087,14 +1087,6 @@ TIER1_EXCLUDED_CASE_IDS: frozenset[str] = frozenset(
         "player_all_star-jamesle01",
         "player_career_stats-chambwi01",
         "player_career_stats-russebi01",
-        "franchise_history-BOS",
-        "franchise_history-LAL",
-        "franchise_history-OKC",
-        "franchise_history-SAC",
-        "franchise_history-WAS",
-        "team_splits-1980-BOS",
-        "team_splits-2023-GSW",
-        "team_splits-2024-BOS",
     }
 )
 

@@ -107,7 +107,7 @@ def _summarize_pydantic_errors(pydantic_errors: list[dict]) -> str:
     if err_type == "missing":
         base = f"missing field/alias '{loc_str}'"
     else:
-        short_msg = msg if len(msg) <= 80 else msg[:77] + "..."
+        short_msg = msg if len(msg) <= 80 else f"{msg[:77]}..."
         base = f"first error \u2014 {err_type} at '{loc_str}': {short_msg}"
     extras = len(pydantic_errors) - 1
     if extras > 0:

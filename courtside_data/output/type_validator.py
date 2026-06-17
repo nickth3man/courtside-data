@@ -65,18 +65,18 @@ class ValidationReport:
         self.error_count = len(errors)
 
     @property
-    def ok(self) -> bool:
+    def is_ok(self) -> bool:
         return self.error_count == 0
 
     def summary(self) -> str:
-        if self.ok:
+        if self.is_ok:
             return "Validation passed — no type mismatches."
         return f"Validation found {self.error_count} type error(s)."
 
     def __str__(self) -> str:
         lines = [self.summary()]
-        for err in self.errors:
-            lines.append(f"  {err}")
+        for error in self.errors:
+            lines.append(f"  {error}")
         return "\n".join(lines)
 
 
@@ -98,10 +98,10 @@ def validate_rows(
     errors: list[ValidationError] = []
 
     for i, row in enumerate(rows):
-        cols_to_check = expected_columns or list(row.keys())
-        for col in cols_to_check:
-            value = row.get(col)
-            target_type = _get_target_type(col)
+        columns_to_check = expected_columns or list(row.keys())
+        for column in columns_to_check:
+            value = row.get(column)
+            target_type = _get_target_type(column)
 
             if target_type is None:
                 continue  # no type expectation
@@ -115,14 +115,14 @@ def validate_rows(
                     continue
 
             if not isinstance(value, target_type):
-                if col == "mp" and isinstance(value, str) and _CLOCK_RE.fullmatch(value.strip()):
+                if column == "mp" and isinstance(value, str) and _CLOCK_RE.fullmatch(value.strip()):
                     continue
                 expected_name = _type_name(target_type)
                 actual_name = type(value).__name__
-                err = ValidationError(i, col, expected_name, actual_name, value)
+                error = ValidationError(i, column, expected_name, actual_name, value)
                 if strict:
-                    raise ValueError(str(err))
-                errors.append(err)
+                    raise ValueError(str(error))
+                errors.append(error)
 
     return ValidationReport(errors)
 

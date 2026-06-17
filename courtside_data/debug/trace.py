@@ -437,7 +437,7 @@ def _jsonish(value: Any, *, config: DebugConfig, key: str | None = None, depth: 
     if isinstance(value, float) and not math.isfinite(value):
         return str(value)
     if isinstance(value, str) and config.max_string_length is not None and len(value) > config.max_string_length:
-        return value[: config.max_string_length] + f"...<truncated {len(value) - config.max_string_length} chars>"
+        return f"{value[: config.max_string_length]}...<truncated {len(value) - config.max_string_length} chars>"
     if isinstance(value, bytes):
         return f"<bytes len={len(value)} sha256={hashlib.sha256(value).hexdigest()}>"
     try:

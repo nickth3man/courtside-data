@@ -373,11 +373,11 @@ def _execute(
             trace.record(
                 "validation",
                 "legacy_validation_complete",
-                ok=report.ok,
+                ok=report.is_ok,
                 error_count=report.error_count,
                 errors=[str(error) for error in report.errors],
             )
-        if not report.ok:
+        if not report.is_ok:
             error = ValueError(str(report))
             if trace is not None:
                 trace.record_exception(error, stage="validation")

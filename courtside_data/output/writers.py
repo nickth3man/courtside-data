@@ -134,9 +134,9 @@ class CSVWriter(Writer):
         if isinstance(data, list):
             return data
         if isinstance(data, dict):
-            for v in data.values():
-                if isinstance(v, list):
-                    return v
+            for value in data.values():
+                if isinstance(value, list):
+                    return value
         return []
 
     @staticmethod
