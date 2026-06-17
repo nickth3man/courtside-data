@@ -24,11 +24,13 @@ import weakref
 from collections.abc import Callable, Sequence
 from contextvars import ContextVar
 from functools import lru_cache
-from typing import Annotated, Any, cast, get_type_hints
+from typing import TYPE_CHECKING, Annotated, Any, cast, get_type_hints
 
 import httpx
 from pydantic import BeforeValidator, ValidationError
-from pydantic_core import InitErrorDetails
+
+if TYPE_CHECKING:
+    from pydantic_core import InitErrorDetails
 
 from courtside_data.data import OutputType, OutputWriteOption, Team
 from courtside_data.debug import DebugTrace, debug_trace_context

@@ -20,12 +20,14 @@ requires-python = ">=3.12"
 dependencies = [
     "httpx>=0.28.0",
     "httpx-curl-cffi>=0.1.0",
+    "curl-cffi>=0.7.0",
     "hishel>=1.1.0",
     "stamina>=24.3.0",
     "lxml>=5.1.0",
     "parsel>=1.8.0",
     "tzdata>=2024.1; sys_platform == 'win32'",
     "pydantic>=2.13.4",
+    "pydantic-core>=2.14.0",
 ]
 
 [project.optional-dependencies]
@@ -152,6 +154,15 @@ extra-paths = ["courtside_data"]
 
 [tool.ty.src]
 exclude = [".venv", "dist", ".slim"]
+
+[tool.deptry.per_rule_ignores]
+# DEP002: tzdata is required on Windows for timezone support and is not directly imported.
+# DEP002: pydantic-core backs InitErrorDetails used in ValidationError construction (TYPE_CHECKING import).
+DEP002 = ["tzdata", "pydantic-core"]
+
+[tool.vulture]
+min_confidence = 80
+ignore_names = ["InitErrorDetails"]
 
 [tool.taskipy.tasks]
 fix      = "ruff check --fix . && ruff format ."

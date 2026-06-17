@@ -346,12 +346,14 @@ name = "courtside-data"
 version = "5.0.0a1"
 source = { editable = "." }
 dependencies = [
+    { name = "curl-cffi" },
     { name = "hishel" },
     { name = "httpx" },
     { name = "httpx-curl-cffi" },
     { name = "lxml" },
     { name = "parsel" },
     { name = "pydantic" },
+    { name = "pydantic-core" },
     { name = "stamina" },
     { name = "tzdata", marker = "sys_platform == 'win32'" },
 ]
@@ -391,6 +393,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
+    { name = "curl-cffi", specifier = ">=0.7.0" },
     { name = "hishel", specifier = ">=1.1.0" },
     { name = "httpx", specifier = ">=0.28.0" },
     { name = "httpx-curl-cffi", specifier = ">=0.1.0" },
@@ -398,6 +401,7 @@ requires-dist = [
     { name = "pandas", marker = "extra == 'pandas'", specifier = ">=2.0" },
     { name = "parsel", specifier = ">=1.8.0" },
     { name = "pydantic", specifier = ">=2.13.4" },
+    { name = "pydantic-core", specifier = ">=2.14.0" },
     { name = "stamina", specifier = ">=24.3.0" },
     { name = "tzdata", marker = "sys_platform == 'win32'", specifier = ">=2024.1" },
 ]
