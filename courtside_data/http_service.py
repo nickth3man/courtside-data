@@ -325,6 +325,11 @@ class HTTPService:
         # the same URL share one fetch and one parse.
         self._selector_cache: OrderedDict[str, Selector] = OrderedDict()
 
+    @classmethod
+    def _url(cls, path: str = "") -> str:
+        """Join :attr:`BASE_URL` with ``path`` (leading slash optional)."""
+        return f"{cls.BASE_URL}/{path.lstrip('/')}" if path else cls.BASE_URL
+
     def _apply_rate_limiting(self) -> None:
         with self._rate_limit_lock:
             trace = current_debug_trace()
@@ -498,7 +503,7 @@ class HTTPService:
         if endpoint.custom:
             raise ValueError("Endpoint requires its bespoke HTTPService method, not fetch_table()")
         trace = current_debug_trace()
-        url = f"{HTTPService.BASE_URL}{endpoint.path.format(**params)}"
+        url = self._url(endpoint.path.format(**params))
         if trace is not None:
             trace.record(
                 "endpoint",
@@ -652,7 +657,7 @@ class HTTPService:
     _parse_friv_playoff_outcomes_row = staticmethod(_parsing.parse_friv_playoff_outcomes_row)
 
     def _friv_7_game_playoff_series_outcomes(self, table_id: str) -> list[dict[str, Any]]:
-        url = f"{HTTPService.BASE_URL}{_FRIV_7_GAME_PLAYOFF_SERIES_OUTCOMES_PATH}"
+        url = self._url(_FRIV_7_GAME_PLAYOFF_SERIES_OUTCOMES_PATH)
         selector = self._get_selector(url=url)
         table = self._find_table(selector, table_id)
         if table is None:
@@ -681,7 +686,7 @@ class HTTPService:
     def season_awards_voting(self, season_end_year: int, award: str) -> list[dict[str, Any]]:
         """Return one award voting table from ``/awards/awards_{year}.html``."""
         table_id = award.strip().lower().replace("-", "_")
-        selector = self._get_selector(f"{HTTPService.BASE_URL}/awards/awards_{season_end_year}.html")
+        selector = self._get_selector(self._url(f"/awards/awards_{season_end_year}.html"))
         table = self._find_table(selector, table_id)
         if table is None:
             return []
@@ -782,7 +787,7 @@ class HTTPService:
         return links[1].attrib["href"]
 
     def standings(self, season_end_year: int) -> list[dict[str, Any]]:
-        url = f"{HTTPService.BASE_URL}/leagues/NBA_{season_end_year}.html"
+        url = self._url(f"/leagues/NBA_{season_end_year}.html")
 
         selector = self._get_selector(url=url)
         standings: list[dict[str, Any]] = []
@@ -815,7 +820,7 @@ class HTTPService:
         return standings
 
     def player_box_scores(self, day: int, month: int, year: int) -> list[dict[str, Any]]:
-        url = f"{HTTPService.BASE_URL}/friv/dailyleaders.cgi?month={month}&day={day}&year={year}"
+        url = self._url(f"/friv/dailyleaders.cgi?month={month}&day={day}&year={year}")
 
         response = self._get(url=url, follow_redirects=False)
 
@@ -841,7 +846,7 @@ class HTTPService:
         # Makes assumption that basketball reference pattern of breaking out player pathing using first character of
         # surname can be derived from the fact that basketball reference also has a pattern of player identifiers
         # starting with first few characters of player's surname
-        url = f"{HTTPService.BASE_URL}/players/{player_identifier[0]}/{player_identifier}/gamelog/{season_end_year}"
+        url = self._url(f"/players/{player_identifier[0]}/{player_identifier}/gamelog/{season_end_year}")
 
         return self._get_selector(url=url)
 
@@ -874,7 +879,7 @@ class HTTPService:
         # Look up the actual game URL from the daily boxscores page
         # instead of hardcoding the game index (handles doubleheaders).
         boxscores_selector = self._get_selector(
-            url=f"{HTTPService.BASE_URL}/boxscores/?day={day}&month={month}&year={year}",
+            url=self._url(f"/boxscores/?day={day}&month={month}&year={year}"),
         )
         abbr = TEAM_TO_TEAM_ABBREVIATION[home_team]
         game_url_path = None
@@ -884,7 +889,7 @@ class HTTPService:
                 break
         if game_url_path is None:
             raise InvalidDate(day=day, month=month, year=year)
-        url = f"{HTTPService.BASE_URL}/boxscores/pbp/{game_url_path.split('/')[-1]}"
+        url = self._url(f"/boxscores/pbp/{game_url_path.split('/')[-1]}")
         selector = self._get_selector(url=url)
         team_names = [self._cell_text(team_name) for team_name in selector.css("#content div.scorebox strong a")]
         away_team = self._team_abbreviation_from_name(team_names[0])
@@ -928,7 +933,7 @@ class HTTPService:
         return rows
 
     def playoff_bracket(self, season_end_year: int) -> list[dict[str, Any]]:
-        url = f"{HTTPService.BASE_URL}/playoffs/NBA_{season_end_year}.html"
+        url = self._url(f"/playoffs/NBA_{season_end_year}.html")
 
         selector = self._get_selector(url=url)
         table = self._find_table(selector, "all_playoffs")
@@ -962,13 +967,13 @@ class HTTPService:
     def players_advanced_season_totals(
         self, season_end_year: int, include_combined_values: bool = False
     ) -> list[dict[str, Any]]:
-        url = f"{HTTPService.BASE_URL}/leagues/NBA_{season_end_year}_advanced.html"
+        url = self._url(f"/leagues/NBA_{season_end_year}_advanced.html")
 
         selector = self._get_selector(url=url)
         return self._player_totals_rows(selector, "advanced", include_combined=include_combined_values)
 
     def players_season_totals(self, season_end_year: int) -> list[dict[str, Any]]:
-        url = f"{HTTPService.BASE_URL}/leagues/NBA_{season_end_year}_totals.html"
+        url = self._url(f"/leagues/NBA_{season_end_year}_totals.html")
 
         selector = self._get_selector(url=url)
         return self._player_totals_rows(selector, "totals_stats", include_combined=False)
@@ -977,7 +982,7 @@ class HTTPService:
         return self._schedule_rows(self._get_selector(url=url))
 
     def season_schedule(self, season_end_year: int) -> list[dict[str, Any]]:
-        url = f"{HTTPService.BASE_URL}/leagues/NBA_{season_end_year}_games.html"
+        url = self._url(f"/leagues/NBA_{season_end_year}_games.html")
 
         selector = self._get_selector(url=url)
         season_schedule_values = self._schedule_rows(selector)
@@ -985,14 +990,14 @@ class HTTPService:
         for month_url_path in [
             link.attrib["href"] for link in selector.css('div#content div.filter div:not([class*="current"]) a')
         ]:
-            url = f"{HTTPService.BASE_URL}{month_url_path}"
+            url = self._url(month_url_path)
             monthly_schedule = self.schedule_for_month(url=url)
             season_schedule_values.extend(monthly_schedule)
 
         return season_schedule_values
 
     def team_box_score(self, game_url_path: str) -> list[dict[str, Any]]:
-        url = f"{HTTPService.BASE_URL}/{game_url_path.lstrip('/')}"
+        url = self._url(game_url_path)
 
         selector = self._get_selector(url=url)
         combined_team_totals: list[dict[str, Any]] = []
@@ -1020,7 +1025,7 @@ class HTTPService:
         return [first_team_totals, second_team_totals]
 
     def team_box_scores(self, day: int, month: int, year: int) -> list[dict[str, Any]]:
-        url = f"{HTTPService.BASE_URL}/boxscores/?day={day}&month={month}&year={year}"
+        url = self._url(f"/boxscores/?day={day}&month={month}&year={year}")
 
         selector = self._get_selector(url=url)
         game_url_paths = [link.attrib["href"] for link in selector.css("td.gamelink a")]
@@ -1034,13 +1039,13 @@ class HTTPService:
         ]
 
     def search(self, term: str) -> dict[str, list[dict[str, Any]]]:
-        response = self._get(url=f"{HTTPService.BASE_URL}/search/search.fcgi", params={"search": term})
+        response = self._get(url=self._url("/search/search.fcgi"), params={"search": term})
 
         response.raise_for_status()
 
         player_results: list[dict[str, Any]] = []
 
-        if str(response.url).startswith(f"{HTTPService.BASE_URL}/search/search.fcgi"):
+        if str(response.url).startswith(self._url("/search/search.fcgi")):
             selector = Selector(text=response.text)
             player_results += self._search_rows(selector)
 
@@ -1088,9 +1093,7 @@ class HTTPService:
             ("eastern_conference", "Eastern"),
             ("western_conference", "Western"),
         ]:
-            url = (
-                f"{HTTPService.BASE_URL}{endpoint.path.format(season_end_year=season_end_year, conference=conference)}"
-            )
+            url = self._url(endpoint.path.format(season_end_year=season_end_year, conference=conference))
             selector = self._get_selector(url=url)
             table_selector = selector.css(f"table#{endpoint.table_id}")
             if table_selector:
