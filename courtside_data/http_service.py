@@ -15,7 +15,6 @@ import json
 import logging
 import os
 import random
-import re
 import threading
 import time
 from collections import OrderedDict
@@ -33,9 +32,7 @@ from parsel import Selector
 
 from courtside_data import _parsing
 from courtside_data.data import (
-    DIVISIONS_TO_CONFERENCES,
     TEAM_TO_TEAM_ABBREVIATION,
-    Division,
     Team,
 )
 from courtside_data.debug import current_debug_trace
@@ -331,8 +328,9 @@ class HTTPService:
         return f"{cls.BASE_URL}/{path.lstrip('/')}" if path else cls.BASE_URL
 
     def _apply_rate_limiting(self) -> None:
+        wait = 0.0
+        trace = current_debug_trace()
         with self._rate_limit_lock:
-            trace = current_debug_trace()
             # A jail set by a previous process (persisted to disk) carries over
             if not self.__class__._jail_state_loaded:
                 self.__class__._jail_state_loaded = True
@@ -356,7 +354,6 @@ class HTTPService:
             if self._rate_limit_interval > 0 and time_since_last < self._rate_limit_interval:
                 jitter = self._random(0.0, self._rate_limit_jitter)
                 wait = (self._rate_limit_interval - time_since_last) + jitter
-                logger.debug("Rate-limit pacing: sleeping %.2fs", wait)
                 if trace is not None:
                     trace.record(
                         "rate_limit",
@@ -366,15 +363,20 @@ class HTTPService:
                         wait_seconds=wait,
                         seconds_since_last_request=time_since_last,
                     )
-                self._sleep(wait)
-            elif trace is not None:
-                trace.record(
-                    "rate_limit",
-                    "no_sleep",
-                    interval_seconds=self._rate_limit_interval,
-                    seconds_since_last_request=time_since_last,
-                )
-            self.__class__._last_request_time = self._time()
+                self.__class__._last_request_time = current_time + wait
+            else:
+                if trace is not None:
+                    trace.record(
+                        "rate_limit",
+                        "no_sleep",
+                        interval_seconds=self._rate_limit_interval,
+                        seconds_since_last_request=time_since_last,
+                    )
+                self.__class__._last_request_time = current_time
+
+        if wait > 0.0:
+            logger.debug("Rate-limit pacing: sleeping %.2fs", wait)
+            self._sleep(wait)
 
     def _get(self, url: str, **kwargs: Any) -> httpx.Response:
         trace = current_debug_trace()
@@ -493,6 +495,59 @@ class HTTPService:
 
     # ── Generic endpoint plumbing ───────────────────────────────────────
 
+    def _resolve_table_selector(
+        self, selector: Selector, endpoint: TableEndpoint, params: dict[str, Any]
+    ) -> tuple[Selector | None, str | None]:
+        trace = current_debug_trace()
+        if endpoint.table_id is not None:
+            rendered_table_id = endpoint.table_id.format(**params)
+            found = _find_table_by_id(selector, rendered_table_id)
+            if trace is not None:
+                trace.record(
+                    "table_resolution",
+                    "table_id_lookup",
+                    selector=f"table[@id={rendered_table_id!r}]",
+                    matched=bool(found),
+                    match_count=len(found),
+                )
+            if found:
+                return found[0], "table_id"
+
+        if endpoint.fallback_table_ids:
+            for fallback_id in endpoint.fallback_table_ids:
+                rendered_fallback_id = fallback_id.format(**params)
+                found = _find_table_by_id(selector, rendered_fallback_id)
+                if trace is not None:
+                    trace.record(
+                        "table_resolution",
+                        "fallback_table_id_lookup",
+                        selector=f"table[@id={rendered_fallback_id!r}]",
+                        fallback_id=fallback_id,
+                        matched=bool(found),
+                        match_count=len(found),
+                    )
+                if found:
+                    return found[0], "fallback_table_id"
+
+        if endpoint.commented_table_id is not None:
+            table_selector = extract_commented_table(selector, endpoint.commented_table_id)
+            if trace is not None:
+                trace.record(
+                    "table_resolution",
+                    "commented_table_lookup",
+                    table_id=endpoint.commented_table_id,
+                    matched=table_selector is not None,
+                )
+            if table_selector is not None:
+                return table_selector, "commented_table_id"
+
+        if endpoint.table_id is None and endpoint.commented_table_id is None:
+            found = selector.css("table")
+            if found:
+                return found[0], "first_table"
+
+        return None, None
+
     def fetch_table(self, endpoint: TableEndpoint, **params: Any) -> list[dict[str, Any]]:
         """Fetch and parse a generic table endpoint described by ``endpoint``.
 
@@ -518,56 +573,7 @@ class HTTPService:
             )
         selector = self._get_selector(url=url)
 
-        table_selector: Selector | None = None
-        table_source: str | None = None
-        if endpoint.table_id is not None:
-            rendered_table_id = endpoint.table_id.format(**params)
-            found = _find_table_by_id(selector, rendered_table_id)
-            if trace is not None:
-                trace.record(
-                    "table_resolution",
-                    "table_id_lookup",
-                    selector=f"table[@id={rendered_table_id!r}]",
-                    matched=bool(found),
-                    match_count=len(found),
-                )
-            if found:
-                table_selector = found[0]
-                table_source = "table_id"
-        if table_selector is None and endpoint.fallback_table_ids:
-            for fallback_id in endpoint.fallback_table_ids:
-                rendered_fallback_id = fallback_id.format(**params)
-                found = _find_table_by_id(selector, rendered_fallback_id)
-                if trace is not None:
-                    trace.record(
-                        "table_resolution",
-                        "fallback_table_id_lookup",
-                        selector=f"table[@id={rendered_fallback_id!r}]",
-                        fallback_id=fallback_id,
-                        matched=bool(found),
-                        match_count=len(found),
-                    )
-                if found:
-                    table_selector = found[0]
-                    table_source = "fallback_table_id"
-                    break
-        if table_selector is None and endpoint.commented_table_id is not None:
-            table_selector = extract_commented_table(selector, endpoint.commented_table_id)
-            if trace is not None:
-                trace.record(
-                    "table_resolution",
-                    "commented_table_lookup",
-                    table_id=endpoint.commented_table_id,
-                    matched=table_selector is not None,
-                )
-            if table_selector is not None:
-                table_source = "commented_table_id"
-
-        if table_selector is None and endpoint.table_id is None and endpoint.commented_table_id is None:
-            found = selector.css("table")
-            if found:
-                table_selector = found[0]
-                table_source = "first_table"
+        table_selector, table_source = self._resolve_table_selector(selector, endpoint, params)
 
         if table_selector is None:
             if endpoint.transaction_list_fallback:
@@ -625,33 +631,7 @@ class HTTPService:
             return table[0]
         return extract_commented_table(selector, table_id)
 
-    @staticmethod
-    def _raw_rows_from_table(
-        table_selector: Selector,
-        *,
-        use_header_fallback: bool = False,
-    ) -> list[tuple[dict[str, Any], dict[str, dict[str, str]]]]:
-        table = GenericTable(table_selector, use_header_fallback=use_header_fallback)
-        rows = [(row.to_dict(), row.metadata) for row in table.rows]
-        trace = current_debug_trace()
-        if trace is not None:
-            trace.record(
-                "parse",
-                "raw_rows_from_table",
-                row_count=len(rows),
-                use_header_fallback=use_header_fallback,
-                column_names=list(rows[0][0].keys()) if rows else [],
-            )
-            trace.append_artifact(
-                "raw_table_extracts",
-                {
-                    "rows": [row for row, _ in rows],
-                    "row_metadata": [
-                        {"row_index": index, "metadata": metadata} for index, (_, metadata) in enumerate(rows)
-                    ],
-                },
-            )
-        return rows
+    _raw_rows_from_table = staticmethod(_parsing.raw_rows_from_table)
 
     # Static shim for the friv playoff series parser (see :mod:`courtside_data._parsing`).
     _parse_friv_playoff_outcomes_row = staticmethod(_parsing.parse_friv_playoff_outcomes_row)
@@ -762,62 +742,15 @@ class HTTPService:
         ]
 
     def _search_rows(self, selector: Selector) -> list[dict[str, Any]]:
-        rows: list[dict[str, Any]] = []
-        for result in selector.css("div#searches div#players div.search-item"):
-            link = result.css("div.search-item-name a")
-            if not link:
-                continue
-            rows.append(
-                {
-                    "name": self._search_result_name(self._cell_text(link[0])),
-                    "identifier": self._resource_identifier(link[0].attrib.get("href")),
-                    "leagues": self._cell_text(result.css("div.search-item-league")),
-                }
-            )
-        return rows
+        return _parsing.parse_search_rows(selector)
 
     def _search_pagination_url(self, selector: Selector) -> str | None:
-        links = selector.css("div#searches div#players div.search-pagination a")
-        if not links:
-            return None
-        if len(links) == 1:
-            if self._cell_text(links[0]) == "Previous 100 Results":
-                return None
-            return links[0].attrib["href"]
-        return links[1].attrib["href"]
+        return _parsing.parse_search_pagination_url(selector)
 
     def standings(self, season_end_year: int) -> list[dict[str, Any]]:
         url = self._url(f"/leagues/NBA_{season_end_year}.html")
-
         selector = self._get_selector(url=url)
-        standings: list[dict[str, Any]] = []
-        for table_id in ("divs_standings_E", "divs_standings_W"):
-            current_division: Division | None = None
-            table = selector.css(f"table#{table_id}")
-            if not table:
-                continue
-            for row in table[0].css("tbody tr"):
-                classes = row.attrib.get("class", "").split()
-                if "thead" in classes:
-                    division_value = self._division_value(self._cell_text(row.css("th")))
-                    current_division = Division(division_value) if division_value is not None else None
-                    continue
-                team = self._cell_text(row.css('[data-stat="team_name"]'))
-                if not team:
-                    continue
-                standings.append(
-                    {
-                        "team": self._standings_team_value(team),
-                        "wins": self._cell_text(row.css('[data-stat="wins"]')),
-                        "losses": self._cell_text(row.css('[data-stat="losses"]')),
-                        "division": current_division.value if current_division is not None else None,
-                        "conference": (
-                            DIVISIONS_TO_CONFERENCES[current_division].value if current_division is not None else None
-                        ),
-                    }
-                )
-
-        return standings
+        return _parsing.parse_standings(selector)
 
     def player_box_scores(self, day: int, month: int, year: int) -> list[dict[str, Any]]:
         url = self._url(f"/friv/dailyleaders.cgi?month={month}&day={day}&year={year}")
@@ -882,11 +815,7 @@ class HTTPService:
             url=self._url(f"/boxscores/?day={day}&month={month}&year={year}"),
         )
         abbr = TEAM_TO_TEAM_ABBREVIATION[home_team]
-        game_url_path = None
-        for path in [link.attrib["href"] for link in boxscores_selector.css("td.gamelink a")]:
-            if path.endswith((f"0{abbr}.html", f"1{abbr}.html")):
-                game_url_path = path
-                break
+        game_url_path = _parsing.resolve_pbp_game_url_path(boxscores_selector, abbr)
         if game_url_path is None:
             raise InvalidDate(day=day, month=month, year=year)
         url = self._url(f"/boxscores/pbp/{game_url_path.split('/')[-1]}")
@@ -894,43 +823,7 @@ class HTTPService:
         team_names = [self._cell_text(team_name) for team_name in selector.css("#content div.scorebox strong a")]
         away_team = self._team_abbreviation_from_name(team_names[0])
         home_team_abbreviation = self._team_abbreviation_from_name(team_names[1])
-
-        current_period = 0
-        rows: list[dict[str, Any]] = []
-        for row in selector.css("table#pbp tr"):
-            cells = row.css("td, th")
-            if not cells:
-                continue
-            timestamp_cell = cells[0]
-            if timestamp_cell.attrib.get("colspan") == "6":
-                current_period += 1
-                continue
-            if (
-                len(cells) < 2
-                or cells[1].attrib.get("colspan") == "5"
-                or timestamp_cell.attrib.get("aria-label") == "Time"
-            ):
-                continue
-
-            timestamp = self._cell_text(timestamp_cell)
-            away_description = self._cell_text(cells[1]) if len(cells) == 6 else ""
-            home_description = self._cell_text(cells[5]) if len(cells) == 6 else ""
-            scores = self._cell_text(cells[3]) if len(cells) == 6 else ""
-            is_away_play = away_description != ""
-            rows.append(
-                {
-                    "period": self._period_number(current_period),
-                    "period_type": self._period_type(current_period),
-                    "remaining_seconds_in_period": self._remaining_seconds(timestamp),
-                    "relevant_team": away_team if is_away_play else home_team_abbreviation,
-                    "away_team": away_team,
-                    "home_team": home_team_abbreviation,
-                    "away_score": scores,
-                    "home_score": scores,
-                    "description": away_description if is_away_play else home_description,
-                }
-            )
-        return rows
+        return _parsing.parse_play_by_play_rows(selector, away_team, home_team_abbreviation)
 
     def playoff_bracket(self, season_end_year: int) -> list[dict[str, Any]]:
         url = self._url(f"/playoffs/NBA_{season_end_year}.html")
@@ -939,30 +832,7 @@ class HTTPService:
         table = self._find_table(selector, "all_playoffs")
         if table is None:
             return []
-
-        rows: list[dict[str, Any]] = []
-        for row in table.xpath("./tbody/tr"):
-            classes = row.attrib.get("class", "").split()
-            if "thead" in classes or "toggleable" in classes or row.css("table"):
-                continue
-            cells = row.xpath("./td|./th")
-            if len(cells) != 3:
-                continue
-
-            series = self._cell_text(cells[0])
-            matchup = re.sub(r"\s+", " ", self._cell_text(cells[1])).strip()
-            if not series or not matchup:
-                continue
-
-            team, separator, result = matchup.partition(" over ")
-            rows.append(
-                {
-                    "series": series,
-                    "team": team.strip(),
-                    "result": f"over {result.strip()}" if separator else matchup,
-                }
-            )
-        return rows
+        return _parsing.parse_playoff_bracket(table)
 
     def players_advanced_season_totals(
         self, season_end_year: int, include_combined_values: bool = False
@@ -998,31 +868,8 @@ class HTTPService:
 
     def team_box_score(self, game_url_path: str) -> list[dict[str, Any]]:
         url = self._url(game_url_path)
-
         selector = self._get_selector(url=url)
-        combined_team_totals: list[dict[str, Any]] = []
-        for table in selector.css('table.stats_table[id$="-game-basic"]'):
-            table_id = table.attrib.get("id", "")
-            if not table_id.startswith("box-"):
-                continue
-            team_abbreviation = table_id.removeprefix("box-").removesuffix("-game-basic")
-            footer = table.css("tfoot")
-            if not footer:
-                continue
-            rows = self._raw_rows_from_table(footer[0])
-            if not rows:
-                continue
-            row = rows[0][0]
-            row["team_name_abbr"] = self._team_name_from_abbreviation(team_abbreviation)
-            combined_team_totals.append(row)
-
-        if len(combined_team_totals) < 2:
-            raise ValueError(f"Expected 2 team totals in box score page, got {len(combined_team_totals)}")
-
-        first_team_totals, second_team_totals = combined_team_totals[:2]
-        first_team_totals["outcome"] = self._score_outcome(first_team_totals["pts"], second_team_totals["pts"])
-        second_team_totals["outcome"] = self._score_outcome(second_team_totals["pts"], first_team_totals["pts"])
-        return [first_team_totals, second_team_totals]
+        return _parsing.parse_team_box_score(selector)
 
     def team_box_scores(self, day: int, month: int, year: int) -> list[dict[str, Any]]:
         url = self._url(f"/boxscores/?day={day}&month={month}&year={year}")
@@ -1069,18 +916,7 @@ class HTTPService:
 
         elif str(response.url).startswith(f"{HTTPService.BASE_URL}/players"):
             selector = Selector(text=response.text)
-            league_abbreviations = {
-                self._cell_text(league)
-                for league in selector.css('table#per_game tbody tr td[data-stat="lg_id"]')
-                if self._cell_text(league)
-            }
-            player_results += [
-                {
-                    "name": self._cell_text(selector.css('h1[itemprop="name"]')),
-                    "identifier": self._resource_identifier(str(response.url)),
-                    "leagues": league_abbreviations,
-                }
-            ]
+            player_results += _parsing.parse_player_direct_search_results(selector, str(response.url))
 
         return {"players": player_results}
 

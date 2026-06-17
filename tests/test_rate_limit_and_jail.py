@@ -120,8 +120,8 @@ def test_pacing_sleeps_to_fill_interval():
     service._apply_rate_limiting()
 
     assert sleep.calls == [pytest.approx(5.0, abs=0.01)]
-    # After the call, the module-level state is updated to the current time.
-    assert HTTPService._last_request_time == pytest.approx(1.0)
+    # After the call, the module-level state is updated to the projected/pacing-complete time.
+    assert HTTPService._last_request_time == pytest.approx(6.0)
 
 
 def test_pacing_does_not_sleep_when_interval_is_zero():
