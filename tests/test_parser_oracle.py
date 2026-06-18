@@ -13,7 +13,7 @@ from pathlib import Path
 
 import pytest
 from courtside_data.endpoints import ENDPOINTS
-from courtside_data.generic_endpoints import xpath_literal
+from courtside_data.parsing.generic import xpath_literal
 from parsel import Selector
 from selectolax.parser import HTMLParser
 

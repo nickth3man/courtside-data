@@ -1,7 +1,7 @@
 """HTTP transport: rate-limited, retried requests with selector caching.
 
-Generic table endpoints are handled by :class:`~courtside_data.generic_endpoints.GenericEndpointHandler`.
-Bespoke endpoints are handled by :class:`~courtside_data.custom_endpoints.CustomEndpointHandler`.
+Generic table endpoints are handled by :class:`~courtside_data.parsing.generic.GenericEndpointHandler`.
+Bespoke endpoints are handled by :class:`~courtside_data.parsing.custom.CustomEndpointHandler`.
 """
 
 from __future__ import annotations

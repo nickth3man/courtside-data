@@ -260,7 +260,7 @@ class TeamTransactionsRow(BRRow):
     """Row from a team's transaction-list page.
 
     Transaction-list pages are ``<ul>``-based rather than tabular; the raw dict
-    shape comes from :func:`courtside_data.tables.parse_transaction_list`.
+    shape comes from :func:`courtside_data.parsing.tables.parse_transaction_list`.
     Dates are full-month strings (e.g. "October 16, 2018") so they are kept as
     strings to avoid lossy parsing.
     """

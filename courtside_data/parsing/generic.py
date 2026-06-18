@@ -9,7 +9,7 @@ from parsel import Selector
 
 from courtside_data.debug import current_debug_trace
 from courtside_data.endpoints import TableEndpoint
-from courtside_data.tables import GenericTable, extract_commented_table, parse_transaction_list
+from courtside_data.parsing.tables import GenericTable, extract_commented_table, parse_transaction_list
 
 if TYPE_CHECKING:
     from courtside_data.http_service import HTTPService

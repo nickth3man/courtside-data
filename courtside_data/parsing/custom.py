@@ -7,15 +7,15 @@ from typing import Any
 import httpx
 from parsel import Selector
 
-from courtside_data import _parsing
 from courtside_data.data import TEAM_TO_TEAM_ABBREVIATION, Team
 from courtside_data.debug import current_debug_trace
 from courtside_data.endpoints import ENDPOINTS
 from courtside_data.errors import InvalidDate, InvalidPlayerAndSeason
-from courtside_data.generic_endpoints import find_table
 from courtside_data.http_service import HTTPService
+from courtside_data.parsing import cells, rows
+from courtside_data.parsing.generic import find_table
+from courtside_data.parsing.tables import GenericTable
 from courtside_data.schemas._fields import _team_field
-from courtside_data.tables import GenericTable
 
 _FRIV_7_GAME_PLAYOFF_SERIES_OUTCOMES_PATH = "/friv/7-game-playoff-series-outcomes-22111.html"
 
@@ -32,14 +32,14 @@ class CustomEndpointHandler:
         table = find_table(selector, table_id)
         if table is None:
             return []
-        rows = [
-            _parsing.parse_friv_playoff_outcomes_row(row) for row in table.css("tbody tr:not(.thead)") if row.css("td")
+        parsed_rows = [
+            rows.parse_friv_playoff_outcomes_row(row) for row in table.css("tbody tr:not(.thead)") if row.css("td")
         ]
         trace = current_debug_trace()
         if trace is not None:
-            trace.record("parse", "friv_playoff_outcomes_parsed", table_id=table_id, row_count=len(rows))
-            trace.artifact("raw_rows", rows)
-        return rows
+            trace.record("parse", "friv_playoff_outcomes_parsed", table_id=table_id, row_count=len(parsed_rows))
+            trace.artifact("raw_rows", parsed_rows)
+        return parsed_rows
 
     def friv_7_game_playoff_series_outcomes_team_is_down(self) -> list[dict[str, Any]]:
         """Return the team-is-down matrix from the seven-game series outcomes page."""
@@ -60,32 +60,32 @@ class CustomEndpointHandler:
         table = find_table(selector, table_id)
         if table is None:
             return []
-        return [row for row, _ in _parsing.raw_rows_from_table(table)]
+        return [row for row, _ in rows.raw_rows_from_table(table)]
 
     def _generic_table_rows(self, selector: Selector, table_id: str) -> list[dict[str, Any]]:
         table_selector = find_table(selector, table_id)
         if table_selector is None:
             return []
-        return [row for row, _ in _parsing.raw_rows_from_table(table_selector)]
+        return [row for row, _ in rows.raw_rows_from_table(table_selector)]
 
     def _player_totals_rows(self, selector: Selector, table_id: str, *, include_combined: bool) -> list[dict[str, Any]]:
         table_selector = find_table(selector, table_id)
         if table_selector is None:
             return []
 
-        rows: list[dict[str, Any]] = []
+        parsed_rows: list[dict[str, Any]] = []
         endpoint_name = "players_advanced_season_totals" if table_id == "advanced" else "players_season_totals"
-        for row_index, (row, metadata) in enumerate(_parsing.raw_rows_from_table(table_selector)):
+        for row_index, (row, metadata) in enumerate(rows.raw_rows_from_table(table_selector)):
             if not row.get("name_display") or not row.get("team_name_abbr"):
                 continue
-            if not include_combined and _parsing.is_combined_team(row):
+            if not include_combined and cells.is_combined_team(row):
                 continue
-            row["slug"] = _parsing.slug_from_metadata(metadata, "name_display")
-            _parsing.require_slug(endpoint_name, row, row_index)
+            row["slug"] = cells.slug_from_metadata(metadata, "name_display")
+            cells.require_slug(endpoint_name, row, row_index)
             if table_id == "advanced":
-                row["is_combined_totals"] = _parsing.is_combined_team(row)
-            rows.append(row)
-        return rows
+                row["is_combined_totals"] = cells.is_combined_team(row)
+            parsed_rows.append(row)
+        return parsed_rows
 
     def _player_season_box_score_rows(
         self,
@@ -93,8 +93,8 @@ class CustomEndpointHandler:
         *,
         include_inactive_games: bool,
     ) -> list[dict[str, Any]]:
-        rows: list[dict[str, Any]] = []
-        for row, metadata in _parsing.raw_rows_from_table(table_selector):
+        parsed_rows: list[dict[str, Any]] = []
+        for row, metadata in rows.raw_rows_from_table(table_selector):
             if not row.get("date") and not row.get("date_game"):
                 continue
 
@@ -103,8 +103,8 @@ class CustomEndpointHandler:
                 continue
 
             row["active"] = active
-            rows.append(row)
-        return rows
+            parsed_rows.append(row)
+        return parsed_rows
 
     def _schedule_rows(self, selector: Selector) -> list[dict[str, Any]]:
         return [
@@ -116,7 +116,7 @@ class CustomEndpointHandler:
     def standings(self, season_end_year: int) -> list[dict[str, Any]]:
         url = self._http._url(f"/leagues/NBA_{season_end_year}.html")
         selector = self._http._get_selector(url=url)
-        return _parsing.parse_standings(selector)
+        return rows.parse_standings(selector)
 
     def player_box_scores(self, day: int, month: int, year: int) -> list[dict[str, Any]]:
         url = self._http._url(f"/friv/dailyleaders.cgi?month={month}&day={day}&year={year}")
@@ -130,14 +130,14 @@ class CustomEndpointHandler:
             table = find_table(selector, "stats")
             if table is None:
                 raise InvalidDate(day=day, month=month, year=year)
-            rows = []
-            for row_index, (row, metadata) in enumerate(_parsing.raw_rows_from_table(table)):
-                row["slug"] = _parsing.slug_from_metadata(metadata, "player")
-                _parsing.require_slug("player_box_scores", row, row_index)
-                rows.append(row)
-            if not rows:
+            parsed_rows = []
+            for row_index, (row, metadata) in enumerate(rows.raw_rows_from_table(table)):
+                row["slug"] = cells.slug_from_metadata(metadata, "player")
+                cells.require_slug("player_box_scores", row, row_index)
+                parsed_rows.append(row)
+            if not parsed_rows:
                 raise InvalidDate(day=day, month=month, year=year)
-            return rows
+            return parsed_rows
 
         raise InvalidDate(day=day, month=month, year=year)
 
@@ -172,15 +172,15 @@ class CustomEndpointHandler:
             url=self._http._url(f"/boxscores/?day={day}&month={month}&year={year}"),
         )
         abbr = TEAM_TO_TEAM_ABBREVIATION[home_team]
-        game_url_path = _parsing.resolve_pbp_game_url_path(boxscores_selector, abbr)
+        game_url_path = rows.resolve_pbp_game_url_path(boxscores_selector, abbr)
         if game_url_path is None:
             raise InvalidDate(day=day, month=month, year=year)
         url = self._http._url(f"/boxscores/pbp/{game_url_path.split('/')[-1]}")
         selector = self._http._get_selector(url=url)
-        team_names = [_parsing.cell_text(team_name) for team_name in selector.css("#content div.scorebox strong a")]
-        away_team = _parsing.team_abbreviation_from_name(team_names[0])
-        home_team_abbreviation = _parsing.team_abbreviation_from_name(team_names[1])
-        return _parsing.parse_play_by_play_rows(selector, away_team, home_team_abbreviation)
+        team_names = [cells.cell_text(team_name) for team_name in selector.css("#content div.scorebox strong a")]
+        away_team = cells.team_abbreviation_from_name(team_names[0])
+        home_team_abbreviation = cells.team_abbreviation_from_name(team_names[1])
+        return rows.parse_play_by_play_rows(selector, away_team, home_team_abbreviation)
 
     def playoff_bracket(self, season_end_year: int) -> list[dict[str, Any]]:
         url = self._http._url(f"/playoffs/NBA_{season_end_year}.html")
@@ -189,7 +189,7 @@ class CustomEndpointHandler:
         table = find_table(selector, "all_playoffs")
         if table is None:
             return []
-        return _parsing.parse_playoff_bracket(table)
+        return rows.parse_playoff_bracket(table)
 
     def players_advanced_season_totals(
         self, season_end_year: int, include_combined_values: bool = False
@@ -226,7 +226,7 @@ class CustomEndpointHandler:
     def team_box_score(self, game_url_path: str) -> list[dict[str, Any]]:
         url = self._http._url(game_url_path)
         selector = self._http._get_selector(url=url)
-        return _parsing.parse_team_box_score(selector)
+        return rows.parse_team_box_score(selector)
 
     def team_box_scores(self, day: int, month: int, year: int) -> list[dict[str, Any]]:
         url = self._http._url(f"/boxscores/?day={day}&month={month}&year={year}")
@@ -251,11 +251,11 @@ class CustomEndpointHandler:
 
         if str(response.url).startswith(self._http._url("/search/search.fcgi")):
             selector = Selector(text=response.text)
-            player_results += _parsing.parse_search_rows(selector)
+            player_results += rows.parse_search_rows(selector)
 
             seen_pagination_urls: set[str] = set()
-            while _parsing.parse_search_pagination_url(selector) is not None:
-                pagination_url = _parsing.parse_search_pagination_url(selector)
+            while rows.parse_search_pagination_url(selector) is not None:
+                pagination_url = rows.parse_search_pagination_url(selector)
                 assert pagination_url is not None
                 if pagination_url in seen_pagination_urls:
                     break
@@ -266,11 +266,11 @@ class CustomEndpointHandler:
                 response.raise_for_status()
 
                 selector = Selector(text=response.text)
-                player_results += _parsing.parse_search_rows(selector)
+                player_results += rows.parse_search_rows(selector)
 
         elif str(response.url).startswith(f"{HTTPService.BASE_URL}/players"):
             selector = Selector(text=response.text)
-            player_results += _parsing.parse_player_direct_search_results(selector, str(response.url))
+            player_results += rows.parse_player_direct_search_results(selector, str(response.url))
 
         return {"players": player_results}
 

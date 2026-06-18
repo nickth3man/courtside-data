@@ -15,7 +15,6 @@ and the parser graph are reused across calls.
 
 from __future__ import annotations
 
-import contextlib
 import inspect
 import sys
 import threading
@@ -24,28 +23,23 @@ import weakref
 from collections.abc import Callable, Sequence
 from contextvars import ContextVar
 from functools import lru_cache
-from typing import TYPE_CHECKING, Annotated, Any, cast, get_type_hints
+from typing import Annotated, Any, get_type_hints
 
 import httpx
-from pydantic import BeforeValidator, ValidationError
+from pydantic import BeforeValidator
 
-if TYPE_CHECKING:
-    from pydantic_core import InitErrorDetails
-
-from courtside_data.custom_endpoints import CustomEndpointHandler, dispatch_custom_endpoint
+from courtside_data.client._pipelines.legacy import validate_rows_legacy
+from courtside_data.client._pipelines.pydantic import validate_rows_pydantic
 from courtside_data.data import OutputType, OutputWriteOption, Team
 from courtside_data.debug import DebugTrace, debug_trace_context
 from courtside_data.debug.sink import debug_log_path, prepare_log_dir
 from courtside_data.endpoints import ENDPOINTS
-from courtside_data.errors import SchemaDriftError
-from courtside_data.generic_endpoints import GenericEndpointHandler
 from courtside_data.http_service import HTTPService
-from courtside_data.output.field_types import coerce_data
 from courtside_data.output.fields import BasketballReferenceJSONEncoder, format_value
 from courtside_data.output.service import OutputService
-from courtside_data.output.type_validator import validate_rows
 from courtside_data.output.writers import CSVWriter, FileOptions, JSONWriter, OutputOptions
-from courtside_data.schemas import ROW_ADAPTERS
+from courtside_data.parsing.custom import CustomEndpointHandler, dispatch_custom_endpoint
+from courtside_data.parsing.generic import GenericEndpointHandler
 from courtside_data.schemas._fields import _team_field
 
 _shared_service_lock = threading.Lock()
@@ -89,119 +83,6 @@ def _call_with_error_mapping(
         raise
 
 
-def _extract_rows(values: Any) -> list[dict[str, Any]] | None:
-    """Pull the row list out of endpoint output (list[dict] or dict[str, list[dict]])."""
-    if isinstance(values, list) and values and isinstance(values[0], dict):
-        return values
-    if isinstance(values, dict):
-        for v in values.values():
-            if isinstance(v, list) and v and isinstance(v[0], dict):
-                return v
-    return None
-
-
-def _extract_raw_rows(values: Any) -> list[dict[str, Any]]:
-    """Pull raw rows out of row-model endpoint output, preserving empty results."""
-    if isinstance(values, list):
-        if all(isinstance(row, dict) for row in values):
-            return values
-        return []
-    if isinstance(values, dict):
-        for v in values.values():
-            if isinstance(v, list) and all(isinstance(row, dict) for row in v):
-                return v
-    return []
-
-
-def _detect_csv_columns(rows: list[dict[str, Any]]) -> Sequence[str]:
-    """Auto-detect CSV column names from row keys, stripping all-empty columns.
-
-    Only used when an endpoint doesn't declare explicit column names; declared
-    columns keep their contract even when empty.
-    """
-    column_names = list(rows[0].keys())
-    non_empty = [k for k in column_names if any(row.get(k) not in (None, "", set(), []) for row in rows)]
-    return non_empty or column_names
-
-
-_SENTINEL_ROW_VALUES = {
-    "did not dress",
-    "did not play",
-    "inactive",
-    "not with team",
-    "player suspended",
-    "suspended",
-    "traded",
-    "forfeited",
-}
-
-
-_HEADER_ROW_VALUES = {
-    "2p",
-    "2p%",
-    "2pa",
-    "3p",
-    "3p%",
-    "3pa",
-    "age",
-    "ast",
-    "blk",
-    "date",
-    "drb",
-    "efg%",
-    "fg",
-    "fg%",
-    "fga",
-    "ft",
-    "ft%",
-    "fta",
-    "g",
-    "gs",
-    "lg",
-    "mp",
-    "opp",
-    "orb",
-    "pf",
-    "player",
-    "pos",
-    "pts",
-    "rk",
-    "season",
-    "stl",
-    "team",
-    "tov",
-    "trb",
-    "w/l",
-}
-
-
-def _normalized_cell_value(value: Any) -> str:
-    return " ".join(str(value).strip().lower().replace("\xa0", " ").split())
-
-
-def _is_skippable_bref_row(row: dict[str, Any]) -> bool:
-    values = {_normalized_cell_value(value) for value in row.values() if value not in (None, "")}
-    if any(any(marker in value for marker in _SENTINEL_ROW_VALUES) for value in values):
-        return True
-    # Some BREF tables repeat header rows or section rows that survive table
-    # extraction because they use data-stat attributes like normal cells.
-    if bool(values) and all(_normalized_cell_value(key) in values for key in row):
-        return True
-    return bool(values) and all(value in _HEADER_ROW_VALUES for value in values)
-
-
-def _endpoint_url_context(endpoint: Any, params: dict[str, Any] | None) -> str:
-    if endpoint is None:
-        return "<unknown>"
-    path = getattr(endpoint, "path", "<unknown>")
-    if params:
-        with contextlib.suppress(IndexError, KeyError, TypeError, ValueError):
-            path = path.format(**params)
-    if isinstance(path, str) and path.startswith("/"):
-        return f"https://www.basketball-reference.com{path}"
-    return str(path)
-
-
 def _make_output_service() -> OutputService:
     return OutputService(
         json_writer=JSONWriter(value_formatter=BasketballReferenceJSONEncoder),
@@ -225,190 +106,6 @@ def _format_output(
         csv_options={"column_names": csv_column_names},
     )
     return _make_output_service().output(data=data, options=options)
-
-
-def _execute_pydantic_pipeline(
-    values: Any,
-    *,
-    row_model: Any,
-    endpoint: Any,
-    endpoint_name: str | None,
-    endpoint_params: dict[str, Any] | None,
-    csv_column_names: Sequence[str] | None,
-    output_type: OutputType | None,
-    output_file_path: str | None,
-    output_write_option: OutputWriteOption | None,
-    json_options: dict[str, Any] | None,
-    raw: bool,
-    debug: bool,
-    trace: DebugTrace | None,
-) -> Any:
-    raw_rows = _extract_raw_rows(values)
-    if trace is not None:
-        trace.record(
-            "runner",
-            "row_model_pipeline_start",
-            row_model=row_model.__name__,
-            raw_row_count=len(raw_rows),
-            raw_requested=raw,
-        )
-        trace.observe_rows("raw_rows", raw_rows, expected_columns=csv_column_names)
-    if raw:
-        if debug and trace is not None:
-            return _output_debug_result(
-                raw_rows,
-                trace,
-                output_type,
-                output_file_path,
-                output_write_option,
-                json_options,
-            )
-        return raw_rows
-
-    if ROW_ADAPTERS.get(endpoint_name) is None:
-        raise RuntimeError(
-            f"Endpoint {endpoint_name!r} declares row_model {row_model.__name__!r} but no adapter is registered."
-        )
-    try:
-        if trace is not None:
-            with trace.span("pydantic_validation", stage="validation", row_model=row_model.__name__):
-                validated = _validate_row_model_rows(row_model, raw_rows)
-        else:
-            validated = _validate_row_model_rows(row_model, raw_rows)
-        if trace is not None:
-            trace.record(
-                "validation",
-                "pydantic_validation_complete",
-                adapter_registered=True,
-                row_model=row_model.__name__,
-                row_count=len(validated),
-            )
-    except ValidationError as exc:
-        if trace is not None:
-            trace.record(
-                "validation",
-                "pydantic_validation_failed",
-                row_model=row_model.__name__,
-                errors=exc.errors(),
-            )
-            trace.record_exception(exc, stage="validation")
-        raise SchemaDriftError(
-            endpoint_name=endpoint_name or "<unknown>",
-            url=_endpoint_url_context(endpoint, endpoint_params),
-            pydantic_errors=cast("list[dict[str, Any]]", exc.errors()),
-        ) from exc
-
-    if output_type in (OutputType.CSV, OutputType.DATAFRAME):
-        csv_column_names = tuple(row_model.model_fields)
-    if trace is not None:
-        trace.artifact("validated_rows", validated)
-        trace.observe_rows("validated_rows", validated, expected_columns=tuple(row_model.model_fields))
-
-    if debug and trace is not None:
-        return _output_debug_result(
-            validated,
-            trace,
-            output_type,
-            output_file_path,
-            output_write_option,
-            json_options,
-        )
-
-    return _format_output(
-        validated,
-        output_type=output_type,
-        output_file_path=output_file_path,
-        output_write_option=output_write_option,
-        json_options=json_options,
-        csv_column_names=csv_column_names,
-    )
-
-
-def _execute_legacy_pipeline(
-    values: Any,
-    *,
-    csv_column_names: Sequence[str] | None,
-    output_type: OutputType | None,
-    output_file_path: str | None,
-    output_write_option: OutputWriteOption | None,
-    json_options: dict[str, Any] | None,
-    validate_output: bool,
-    debug: bool,
-    trace: DebugTrace | None,
-) -> Any:
-    if trace is not None:
-        trace.record("runner", "coerce_data_start")
-    if trace is not None:
-        with warnings.catch_warnings(record=True) as caught_warnings:
-            warnings.simplefilter("always")
-            with trace.span("coerce_data", stage="runner"):
-                values = coerce_data(values)
-        trace.metric("warnings.coerce_data.count", len(caught_warnings))
-        if caught_warnings:
-            trace.artifact(
-                "coerce_data_warnings",
-                [
-                    {
-                        "category": warning.category.__name__,
-                        "message": str(warning.message),
-                        "filename": warning.filename,
-                        "lineno": warning.lineno,
-                    }
-                    for warning in caught_warnings
-                ],
-            )
-    else:
-        values = coerce_data(values)
-    if trace is not None:
-        trace.record("runner", "coerce_data_complete", value_type=type(values).__name__)
-        trace.artifact("coerced_values", values)
-        trace.observe_rows("coerced_values", values, expected_columns=csv_column_names)
-
-    if output_type in (OutputType.CSV, OutputType.DATAFRAME) and csv_column_names is None:
-        rows = _extract_rows(values)
-        if rows is not None:
-            csv_column_names = _detect_csv_columns(rows)
-            if trace is not None:
-                trace.record("output", "csv_columns_detected", column_names=list(csv_column_names))
-
-    if validate_output and isinstance(values, list) and values and isinstance(values[0], dict):
-        if trace is not None:
-            with trace.span("legacy_validate_rows", stage="validation"):
-                report = validate_rows(values, expected_columns=csv_column_names)
-        else:
-            report = validate_rows(values, expected_columns=csv_column_names)
-        if trace is not None:
-            trace.record(
-                "validation",
-                "legacy_validation_complete",
-                ok=report.is_ok,
-                error_count=report.error_count,
-                errors=[str(error) for error in report.errors],
-            )
-        if not report.is_ok:
-            error = ValueError(str(report))
-            if trace is not None:
-                trace.record_exception(error, stage="validation")
-            raise error
-
-    if debug and trace is not None:
-        return _output_debug_result(
-            values,
-            trace,
-            output_type,
-            output_file_path,
-            output_write_option,
-            json_options,
-        )
-
-    return _format_output(
-        values,
-        output_type=output_type,
-        output_file_path=output_file_path,
-        output_write_option=output_write_option,
-        json_options=json_options,
-        csv_column_names=csv_column_names,
-    )
 
 
 def _execute(
@@ -454,7 +151,7 @@ def _execute(
 
     row_model = getattr(endpoint, "row_model", None)
     if row_model is not None:
-        return _execute_pydantic_pipeline(
+        data, csv_column_names = validate_rows_pydantic(
             values,
             row_model=row_model,
             endpoint=endpoint,
@@ -462,49 +159,36 @@ def _execute(
             endpoint_params=endpoint_params,
             csv_column_names=csv_column_names,
             output_type=output_type,
-            output_file_path=output_file_path,
-            output_write_option=output_write_option,
-            json_options=json_options,
             raw=raw,
-            debug=debug,
+            trace=trace,
+        )
+    else:
+        data, csv_column_names = validate_rows_legacy(
+            values,
+            csv_column_names=csv_column_names,
+            output_type=output_type,
+            validate_output=validate_output,
             trace=trace,
         )
 
-    return _execute_legacy_pipeline(
-        values,
-        csv_column_names=csv_column_names,
+    if debug and trace is not None:
+        return _output_debug_result(
+            data,
+            trace,
+            output_type,
+            output_file_path,
+            output_write_option,
+            json_options,
+        )
+
+    return _format_output(
+        data,
         output_type=output_type,
         output_file_path=output_file_path,
         output_write_option=output_write_option,
         json_options=json_options,
-        validate_output=validate_output,
-        debug=debug,
-        trace=trace,
+        csv_column_names=csv_column_names,
     )
-
-
-def _validate_row_model_rows(row_model: Any, raw_rows: list[dict[str, Any]]) -> list[Any]:
-    """Validate rows one at a time, dropping invalid BREF sentinel/header rows.
-
-    Basketball-Reference can interleave non-data rows with otherwise valid
-    table rows. Keep the validated rows instead of failing the whole table, but
-    still surface schema drift when no row in a non-empty table validates.
-    """
-    values: list[Any] = []
-    drift_errors: list[dict[str, Any]] = []
-    for index, row in enumerate(raw_rows):
-        try:
-            values.append(row_model.model_validate(row))
-        except ValidationError as exc:
-            if _is_skippable_bref_row(row):
-                continue
-            for error in exc.errors():
-                enriched = dict(error)
-                enriched["row_index"] = index
-                drift_errors.append(enriched)
-    if drift_errors and not values:
-        raise ValidationError.from_exception_data(row_model.__name__, cast("list[InitErrorDetails]", drift_errors))
-    return values
 
 
 def _output_debug_result(

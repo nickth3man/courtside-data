@@ -7,7 +7,7 @@ This test is a regression canary for two classes of offline-replay bugs:
    bespoke ``CustomEndpointHandler`` method does not accept, or the endpoint declares a
    parameter that no method parameter exists for. The test verifies both
    directions against :data:`courtside_data.endpoints.ENDPOINTS` and the
-   live :class:`courtside_data.custom_endpoints.CustomEndpointHandler` method signatures.
+   live :class:`courtside_data.parsing.custom.CustomEndpointHandler` method signatures.
 
 2. **Year-range drift** (catches the ``league_per_100_possessions`` /
    ``1973`` class): a manifest case supplies a ``season_end_year`` that
@@ -27,11 +27,31 @@ from dataclasses import FrozenInstanceError
 from datetime import date
 
 import pytest
-from courtside_data.custom_endpoints import CustomEndpointHandler
 from courtside_data.data import TEAM_ABBREVIATIONS_TO_TEAM
 from courtside_data.endpoints import ENDPOINTS, TableEndpoint
+from courtside_data.parsing.custom import CustomEndpointHandler
 
 from tests.fixture_manifest import ALL_CASES, Case
+
+# ─── Case partitions ──────────────────────────────────────────────────────
+# Each parametrized contract test runs only on the cases that actually apply
+# to it. Cases are excluded at *collection time* rather than skipped at
+# runtime, so the suite reports a clean pass/fail count with no skip noise.
+# The custom↔generic partition invariant is additionally enforced by
+# ``test_endpoint_categories_are_partitioned`` below, which catches endpoint
+# registration drift (custom flag vs. method existence) in one assertion.
+_CASES_WITH_ENDPOINT: list[Case] = [c for c in ALL_CASES if c.endpoint_name and c.endpoint_name in ENDPOINTS]
+_CUSTOM_ENDPOINT_CASES: list[Case] = [c for c in _CASES_WITH_ENDPOINT if ENDPOINTS[c.endpoint_name].custom]
+_GENERIC_ENDPOINT_CASES: list[Case] = [c for c in _CASES_WITH_ENDPOINT if not ENDPOINTS[c.endpoint_name].custom]
+_CASES_WITH_YEAR_RANGE: list[Case] = [
+    c
+    for c in _CASES_WITH_ENDPOINT
+    if "season_end_year" in c.params
+    and (ENDPOINTS[c.endpoint_name].min_year is not None or ENDPOINTS[c.endpoint_name].max_year is not None)
+]
+# Excludes error-* cases (their team_abbreviation is deliberately bogus);
+# those are filtered out by the ``in ENDPOINTS`` membership check above.
+_CASES_WITH_TEAM_ABBREVIATION: list[Case] = [c for c in _CASES_WITH_ENDPOINT if "team_abbreviation" in c.params]
 
 
 def _sig_params(name: str) -> set[str]:
@@ -49,19 +69,15 @@ def _sig_params(name: str) -> set[str]:
     return set(sig.parameters) - {"self"}
 
 
-@pytest.mark.parametrize("case", ALL_CASES, ids=[case.id for case in ALL_CASES])
+@pytest.mark.parametrize("case", _CUSTOM_ENDPOINT_CASES, ids=[case.id for case in _CUSTOM_ENDPOINT_CASES])
 def test_custom_endpoint_signature_compatible(case: Case) -> None:
     """Custom endpoints: every declared param must be accepted by the method, and
     every case param must bind cleanly against the method signature.
-    """
-    if not case.endpoint_name:
-        pytest.skip("non-endpoint case (e.g. error-*)")
 
-    endpoint = ENDPOINTS.get(case.endpoint_name)
-    if endpoint is None:
-        pytest.fail(f"{case.id}: endpoint {case.endpoint_name!r} not in ENDPOINTS")
-    if not endpoint.custom:
-        pytest.skip(f"{case.id}: generic endpoint, covered by test_generic_endpoint_params")
+    Runs only on ``custom=True`` endpoints (filtered at collection time). The
+    generic/generic partition is enforced by ``test_endpoint_categories_are_partitioned``.
+    """
+    endpoint = ENDPOINTS[case.endpoint_name]
 
     sig_params = _sig_params(case.endpoint_name)
     # Some bespoke methods (e.g. friv_7_game_playoff_series_outcomes_*) take
@@ -97,7 +113,7 @@ def test_custom_endpoint_signature_compatible(case: Case) -> None:
     )
 
 
-@pytest.mark.parametrize("case", ALL_CASES, ids=[case.id for case in ALL_CASES])
+@pytest.mark.parametrize("case", _GENERIC_ENDPOINT_CASES, ids=[case.id for case in _GENERIC_ENDPOINT_CASES])
 def test_generic_endpoint_params_match_endpoint_spec(case: Case) -> None:
     """Generic endpoints: the case params must match the endpoint.params tuple.
 
@@ -105,15 +121,10 @@ def test_generic_endpoint_params_match_endpoint_spec(case: Case) -> None:
     exactly — there is no bespoke method to absorb a mismatch. Generic
     endpoints with no params (``endpoint.params == ()``) get exactly one
     case with ``params == {}``.
-    """
-    if not case.endpoint_name:
-        pytest.skip("non-endpoint case (e.g. error-*)")
 
-    endpoint = ENDPOINTS.get(case.endpoint_name)
-    if endpoint is None:
-        pytest.fail(f"{case.id}: endpoint {case.endpoint_name!r} not in ENDPOINTS")
-    if endpoint.custom:
-        pytest.skip(f"{case.id}: custom endpoint, covered by test_custom_endpoint_signature_compatible")
+    Runs only on ``custom=False`` endpoints (filtered at collection time).
+    """
+    endpoint = ENDPOINTS[case.endpoint_name]
 
     expected = set(endpoint.params)
     actual = set(case.params)
@@ -122,7 +133,7 @@ def test_generic_endpoint_params_match_endpoint_spec(case: Case) -> None:
     )
 
 
-@pytest.mark.parametrize("case", ALL_CASES, ids=[case.id for case in ALL_CASES])
+@pytest.mark.parametrize("case", _CASES_WITH_YEAR_RANGE, ids=[case.id for case in _CASES_WITH_YEAR_RANGE])
 def test_season_end_year_within_declared_range(case: Case) -> None:
     """If a case has ``season_end_year`` and the endpoint declares a range,
     the year must fall within ``min_year``/``max_year`` (inclusive).
@@ -130,15 +141,12 @@ def test_season_end_year_within_declared_range(case: Case) -> None:
     An offline fixture below the live floor (e.g. ``per_poss`` pre-1974)
     would replay against the saved HTML but the live endpoint would reject
     it. The contract test surfaces that drift at CHECK time.
-    """
-    if "season_end_year" not in case.params:
-        pytest.skip(f"{case.id}: no season_end_year param")
 
-    endpoint = ENDPOINTS.get(case.endpoint_name)
-    if endpoint is None:
-        pytest.skip(f"{case.id}: no endpoint registered (likely an error case)")
-    if endpoint.min_year is None and endpoint.max_year is None:
-        pytest.skip(f"{case.id}: endpoint declares no year range")
+    Runs only on cases that have ``season_end_year`` and whose endpoint
+    declares at least one of ``min_year``/``max_year`` (filtered at
+    collection time).
+    """
+    endpoint = ENDPOINTS[case.endpoint_name]
 
     year = case.params["season_end_year"]
     assert isinstance(year, int), f"{case.id}: season_end_year must be int, got {type(year).__name__}"
@@ -153,18 +161,13 @@ def test_season_end_year_within_declared_range(case: Case) -> None:
         )
 
 
-@pytest.mark.parametrize("case", ALL_CASES, ids=[case.id for case in ALL_CASES])
+@pytest.mark.parametrize("case", _CASES_WITH_TEAM_ABBREVIATION, ids=[case.id for case in _CASES_WITH_TEAM_ABBREVIATION])
 def test_team_abbreviation_is_known(case: Case) -> None:
     """If a case supplies ``team_abbreviation``, it must be a known BR code.
 
-    Skipped for error cases that intentionally pass a bogus abbreviation to
-    exercise the 404 path — those would be false positives.
+    Error cases (``error-*``) are excluded at collection time — they
+    intentionally pass a bogus abbreviation to exercise the 404 path.
     """
-    if "team_abbreviation" not in case.params:
-        pytest.skip(f"{case.id}: no team_abbreviation param")
-    if case.endpoint_name.startswith("error-"):
-        pytest.skip(f"{case.id}: error case uses a deliberately bogus abbreviation")
-
     abbr = case.params["team_abbreviation"]
     assert abbr in TEAM_ABBREVIATIONS_TO_TEAM, (
         f"{case.id}: team_abbreviation={abbr!r} not in TEAM_ABBREVIATIONS_TO_TEAM"
@@ -172,6 +175,24 @@ def test_team_abbreviation_is_known(case: Case) -> None:
 
 
 # ─── Supplemental sanity checks (non-parametrized) ──────────────────────
+
+
+def test_endpoint_categories_are_partitioned() -> None:
+    """Every ``custom=True`` endpoint must have a ``CustomEndpointHandler.<name>``
+    method, and every ``custom=False`` endpoint must not.
+
+    This is the invariant the two parametrized contract tests above rely on
+    to keep their scopes disjoint (custom vs. generic). A single registration
+    drift — e.g. setting ``custom=True`` without adding the method, or vice
+    versa — would otherwise be caught only indirectly via confusing
+    parametrized failures; this test surfaces it in one assertion.
+    """
+    for name, endpoint in ENDPOINTS.items():
+        has_method = getattr(CustomEndpointHandler, name, None) is not None
+        assert endpoint.custom == has_method, (
+            f"{name}: custom={endpoint.custom} but "
+            f"CustomEndpointHandler.{name} {'exists' if has_method else 'is missing'}"
+        )
 
 
 def test_min_year_default_for_season_endpoints() -> None:

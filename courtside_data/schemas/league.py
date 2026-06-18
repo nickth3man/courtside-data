@@ -422,7 +422,7 @@ class LeagueTransactionRow(BRRow):
     """Row from a league transactions page.
 
     The endpoint declares ``transaction_list_fallback=True``, so the Wave-3
-    fetcher produces rows from :func:`courtside_data.tables.parse_transaction_list`
+    fetcher produces rows from :func:`courtside_data.parsing.tables.parse_transaction_list`
     with the stable keys ``date`` and ``transaction``. The optional
     ``from_team_abbreviations`` / ``to_team_abbreviations`` / ``linked_resources``
     keys are accepted for forward compatibility but are not part of the legacy
