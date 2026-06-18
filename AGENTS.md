@@ -333,7 +333,7 @@ uv run deptry . --ignore DEP001,DEP004
 uv run deptry . --per-rule-ignores "DEP001=matplotlib,DEP002=pandas|numpy"
 
 # Extend default excludes (additive; respects .gitignore)
-uv run deptry . --extend-exclude ".*/legacy/*"
+uv run deptry . --extend-exclude ".*/_private/*"
 ```
 
 ### Rules

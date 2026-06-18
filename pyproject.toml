@@ -155,7 +155,7 @@ unfixable = [
 plugins = ["covdefaults"]
 relative_files = true
 source = ["courtside_data"]
-omit = ["*/__init__.py", "tests/*", "*/conftest.py", "courtside_data/legacy/*"]
+omit = ["*/__init__.py", "tests/*", "*/conftest.py"]
 branch = true
 
 [tool.ty.environment]
