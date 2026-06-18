@@ -9,7 +9,6 @@ from __future__ import annotations
 import contextlib
 import hashlib
 import logging
-import os
 import random
 import threading
 import time
@@ -21,19 +20,17 @@ from typing import Any, ClassVar
 import cachetools
 import httpx
 import orjson
-import platformdirs
 import stamina
 from curl_cffi.const import CurlOpt  # type: ignore[import-untyped]
 from hishel.httpx import SyncCacheTransport
 from parsel import Selector
 
+from courtside_data import config
 from courtside_data.debug import current_debug_trace
 from courtside_data.errors import RateLimitJailed
 
 logger = logging.getLogger(__name__)
 
-_DEFAULT_RATE_LIMIT_INTERVAL = 6.0  # 10 req/min ceiling — matches pybaseball's proven safe rate
-_DEFAULT_RATE_LIMIT_JITTER = 1.0  # uniform(0, 1.0) — average ~8.6 req/min with comfortable headroom
 _DEFAULT_TIMEOUT = httpx.Timeout(30.0, connect=10.0)
 _RETRY_ATTEMPTS = 3
 
@@ -50,22 +47,21 @@ _SELECTOR_CACHE_TTL = 600.0
 # session is jailed. stamina uses a hook-returned float verbatim (wait_max
 # does not apply to it), so cap it to keep a single request from sleeping
 # for the full jail duration.
-_MAX_RETRY_AFTER_WAIT = float(os.environ.get("BASKETBALL_REF_MAX_RETRY_AFTER", "60.0"))
+#
+# This import-time read is preserved for backward compatibility (tests
+# import ``_MAX_RETRY_AFTER_WAIT``); the live, call-time value used by
+# :func:`_should_retry` is read via :func:`courtside_data.config.max_retry_after_wait`.
+_MAX_RETRY_AFTER_WAIT = config.max_retry_after_wait()
 
 # If Retry-After exceeds this threshold, the session is considered jailed
 # and further retries are suppressed to avoid wasting requests.
 _JAIL_THRESHOLD_SECONDS = 300.0  # 5 minutes
 
-# Jail state is persisted to disk so a process that crashes (or is restarted)
-# while jailed does not immediately re-offend — Basketball-Reference
-# escalates bans for repeat offenders. Set the env var to an empty string to
-# disable persistence (the test suite does this to stay hermetic).
-_JAIL_STATE_PATH_ENV = "BASKETBALL_REF_JAIL_STATE_PATH"
-# Use platformdirs to resolve a per-user cache directory (respects OS conventions:
-# %LOCALAPPDATA%\courtside\courtside-data\Cache on Windows, ~/.cache/courtside-data
-# on Linux, ~/Library/Caches/courtside-data on macOS). Falls through to the
-# BASKETBALL_REF_JAIL_STATE_PATH env var when set (see ``_jail_state_path``).
-_DEFAULT_JAIL_STATE_PATH = Path(platformdirs.user_cache_dir("courtside-data", "courtside")) / "jail.json"
+# Env var that controls where the on-disk jail-state blob lives. Set to
+# an empty string to disable persistence (the test suite does this to
+# stay hermetic). Re-exported from :mod:`courtside_data.config` for tests
+# and for backward compatibility with the previous module-level constant.
+_JAIL_STATE_PATH_ENV = config.BASKETBALL_REF_JAIL_STATE_PATH_ENV
 
 # Browser-like headers proven to avoid bot-flagging.
 # Tells Cloudflare this looks like a real browser navigation event.
@@ -154,10 +150,14 @@ def _should_retry(exc: Exception) -> bool | float:
     """Custom stamina retry predicate.
 
     Returns True to retry with default backoff, a float to retry after
-    that many seconds (honors Retry-After, capped at _MAX_RETRY_AFTER_WAIT),
-    or False to abort. If the Retry-After value exceeds the jail threshold
-    (5 minutes), returns False to skip retries — the caller handles jail
-    detection.
+    that many seconds (honors Retry-After, capped at the configured
+    ``max_retry_after_wait()``), or False to abort. If the Retry-After
+    value exceeds the jail threshold (5 minutes), returns False to skip
+    retries — the caller handles jail detection.
+
+    The cap is read via :func:`courtside_data.config.max_retry_after_wait`
+    on every invocation, so changes to the ``BASKETBALL_REF_MAX_RETRY_AFTER``
+    env var after import are honored immediately.
     """
     if isinstance(exc, httpx.TransportError):
         logger.debug("Retrying after transport error: %s", exc)
@@ -171,7 +171,7 @@ def _should_retry(exc: Exception) -> bool | float:
                 if parsed > _JAIL_THRESHOLD_SECONDS:
                     logger.warning("Retry-After of %.0fs exceeds jail threshold; not retrying", parsed)
                     return False  # We're jailed — don't burn retries
-                wait = min(parsed, _MAX_RETRY_AFTER_WAIT)
+                wait = min(parsed, config.max_retry_after_wait())
                 logger.debug("HTTP %d with Retry-After %s; retrying in %.1fs", code, retry_after, wait)
                 return wait
             logger.debug("HTTP %d; retrying with default backoff", code)
@@ -182,10 +182,12 @@ def _should_retry(exc: Exception) -> bool | float:
 
 
 def _jail_state_path() -> Path | None:
-    value = os.environ.get(_JAIL_STATE_PATH_ENV)
-    if value is None:
-        return _DEFAULT_JAIL_STATE_PATH
-    return Path(value) if value else None
+    """Return the persisted jail-state path, or ``None`` if persistence is disabled.
+
+    Thin wrapper around :func:`courtside_data.config.jail_state_path` that
+    preserves the previous call signature for existing tests.
+    """
+    return config.jail_state_path()
 
 
 def _read_persisted_jail() -> float | None:
@@ -243,7 +245,7 @@ def build_client(
     transport: httpx.BaseTransport = httpx.HTTPTransport()
 
     if impersonate is None:
-        impersonate = os.environ.get("BASKETBALL_REF_IMPERSONATE", "chrome131")
+        impersonate = config.impersonate()
     if impersonate is not None:
         transport = _SafeCurlTransport(impersonate=impersonate)
 
@@ -276,20 +278,16 @@ class HTTPService:
         impersonate: str | None = None,
     ) -> None:
         self.parser = parser
-        # Constructor param > env var > default
+        # Constructor param > env var > default (via courtside_data.config)
         if rate_limit_interval is not None:
             self._rate_limit_interval = rate_limit_interval
         else:
-            self._rate_limit_interval = float(
-                os.environ.get("BASKETBALL_REF_RATE_LIMIT_INTERVAL", _DEFAULT_RATE_LIMIT_INTERVAL)
-            )
+            self._rate_limit_interval = config.rate_limit_interval()
 
         if rate_limit_jitter is not None:
             self._rate_limit_jitter = rate_limit_jitter
         else:
-            self._rate_limit_jitter = float(
-                os.environ.get("BASKETBALL_REF_RATE_LIMIT_JITTER", _DEFAULT_RATE_LIMIT_JITTER)
-            )
+            self._rate_limit_jitter = config.rate_limit_jitter()
 
         self._timeout = timeout if timeout is not None else _DEFAULT_TIMEOUT
         self._session = (

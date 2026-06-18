@@ -18,9 +18,10 @@ flag is still honored and treated as ``selectolax``;
 env vars are set, ``COURTSIDE_DATA_PARSE_BACKEND`` wins.
 
 The :func:`is_selectolax_backend` and :func:`is_parsel_backend` predicates
-read ``os.environ`` on every call so tests can flip the dispatch via
-``monkeypatch.setenv`` without reloading modules. The parsing hot paths
-in :mod:`courtside_data.parsing.tables` and
+read the env via :func:`courtside_data.config.parse_backend` on every
+call so tests can flip the dispatch via ``monkeypatch.setenv`` without
+reloading modules. The parsing hot paths in
+:mod:`courtside_data.parsing.tables` and
 :mod:`courtside_data.parsing.generic` consult those helpers and dispatch
 to :func:`build_selectolax_table`, :func:`selectolax_extract_commented_table`,
 or :func:`selectolax_parse_transaction_list` when selectolax is active.
@@ -49,16 +50,21 @@ parsel backend is selected.
 
 from __future__ import annotations
 
-import os
 import re
 from typing import TYPE_CHECKING, Any
+
+from courtside_data import config
 
 if TYPE_CHECKING:
     from selectolax.lexbor import LexborNode as _SLNode
 
-_PARSE_BACKEND_ENV_VAR = "COURTSIDE_DATA_PARSE_BACKEND"
-_FAST_PARSE_ENV_VAR = "COURTSIDE_DATA_FAST_PARSE"  # legacy alias
-_VALID_BACKENDS: frozenset[str] = frozenset({"selectolax", "parsel"})
+# Re-exports for backward compatibility — the env-var names and the
+# set of valid backend identifiers live in :mod:`courtside_data.config`
+# (the single source of truth for env-var access). External code that
+# imported these from ``_selectolax_backend`` still gets the same values.
+_PARSE_BACKEND_ENV_VAR = config.COURTSIDE_DATA_PARSE_BACKEND_ENV
+_FAST_PARSE_ENV_VAR = config.COURTSIDE_DATA_FAST_PARSE_ENV  # legacy alias
+_VALID_BACKENDS: frozenset[str] = config._VALID_PARSE_BACKENDS
 
 # Same set of "identity" column keys used by the parsel GenericTable's
 # :meth:`GenericTable._normalize_value_column` pass to detect the rotating
@@ -69,26 +75,11 @@ _LEADER_TEXT_COLUMN_KEYS: frozenset[str] = frozenset({"rank", "player", "season"
 def get_parse_backend() -> str:
     """Return the active HTML-parsing backend (``'selectolax'`` or ``'parsel'``).
 
-    Resolution order:
-
-    1. ``COURTSIDE_DATA_PARSE_BACKEND`` — ``selectolax`` or ``parsel``
-       (case-insensitive, whitespace-stripped). Unknown values are ignored.
-    2. ``COURTSIDE_DATA_FAST_PARSE`` — legacy alias. ``"1"`` → ``selectolax``,
-       ``"0"`` → ``parsel``. Any other value is ignored.
-    3. Default → ``selectolax``.
-
-    The check is performed against ``os.environ`` on every call so tests
-    can flip the backend via ``monkeypatch.setenv`` without reloading modules.
+    Thin wrapper around :func:`courtside_data.config.parse_backend`; the
+    check is performed against ``os.environ`` on every call so tests can
+    flip the backend via ``monkeypatch.setenv`` without reloading modules.
     """
-    backend = os.environ.get(_PARSE_BACKEND_ENV_VAR, "").strip().lower()
-    if backend in _VALID_BACKENDS:
-        return backend
-    legacy = os.environ.get(_FAST_PARSE_ENV_VAR)
-    if legacy == "1":
-        return "selectolax"
-    if legacy == "0":
-        return "parsel"
-    return "selectolax"
+    return config.parse_backend()
 
 
 def is_selectolax_backend() -> bool:

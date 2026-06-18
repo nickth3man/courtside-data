@@ -10,23 +10,27 @@ but never breaks the underlying data fetch.
 
 from __future__ import annotations
 
-import os
 import warnings
 from datetime import datetime
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+from courtside_data import config
+
 if TYPE_CHECKING:
     from courtside_data.debug.trace import DebugTrace
 
-DEFAULT_LOG_DIR = "logs"
-LOG_DIR_ENV_VAR = "COURTSIDE_DEBUG_LOG_DIR"
+# Re-exports for backward compatibility — the env-var name and default
+# directory live in :mod:`courtside_data.config` (the single source of
+# truth for env-var access). Tests and external code that imported these
+# from ``sink`` still get the same values.
+LOG_DIR_ENV_VAR = config.COURTSIDE_DEBUG_LOG_DIR_ENV
+DEFAULT_LOG_DIR = config.DEFAULT_DEBUG_LOG_DIR
 
 
 def resolve_log_dir() -> Path:
     """Return the directory debug traces are written to (``./logs`` by default)."""
-    configured = os.environ.get(LOG_DIR_ENV_VAR)
-    return Path(configured) if configured else Path(DEFAULT_LOG_DIR)
+    return config.debug_log_dir()
 
 
 def _safe_segment(value: str) -> str:

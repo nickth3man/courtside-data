@@ -11,68 +11,70 @@ class CourtsideDataError(Exception):
     """
 
 
-class InvalidDate(CourtsideDataError):
+class _DomainError(CourtsideDataError):
+    """Internal base for the concrete domain errors in this module.
+
+    This is private — public callers should catch :class:`CourtsideDataError`
+    instead.
+    """
+
+
+class InvalidDate(_DomainError):
     def __init__(self, day: int, month: int, year: int) -> None:
-        message = f"Date with year set to {year}, month set to {month}, and day set to {day} is invalid"
-        super().__init__(message)
+        super().__init__(f"Date with year set to {year}, month set to {month}, and day set to {day} is invalid")
 
 
-class InvalidSeason(CourtsideDataError):
+class InvalidSeason(_DomainError):
     def __init__(self, season_end_year: int) -> None:
-        message = f"Season end year of {season_end_year} is invalid"
-        super().__init__(message)
+        super().__init__(f"Season end year of {season_end_year} is invalid")
 
 
-class InvalidPlayerAndSeason(CourtsideDataError):
+class InvalidPlayerAndSeason(_DomainError):
     def __init__(self, player_identifier: str, season_end_year: int) -> None:
-        message = f'Player with identifier "{player_identifier}" in season ending in {season_end_year} is invalid'
-        super().__init__(message)
+        super().__init__(
+            f'Player with identifier "{player_identifier}" in season ending in {season_end_year} is invalid'
+        )
 
 
-class InvalidSearch(CourtsideDataError):
+class InvalidSearch(_DomainError):
     def __init__(self, term: str) -> None:
-        message = f'Search term "{term}" returned no results'
-        super().__init__(message)
+        super().__init__(f'Search term "{term}" returned no results')
 
 
-class InvalidPlayer(CourtsideDataError):
+class InvalidPlayer(_DomainError):
     def __init__(self, player_identifier: str) -> None:
         self.player_identifier = player_identifier
-        message = f"Invalid player: {player_identifier}"
-        super().__init__(message)
+        super().__init__(f"Invalid player: {player_identifier}")
 
 
-class InvalidTeam(CourtsideDataError):
+class InvalidTeam(_DomainError):
     def __init__(self, team_abbreviation: str) -> None:
         self.team_abbreviation = team_abbreviation
-        message = f"Invalid team: {team_abbreviation}"
-        super().__init__(message)
+        super().__init__(f"Invalid team: {team_abbreviation}")
 
 
-class RateLimitJailed(CourtsideDataError):
+class RateLimitJailed(_DomainError):
     """Raised when Basketball-Reference has jailed the session (Retry-After > 5 minutes)."""
 
     def __init__(self, retry_after: float) -> None:
         self.retry_after = retry_after
-        message = (
+        super().__init__(
             f"Session jailed by Basketball-Reference. "
             f"Retry-After: {retry_after:.0f}s ({retry_after / 60:.1f} minutes). "
             f"Back off and retry later."
         )
-        super().__init__(message)
 
 
-class MissingPlayerSlug(CourtsideDataError):
+class MissingPlayerSlug(_DomainError):
     """Raised when a custom player parser fails to inject the required player slug."""
 
     def __init__(self, endpoint_name: str, row_index: int, player: str) -> None:
         self.endpoint_name = endpoint_name
         self.row_index = row_index
         self.player = player
-        message = (
+        super().__init__(
             f"Missing player slug while parsing endpoint '{endpoint_name}' at row {row_index} for player {player!r}"
         )
-        super().__init__(message)
 
 
 def _format_loc(loc: tuple[Any, ...]) -> str:
@@ -115,7 +117,7 @@ def _summarize_pydantic_errors(pydantic_errors: list[dict]) -> str:
     return base
 
 
-class SchemaDriftError(CourtsideDataError):
+class SchemaDriftError(_DomainError):
     """Raised when a generic endpoint row no longer matches the registered schema.
 
     Carries the Pydantic validation errors so callers can inspect exactly which
@@ -127,5 +129,4 @@ class SchemaDriftError(CourtsideDataError):
         self.url = url
         self.pydantic_errors = pydantic_errors
         detail = _summarize_pydantic_errors(pydantic_errors)
-        message = f"Schema drift detected for endpoint '{endpoint_name}' ({url}): {detail}"
-        super().__init__(message)
+        super().__init__(f"Schema drift detected for endpoint '{endpoint_name}' ({url}): {detail}")

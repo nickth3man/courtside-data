@@ -1,356 +1,59 @@
-from enum import Enum
+"""Backward-compatibility shim for :mod:`courtside_data.data`.
 
+Historically this module hosted the project's core domain types — enums
+(``Team``, ``Location``, …), abbreviation lookup tables, and a pair of
+legacy container classes (``TeamTotal``, ``PlayerData``). Those definitions
+now live in :mod:`courtside_data.domain`; this module exists solely to
+preserve the existing ``from courtside_data.data import X`` public surface
+for downstream callers.
 
-class Location(Enum):
-    HOME = "HOME"
-    AWAY = "AWAY"
+New code should import from :mod:`courtside_data.domain` directly.
+"""
 
+from courtside_data.domain import (
+    DIVISIONS_TO_CONFERENCES,
+    LEAGUE_ABBREVIATIONS_TO_LEAGUE,
+    LOCATION_ABBREVIATIONS_TO_LOCATION,
+    LOCATION_ABBREVIATIONS_TO_POSITION,
+    OUTCOME_ABBREVIATIONS_TO_OUTCOME,
+    POSITION_ABBREVIATIONS_TO_POSITION,
+    TEAM_ABBREVIATIONS_TO_TEAM,
+    TEAM_NAME_TO_TEAM,
+    TEAM_TO_TEAM_ABBREVIATION,
+    Conference,
+    Division,
+    League,
+    Location,
+    Outcome,
+    OutputType,
+    OutputWriteOption,
+    PeriodType,
+    PlayerData,
+    Position,
+    Team,
+    TeamTotal,
+)
 
-class Outcome(Enum):
-    WIN = "WIN"
-    LOSS = "LOSS"
-
-
-class Team(Enum):
-    ATLANTA_HAWKS = "ATLANTA HAWKS"
-    BOSTON_CELTICS = "BOSTON CELTICS"
-    BROOKLYN_NETS = "BROOKLYN NETS"
-    CHARLOTTE_HORNETS = "CHARLOTTE HORNETS"
-    CHICAGO_BULLS = "CHICAGO BULLS"
-    CLEVELAND_CAVALIERS = "CLEVELAND CAVALIERS"
-    DALLAS_MAVERICKS = "DALLAS MAVERICKS"
-    DENVER_NUGGETS = "DENVER NUGGETS"
-    DETROIT_PISTONS = "DETROIT PISTONS"
-    GOLDEN_STATE_WARRIORS = "GOLDEN STATE WARRIORS"
-    HOUSTON_ROCKETS = "HOUSTON ROCKETS"
-    INDIANA_PACERS = "INDIANA PACERS"
-    LOS_ANGELES_CLIPPERS = "LOS ANGELES CLIPPERS"
-    LOS_ANGELES_LAKERS = "LOS ANGELES LAKERS"
-    MEMPHIS_GRIZZLIES = "MEMPHIS GRIZZLIES"
-    MIAMI_HEAT = "MIAMI HEAT"
-    MILWAUKEE_BUCKS = "MILWAUKEE BUCKS"
-    MINNESOTA_TIMBERWOLVES = "MINNESOTA TIMBERWOLVES"
-    NEW_ORLEANS_PELICANS = "NEW ORLEANS PELICANS"
-    NEW_YORK_KNICKS = "NEW YORK KNICKS"
-    OKLAHOMA_CITY_THUNDER = "OKLAHOMA CITY THUNDER"
-    ORLANDO_MAGIC = "ORLANDO MAGIC"
-    PHILADELPHIA_76ERS = "PHILADELPHIA 76ERS"
-    PHOENIX_SUNS = "PHOENIX SUNS"
-    PORTLAND_TRAIL_BLAZERS = "PORTLAND TRAIL BLAZERS"
-    SACRAMENTO_KINGS = "SACRAMENTO KINGS"
-    SAN_ANTONIO_SPURS = "SAN ANTONIO SPURS"
-    TORONTO_RAPTORS = "TORONTO RAPTORS"
-    UTAH_JAZZ = "UTAH JAZZ"
-    WASHINGTON_WIZARDS = "WASHINGTON WIZARDS"
-
-    # DEPRECATED TEAMS
-    KANSAS_CITY_KINGS = "KANSAS CITY KINGS"
-    CHARLOTTE_BOBCATS = "CHARLOTTE BOBCATS"
-    NEW_JERSEY_NETS = "NEW JERSEY NETS"
-    NEW_ORLEANS_HORNETS = "NEW ORLEANS HORNETS"
-    NEW_ORLEANS_OKLAHOMA_CITY_HORNETS = "NEW ORLEANS/OKLAHOMA CITY HORNETS"
-    SEATTLE_SUPERSONICS = "SEATTLE SUPERSONICS"
-    ST_LOUIS_HAWKS = "ST. LOUIS HAWKS"
-    VANCOUVER_GRIZZLIES = "VANCOUVER GRIZZLIES"
-    WASHINGTON_BULLETS = "WASHINGTON BULLETS"
-
-    # DEFUNCT BAA/NBA FRANCHISES
-    ANDERSON_PACKERS = "ANDERSON PACKERS"
-    BALTIMORE_BULLETS = "BALTIMORE BULLETS"
-    CHICAGO_STAGS = "CHICAGO STAGS"
-    CLEVELAND_REBELS = "CLEVELAND REBELS"
-    DETROIT_FALCONS = "DETROIT FALCONS"
-    INDIANAPOLIS_JETS = "INDIANAPOLIS JETS"
-    INDIANAPOLIS_OLYMPIANS = "INDIANAPOLIS OLYMPIANS"
-    PITTSBURGH_IRONMEN = "PITTSBURGH IRONMEN"
-    PROVIDENCE_STEAMROLLERS = "PROVIDENCE STEAMROLLERS"
-    SHEBOYGAN_RED_SKINS = "SHEBOYGAN RED SKINS"
-    ST_LOUIS_BOMBERS = "ST. LOUIS BOMBERS"
-    TORONTO_HUSKIES = "TORONTO HUSKIES"
-    WATERLOO_HAWKS = "WATERLOO HAWKS"
-    WASHINGTON_CAPITOLS = "WASHINGTON CAPITOLS"
-
-
-class OutputType(Enum):
-    JSON = "JSON"
-    CSV = "CSV"
-    DATAFRAME = "DATAFRAME"
-
-
-class OutputWriteOption(Enum):
-    WRITE = "w"
-    CREATE_AND_WRITE = "w+"
-    APPEND = "a"
-    APPEND_AND_WRITE = "a+"
-
-
-class Position(Enum):
-    POINT_GUARD = "POINT GUARD"
-    SHOOTING_GUARD = "SHOOTING GUARD"
-    SMALL_FORWARD = "SMALL FORWARD"
-    POWER_FORWARD = "POWER FORWARD"
-    CENTER = "CENTER"
-    FORWARD = "FORWARD"
-    GUARD = "GUARD"
-
-
-class PeriodType(Enum):
-    QUARTER = "QUARTER"
-    OVERTIME = "OVERTIME"
-
-
-class League(Enum):
-    NATIONAL_BASKETBALL_ASSOCIATION = "NATIONAL_BASKETBALL_ASSOCIATION"
-    AMERICAN_BASKETBALL_ASSOCIATION = "AMERICAN_BASKETBALL_ASSOCIATION"
-    BASKETBALL_ASSOCIATION_OF_AMERICA = "BASKETBALL_ASSOCIATION_OF_AMERICA"
-
-
-class Conference(Enum):
-    EASTERN = "EASTERN"
-    WESTERN = "WESTERN"
-
-
-class Division(Enum):
-    ATLANTIC = "ATLANTIC"
-    CENTRAL = "CENTRAL"
-    MIDWEST = "MIDWEST"
-    NORTHWEST = "NORTHWEST"
-    PACIFIC = "PACIFIC"
-    SOUTHEAST = "SOUTHEAST"
-    SOUTHWEST = "SOUTHWEST"
-
-
-DIVISIONS_TO_CONFERENCES = {
-    Division.ATLANTIC: Conference.EASTERN,
-    Division.CENTRAL: Conference.EASTERN,
-    Division.SOUTHEAST: Conference.EASTERN,
-    Division.MIDWEST: Conference.WESTERN,
-    Division.PACIFIC: Conference.WESTERN,
-    Division.SOUTHWEST: Conference.WESTERN,
-    Division.NORTHWEST: Conference.WESTERN,
-}
-
-
-TEAM_ABBREVIATIONS_TO_TEAM = {
-    "ATL": Team.ATLANTA_HAWKS,
-    "BOS": Team.BOSTON_CELTICS,
-    "BRK": Team.BROOKLYN_NETS,
-    "CHI": Team.CHICAGO_BULLS,
-    "CHO": Team.CHARLOTTE_HORNETS,
-    "CLE": Team.CLEVELAND_CAVALIERS,
-    "DAL": Team.DALLAS_MAVERICKS,
-    "DEN": Team.DENVER_NUGGETS,
-    "DET": Team.DETROIT_PISTONS,
-    "GSW": Team.GOLDEN_STATE_WARRIORS,
-    "HOU": Team.HOUSTON_ROCKETS,
-    "IND": Team.INDIANA_PACERS,
-    "LAC": Team.LOS_ANGELES_CLIPPERS,
-    "LAL": Team.LOS_ANGELES_LAKERS,
-    "MEM": Team.MEMPHIS_GRIZZLIES,
-    "MIA": Team.MIAMI_HEAT,
-    "MIL": Team.MILWAUKEE_BUCKS,
-    "MIN": Team.MINNESOTA_TIMBERWOLVES,
-    "NOP": Team.NEW_ORLEANS_PELICANS,
-    "NYK": Team.NEW_YORK_KNICKS,
-    "OKC": Team.OKLAHOMA_CITY_THUNDER,
-    "ORL": Team.ORLANDO_MAGIC,
-    "PHI": Team.PHILADELPHIA_76ERS,
-    "PHO": Team.PHOENIX_SUNS,
-    "POR": Team.PORTLAND_TRAIL_BLAZERS,
-    "SAC": Team.SACRAMENTO_KINGS,
-    "SAS": Team.SAN_ANTONIO_SPURS,
-    "TOR": Team.TORONTO_RAPTORS,
-    "UTA": Team.UTAH_JAZZ,
-    "WAS": Team.WASHINGTON_WIZARDS,
-    # DEPRECATED TEAMS
-    "KCK": Team.KANSAS_CITY_KINGS,
-    "NJN": Team.NEW_JERSEY_NETS,
-    "NOH": Team.NEW_ORLEANS_HORNETS,
-    "NOK": Team.NEW_ORLEANS_OKLAHOMA_CITY_HORNETS,
-    "CHA": Team.CHARLOTTE_BOBCATS,
-    "CHH": Team.CHARLOTTE_HORNETS,
-    "SEA": Team.SEATTLE_SUPERSONICS,
-    "STL": Team.ST_LOUIS_HAWKS,
-    "VAN": Team.VANCOUVER_GRIZZLIES,
-    "WSB": Team.WASHINGTON_BULLETS,
-    # DEFUNCT BAA/NBA FRANCHISES
-    "AND": Team.ANDERSON_PACKERS,
-    "BLB": Team.BALTIMORE_BULLETS,
-    "CHS": Team.CHICAGO_STAGS,
-    "CLR": Team.CLEVELAND_REBELS,
-    "DF": Team.DETROIT_FALCONS,
-    "JET": Team.INDIANAPOLIS_JETS,
-    "INO": Team.INDIANAPOLIS_OLYMPIANS,
-    "PIT": Team.PITTSBURGH_IRONMEN,
-    "PRS": Team.PROVIDENCE_STEAMROLLERS,
-    "SHE": Team.SHEBOYGAN_RED_SKINS,
-    "STB": Team.ST_LOUIS_BOMBERS,
-    "TRH": Team.TORONTO_HUSKIES,
-    "WAT": Team.WATERLOO_HAWKS,
-    "CAP": Team.WASHINGTON_CAPITOLS,
-}
-
-TEAM_TO_TEAM_ABBREVIATION = {v: k for k, v in TEAM_ABBREVIATIONS_TO_TEAM.items()}
-TEAM_TO_TEAM_ABBREVIATION[Team.CHARLOTTE_HORNETS] = "CHO"
-
-TEAM_NAME_TO_TEAM = {
-    "ATLANTA HAWKS": Team.ATLANTA_HAWKS,
-    "BOSTON CELTICS": Team.BOSTON_CELTICS,
-    "BROOKLYN NETS": Team.BROOKLYN_NETS,
-    "CHARLOTTE HORNETS": Team.CHARLOTTE_HORNETS,
-    "CHICAGO BULLS": Team.CHICAGO_BULLS,
-    "CLEVELAND CAVALIERS": Team.CLEVELAND_CAVALIERS,
-    "DALLAS MAVERICKS": Team.DALLAS_MAVERICKS,
-    "DENVER NUGGETS": Team.DENVER_NUGGETS,
-    "DETROIT PISTONS": Team.DETROIT_PISTONS,
-    "GOLDEN STATE WARRIORS": Team.GOLDEN_STATE_WARRIORS,
-    "HOUSTON ROCKETS": Team.HOUSTON_ROCKETS,
-    "INDIANA PACERS": Team.INDIANA_PACERS,
-    "LOS ANGELES CLIPPERS": Team.LOS_ANGELES_CLIPPERS,
-    "LOS ANGELES LAKERS": Team.LOS_ANGELES_LAKERS,
-    "MEMPHIS GRIZZLIES": Team.MEMPHIS_GRIZZLIES,
-    "MIAMI HEAT": Team.MIAMI_HEAT,
-    "MILWAUKEE BUCKS": Team.MILWAUKEE_BUCKS,
-    "MINNESOTA TIMBERWOLVES": Team.MINNESOTA_TIMBERWOLVES,
-    "NEW ORLEANS PELICANS": Team.NEW_ORLEANS_PELICANS,
-    "NEW YORK KNICKS": Team.NEW_YORK_KNICKS,
-    "OKLAHOMA CITY THUNDER": Team.OKLAHOMA_CITY_THUNDER,
-    "ORLANDO MAGIC": Team.ORLANDO_MAGIC,
-    "PHILADELPHIA 76ERS": Team.PHILADELPHIA_76ERS,
-    "PHOENIX SUNS": Team.PHOENIX_SUNS,
-    "PORTLAND TRAIL BLAZERS": Team.PORTLAND_TRAIL_BLAZERS,
-    "SACRAMENTO KINGS": Team.SACRAMENTO_KINGS,
-    "SAN ANTONIO SPURS": Team.SAN_ANTONIO_SPURS,
-    "TORONTO RAPTORS": Team.TORONTO_RAPTORS,
-    "UTAH JAZZ": Team.UTAH_JAZZ,
-    "WASHINGTON WIZARDS": Team.WASHINGTON_WIZARDS,
-    # DEPRECATED TEAMS
-    "CHARLOTTE BOBCATS": Team.CHARLOTTE_BOBCATS,
-    "KANSAS CITY KINGS": Team.KANSAS_CITY_KINGS,
-    "NEW JERSEY NETS": Team.NEW_JERSEY_NETS,
-    "NEW ORLEANS HORNETS": Team.NEW_ORLEANS_HORNETS,
-    "NEW ORLEANS/OKLAHOMA CITY HORNETS": Team.NEW_ORLEANS_OKLAHOMA_CITY_HORNETS,
-    "SEATTLE SUPERSONICS": Team.SEATTLE_SUPERSONICS,
-    "ST. LOUIS HAWKS": Team.ST_LOUIS_HAWKS,
-    "VANCOUVER GRIZZLIES": Team.VANCOUVER_GRIZZLIES,
-    "WASHINGTON BULLETS": Team.WASHINGTON_BULLETS,
-    # DEFUNCT BAA/NBA FRANCHISES
-    "ANDERSON PACKERS": Team.ANDERSON_PACKERS,
-    "BALTIMORE BULLETS": Team.BALTIMORE_BULLETS,
-    "CHICAGO STAGS": Team.CHICAGO_STAGS,
-    "CLEVELAND REBELS": Team.CLEVELAND_REBELS,
-    "DETROIT FALCONS": Team.DETROIT_FALCONS,
-    "INDIANAPOLIS JETS": Team.INDIANAPOLIS_JETS,
-    "INDIANAPOLIS OLYMPIANS": Team.INDIANAPOLIS_OLYMPIANS,
-    "PITTSBURGH IRONMEN": Team.PITTSBURGH_IRONMEN,
-    "PROVIDENCE STEAMROLLERS": Team.PROVIDENCE_STEAMROLLERS,
-    "SHEBOYGAN RED SKINS": Team.SHEBOYGAN_RED_SKINS,
-    "ST. LOUIS BOMBERS": Team.ST_LOUIS_BOMBERS,
-    "TORONTO HUSKIES": Team.TORONTO_HUSKIES,
-    "WATERLOO HAWKS": Team.WATERLOO_HAWKS,
-    "WASHINGTON CAPITOLS": Team.WASHINGTON_CAPITOLS,
-}
-
-POSITION_ABBREVIATIONS_TO_POSITION = {
-    "PG": Position.POINT_GUARD,
-    "SG": Position.SHOOTING_GUARD,
-    "SF": Position.SMALL_FORWARD,
-    "PF": Position.POWER_FORWARD,
-    "C": Position.CENTER,
-    "F": Position.FORWARD,
-    "G": Position.GUARD,
-}
-
-
-LOCATION_ABBREVIATIONS_TO_LOCATION = {
-    "": Location.HOME,
-    "@": Location.AWAY,
-}
-
-# Deprecated alias (historical misnomer); prefer LOCATION_ABBREVIATIONS_TO_LOCATION.
-LOCATION_ABBREVIATIONS_TO_POSITION = LOCATION_ABBREVIATIONS_TO_LOCATION
-
-
-OUTCOME_ABBREVIATIONS_TO_OUTCOME = {
-    "W": Outcome.WIN,
-    "L": Outcome.LOSS,
-}
-
-LEAGUE_ABBREVIATIONS_TO_LEAGUE = {
-    "NBA": League.NATIONAL_BASKETBALL_ASSOCIATION,
-    "ABA": League.AMERICAN_BASKETBALL_ASSOCIATION,
-    "BAA": League.BASKETBALL_ASSOCIATION_OF_AMERICA,
-}
-
-
-class TeamTotal:
-    def __init__(self, team_abbreviation, totals):
-        self.team_abbreviation = team_abbreviation
-        self.totals = totals
-
-    @property
-    def minutes_played(self):
-        return self.totals.minutes_played
-
-    @property
-    def made_field_goals(self):
-        return self.totals.made_field_goals
-
-    @property
-    def attempted_field_goals(self):
-        return self.totals.attempted_field_goals
-
-    @property
-    def made_three_point_field_goals(self):
-        return self.totals.made_three_point_field_goals
-
-    @property
-    def attempted_three_point_field_goals(self):
-        return self.totals.attempted_three_point_field_goals
-
-    @property
-    def made_free_throws(self):
-        return self.totals.made_free_throws
-
-    @property
-    def attempted_free_throws(self):
-        return self.totals.attempted_free_throws
-
-    @property
-    def offensive_rebounds(self):
-        return self.totals.offensive_rebounds
-
-    @property
-    def defensive_rebounds(self):
-        return self.totals.defensive_rebounds
-
-    @property
-    def assists(self):
-        return self.totals.assists
-
-    @property
-    def steals(self):
-        return self.totals.steals
-
-    @property
-    def blocks(self):
-        return self.totals.blocks
-
-    @property
-    def turnovers(self):
-        return self.totals.turnovers
-
-    @property
-    def personal_fouls(self):
-        return self.totals.personal_fouls
-
-    @property
-    def points(self):
-        return self.totals.points
-
-
-class PlayerData:
-    def __init__(self, name, resource_location, league_abbreviations):
-        self.name = name
-        self.resource_location = resource_location
-        self.league_abbreviations = set(league_abbreviations)
+__all__ = [
+    "DIVISIONS_TO_CONFERENCES",
+    "LEAGUE_ABBREVIATIONS_TO_LEAGUE",
+    "LOCATION_ABBREVIATIONS_TO_LOCATION",
+    "LOCATION_ABBREVIATIONS_TO_POSITION",
+    "OUTCOME_ABBREVIATIONS_TO_OUTCOME",
+    "POSITION_ABBREVIATIONS_TO_POSITION",
+    "TEAM_ABBREVIATIONS_TO_TEAM",
+    "TEAM_NAME_TO_TEAM",
+    "TEAM_TO_TEAM_ABBREVIATION",
+    "Conference",
+    "Division",
+    "League",
+    "Location",
+    "Outcome",
+    "OutputType",
+    "OutputWriteOption",
+    "PeriodType",
+    "PlayerData",
+    "Position",
+    "Team",
+    "TeamTotal",
+]
