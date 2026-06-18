@@ -1,487 +1,99 @@
-"""HTTP transport: rate-limited, retried requests with selector caching.
+"""Backwards-compatibility shim for the HTTP transport.
 
-Generic table endpoints are handled by :class:`~courtside_data.parsing.generic.GenericEndpointHandler`.
-Bespoke endpoints are handled by :class:`~courtside_data.parsing.custom.CustomEndpointHandler`.
+Phase 2C of the courtside-data refactor moves the implementation into
+:mod:`courtside_data.http._service` and the rate-limit singleton into
+:mod:`courtside_data.http._rate_limit`. This module re-exports the
+public (and previously private) names that lived here so existing
+imports keep working:
+
+* :class:`HTTPService` — the rate-limited, retried, selector-cached
+  HTTP client.
+* :func:`build_client` — the rate-limit-aware ``httpx.Client`` factory.
+* :class:`_SafeCurlTransport` — the curl-cffi transport shim used by
+  :func:`build_client`.
+* Module-level constants: ``_DEFAULT_TIMEOUT``, ``_RETRY_ATTEMPTS``,
+  ``_SELECTOR_CACHE_SIZE``, ``_SELECTOR_CACHE_TTL``, ``_DEFAULT_HEADERS``,
+  ``_MAX_RETRY_AFTER_WAIT``, ``_JAIL_THRESHOLD_SECONDS``,
+  ``_JAIL_STATE_PATH_ENV``.
+* Pure-function retry helpers: :func:`_parse_retry_after` and
+  :func:`_should_retry`.
+* Persistence helpers: :func:`_read_persisted_jail`,
+  :func:`_persist_jail`, and the thin :func:`_jail_state_path` wrapper
+  around :func:`courtside_data.config.jail_state_path`.
+
+Process-wide pacing state (``_last_request_time``, ``_jailed_until``,
+``_jail_state_loaded``, ``_rate_limit_lock``) lives in
+:mod:`courtside_data.http._rate_limit` and is exposed on
+:class:`HTTPService` via the :class:`_ClassStateMeta` metaclass
+forwarder, so existing test resets
+(``HTTPService._last_request_time = float('-inf')``) keep working
+without code changes.
+
+The shim is intended to be removed in a future major release once the
+new module path is the public surface.
 """
 
 from __future__ import annotations
 
-import contextlib
-import hashlib
-import logging
-import random
-import threading
-import time
-from collections.abc import Callable
-from datetime import UTC
-from pathlib import Path
-from typing import Any, ClassVar
-
-import cachetools
-import httpx
-import orjson
-import stamina
-from curl_cffi.const import CurlOpt  # type: ignore[import-untyped]
-from hishel.httpx import SyncCacheTransport
-from parsel import Selector
-
 from courtside_data import config
-from courtside_data.debug import current_debug_trace
-from courtside_data.errors import RateLimitJailed
+from courtside_data.http import _constants, _rate_limit, _retry, _service
+from courtside_data.http._service import HTTPService
+from courtside_data.http._transport import _SafeCurlTransport, build_client
 
-logger = logging.getLogger(__name__)
+# Re-export the module-level constants. Defined as module attributes
+# (not bare imports) so they appear as ``http_service._DEFAULT_TIMEOUT``
+# etc. on the legacy module — matching the previous layout.
+_DEFAULT_TIMEOUT = _constants._DEFAULT_TIMEOUT
+_RETRY_ATTEMPTS = _constants._RETRY_ATTEMPTS
+_SELECTOR_CACHE_SIZE = _constants._SELECTOR_CACHE_SIZE
+_SELECTOR_CACHE_TTL = _constants._SELECTOR_CACHE_TTL
+_MAX_RETRY_AFTER_WAIT = _constants._MAX_RETRY_AFTER_WAIT
+_JAIL_THRESHOLD_SECONDS = _constants._JAIL_THRESHOLD_SECONDS
+_JAIL_STATE_PATH_ENV = _constants._JAIL_STATE_PATH_ENV
+_DEFAULT_HEADERS = _constants._DEFAULT_HEADERS
 
-_DEFAULT_TIMEOUT = httpx.Timeout(30.0, connect=10.0)
-_RETRY_ATTEMPTS = 3
+# Re-export the pure-function retry helpers.
+_parse_retry_after = _retry._parse_retry_after
+_should_retry = _retry._should_retry
 
-# Pages like the 7-game playoff series outcomes matrix host multiple tables
-# that are exposed as separate endpoints. Cache parsed selectors per URL so
-# fetching several tables from the same page only makes one HTTP request and
-# only parses the HTML once. The cache is per-instance and bounded to avoid
-# unbounded growth for long-lived clients.
-_SELECTOR_CACHE_SIZE = 16
-# 10 minutes — selectors for time-sensitive pages (e.g. box scores) should
-# not be reused indefinitely. TTLCache evicts on age *and* size.
-_SELECTOR_CACHE_TTL = 600.0
-# Basketball-Reference can send Retry-After values of an hour or more when a
-# session is jailed. stamina uses a hook-returned float verbatim (wait_max
-# does not apply to it), so cap it to keep a single request from sleeping
-# for the full jail duration.
-#
-# This import-time read is preserved for backward compatibility (tests
-# import ``_MAX_RETRY_AFTER_WAIT``); the live, call-time value used by
-# :func:`_should_retry` is read via :func:`courtside_data.config.max_retry_after_wait`.
-_MAX_RETRY_AFTER_WAIT = config.max_retry_after_wait()
-
-# If Retry-After exceeds this threshold, the session is considered jailed
-# and further retries are suppressed to avoid wasting requests.
-_JAIL_THRESHOLD_SECONDS = 300.0  # 5 minutes
-
-# Env var that controls where the on-disk jail-state blob lives. Set to
-# an empty string to disable persistence (the test suite does this to
-# stay hermetic). Re-exported from :mod:`courtside_data.config` for tests
-# and for backward compatibility with the previous module-level constant.
-_JAIL_STATE_PATH_ENV = config.BASKETBALL_REF_JAIL_STATE_PATH_ENV
-
-# Browser-like headers proven to avoid bot-flagging.
-# Tells Cloudflare this looks like a real browser navigation event.
-_DEFAULT_HEADERS: dict[str, str] = {
-    "User-Agent": (
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-        "AppleWebKit/537.36 (KHTML, like Gecko) "
-        "Chrome/124.0.0.0 Safari/537.36"
-    ),
-    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
-    "Accept-Language": "en-US,en;q=0.5",
-    "Sec-Fetch-Dest": "document",
-    "Sec-Fetch-Mode": "navigate",
-    "Sec-Fetch-Site": "none",
-    "Sec-Fetch-User": "?1",
-    "Upgrade-Insecure-Requests": "1",
-    "DNT": "1",
-}
+# Re-export the persistence helpers. ``_persist_jail`` and
+# ``_read_persisted_jail`` now live in :mod:`courtside_data.http._rate_limit`.
+_persist_jail = _rate_limit._persist_jail
+_read_persisted_jail = _rate_limit._read_persisted_jail
 
 
-class _SafeCurlTransport(httpx.BaseTransport):
-    """Wraps :class:`httpx_curl_cffi.CurlTransport` with two workarounds for
-    correct caching behavior with hishel:
-
-    1. **Timeout extension**: A hishel 1.x regression drops the ``timeout``
-       extension when revalidating cached responses, causing
-       ``CurlTransport._create_request_params`` to fail with an
-       ``AssertionError``. The ``handle_request`` method ensures every
-       request has a ``timeout`` extension before handing off to the real
-       transport.
-
-    2. **Content decoding**: ``curl-cffi`` decompresses gzip responses by
-       default but leaves the ``Content-Encoding: gzip`` header in place.
-       When hishel stores/retrieves the response, ``httpx`` sees the header
-       and tries to decompress already-plaintext content, raising
-       ``httpx.DecodingError``. Passing
-       ``curl_options={CurlOpt.HTTP_CONTENT_DECODING: 0}`` tells libcurl
-       not to decode content, so ``httpx`` handles decompression
-       consistently.
-    """
-
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
-        from httpx_curl_cffi import CurlTransport  # type: ignore[import-untyped]
-
-        curl_options = kwargs.pop("curl_options", {})
-        curl_options = {CurlOpt.HTTP_CONTENT_DECODING: 0, **curl_options}
-        self._impl = CurlTransport(*args, curl_options=curl_options, **kwargs)
-
-    def handle_request(self, request: httpx.Request) -> httpx.Response:
-        if "timeout" not in request.extensions:
-            request.extensions["timeout"] = {
-                "connect": _DEFAULT_TIMEOUT.connect,
-                "read": _DEFAULT_TIMEOUT.read,
-                "write": _DEFAULT_TIMEOUT.write,
-                "pool": _DEFAULT_TIMEOUT.pool,
-            }
-        return self._impl.handle_request(request)
-
-    def close(self) -> None:
-        self._impl.close()
-
-
-def _parse_retry_after(value: str) -> float:
-    """Parse Retry-After header value, returning seconds to wait.
-
-    Handles both integer seconds and HTTP-date formats per RFC 9110.
-    """
-    try:
-        return float(value)
-    except ValueError:
-        pass
-    # HTTP-date format: parse RFC 2822 date
-    import email.utils as eutils
-    from datetime import datetime
-
-    parsed = eutils.parsedate_tz(value)
-    if parsed is not None:
-        retry_time = datetime(*parsed[:6], tzinfo=UTC)
-        now = datetime.now(UTC)
-        wait = (retry_time - now).total_seconds()
-        return max(wait, 1.0)
-    return 5.0
-
-
-def _should_retry(exc: Exception) -> bool | float:
-    """Custom stamina retry predicate.
-
-    Returns True to retry with default backoff, a float to retry after
-    that many seconds (honors Retry-After, capped at the configured
-    ``max_retry_after_wait()``), or False to abort. If the Retry-After
-    value exceeds the jail threshold (5 minutes), returns False to skip
-    retries — the caller handles jail detection.
-
-    The cap is read via :func:`courtside_data.config.max_retry_after_wait`
-    on every invocation, so changes to the ``BASKETBALL_REF_MAX_RETRY_AFTER``
-    env var after import are honored immediately.
-    """
-    if isinstance(exc, httpx.TransportError):
-        logger.debug("Retrying after transport error: %s", exc)
-        return True
-    if isinstance(exc, httpx.HTTPStatusError):
-        code = exc.response.status_code
-        if code in (429, 502, 503, 504):
-            retry_after = exc.response.headers.get("Retry-After")
-            if retry_after is not None:
-                parsed = _parse_retry_after(retry_after)
-                if parsed > _JAIL_THRESHOLD_SECONDS:
-                    logger.warning("Retry-After of %.0fs exceeds jail threshold; not retrying", parsed)
-                    return False  # We're jailed — don't burn retries
-                wait = min(parsed, config.max_retry_after_wait())
-                logger.debug("HTTP %d with Retry-After %s; retrying in %.1fs", code, retry_after, wait)
-                return wait
-            logger.debug("HTTP %d; retrying with default backoff", code)
-            return True
-        # Do NOT retry other 4xx (400, 401, 403, 404, etc.)
-        return False
-    return False
-
-
-def _jail_state_path() -> Path | None:
+def _jail_state_path():
     """Return the persisted jail-state path, or ``None`` if persistence is disabled.
 
-    Thin wrapper around :func:`courtside_data.config.jail_state_path` that
-    preserves the previous call signature for existing tests.
+    Thin wrapper around :func:`courtside_data.config.jail_state_path`
+    preserved for callers that historically imported ``_jail_state_path``
+    from :mod:`courtside_data.http_service`.
     """
     return config.jail_state_path()
 
 
-def _read_persisted_jail() -> float | None:
-    """Return the persisted jailed-until UNIX timestamp if it is still active.
-
-    Stale or unreadable state files are removed/ignored (best effort).
-    """
-    path = _jail_state_path()
-    if path is None:
-        return None
-    try:
-        payload = orjson.loads(path.read_bytes())
-        jailed_until_epoch = float(payload["jailed_until_epoch"])
-    except (OSError, ValueError, KeyError, TypeError):
-        return None
-    if jailed_until_epoch <= time.time():
-        with contextlib.suppress(OSError):
-            path.unlink()
-        return None
-    return jailed_until_epoch
+# Re-export the service module's ``BASE_URL`` for callers that
+# historically imported it as ``http_service.BASE_URL`` (or read it off
+# the class via ``HTTPService.BASE_URL``).
+BASE_URL = _service.BASE_URL
 
 
-def _persist_jail(jailed_until_epoch: float) -> None:
-    path = _jail_state_path()
-    if path is None:
-        return
-    try:
-        path.parent.mkdir(parents=True, exist_ok=True)
-        # orjson returns bytes; write in binary mode to match.
-        path.write_bytes(orjson.dumps({"jailed_until_epoch": jailed_until_epoch}))
-    except OSError:
-        logger.warning("Could not persist rate-limit jail state to %s", path)
-
-
-def build_client(
-    cache: bool = False,
-    timeout: httpx.Timeout = _DEFAULT_TIMEOUT,
-    headers: dict[str, str] | None = None,
-    impersonate: str | None = None,
-) -> httpx.Client:
-    """Build the httpx client used by HTTPService.
-
-    With cache=True, responses are cached per RFC 9111 via hishel's
-    SQLite-backed storage. Headers default to browser-like values that
-    reduce bot-flagging; pass ``headers`` to override or extend.
-
-    TLS impersonation is enabled by default via the ``httpx-curl-cffi``
-    package, using the Chrome target named by the ``BASKETBALL_REF_IMPERSONATE``
-    env var when set, otherwise ``"chrome131"``. The default was rolled
-    forward from ``"chrome124"`` (early 2024) to keep the JA3/JA4
-    fingerprint aligned with a current stable Chrome release. Set
-    ``impersonate=None`` to use standard httpx TLS instead.
-    """
-    merged = {**_DEFAULT_HEADERS, **(headers or {})}
-    transport: httpx.BaseTransport = httpx.HTTPTransport()
-
-    if impersonate is None:
-        impersonate = config.impersonate()
-    if impersonate is not None:
-        transport = _SafeCurlTransport(impersonate=impersonate)
-
-    if cache:
-        transport = SyncCacheTransport(next_transport=transport)
-    return httpx.Client(transport=transport, follow_redirects=True, timeout=timeout, headers=merged)
-
-
-class HTTPService:
-    """Rate-limited HTTP client with selector caching for Basketball Reference."""
-
-    BASE_URL = "https://www.basketball-reference.com"
-    _last_request_time: ClassVar[float] = float("-inf")
-    _jailed_until: ClassVar[float] = 0.0  # monotonic timestamp; 0 = not jailed
-    _jail_state_loaded: ClassVar[bool] = False  # persisted jail state is read at most once per process
-    _rate_limit_lock: ClassVar[threading.RLock] = threading.RLock()
-
-    def __init__(
-        self,
-        parser: Any = None,
-        rate_limit_interval: float | None = None,
-        rate_limit_jitter: float | None = None,
-        session: httpx.Client | None = None,
-        time_func: Callable[[], float] | None = None,
-        sleep: Callable[[float], None] | None = None,
-        random_func: Callable[[float, float], float] | None = None,
-        timeout: httpx.Timeout | None = None,
-        cache: bool = True,
-        headers: dict[str, str] | None = None,
-        impersonate: str | None = None,
-    ) -> None:
-        self.parser = parser
-        # Constructor param > env var > default (via courtside_data.config)
-        if rate_limit_interval is not None:
-            self._rate_limit_interval = rate_limit_interval
-        else:
-            self._rate_limit_interval = config.rate_limit_interval()
-
-        if rate_limit_jitter is not None:
-            self._rate_limit_jitter = rate_limit_jitter
-        else:
-            self._rate_limit_jitter = config.rate_limit_jitter()
-
-        self._timeout = timeout if timeout is not None else _DEFAULT_TIMEOUT
-        self._session = (
-            session
-            if session is not None
-            else build_client(
-                cache=cache,
-                timeout=self._timeout,
-                headers=headers,
-                impersonate=impersonate,
-            )
-        )
-
-        # Injectable dependencies for testing
-        self._time = time_func if time_func is not None else time.monotonic
-        self._sleep = sleep if sleep is not None else time.sleep
-        self._random = random_func if random_func is not None else random.uniform
-
-        # Bounded per-instance selector cache so multiple endpoints that scrape
-        # the same URL share one fetch and one parse. TTLCache evicts on age
-        # (10 min) *and* size, so long-lived clients cannot accumulate stale
-        # Selectors and selectors for time-sensitive pages do not outlive their
-        # validity window.
-        self._selector_cache: cachetools.TTLCache[str, Selector] = cachetools.TTLCache(
-            maxsize=_SELECTOR_CACHE_SIZE, ttl=_SELECTOR_CACHE_TTL
-        )
-
-    @classmethod
-    def _url(cls, path: str = "") -> str:
-        """Join :attr:`BASE_URL` with ``path`` (leading slash optional)."""
-        return f"{cls.BASE_URL}/{path.lstrip('/')}" if path else cls.BASE_URL
-
-    def _apply_rate_limiting(self) -> None:
-        wait = 0.0
-        trace = current_debug_trace()
-        with self._rate_limit_lock:
-            # A jail set by a previous process (persisted to disk) carries over
-            if not self.__class__._jail_state_loaded:
-                self.__class__._jail_state_loaded = True
-                jailed_until_epoch = _read_persisted_jail()
-                if jailed_until_epoch is not None:
-                    remaining = jailed_until_epoch - time.time()
-                    self.__class__._jailed_until = self._time() + remaining
-                    logger.warning("Loaded persisted jail state: %.0fs remaining", remaining)
-                    if trace is not None:
-                        trace.record("rate_limit", "persisted_jail_loaded", remaining_seconds=remaining)
-
-            # Circuit breaker: if jailed, refuse all requests immediately
-            current_time = self._time()
-            if current_time < self.__class__._jailed_until:
-                remaining = self.__class__._jailed_until - current_time
-                if trace is not None:
-                    trace.record("rate_limit", "jailed_request_rejected", remaining_seconds=remaining)
-                raise RateLimitJailed(retry_after=remaining)
-
-            time_since_last = current_time - self.__class__._last_request_time
-            if self._rate_limit_interval > 0 and time_since_last < self._rate_limit_interval:
-                jitter = self._random(0.0, self._rate_limit_jitter)
-                wait = (self._rate_limit_interval - time_since_last) + jitter
-                if trace is not None:
-                    trace.record(
-                        "rate_limit",
-                        "sleep",
-                        interval_seconds=self._rate_limit_interval,
-                        jitter_seconds=jitter,
-                        wait_seconds=wait,
-                        seconds_since_last_request=time_since_last,
-                    )
-                self.__class__._last_request_time = current_time + wait
-            else:
-                if trace is not None:
-                    trace.record(
-                        "rate_limit",
-                        "no_sleep",
-                        interval_seconds=self._rate_limit_interval,
-                        seconds_since_last_request=time_since_last,
-                    )
-                self.__class__._last_request_time = current_time
-
-        if wait > 0.0:
-            logger.debug("Rate-limit pacing: sleeping %.2fs", wait)
-            self._sleep(wait)
-
-    def _get(self, url: str, **kwargs: Any) -> httpx.Response:
-        trace = current_debug_trace()
-        if trace is not None:
-            trace.record("http", "request_prepare", url=url, kwargs=sorted(kwargs))
-        self._apply_rate_limiting()
-        response = None
-        attempt_count = 0
-        try:
-            for attempt in stamina.retry_context(
-                on=_should_retry,
-                attempts=_RETRY_ATTEMPTS,
-                wait_initial=1.0,
-                wait_max=10.0,
-                wait_jitter=0.5,
-            ):
-                with attempt:
-                    attempt_count += 1
-                    if trace is not None:
-                        trace.record("http", "attempt_start", attempt=attempt_count, url=url)
-                    response = self._session.get(url=url, **kwargs)
-                    if trace is not None:
-                        trace.record(
-                            "http",
-                            "attempt_response",
-                            attempt=attempt_count,
-                            status_code=response.status_code,
-                            url=str(response.url),
-                            headers=trace.sanitize_headers(response.headers),
-                            extensions={key: repr(value) for key, value in response.extensions.items()},
-                        )
-                    response.raise_for_status()
-            if response is None:  # pragma: no cover
-                raise RuntimeError("stamina.retry_context completed without yielding a response")
-        except httpx.HTTPStatusError as e:
-            if trace is not None:
-                trace.record(
-                    "http",
-                    "status_error",
-                    status_code=e.response.status_code,
-                    url=str(e.response.url),
-                    attempts=attempt_count,
-                )
-            if e.response.status_code == 429:
-                retry_after = e.response.headers.get("Retry-After")
-                if retry_after is not None:
-                    parsed = _parse_retry_after(retry_after)
-                    if parsed > _JAIL_THRESHOLD_SECONDS:
-                        # Set the circuit breaker so future calls fail fast,
-                        # and persist it so restarted processes honor it too
-                        self.__class__._jailed_until = self._time() + parsed
-                        _persist_jail(time.time() + parsed)
-                        logger.warning("Session jailed by Basketball-Reference for %.0fs", parsed)
-                        if trace is not None:
-                            trace.record("rate_limit", "jail_detected", retry_after_seconds=parsed)
-                        raise RateLimitJailed(retry_after=parsed) from e
-            raise
-        else:
-            # Reset pacing — retries consumed time, so measure from now
-            with self._rate_limit_lock:
-                self.__class__._last_request_time = self._time()
-            if trace is not None:
-                trace.record(
-                    "http",
-                    "request_complete",
-                    status_code=response.status_code,
-                    final_url=str(response.url),
-                    attempts=attempt_count,
-                )
-        return response
-
-    def _get_selector(self, url: str) -> Selector:
-        """Fetch a page (no redirects) and wrap the body in a parsel Selector.
-
-        Parsed selectors are cached per URL on this instance, so callers that
-        extract several tables from the same page (e.g. the three 7-game
-        playoff series outcome matrices) reuse one request and one parse.
-        """
-        if url in self._selector_cache:
-            trace = current_debug_trace()
-            if trace is not None:
-                trace.record(
-                    "http",
-                    "selector_cache_hit",
-                    url=url,
-                    cache_stats=self._selector_cache_stats(),
-                )
-            return self._selector_cache[url]
-
-        response = self._get(url=url, follow_redirects=False)
-        response.raise_for_status()
-        trace = current_debug_trace()
-        if trace is not None:
-            trace.record(
-                "http",
-                "selector_created",
-                url=str(response.url),
-                response_text_length=len(response.text),
-                response_text_sha256=hashlib.sha256(response.text.encode("utf-8", errors="replace")).hexdigest(),
-            )
-        selector = Selector(text=response.text)
-        self._selector_cache[url] = selector
-        return selector
-
-    def _selector_cache_stats(self) -> dict[str, int | float]:
-        """Return cache_info()-style stats for the selector TTLCache.
-
-        Mirrors the fields exposed by :func:`functools.lru_cache.cache_info`
-        so consumers do not need to special-case the implementation.
-        """
-        return {
-            "size": self._selector_cache.currsize,
-            "maxsize": self._selector_cache.maxsize,
-            "ttl": self._selector_cache.ttl,
-        }
+__all__ = [
+    "BASE_URL",
+    "_DEFAULT_HEADERS",
+    "_DEFAULT_TIMEOUT",
+    "_JAIL_STATE_PATH_ENV",
+    "_JAIL_THRESHOLD_SECONDS",
+    "_MAX_RETRY_AFTER_WAIT",
+    "_RETRY_ATTEMPTS",
+    "_SELECTOR_CACHE_SIZE",
+    "_SELECTOR_CACHE_TTL",
+    "HTTPService",
+    "_SafeCurlTransport",
+    "_jail_state_path",
+    "_parse_retry_after",
+    "_persist_jail",
+    "_read_persisted_jail",
+    "_should_retry",
+    "build_client",
+]
