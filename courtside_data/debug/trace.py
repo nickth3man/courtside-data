@@ -210,7 +210,8 @@ class DebugTrace:
             yield
             return
         # Lazy import: keep the debug package cheap to import when profiling is off.
-        from pyinstrument import Profiler
+        # pyinstrument is intentionally a dev dependency; profiling is opt-in.
+        from pyinstrument import Profiler  # deptry: ignore[DEP004]
 
         profiler = Profiler(interval=self.config.profile_interval)
         with self.span(name, stage="profile", **attributes):

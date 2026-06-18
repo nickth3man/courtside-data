@@ -254,9 +254,8 @@ class CustomEndpointHandler:
             player_results += rows.parse_search_rows(selector)
 
             seen_pagination_urls: set[str] = set()
-            while rows.parse_search_pagination_url(selector) is not None:
-                pagination_url = rows.parse_search_pagination_url(selector)
-                assert pagination_url is not None
+            pagination_url = rows.parse_search_pagination_url(selector)
+            while pagination_url is not None:
                 if pagination_url in seen_pagination_urls:
                     break
                 seen_pagination_urls.add(pagination_url)
@@ -267,6 +266,7 @@ class CustomEndpointHandler:
 
                 selector = Selector(text=response.text)
                 player_results += rows.parse_search_rows(selector)
+                pagination_url = rows.parse_search_pagination_url(selector)
 
         elif str(response.url).startswith(f"{HTTPService.BASE_URL}/players"):
             selector = Selector(text=response.text)

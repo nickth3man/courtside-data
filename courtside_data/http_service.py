@@ -25,7 +25,6 @@ import platformdirs
 import stamina
 from curl_cffi.const import CurlOpt  # type: ignore[import-untyped]
 from hishel.httpx import SyncCacheTransport
-from lxml import html
 from parsel import Selector
 
 from courtside_data.debug import current_debug_trace
@@ -405,7 +404,8 @@ class HTTPService:
                             extensions={key: repr(value) for key, value in response.extensions.items()},
                         )
                     response.raise_for_status()
-            assert response is not None  # retry_context either yields a response or raises
+            if response is None:  # pragma: no cover
+                raise RuntimeError("stamina.retry_context completed without yielding a response")
         except httpx.HTTPStatusError as e:
             if trace is not None:
                 trace.record(
@@ -487,18 +487,3 @@ class HTTPService:
             "maxsize": self._selector_cache.maxsize,
             "ttl": self._selector_cache.ttl,
         }
-
-    def _get_html(self, url: str, **kwargs: Any) -> html.HtmlElement:
-        """Fetch a page, raise on HTTP errors, and parse the body with lxml."""
-        response = self._get(url=url, **kwargs)
-        response.raise_for_status()
-        trace = current_debug_trace()
-        if trace is not None:
-            trace.record(
-                "http",
-                "html_created",
-                url=str(response.url),
-                response_content_length=len(response.content),
-                response_content_sha256=hashlib.sha256(response.content).hexdigest(),
-            )
-        return html.fromstring(response.content)

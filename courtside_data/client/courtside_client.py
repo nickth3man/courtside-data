@@ -39,7 +39,7 @@ class CourtsideClient:
         *,
         cache: bool = True,
         headers: dict[str, str] | None = None,
-        impersonate: str | None = "chrome124",
+        impersonate: str | None = None,
         timeout: httpx.Timeout | None = None,
         service: HTTPService | None = None,
     ) -> None:
