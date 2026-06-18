@@ -222,20 +222,53 @@ def _league_field(value: object) -> League:
     return league
 
 
+_BR_STRICT_DATE_FORMATS = ("%a, %b %d, %Y", "%Y-%m-%d")
+_BR_STRICT_DATETIME_FORMATS = (
+    "%a, %b %d, %Y %I:%M %p",  # "Mon, Jan 01, 2024 8:30 PM"
+    "%a, %b %d, %Y %I:%M%p",  # "Mon, Jan 01, 2024 8:30p" (m appended for %p)
+)
+# dateparser parser set: skip the heavier relative-time/timestamp parsers so
+# the fallback stays cheap. ``absolute-time`` covers natural-language dates,
+# ``custom-formats`` re-tries the strict strptime formats, and ``no-spaces-time``
+# handles "8:30PM" style inputs.
+_BR_DATEPARSER_PARSERS = ("absolute-time", "custom-formats", "no-spaces-time")
+
+
+def _dateparser_parse(s: str) -> datetime | None:
+    """Tolerant parse via :mod:`dateparser` — fallback only.
+
+    Returns a **naive** :class:`datetime` on success, ``None`` on failure.
+    ``dateparser`` is imported lazily so the strict path stays import-free.
+    """
+    try:
+        import dateparser
+    except ImportError:
+        return None
+    return dateparser.parse(
+        s,
+        languages=["en"],
+        date_formats=[*_BR_STRICT_DATE_FORMATS, *_BR_STRICT_DATETIME_FORMATS],
+        settings={"PARSERS": list(_BR_DATEPARSER_PARSERS)},
+    )
+
+
 def _br_date(value: object) -> date:
     if isinstance(value, date) and not isinstance(value, datetime):
         return value
     if isinstance(value, datetime):
         return value.date()
     s = str(value).strip()
-    try:
-        return datetime.strptime(s, "%a, %b %d, %Y").date()
-    except ValueError:
-        pass
-    try:
-        return datetime.strptime(s, "%Y-%m-%d").date()
-    except ValueError as exc:
-        raise ValueError(f"Invalid date value: {value!r}") from exc
+    # Strict first — try the known strptime formats with no extra cost.
+    for fmt in _BR_STRICT_DATE_FORMATS:
+        try:
+            return datetime.strptime(s, fmt).date()
+        except ValueError:
+            continue
+    # Tolerant fallback: dateparser handles drifted/renamed BR date strings.
+    parsed = _dateparser_parse(s)
+    if parsed is None:
+        raise ValueError(f"Invalid date value: {value!r}")
+    return parsed.date()
 
 
 def _br_datetime(value: object) -> datetime:
@@ -255,18 +288,22 @@ def _br_datetime(value: object) -> datetime:
     date_s = str(formatted_date).strip()
     time_s = "" if formatted_time_of_day is None else str(formatted_time_of_day).strip()
 
+    # Strict first — try the existing strptime path verbatim. The whole branch
+    # is wrapped so any failure (new date format, new time format, both) routes
+    # uniformly through the tolerant fallback below.
     try:
-        base_date = datetime.strptime(date_s, "%a, %b %d, %Y")
-    except ValueError as exc:
-        raise ValueError(f"Invalid date value: {value!r}") from exc
-
-    if time_s in ("", " "):
-        dt = base_date
-    elif time_s[-2:].lower() in ("am", "pm"):
-        dt = datetime.strptime(f"{date_s} {time_s}", "%a, %b %d, %Y %I:%M %p")
-    else:
-        # Newer BR format uses "p" or "a" suffix; add "m" for strptime's %p.
-        dt = datetime.strptime(f"{date_s} {time_s}m", "%a, %b %d, %Y %I:%M%p")
+        if time_s in ("", " "):
+            dt = datetime.strptime(date_s, "%a, %b %d, %Y")
+        elif time_s[-2:].lower() in ("am", "pm"):
+            dt = datetime.strptime(f"{date_s} {time_s}", "%a, %b %d, %Y %I:%M %p")
+        else:
+            # Newer BR format uses "p" or "a" suffix; add "m" for strptime's %p.
+            dt = datetime.strptime(f"{date_s} {time_s}m", "%a, %b %d, %Y %I:%M%p")
+    except ValueError:
+        combined = f"{date_s} {time_s}".strip() if time_s else date_s
+        dt = _dateparser_parse(combined)
+        if dt is None:
+            raise ValueError(f"Invalid datetime value: {value!r}") from None
 
     return dt.replace(tzinfo=ZoneInfo("US/Eastern")).astimezone(UTC)
 

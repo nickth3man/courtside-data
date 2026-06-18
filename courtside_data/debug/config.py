@@ -54,3 +54,5 @@ class DebugConfig:
     max_column_examples: int = 5
     redact_keys: frozenset[str] = DEFAULT_REDACT_KEYS
     safe_response_headers: frozenset[str] = SAFE_RESPONSE_HEADERS
+    profile: bool = False
+    profile_interval: float = 0.001

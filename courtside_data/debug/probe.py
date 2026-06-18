@@ -15,13 +15,13 @@ Usage::
 from __future__ import annotations
 
 import argparse
-import json
 import sys
 import time
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+import orjson
 from tests.fixture_manifest import ALL_CASES
 
 from courtside_data.client._runner import _run_endpoint
@@ -165,7 +165,7 @@ def probe_endpoints(*, endpoints: list[str] | None = None, output_path: Path | N
         stamp = finished_at.strftime("%Y%m%d_%H%M%S")
         output_path = resolve_log_dir() / f"endpoint_probe_report_{stamp}.json"
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    output_path.write_text(json.dumps(report, indent=2, default=str), encoding="utf-8")
+    output_path.write_bytes(orjson.dumps(report, option=orjson.OPT_INDENT_2, default=str))
     report["report_path"] = str(output_path)
     return report
 
@@ -198,7 +198,7 @@ def main(argv: list[str] | None = None) -> int:
         print(str(exc), file=sys.stderr)
         return 2
     summary_keys = ("report_path", "ok_count", "failed_count", "failed_endpoints")
-    print(json.dumps({key: report[key] for key in summary_keys}, indent=2))
+    print(orjson.dumps({key: report[key] for key in summary_keys}, option=orjson.OPT_INDENT_2).decode("utf-8"))
     return 0 if report["failed_count"] == 0 and not report["missing_sample_params"] else 1
 
 

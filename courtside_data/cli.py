@@ -9,11 +9,19 @@ parameters::
     courtside-data list
 
 Results print as JSON to stdout unless ``--output-file`` is given.
+
+When stdout is a TTY, the ``list`` subcommand renders a :mod:`rich.table.Table`
+and ``--debug`` envelopes render with :class:`rich.json.JSON` for nicer human
+readability. Piped / non-TTY output stays plain so scripts, ``--output-file``
+paths, and existing test fixtures are unaffected. ``rich`` is imported lazily
+inside the rendering helpers — the package still imports if it is missing.
 """
 
 from __future__ import annotations
 
 import argparse
+import json
+import sys
 
 from courtside_data import client
 from courtside_data.data import OutputType, OutputWriteOption, Team
@@ -21,6 +29,47 @@ from courtside_data.endpoints import ENDPOINTS
 
 _INT_PARAMS = {"season_end_year", "day", "month", "year"}
 _FLAG_PARAMS = {"include_inactive_games", "include_combined_values"}
+
+
+def _is_rich_available() -> bool:
+    """Probe for ``rich`` at call time so the package still imports if it's missing."""
+    try:
+        import rich  # noqa: F401
+    except ImportError:
+        return False
+    return True
+
+
+def _print_endpoint_list_rich() -> None:
+    """Render the ``list`` subcommand output as a :class:`rich.table.Table`."""
+    from rich.console import Console
+    from rich.table import Table
+
+    table = Table(
+        title="courtside-data endpoints",
+        header_style="bold",
+        show_lines=False,
+    )
+    table.add_column("endpoint", style="cyan", no_wrap=True)
+    table.add_column("params", style="white")
+    for name, endpoint in ENDPOINTS.items():
+        params = ", ".join(endpoint.params)
+        table.add_row(name, params)
+    Console().print(table)
+
+
+def _print_debug_envelope_rich(envelope_text: str) -> None:
+    """Render a debug envelope with :class:`rich.json.JSON`.
+
+    The caller already serialized the envelope to a JSON string via the
+    project's output writers — we parse it back into a Python object so
+    ``rich.json.JSON`` can pretty-print and syntax-highlight it.
+    """
+    from rich.console import Console
+    from rich.json import JSON
+
+    payload = json.loads(envelope_text)
+    Console().print(JSON.from_data(payload, indent=2, highlight=True))
 
 
 def _team_value(value: str) -> Team:
@@ -74,10 +123,16 @@ def main(argv: list[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
 
+    is_tty = sys.stdout.isatty()
+    use_rich = is_tty and _is_rich_available()
+
     if args.endpoint == "list":
-        for name, endpoint in ENDPOINTS.items():
-            params = ", ".join(endpoint.params)
-            print(f"{name}({params})")
+        if use_rich:
+            _print_endpoint_list_rich()
+        else:
+            for name, endpoint in ENDPOINTS.items():
+                params = ", ".join(endpoint.params)
+                print(f"{name}({params})")
         return 0
 
     endpoint = ENDPOINTS[args.endpoint]
@@ -105,7 +160,10 @@ def main(argv: list[str] | None = None) -> int:
     if args.output_file:
         print(f"Wrote {args.output_file}")
     elif result is not None:
-        print(result)
+        if args.debug and use_rich:
+            _print_debug_envelope_rich(result)
+        else:
+            print(result)
     return 0
 
 

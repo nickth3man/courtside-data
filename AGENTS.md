@@ -18,6 +18,19 @@ Python **3.12+**. Source lives in `courtside_data/`. Tests live in `tests/` (off
 
 ---
 
+## Environment variables
+
+Runtime configuration is env-var driven. The values agents are most likely to need:
+
+| Variable | Default | Purpose |
+|----------|---------|---------|
+| `BASKETBALL_REF_JAIL_STATE_PATH` | `platformdirs.user_cache_dir("courtside-data", "courtside") / "jail.json"` | Path to the persisted 429 rate-limit-jail state file (so the cap survives process restarts). |
+| `BASKETBALL_REF_IMPERSONATE` | `chrome131` | curl-cffi TLS-impersonation target. Pin an older Chrome version when debugging a sudden 403 wave. |
+| `COURTSIDE_DATA_FAST_PARSE` | unset | Set to `1` to route the HTML-parsing hot path through the selectolax (Lexbor) backend (~6× faster on table-heavy pages). Default is the lxml+parsel pipeline; both backends are cross-validated by `tests/test_selectolax_backend.py`. |
+| `COURTSIDE_DEBUG_LOG_DIR` | `./logs` | Directory for per-call debug-trace JSON envelopes (see "Live endpoint probe"). |
+
+---
+
 ## Ruff (lint + format)
 
 [Ruff](https://docs.astral.sh/ruff/) is the single linter and formatter. Config: `[tool.ruff]` and `[tool.ruff.lint]` in `pyproject.toml`.
@@ -184,6 +197,17 @@ Optional determinism check after changes to shared state (`HTTPService` class va
 # If dev dependencies are not installed, run `uv sync --group dev` first.
 uv run pytest tests -n auto --randomly-seed=last
 ```
+
+### Benchmarks (opt-in)
+
+`tests/test_benchmarks.py` contains `@pytest.mark.benchmark(group="parse")` tests covering the parsing hot paths (`GenericTable` row extraction, `extract_commented_table`, transaction-list fallback, `JSONWriter`, and debug-envelope serialization). They are **skipped by default** and only run with `--benchmark-only`:
+
+```bash
+# Run the parse benchmarks (serial — xdist disables benchmarks)
+uv run pytest tests/test_benchmarks.py --benchmark-only -v
+```
+
+pytest-benchmark auto-disables under `-n auto` (xdist parallelizes workers, which makes timing unreliable), so the benchmark suite is invisible to the normal `uv run task test` run. Run serially for meaningful numbers.
 
 ---
 
@@ -430,6 +454,10 @@ uv run mkdocs get-deps          # list PyPI packages the config requires
 ```
 
 > **`--strict` is the CI gate** (added in mkdocs 1.4): broken internal links, unknown config keys, and unknown markdown-extension settings all fail the build. Run it locally before pushing. (Note: current CI only runs `gh-deploy`; adding a `build --strict` step is recommended hardening.)
+
+### Auto-generated API reference
+
+The `API` section of the site (`docs/api/schemas.md`, `docs/api/endpoints.md`) is rendered by the **mkdocstrings** Python handler with the **griffe-pydantic** extension (configured in `mkdocs.yml` under `plugins:`). Pydantic `BRRow` subclasses in `courtside_data/schemas/` and the `TableEndpoint` registry in `courtside_data/endpoints.py` are documented directly from source — do not hand-edit the rendered schema/field tables; update the docstrings and re-run `mkdocs build`. `docs/index.md` is the hand-written landing page.
 
 **pymdown-extensions** are provided by the `pymdown-extensions` package (a dep of mkdocs-material ≥ 9) and enabled by name under `markdown_extensions:` in `mkdocs.yml`.
 

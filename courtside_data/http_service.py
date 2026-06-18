@@ -8,19 +8,20 @@ from __future__ import annotations
 
 import contextlib
 import hashlib
-import json
 import logging
 import os
 import random
 import threading
 import time
-from collections import OrderedDict
 from collections.abc import Callable
 from datetime import UTC
 from pathlib import Path
 from typing import Any, ClassVar
 
+import cachetools
 import httpx
+import orjson
+import platformdirs
 import stamina
 from curl_cffi.const import CurlOpt  # type: ignore[import-untyped]
 from hishel.httpx import SyncCacheTransport
@@ -43,6 +44,9 @@ _RETRY_ATTEMPTS = 3
 # only parses the HTML once. The cache is per-instance and bounded to avoid
 # unbounded growth for long-lived clients.
 _SELECTOR_CACHE_SIZE = 16
+# 10 minutes — selectors for time-sensitive pages (e.g. box scores) should
+# not be reused indefinitely. TTLCache evicts on age *and* size.
+_SELECTOR_CACHE_TTL = 600.0
 # Basketball-Reference can send Retry-After values of an hour or more when a
 # session is jailed. stamina uses a hook-returned float verbatim (wait_max
 # does not apply to it), so cap it to keep a single request from sleeping
@@ -58,7 +62,11 @@ _JAIL_THRESHOLD_SECONDS = 300.0  # 5 minutes
 # escalates bans for repeat offenders. Set the env var to an empty string to
 # disable persistence (the test suite does this to stay hermetic).
 _JAIL_STATE_PATH_ENV = "BASKETBALL_REF_JAIL_STATE_PATH"
-_DEFAULT_JAIL_STATE_PATH = Path(".cache") / "courtside" / "jail.json"
+# Use platformdirs to resolve a per-user cache directory (respects OS conventions:
+# %LOCALAPPDATA%\courtside\courtside-data\Cache on Windows, ~/.cache/courtside-data
+# on Linux, ~/Library/Caches/courtside-data on macOS). Falls through to the
+# BASKETBALL_REF_JAIL_STATE_PATH env var when set (see ``_jail_state_path``).
+_DEFAULT_JAIL_STATE_PATH = Path(platformdirs.user_cache_dir("courtside-data", "courtside")) / "jail.json"
 
 # Browser-like headers proven to avoid bot-flagging.
 # Tells Cloudflare this looks like a real browser navigation event.
@@ -190,7 +198,7 @@ def _read_persisted_jail() -> float | None:
     if path is None:
         return None
     try:
-        payload = json.loads(path.read_text(encoding="utf-8"))
+        payload = orjson.loads(path.read_bytes())
         jailed_until_epoch = float(payload["jailed_until_epoch"])
     except (OSError, ValueError, KeyError, TypeError):
         return None
@@ -207,7 +215,8 @@ def _persist_jail(jailed_until_epoch: float) -> None:
         return
     try:
         path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(json.dumps({"jailed_until_epoch": jailed_until_epoch}), encoding="utf-8")
+        # orjson returns bytes; write in binary mode to match.
+        path.write_bytes(orjson.dumps({"jailed_until_epoch": jailed_until_epoch}))
     except OSError:
         logger.warning("Could not persist rate-limit jail state to %s", path)
 
@@ -216,7 +225,7 @@ def build_client(
     cache: bool = False,
     timeout: httpx.Timeout = _DEFAULT_TIMEOUT,
     headers: dict[str, str] | None = None,
-    impersonate: str | None = "chrome124",
+    impersonate: str | None = None,
 ) -> httpx.Client:
     """Build the httpx client used by HTTPService.
 
@@ -224,13 +233,18 @@ def build_client(
     SQLite-backed storage. Headers default to browser-like values that
     reduce bot-flagging; pass ``headers`` to override or extend.
 
-    TLS impersonation is enabled by default (``impersonate="chrome124"``)
-    via the ``httpx-curl-cffi`` package. Set ``impersonate=None`` to use
-    standard httpx TLS instead.
+    TLS impersonation is enabled by default via the ``httpx-curl-cffi``
+    package, using the Chrome target named by the ``BASKETBALL_REF_IMPERSONATE``
+    env var when set, otherwise ``"chrome131"``. The default was rolled
+    forward from ``"chrome124"`` (early 2024) to keep the JA3/JA4
+    fingerprint aligned with a current stable Chrome release. Set
+    ``impersonate=None`` to use standard httpx TLS instead.
     """
     merged = {**_DEFAULT_HEADERS, **(headers or {})}
     transport: httpx.BaseTransport = httpx.HTTPTransport()
 
+    if impersonate is None:
+        impersonate = os.environ.get("BASKETBALL_REF_IMPERSONATE", "chrome131")
     if impersonate is not None:
         transport = _SafeCurlTransport(impersonate=impersonate)
 
@@ -260,7 +274,7 @@ class HTTPService:
         timeout: httpx.Timeout | None = None,
         cache: bool = True,
         headers: dict[str, str] | None = None,
-        impersonate: str | None = "chrome124",
+        impersonate: str | None = None,
     ) -> None:
         self.parser = parser
         # Constructor param > env var > default
@@ -296,8 +310,13 @@ class HTTPService:
         self._random = random_func if random_func is not None else random.uniform
 
         # Bounded per-instance selector cache so multiple endpoints that scrape
-        # the same URL share one fetch and one parse.
-        self._selector_cache: OrderedDict[str, Selector] = OrderedDict()
+        # the same URL share one fetch and one parse. TTLCache evicts on age
+        # (10 min) *and* size, so long-lived clients cannot accumulate stale
+        # Selectors and selectors for time-sensitive pages do not outlive their
+        # validity window.
+        self._selector_cache: cachetools.TTLCache[str, Selector] = cachetools.TTLCache(
+            maxsize=_SELECTOR_CACHE_SIZE, ttl=_SELECTOR_CACHE_TTL
+        )
 
     @classmethod
     def _url(cls, path: str = "") -> str:
@@ -432,10 +451,14 @@ class HTTPService:
         playoff series outcome matrices) reuse one request and one parse.
         """
         if url in self._selector_cache:
-            self._selector_cache.move_to_end(url)
             trace = current_debug_trace()
             if trace is not None:
-                trace.record("http", "selector_cache_hit", url=url)
+                trace.record(
+                    "http",
+                    "selector_cache_hit",
+                    url=url,
+                    cache_stats=self._selector_cache_stats(),
+                )
             return self._selector_cache[url]
 
         response = self._get(url=url, follow_redirects=False)
@@ -451,9 +474,19 @@ class HTTPService:
             )
         selector = Selector(text=response.text)
         self._selector_cache[url] = selector
-        if len(self._selector_cache) > _SELECTOR_CACHE_SIZE:
-            self._selector_cache.popitem(last=False)
         return selector
+
+    def _selector_cache_stats(self) -> dict[str, int | float]:
+        """Return cache_info()-style stats for the selector TTLCache.
+
+        Mirrors the fields exposed by :func:`functools.lru_cache.cache_info`
+        so consumers do not need to special-case the implementation.
+        """
+        return {
+            "size": self._selector_cache.currsize,
+            "maxsize": self._selector_cache.maxsize,
+            "ttl": self._selector_cache.ttl,
+        }
 
     def _get_html(self, url: str, **kwargs: Any) -> html.HtmlElement:
         """Fetch a page, raise on HTTP errors, and parse the body with lxml."""

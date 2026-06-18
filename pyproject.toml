@@ -28,6 +28,12 @@ dependencies = [
     "tzdata>=2024.1; sys_platform == 'win32'",
     "pydantic>=2.13.4",
     "pydantic-core>=2.14.0",
+    "platformdirs",
+    "cachetools",
+    "orjson",
+    "selectolax>=0.3",
+    "rich>=13.0",
+    "dateparser",
 ]
 
 [project.optional-dependencies]
@@ -48,7 +54,6 @@ dev = [
     "pytest-cov>=6.0",
     "respx>=0.22.0",
     "deepdiff>=8.0",
-    "selectolax>=0.3",
     # coverage / diff
     "coverage>=7.0",
     "covdefaults>=2.3",
@@ -66,10 +71,15 @@ dev = [
     "libcst>=1.0",
     # task runner
     "taskipy>=1.13",
+    # benchmarking / profiling
+    "pytest-benchmark",
+    "pyinstrument",
     # docs
     "mkdocs>=1.5.3",
     "mkdocs-material>=9.0",
     "pymdown-extensions>=10.0",
+    "mkdocstrings[python]",
+    "griffe-pydantic",
 ]
 
 [project.scripts]

@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import hashlib
-import json
 import math
 import os
 import platform
@@ -19,6 +18,8 @@ from datetime import date, datetime
 from enum import Enum
 from importlib import metadata
 from typing import Any, ClassVar
+
+import orjson
 
 from courtside_data.debug.config import DebugConfig
 
@@ -190,6 +191,37 @@ class DebugTrace:
             if self._span_stack and self._span_stack[-1] == span_id:
                 self._span_stack.pop()
 
+    @contextmanager
+    def profile(self, name: str = "profile", **attributes: Any):
+        """Optionally profile the wrapped block with pyinstrument.
+
+        When ``self.config.profile`` is False (the default) this is a
+        zero-overhead pass-through: it does not import ``pyinstrument`` and
+        yields immediately.
+
+        When ``self.config.profile`` is True it lazily imports
+        ``pyinstrument.Profiler``, starts it at ``self.config.profile_interval``,
+        yields, and on exit renders both the text and HTML profile reports
+        and stores them as debug artifacts (``<name>_text`` and ``<name>_html``).
+        The wrapped block is also recorded as a span so the profile window
+        shows up in the trace event log.
+        """
+        if not self.config.profile:
+            yield
+            return
+        # Lazy import: keep the debug package cheap to import when profiling is off.
+        from pyinstrument import Profiler
+
+        profiler = Profiler(interval=self.config.profile_interval)
+        with self.span(name, stage="profile", **attributes):
+            profiler.start()
+            try:
+                yield
+            finally:
+                profiler.stop()
+                self.artifact(f"{name}_text", profiler.output_text())
+                self.artifact(f"{name}_html", profiler.output_html())
+
     def record_exception(
         self,
         exception: BaseException,
@@ -275,12 +307,16 @@ class DebugTrace:
         }
 
     def to_json(self, *, indent: int | None = 2) -> str:
-        return json.dumps(self.to_dict(), indent=indent, sort_keys=True, ensure_ascii=False, allow_nan=False)
+        options = orjson.OPT_SORT_KEYS | orjson.OPT_NON_STR_KEYS
+        if indent:
+            options |= orjson.OPT_INDENT_2
+        return orjson.dumps(self.to_dict(), option=options).decode("utf-8")
 
     def events_jsonl(self) -> str:
-        return "\n".join(
-            json.dumps(event, sort_keys=True, ensure_ascii=False, allow_nan=False) for event in self.events
-        )
+        if not self.events:
+            return ""
+        options = orjson.OPT_SORT_KEYS | orjson.OPT_NON_STR_KEYS
+        return b"\n".join(orjson.dumps(event, option=options) for event in self.events).decode("utf-8")
 
     def stage_counts(self) -> dict[str, int]:
         counts: dict[str, int] = {}
@@ -380,15 +416,15 @@ class DebugTrace:
         truncated: bool,
         stored: bool,
     ) -> dict[str, Any]:
-        encoded = json.dumps(value, sort_keys=True, ensure_ascii=False, allow_nan=False, default=str)
+        encoded = orjson.dumps(value, option=orjson.OPT_SORT_KEYS | orjson.OPT_NON_STR_KEYS, default=str)
         metadata = {
             "type": type(value).__name__,
             "stored": stored,
             "truncated": truncated,
-            "sha256": hashlib.sha256(encoded.encode("utf-8")).hexdigest(),
+            "sha256": hashlib.sha256(encoded).hexdigest(),
             "stored_count": _count_items(value),
             "original_count": original_count,
-            "byte_length": len(encoded.encode("utf-8")),
+            "byte_length": len(encoded),
         }
         if isinstance(value, list) and value and isinstance(value[0], dict):
             metadata["row_keys"] = sorted(value[0])
@@ -441,8 +477,8 @@ def _jsonish(value: Any, *, config: DebugConfig, key: str | None = None, depth: 
     if isinstance(value, bytes):
         return f"<bytes len={len(value)} sha256={hashlib.sha256(value).hexdigest()}>"
     try:
-        json.dumps(value, allow_nan=False)
-    except (TypeError, ValueError):
+        orjson.dumps(value)
+    except (TypeError, orjson.JSONEncodeError):
         return repr(value)
     return value
 

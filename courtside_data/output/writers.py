@@ -1,7 +1,8 @@
 import csv
-import json
+import re
 from typing import Any
 
+import orjson
 from pydantic import BaseModel
 
 from courtside_data.data import OutputType, OutputWriteOption
@@ -91,7 +92,12 @@ def _serialize_row_model(value: BaseModel) -> dict[str, Any]:
 
 
 def _serialize_row_models(data):
-    """Convert Pydantic row models to JSON-ready dicts, preserving other shapes."""
+    """Convert Pydantic row models to JSON-ready dicts, preserving other shapes.
+
+    Pydantic ``BaseModel`` instances are dumped via ``model_dump(mode="json")``
+    so nested values are coerced to JSON-native types (datetime/UUID/Decimal
+    become strings, etc.), which orjson can serialize natively.
+    """
     if isinstance(data, list):
         return [_serialize_row_model(row) if _is_row_model(row) else row for row in data]
     if isinstance(data, dict):
@@ -104,26 +110,64 @@ def _serialize_row_models(data):
     return data
 
 
+# orjson only ships ``OPT_INDENT_2`` for pretty-printing (2-space units). When
+# callers ask for a wider indent (the public default is 4), expand each
+# line's leading-space run by the appropriate factor to preserve the existing
+# configuration surface.
+_INDENT_LEADING_SPACES = re.compile(r"^( +)", re.MULTILINE)
+
+
+def _expand_indent(text: str, multiplier: int) -> str:
+    if multiplier <= 1:
+        return text
+    return _INDENT_LEADING_SPACES.sub(lambda match: match.group(1) * multiplier, text)
+
+
+# orjson emits ``str`` as raw UTF-8 (it has no ``ensure_ascii`` flag). Match
+# the stdlib ``json`` default (``ensure_ascii=True``) so non-ASCII characters
+# stay escaped as ``\\uXXXX`` and golden-file bytes are preserved.
+def _escape_non_ascii(text: str) -> str:
+    return "".join(c if ord(c) < 0x80 else f"\\u{ord(c):04x}" for c in text)
+
+
+def _orjson_default(value: Any) -> Any:
+    """Fallback serializer for types orjson does not handle natively.
+
+    orjson natively serializes ``datetime``/``date``/``UUID``/``Enum``/
+    ``dataclass``; only ``set``/``frozenset`` need to be coerced to ``list``,
+    matching the previous ``BasketballReferenceJSONEncoder`` behaviour.
+    """
+    if isinstance(value, (set, frozenset)):
+        return list(value)
+    raise TypeError(f"Object of type {type(value).__name__} is not JSON serializable")
+
+
 class JSONWriter(Writer):
     def write(self, data, options):
         serialized_data = _serialize_row_models(data)
-        output_options: dict[str, Any] = {**DEFAULT_JSON_OPTIONS, **options.formatting_options}
-        if options.file_options.should_write_to_file:
-            with open(
-                options.file_options.path, options.file_options.mode.value, newline="", encoding="utf8"
-            ) as json_file:
-                return json.dump(
-                    serialized_data,
-                    json_file,
-                    cls=self.value_formatter,
-                    **output_options,
-                )
+        formatting_options: dict[str, Any] = {**DEFAULT_JSON_OPTIONS, **options.formatting_options}
 
-        return json.dumps(
-            serialized_data,
-            cls=self.value_formatter,
-            **output_options,
-        )
+        flags = orjson.OPT_NAIVE_UTC
+        if formatting_options.get("sort_keys", False):
+            flags |= orjson.OPT_SORT_KEYS
+        indent = int(formatting_options.get("indent", 0) or 0)
+        if indent:
+            flags |= orjson.OPT_INDENT_2
+
+        payload = orjson.dumps(serialized_data, default=_orjson_default, option=flags)
+
+        # Expand orjson's 2-space indent when a wider indent was requested.
+        if indent and indent != 2:
+            payload = _expand_indent(payload.decode("utf-8"), indent // 2).encode("utf-8")
+
+        # Escape non-ASCII as \\uXXXX to match stdlib json's ensure_ascii=True.
+        payload = _escape_non_ascii(payload.decode("utf-8")).encode("utf-8")
+
+        if options.file_options.should_write_to_file:
+            with open(options.file_options.path, "wb") as json_file:
+                return json_file.write(payload)
+
+        return payload.decode("utf-8")
 
 
 class CSVWriter(Writer):

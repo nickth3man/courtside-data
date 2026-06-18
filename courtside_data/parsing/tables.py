@@ -1,11 +1,58 @@
-"""Schema-less table extraction for generic (beta) endpoints, parsel-based."""
+"""Schema-less table extraction for generic (beta) endpoints, parsel-based.
+
+By default, :class:`GenericTable`, :class:`GenericTableRow`,
+:func:`extract_commented_table`, and :func:`parse_transaction_list` all
+operate on parsel ``Selector`` objects backed by lxml. When the
+environment variable ``COURTSIDE_DATA_FAST_PARSE=1`` is set, the parsing
+hot paths delegate to the selectolax-based equivalents in
+:mod:`courtside_data.parsing._selectolax_backend` for faster table
+extraction on large fixtures. The public function signatures and return
+shapes are unchanged on either path.
+"""
 
 from __future__ import annotations
 
 import re
-from typing import Any
+from typing import TYPE_CHECKING, Any, Protocol
 
 from parsel import Selector
+
+
+def _is_fast_parse_enabled() -> bool:
+    """Re-export the fast-parse predicate from the selectolax backend.
+
+    Imported lazily inside the parser hot path so the default suite
+    (flag off) never imports ``selectolax`` at all.
+    """
+    from courtside_data.parsing._selectolax_backend import is_fast_parse_enabled
+
+    return is_fast_parse_enabled()
+
+
+class _GenericRowLike(Protocol):
+    """Minimal row interface consumed by :class:`GenericTable` callers.
+
+    Both :class:`GenericTableRow` (parsel) and
+    ``_SelectolaxGenericTableRow`` (selectolax) satisfy this protocol; the
+    fast-parse path stores instances of the latter in :attr:`GenericTable.rows`
+    so they need to be duck-typed as :class:`GenericTableRow` from a caller's
+    perspective. ``_data`` is the internal cell-data dict used by the
+    parsel extractor to filter out empty rows; both implementations expose
+    it as an implementation detail of the row class.
+    """
+
+    _data: dict[str, str]
+
+    def get(self, stat_name: str, default: str = ...) -> str: ...
+    def to_dict(self) -> dict[str, str]: ...
+    @property
+    def metadata(self) -> dict[str, dict[str, str]]: ...
+
+
+if TYPE_CHECKING:
+    from courtside_data.parsing._selectolax_backend import (
+        _SelectolaxGenericTableRow as _SelectolaxGenericTableRow,
+    )
 
 
 class GenericTableRow:
@@ -62,6 +109,13 @@ class GenericTable:
 
     Filters out header rows (.thead class) and returns GenericTableRow
     instances for each data row.
+
+    When the environment variable ``COURTSIDE_DATA_FAST_PARSE=1`` is set,
+    the constructor delegates to the selectolax-backed
+    :class:`courtside_data.parsing._selectolax_backend._SelectolaxGenericTable`
+    and stores its rows directly. The selectolax rows are duck-typed as
+    :class:`GenericTableRow` (same ``to_dict`` / ``metadata`` surface) so
+    callers don't need to know which backend produced them.
     """
 
     def __init__(
@@ -71,7 +125,16 @@ class GenericTable:
         exclude_summary_rows: bool = False,
         value_column: bool = False,
     ) -> None:
-        self.rows: list[GenericTableRow] = []
+        if _is_fast_parse_enabled():
+            self.rows: list[_GenericRowLike] = self._build_selectolax_rows(
+                table_selector,
+                use_header_fallback=use_header_fallback,
+                exclude_summary_rows=exclude_summary_rows,
+                value_column=value_column,
+            )
+            return
+
+        self.rows: list[_GenericRowLike] = []
         row_filter = "tbody tr:not(.thead)"
         if exclude_summary_rows:
             row_filter += ":not(.norank)"
@@ -95,8 +158,40 @@ class GenericTable:
     def __len__(self) -> int:
         return len(self.rows)
 
-    def __getitem__(self, index: int) -> GenericTableRow:
+    def __getitem__(self, index: int) -> _GenericRowLike:
         return self.rows[index]
+
+    @staticmethod
+    def _build_selectolax_rows(
+        table_selector: Selector,
+        *,
+        use_header_fallback: bool,
+        exclude_summary_rows: bool,
+        value_column: bool,
+    ) -> list[_GenericRowLike]:
+        """Build rows via the selectolax backend.
+
+        Imported lazily so the default (parsel) path costs nothing at import
+        time and the selectolax module is only loaded when the fast-parse
+        flag is set.
+        """
+        from typing import cast
+
+        from courtside_data.parsing._selectolax_backend import build_selectolax_table
+
+        # ``_SelectolaxGenericTableRow`` is structurally a ``_GenericRowLike``
+        # (it exposes ``get``/``to_dict``/``metadata``/``_data``); the cast is
+        # the only safe way to bridge an invariant ``list`` parameterization
+        # in the type checker.
+        return cast(
+            "list[_GenericRowLike]",
+            build_selectolax_table(
+                table_selector,
+                use_header_fallback=use_header_fallback,
+                exclude_summary_rows=exclude_summary_rows,
+                value_column=value_column,
+            ).rows,
+        )
 
     @staticmethod
     def _is_header_row(row: Selector) -> bool:
@@ -159,6 +254,14 @@ def extract_commented_table(selector: Selector, table_id: str) -> Selector | Non
     Basketball-reference wraps some tables in HTML comments to speed up
     page load. This function finds and extracts those hidden tables.
 
+    When ``COURTSIDE_DATA_FAST_PARSE=1`` is set, the comment scan is
+    delegated to the selectolax-based
+    :func:`courtside_data.parsing._selectolax_backend.selectolax_extract_commented_table`,
+    which regex-scans the page's HTML for ``<!-- ... -->`` blocks. The
+    returned table is wrapped in a parsel ``Selector`` to preserve the
+    public ``Selector | None`` return shape; the caller's eventual
+    :class:`GenericTable` call will re-parse it through selectolax.
+
     Args:
         selector: The page-level Parsel Selector
         table_id: The id attribute of the table to find
@@ -166,6 +269,28 @@ def extract_commented_table(selector: Selector, table_id: str) -> Selector | Non
     Returns:
         A Selector for the extracted table, or None if not found
     """
+    if _is_fast_parse_enabled():
+        from lxml.html import tostring
+
+        from courtside_data.parsing._selectolax_backend import selectolax_extract_commented_table
+
+        # Serialize the page Selector back to HTML so the selectolax
+        # backend can scan the original source for comment blocks
+        # (``<!-- ... -->``). lxml preserves comments in the serialized
+        # output. ``lxml.html.tostring`` keeps empty elements like
+        # ``<a data-attr-from=""></a>`` from being collapsed to
+        # ``<a data-attr-from=""/>`` (the self-closing form changes how
+        # selectolax's ``text()`` method sees following sibling text).
+        page_html = tostring(selector.root, encoding="unicode")
+        if isinstance(page_html, bytes):
+            page_html = page_html.decode("utf-8")
+        table_html = selectolax_extract_commented_table(page_html, table_id)
+        if table_html is None:
+            return None
+        fragment = Selector(text=table_html)
+        matches = fragment.css(f"table#{table_id}")
+        return matches[0] if matches else None
+
     for comment in selector.xpath("//comment()").getall():
         if f'id="{table_id}"' in comment or f"id='{table_id}'" in comment:
             # Strip comment tags to get raw HTML
@@ -187,7 +312,28 @@ def parse_transaction_list(selector: Selector) -> list[dict[str, Any]]:
     Transaction pages (league and team) are date-grouped ``<ul>`` lists
     rather than tables; this is the fallback used by ``fetch_table`` when an
     endpoint declares ``transaction_list_fallback``.
+
+    When ``COURTSIDE_DATA_FAST_PARSE=1`` is set, the page is delegated to
+    the selectolax-based
+    :func:`courtside_data.parsing._selectolax_backend.selectolax_parse_transaction_list`,
+    which scans ``<ul.page_index > li>`` date groups and the ``<p>``
+    transactions inside each group. The output shape is identical to the
+    parsel-based path.
     """
+    if _is_fast_parse_enabled():
+        from lxml.html import tostring
+
+        from courtside_data.parsing._selectolax_backend import selectolax_parse_transaction_list
+
+        # ``lxml.html.tostring`` preserves the explicit close tag on empty
+        # elements like ``<a data-attr-from=""></a>`` so selectolax's
+        # text-extraction on the link returns ``""`` rather than the
+        # following sibling text.
+        page_html = tostring(selector.root, encoding="unicode")
+        if isinstance(page_html, bytes):
+            page_html = page_html.decode("utf-8")
+        return selectolax_parse_transaction_list(page_html)
+
     transactions = []
     for day in selector.css("ul.page_index > li"):
         date = _clean_text(day.xpath("./span//text()").getall())
