@@ -98,64 +98,9 @@ ENDPOINT_FUNCTION_NAMES: tuple[str, ...] = tuple(ENDPOINTS)
 # methods through this module at call time.
 from courtside_data.client.courtside_client import CourtsideClient  # noqa: E402,F401
 
-_EXPLICIT_EXPORTS = [
-    "CourtsideClient",
-    "HTTPService",
-    "attendance",
-    "career_leaders",
-    "draft_picks",
-    "franchise_history",
-    "friv_7_game_playoff_series_outcomes_team_is_down",
-    "friv_7_game_playoff_series_outcomes_team_is_tied",
-    "friv_7_game_playoff_series_outcomes_team_is_up",
-    "league_per_36_minutes",
-    "league_per_100_possessions",
-    "league_per_game_stats",
-    "league_play_by_play",
-    "league_shooting",
-    "league_totals",
-    "league_transactions",
-    "play_by_play",
-    "player_adjusted_shooting",
-    "player_all_star",
-    "player_box_scores",
-    "player_career_stats",
-    "player_game_highs",
-    "player_on_off",
-    "player_play_by_play",
-    "player_playoff_series",
-    "player_salaries",
-    "player_shot_charts",
-    "player_similarity_scores",
-    "player_splits",
-    "players_advanced_season_totals",
-    "players_season_totals",
-    "playoff_bracket",
-    "playoff_per_game",
-    "playoff_player_box_scores",
-    "playoff_totals",
-    "regular_season_player_box_scores",
-    "rookie_stats",
-    "search",
-    "season_awards",
-    "season_awards_voting",
-    "season_leaders",
-    "season_schedule",
-    "standings",
-    "standings_by_date",
-    "team_and_opponent",
-    "team_box_scores",
-    "team_contracts",
-    "team_injury_report",
-    "team_lineups",
-    "team_misc_four_factors",
-    "team_on_off",
-    "team_opponent_stats",
-    "team_roster",
-    "team_schedule",
-    "team_splits",
-    "team_starting_lineups",
-    "team_transactions",
-]
-
-__all__ = sorted(set(_EXPLICIT_EXPORTS) | set(ENDPOINT_FUNCTION_NAMES))
+# ``__all__`` is derived from the ENDPOINTS registry (the single source of
+# truth for every endpoint function) plus the two non-endpoint public symbols
+# ``CourtsideClient`` and ``HTTPService``. Adding a new endpoint to
+# ``ENDPOINTS`` and importing it above automatically grows this list — no
+# hand-maintained enumeration to drift.
+__all__ = sorted(set(ENDPOINT_FUNCTION_NAMES) | {"CourtsideClient", "HTTPService"})
