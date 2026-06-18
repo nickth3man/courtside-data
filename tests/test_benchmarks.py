@@ -56,7 +56,6 @@ from courtside_data.client.courtside_client import CourtsideClient
 from courtside_data.data import OutputType, OutputWriteOption
 from courtside_data.debug import DebugTrace
 from courtside_data.endpoints import ENDPOINTS
-from courtside_data.output.fields import BasketballReferenceJSONEncoder
 from courtside_data.output.writers import FileOptions, JSONWriter, OutputOptions
 from courtside_data.parsing.generic import GenericEndpointHandler
 from courtside_data.parsing.tables import GenericTable, extract_commented_table
@@ -228,7 +227,7 @@ def json_writer_medium_payload() -> tuple[JSONWriter, OutputOptions, list[League
     # ``output_type=None`` returns the validated Pydantic models without
     # going through the writer — we drive the writer explicitly here.
     rows = client.league_per_game_stats(season_end_year=2024, output_type=None)
-    writer = JSONWriter(value_formatter=BasketballReferenceJSONEncoder)
+    writer = JSONWriter()
     options = OutputOptions.of(
         file_options=FileOptions.of(path=None, mode=OutputWriteOption.WRITE),
         output_type=OutputType.JSON,

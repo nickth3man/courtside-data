@@ -415,8 +415,26 @@ def coerce_row(row: dict[str, Any]) -> dict[str, Any]:
 
 
 def coerce_rows(rows: Sequence[dict[str, Any]]) -> list[dict[str, Any]]:
-    """Apply type coercion to a list of row dicts."""
-    return [coerce_row(r) for r in rows]
+    """Apply type coercion to a list of row dicts.
+
+    Uses a per-call column→function cache so that ``get_coercion`` is invoked
+    only once per unique column key across the whole batch (rather than once
+    per cell). The cache is local to this call — ``get_coercion`` is still
+    resolved lazily on first encounter of each key, and rows that surface
+    additional keys are handled as they appear.
+    """
+    cache: dict[str, Callable] = {}
+    result: list[dict[str, Any]] = []
+    for row in rows:
+        coerced: dict[str, Any] = {}
+        for key, value in row.items():
+            fn = cache.get(key)
+            if fn is None:
+                fn = get_coercion(key)
+                cache[key] = fn
+            coerced[key] = fn(value)
+        result.append(coerced)
+    return result
 
 
 def coerce_data(data):

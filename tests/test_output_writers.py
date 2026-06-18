@@ -14,7 +14,7 @@ from pathlib import Path
 import pytest
 from courtside_data.data import TEAM_ABBREVIATIONS_TO_TEAM, OutputType, OutputWriteOption
 from courtside_data.errors import InvalidTeam
-from courtside_data.output.fields import BasketballReferenceJSONEncoder, format_value
+from courtside_data.output.fields import format_value
 from courtside_data.output.service import OutputService
 from courtside_data.output.writers import (
     CSVWriter,
@@ -100,7 +100,7 @@ def test_output_options_unknown_type_raises() -> None:
 
 def test_output_service_unknown_type_raises() -> None:
     service = OutputService(
-        json_writer=JSONWriter(value_formatter=BasketballReferenceJSONEncoder),
+        json_writer=JSONWriter(),
         csv_writer=CSVWriter(value_formatter=format_value),
     )
     options = OutputOptions(
@@ -141,7 +141,7 @@ def test_serialize_row_models_passthrough_scalar() -> None:
 
 
 def test_json_writer_serializes_scalar_data() -> None:
-    writer = JSONWriter(value_formatter=BasketballReferenceJSONEncoder)
+    writer = JSONWriter()
     options = OutputOptions.of(
         file_options=FileOptions.of(path=None),
         output_type=OutputType.JSON,

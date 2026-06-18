@@ -1,13 +1,14 @@
-"""Schema-less table extraction for generic (beta) endpoints, parsel-based.
+"""Schema-less table extraction for generic (beta) endpoints.
 
-By default, :class:`GenericTable`, :class:`GenericTableRow`,
+:class:`GenericTable`, :class:`GenericTableRow`,
 :func:`extract_commented_table`, and :func:`parse_transaction_list` all
-operate on parsel ``Selector`` objects backed by lxml. When the
-environment variable ``COURTSIDE_DATA_FAST_PARSE=1`` is set, the parsing
-hot paths delegate to the selectolax-based equivalents in
-:mod:`courtside_data.parsing._selectolax_backend` for faster table
-extraction on large fixtures. The public function signatures and return
-shapes are unchanged on either path.
+operate on the **selectolax (Lexbor)** backend by default — set the
+environment variable ``COURTSIDE_DATA_PARSE_BACKEND=parsel`` to switch to
+the legacy parsel + lxml implementation. The legacy
+``COURTSIDE_DATA_FAST_PARSE=1`` flag is still honored and treated as
+``selectolax``; ``COURTSIDE_DATA_FAST_PARSE=0`` is treated as ``parsel``.
+The public function signatures and return shapes are unchanged on either
+path.
 """
 
 from __future__ import annotations
@@ -18,15 +19,15 @@ from typing import TYPE_CHECKING, Any, Protocol
 from parsel import Selector
 
 
-def _is_fast_parse_enabled() -> bool:
-    """Re-export the fast-parse predicate from the selectolax backend.
+def _is_parsel_backend() -> bool:
+    """Re-export the parsel predicate from the selectolax backend.
 
     Imported lazily inside the parser hot path so the default suite
-    (flag off) never imports ``selectolax`` at all.
+    (selectolax backend) never imports ``selectolax`` at all.
     """
-    from courtside_data.parsing._selectolax_backend import is_fast_parse_enabled
+    from courtside_data.parsing._selectolax_backend import is_parsel_backend
 
-    return is_fast_parse_enabled()
+    return is_parsel_backend()
 
 
 class _GenericRowLike(Protocol):
@@ -110,12 +111,14 @@ class GenericTable:
     Filters out header rows (.thead class) and returns GenericTableRow
     instances for each data row.
 
-    When the environment variable ``COURTSIDE_DATA_FAST_PARSE=1`` is set,
-    the constructor delegates to the selectolax-backed
+    By default the constructor delegates to the selectolax (Lexbor)-backed
     :class:`courtside_data.parsing._selectolax_backend._SelectolaxGenericTable`
     and stores its rows directly. The selectolax rows are duck-typed as
     :class:`GenericTableRow` (same ``to_dict`` / ``metadata`` surface) so
-    callers don't need to know which backend produced them.
+    callers don't need to know which backend produced them. Set the
+    environment variable ``COURTSIDE_DATA_PARSE_BACKEND=parsel`` (or the
+    legacy ``COURTSIDE_DATA_FAST_PARSE=0``) to fall back to the parsel +
+    lxml implementation.
     """
 
     def __init__(
@@ -125,7 +128,7 @@ class GenericTable:
         exclude_summary_rows: bool = False,
         value_column: bool = False,
     ) -> None:
-        if _is_fast_parse_enabled():
+        if not _is_parsel_backend():
             self.rows: list[_GenericRowLike] = self._build_selectolax_rows(
                 table_selector,
                 use_header_fallback=use_header_fallback,
@@ -254,13 +257,15 @@ def extract_commented_table(selector: Selector, table_id: str) -> Selector | Non
     Basketball-reference wraps some tables in HTML comments to speed up
     page load. This function finds and extracts those hidden tables.
 
-    When ``COURTSIDE_DATA_FAST_PARSE=1`` is set, the comment scan is
-    delegated to the selectolax-based
+    By default the comment scan is delegated to the selectolax-based
     :func:`courtside_data.parsing._selectolax_backend.selectolax_extract_commented_table`,
     which regex-scans the page's HTML for ``<!-- ... -->`` blocks. The
     returned table is wrapped in a parsel ``Selector`` to preserve the
     public ``Selector | None`` return shape; the caller's eventual
-    :class:`GenericTable` call will re-parse it through selectolax.
+    :class:`GenericTable` call will re-parse it through selectolax. Set
+    the environment variable ``COURTSIDE_DATA_PARSE_BACKEND=parsel`` (or
+    the legacy ``COURTSIDE_DATA_FAST_PARSE=0``) to fall back to the
+    parsel + lxml implementation.
 
     Args:
         selector: The page-level Parsel Selector
@@ -269,7 +274,7 @@ def extract_commented_table(selector: Selector, table_id: str) -> Selector | Non
     Returns:
         A Selector for the extracted table, or None if not found
     """
-    if _is_fast_parse_enabled():
+    if not _is_parsel_backend():
         from lxml.html import tostring
 
         from courtside_data.parsing._selectolax_backend import selectolax_extract_commented_table
@@ -313,14 +318,16 @@ def parse_transaction_list(selector: Selector) -> list[dict[str, Any]]:
     rather than tables; this is the fallback used by ``fetch_table`` when an
     endpoint declares ``transaction_list_fallback``.
 
-    When ``COURTSIDE_DATA_FAST_PARSE=1`` is set, the page is delegated to
-    the selectolax-based
+    By default the page is delegated to the selectolax-based
     :func:`courtside_data.parsing._selectolax_backend.selectolax_parse_transaction_list`,
     which scans ``<ul.page_index > li>`` date groups and the ``<p>``
     transactions inside each group. The output shape is identical to the
-    parsel-based path.
+    parsel-based path. Set the environment variable
+    ``COURTSIDE_DATA_PARSE_BACKEND=parsel`` (or the legacy
+    ``COURTSIDE_DATA_FAST_PARSE=0``) to fall back to the parsel + lxml
+    implementation.
     """
-    if _is_fast_parse_enabled():
+    if not _is_parsel_backend():
         from lxml.html import tostring
 
         from courtside_data.parsing._selectolax_backend import selectolax_parse_transaction_list

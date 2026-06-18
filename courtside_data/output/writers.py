@@ -143,6 +143,13 @@ def _orjson_default(value: Any) -> Any:
 
 
 class JSONWriter(Writer):
+    def __init__(self):
+        # JSONWriter does not use a value_formatter; orjson handles native
+        # types and the ``_orjson_default`` fallback covers the rest. Override
+        # ``__init__`` so callers can instantiate ``JSONWriter()`` without
+        # the unused keyword argument, mirroring ``DataFrameWriter``.
+        super().__init__(value_formatter=None)
+
     def write(self, data, options):
         serialized_data = _serialize_row_models(data)
         formatting_options: dict[str, Any] = {**DEFAULT_JSON_OPTIONS, **options.formatting_options}

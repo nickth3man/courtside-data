@@ -1,24 +1,32 @@
-"""Selectolax (modest/Lexbor) backend for the generic table extraction hot path.
+"""Selectolax (Lexbor) backend for the generic table extraction hot path.
 
 This module is a parallel implementation of the surface exposed by
 :mod:`courtside_data.parsing.tables` — :class:`GenericTable`, :class:`GenericTableRow`,
 :func:`extract_commented_table`, and :func:`parse_transaction_list` — but
-backed by ``selectolax.parser.HTMLParser`` instead of ``lxml`` + ``parsel``.
+backed by ``selectolax.lexbor.LexborHTMLParser`` instead of ``lxml`` + ``parsel``.
 
 Activation
 ----------
-None of the public symbols in this module are wired into the production
-pipeline by default. The :func:`is_fast_parse_enabled` predicate returns
-``True`` only when the environment variable ``COURTSIDE_DATA_FAST_PARSE=1``
-is set; the parsing hot paths in
-:mod:`courtside_data.parsing.tables` and
-:mod:`courtside_data.parsing.generic` consult that helper and dispatch to
-:func:`build_selectolax_table`, :func:`selectolax_extract_commented_table`,
-or :func:`selectolax_parse_transaction_list` when the flag is on.
+The selectolax backend is the **default**. The parsel backend is opt-in
+via the ``COURTSIDE_DATA_PARSE_BACKEND=parsel`` environment variable.
+Set ``COURTSIDE_DATA_PARSE_BACKEND=selectolax`` explicitly to lock in
+the default (useful in deployment manifests).
 
-When the flag is off, this module is not consulted at all and the existing
-parsel-based code paths run unchanged. The default suite is therefore
-bit-identical to the pre-existing behavior.
+For backward compatibility, the legacy ``COURTSIDE_DATA_FAST_PARSE=1``
+flag is still honored and treated as ``selectolax``;
+``COURTSIDE_DATA_FAST_PARSE=0`` is treated as ``parsel``. When both
+env vars are set, ``COURTSIDE_DATA_PARSE_BACKEND`` wins.
+
+The :func:`is_selectolax_backend` and :func:`is_parsel_backend` predicates
+read ``os.environ`` on every call so tests can flip the dispatch via
+``monkeypatch.setenv`` without reloading modules. The parsing hot paths
+in :mod:`courtside_data.parsing.tables` and
+:mod:`courtside_data.parsing.generic` consult those helpers and dispatch
+to :func:`build_selectolax_table`, :func:`selectolax_extract_commented_table`,
+or :func:`selectolax_parse_transaction_list` when selectolax is active.
+
+When the parsel backend is selected, this module is not consulted at all
+and the existing parsel-based code paths run unchanged.
 
 Module shape
 ------------
@@ -36,7 +44,7 @@ Module shape
 
 Importing this module is side-effect-free: ``selectolax`` is imported lazily
 inside the public helpers so importing the module costs nothing when the
-flag is off.
+parsel backend is selected.
 """
 
 from __future__ import annotations
@@ -46,9 +54,11 @@ import re
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
-    from selectolax.parser import Node as _SLNode
+    from selectolax.lexbor import LexborNode as _SLNode
 
-_FAST_PARSE_ENV_VAR = "COURTSIDE_DATA_FAST_PARSE"
+_PARSE_BACKEND_ENV_VAR = "COURTSIDE_DATA_PARSE_BACKEND"
+_FAST_PARSE_ENV_VAR = "COURTSIDE_DATA_FAST_PARSE"  # legacy alias
+_VALID_BACKENDS: frozenset[str] = frozenset({"selectolax", "parsel"})
 
 # Same set of "identity" column keys used by the parsel GenericTable's
 # :meth:`GenericTable._normalize_value_column` pass to detect the rotating
@@ -56,13 +66,50 @@ _FAST_PARSE_ENV_VAR = "COURTSIDE_DATA_FAST_PARSE"
 _LEADER_TEXT_COLUMN_KEYS: frozenset[str] = frozenset({"rank", "player", "season", "team", "team_id"})
 
 
-def is_fast_parse_enabled() -> bool:
-    """Return ``True`` when ``COURTSIDE_DATA_FAST_PARSE=1`` is set in the process env.
+def get_parse_backend() -> str:
+    """Return the active HTML-parsing backend (``'selectolax'`` or ``'parsel'``).
+
+    Resolution order:
+
+    1. ``COURTSIDE_DATA_PARSE_BACKEND`` — ``selectolax`` or ``parsel``
+       (case-insensitive, whitespace-stripped). Unknown values are ignored.
+    2. ``COURTSIDE_DATA_FAST_PARSE`` — legacy alias. ``"1"`` → ``selectolax``,
+       ``"0"`` → ``parsel``. Any other value is ignored.
+    3. Default → ``selectolax``.
 
     The check is performed against ``os.environ`` on every call so tests
-    can flip the flag via ``monkeypatch.setenv`` without reloading modules.
+    can flip the backend via ``monkeypatch.setenv`` without reloading modules.
     """
-    return os.environ.get(_FAST_PARSE_ENV_VAR) == "1"
+    backend = os.environ.get(_PARSE_BACKEND_ENV_VAR, "").strip().lower()
+    if backend in _VALID_BACKENDS:
+        return backend
+    legacy = os.environ.get(_FAST_PARSE_ENV_VAR)
+    if legacy == "1":
+        return "selectolax"
+    if legacy == "0":
+        return "parsel"
+    return "selectolax"
+
+
+def is_selectolax_backend() -> bool:
+    """Return ``True`` when the selectolax (Lexbor) backend is the active parser."""
+    return get_parse_backend() == "selectolax"
+
+
+def is_parsel_backend() -> bool:
+    """Return ``True`` when the parsel/lxml backend is the active parser."""
+    return get_parse_backend() == "parsel"
+
+
+def is_fast_parse_enabled() -> bool:
+    """Return ``True`` when the selectolax (fast-parse) backend is the active parser.
+
+    Deprecated alias for :func:`is_selectolax_backend`. Retained for
+    backward compatibility with code/tests that probe the legacy
+    ``COURTSIDE_DATA_FAST_PARSE`` flag. New code should call
+    :func:`is_selectolax_backend` or :func:`is_parsel_backend` instead.
+    """
+    return is_selectolax_backend()
 
 
 # ─── Selectolax node helpers ────────────────────────────────────────────────
@@ -247,8 +294,8 @@ def _selector_table_to_html(table_selector: Any) -> str:
 
     lxml's ``tostring`` preserves comments and the original attribute
     ordering, so this is a near-lossless re-serialization of the table
-    subtree. The selectolax ``HTMLParser`` then builds its own tree from
-    the resulting string.
+    subtree. The selectolax ``LexborHTMLParser`` then builds its own tree
+    from the resulting string.
 
     ``method="html"`` is required to keep lxml from collapsing empty
     elements like ``<a data-attr-from=""></a>`` into the self-closing
@@ -281,9 +328,9 @@ def _find_table_node_in_html(html: str, table_id: str | None) -> _SLNode | None:
     container (table / thead / tbody / tfoot), not specifically a
     ``<table>``.
     """
-    from selectolax.parser import HTMLParser
+    from selectolax.lexbor import LexborHTMLParser
 
-    root = HTMLParser(html)
+    root = LexborHTMLParser(html)
     if table_id:
         node = root.css_first(f"table#{table_id}")
         if node is not None:
@@ -306,9 +353,9 @@ def _row_container_node(html: str) -> _SLNode | None:
     inside ``<body>`` unless there happen to be loose ones, in which
     case those are extracted — matching parsel's behavior).
     """
-    from selectolax.parser import HTMLParser
+    from selectolax.lexbor import LexborHTMLParser
 
-    root = HTMLParser(html)
+    root = LexborHTMLParser(html)
     # The first child of <body> is the user's fragment (e.g. <table> or <tfoot>).
     body = root.body
     if body is None:
@@ -359,9 +406,9 @@ def build_selectolax_table(
 
     if needs_unwrap:
         # Re-locate the wrapped container after the synthetic <table>.
-        from selectolax.parser import HTMLParser
+        from selectolax.lexbor import LexborHTMLParser
 
-        wrapped = HTMLParser(html).css_first("table")
+        wrapped = LexborHTMLParser(html).css_first("table")
         if wrapped is None:
             empty = object.__new__(_SelectolaxGenericTable)
             empty.rows = []
@@ -409,14 +456,14 @@ def build_selectolax_table(
 def selectolax_extract_commented_table(html_text: str, table_id: str) -> str | None:
     """Find a table inside an HTML comment and return its inner HTML.
 
-    selectolax's ``HTMLParser`` does not expose HTML comments in its tree
-    (the modests and Lexbor backends both drop them), so we scan the
-    original HTML text with a regex. When a comment contains the target
-    ``id="<table_id>"`` (or ``id='<table_id>'``) attribute, the comment
-    tags are stripped and the resulting HTML is parsed with selectolax; if
-    it contains the desired ``<table id="...">`` element, the table's HTML
-    is returned for the caller to wrap in whatever tree representation the
-    public surface requires.
+    selectolax's ``LexborHTMLParser`` does not expose HTML comments in its
+    tree (it drops them), so we scan the original HTML text with a regex.
+    When a comment contains the target ``id="<table_id>"`` (or
+    ``id='<table_id>'``) attribute, the comment tags are stripped and the
+    resulting HTML is parsed with selectolax; if it contains the desired
+    ``<table id="...">`` element, the table's HTML is returned for the
+    caller to wrap in whatever tree representation the public surface
+    requires.
     """
     for comment in re.findall(r"<!--.*?-->", html_text, flags=re.DOTALL):
         if f'id="{table_id}"' in comment or f"id='{table_id}'" in comment:
@@ -446,9 +493,9 @@ def selectolax_parse_transaction_list(html_text: str) -> list[dict[str, Any]]:
 
     Returns the same ``list[dict[str, Any]]`` shape as the parsel version.
     """
-    from selectolax.parser import HTMLParser
+    from selectolax.lexbor import LexborHTMLParser
 
-    root = HTMLParser(html_text)
+    root = LexborHTMLParser(html_text)
     transactions: list[dict[str, Any]] = []
 
     def _is_transaction_p(node: _SLNode) -> bool:

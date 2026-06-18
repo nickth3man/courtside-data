@@ -35,7 +35,7 @@ from courtside_data.debug import DebugTrace, debug_trace_context
 from courtside_data.debug.sink import debug_log_path, prepare_log_dir
 from courtside_data.endpoints import ENDPOINTS
 from courtside_data.http_service import HTTPService
-from courtside_data.output.fields import BasketballReferenceJSONEncoder, format_value
+from courtside_data.output.fields import format_value
 from courtside_data.output.service import OutputService
 from courtside_data.output.writers import CSVWriter, FileOptions, JSONWriter, OutputOptions
 from courtside_data.parsing.custom import CustomEndpointHandler, dispatch_custom_endpoint
@@ -85,7 +85,7 @@ def _call_with_error_mapping(
 
 def _make_output_service() -> OutputService:
     return OutputService(
-        json_writer=JSONWriter(value_formatter=BasketballReferenceJSONEncoder),
+        json_writer=JSONWriter(),
         csv_writer=CSVWriter(value_formatter=format_value),
     )
 

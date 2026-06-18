@@ -3,13 +3,15 @@
 Goals
 -----
 1. Prove that :class:`courtside_data.parsing.tables.GenericTable` produces
-   identical ``list[dict[str, str]]`` output on both the default (parsel +
-   lxml) and the fast (selectolax) backends.
+   identical ``list[dict[str, str]]`` output on both the default
+   (selectolax / Lexbor) and the opt-in (parsel + lxml) backends.
 2. Prove that :func:`extract_commented_table` and
    :func:`parse_transaction_list` also produce identical output.
-3. Exercise the ``COURTSIDE_DATA_FAST_PARSE=1`` env-var switch through the
-   public surface (``GenericTable``) to confirm the dispatch is wired and
-   the fast path returns the same rows as a direct selectolax build.
+3. Exercise the ``COURTSIDE_DATA_PARSE_BACKEND`` env-var switch through
+   the public surface (``GenericTable``) to confirm the dispatch is wired
+   and both backends return the same rows as a direct selectolax build.
+4. Exercise the legacy ``COURTSIDE_DATA_FAST_PARSE`` shim to confirm
+   backward compatibility (``=1`` → selectolax, ``=0`` → parsel).
 
 These tests are offline-only and parallel-safe; they read fixture HTML
 directly from ``raw/`` (no transport, no conftest dependency) the same
@@ -24,6 +26,10 @@ from pathlib import Path
 import pytest
 from courtside_data.parsing._selectolax_backend import (
     build_selectolax_table,
+    get_parse_backend,
+    is_fast_parse_enabled,
+    is_parsel_backend,
+    is_selectolax_backend,
     selectolax_extract_commented_table,
     selectolax_parse_transaction_list,
 )
@@ -190,21 +196,30 @@ def test_parse_transaction_list_agreement(label: str, path: Path) -> None:
 
 
 @pytest.fixture
-def fast_parse_env(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Force the env-var flag on for the duration of one test.
+def parsel_backend_env(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Force the parsel backend on for the duration of one test.
 
-    The :func:`courtside_data.parsing.tables._is_fast_parse_enabled` helper
+    The :func:`courtside_data.parsing.tables._is_parsel_backend` helper
     re-reads ``os.environ`` on every call, so a ``monkeypatch.setenv``
     flips the dispatch path without reloading any modules.
     """
-    monkeypatch.setenv("COURTSIDE_DATA_FAST_PARSE", "1")
+    monkeypatch.setenv("COURTSIDE_DATA_PARSE_BACKEND", "parsel")
     # monkeypatch unsets it on teardown.
 
 
-def test_env_var_fast_parse_routes_generic_table_to_selectolax(
-    fast_parse_env: None,
-) -> None:
-    """With the env var on, ``GenericTable`` returns selectolax rows."""
+def test_default_backend_is_selectolax(monkeypatch: pytest.MonkeyPatch) -> None:
+    """With no env vars set, the default backend is selectolax."""
+    monkeypatch.delenv("COURTSIDE_DATA_PARSE_BACKEND", raising=False)
+    monkeypatch.delenv("COURTSIDE_DATA_FAST_PARSE", raising=False)
+    assert get_parse_backend() == "selectolax"
+    assert is_selectolax_backend() is True
+    assert is_parsel_backend() is False
+    # Backward-compat alias still reports the right thing.
+    assert is_fast_parse_enabled() is True
+
+
+def test_env_var_routes_generic_table_to_selectolax() -> None:
+    """The default (``selectolax``) backend wires through ``GenericTable``."""
     from courtside_data.parsing._selectolax_backend import _SelectolaxGenericTableRow
 
     path = RAW_ROOT / "team_roster" / "BOS_2024.html"
@@ -217,29 +232,44 @@ def test_env_var_fast_parse_routes_generic_table_to_selectolax(
     env_table = GenericTable(table)
     direct_table = build_selectolax_table(table)
 
-    assert env_table.rows, "fast-parse GenericTable returned no rows"
+    assert env_table.rows, "default-path GenericTable returned no rows"
     # The rows are instances of the selectolax-specific class, not GenericTableRow.
     assert all(isinstance(row, _SelectolaxGenericTableRow) for row in env_table.rows), (
-        "fast-parse GenericTable rows should be _SelectolaxGenericTableRow instances"
+        "default-path GenericTable rows should be _SelectolaxGenericTableRow instances"
     )
 
     # And the public surface produces the same dict list as a direct selectolax build.
     assert [r.to_dict() for r in env_table.rows] == [r.to_dict() for r in direct_table.rows]
 
 
-def test_env_var_default_path_uses_parsel(monkeypatch: pytest.MonkeyPatch) -> None:
-    """With the env var unset, ``GenericTable`` returns parsel rows.
+def test_env_var_explicit_selectolax_routes_generic_table_to_selectolax(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """``COURTSIDE_DATA_PARSE_BACKEND=selectolax`` explicitly locks in the default."""
+    monkeypatch.setenv("COURTSIDE_DATA_PARSE_BACKEND", "selectolax")
+    from courtside_data.parsing._selectolax_backend import _SelectolaxGenericTableRow
 
-    Belt-and-suspenders: even if a previous test left the env var set in
-    the current process, this test pins it off and confirms the default
-    path produces :class:`GenericTableRow` instances.
-    """
-    monkeypatch.delenv("COURTSIDE_DATA_FAST_PARSE", raising=False)
+    path = RAW_ROOT / "team_roster" / "BOS_2024.html"
+    if not path.is_file():
+        pytest.skip(f"missing fixture: {path}")
+    html = path.read_text(encoding="utf-8", errors="replace")
+    sel = Selector(text=html)
+    table = sel.css("table#roster")[0]
+
+    env_table = GenericTable(table)
+    assert all(isinstance(row, _SelectolaxGenericTableRow) for row in env_table.rows), (
+        "selectolax-flagged GenericTable rows should be _SelectolaxGenericTableRow instances"
+    )
+
+
+def test_env_var_parsel_backend_routes_generic_table_to_parsel(
+    parsel_backend_env: None,
+) -> None:
+    """With ``COURTSIDE_DATA_PARSE_BACKEND=parsel``, ``GenericTable`` returns parsel rows."""
     # Sanity check: the helper is reading the env var live.
-    from courtside_data.parsing._selectolax_backend import is_fast_parse_enabled
-
-    assert is_fast_parse_enabled() is False
-    assert "COURTSIDE_DATA_FAST_PARSE" not in os.environ
+    assert is_parsel_backend() is True
+    assert is_selectolax_backend() is False
+    assert get_parse_backend() == "parsel"
 
     path = RAW_ROOT / "team_roster" / "BOS_2024.html"
     if not path.is_file():
@@ -249,7 +279,79 @@ def test_env_var_default_path_uses_parsel(monkeypatch: pytest.MonkeyPatch) -> No
     table = sel.css("table#roster")[0]
 
     default_table = GenericTable(table)
-    assert default_table.rows, "default-path GenericTable returned no rows"
+    assert default_table.rows, "parsel-path GenericTable returned no rows"
     assert all(type(row).__name__ == "GenericTableRow" for row in default_table.rows), (
-        "default-path GenericTable rows should be GenericTableRow instances"
+        "parsel-path GenericTable rows should be GenericTableRow instances"
     )
+
+
+# ─── Legacy COURTSIDE_DATA_FAST_PARSE shim ────────────────────────────────
+
+
+def test_legacy_fast_parse_1_treated_as_selectolax(monkeypatch: pytest.MonkeyPatch) -> None:
+    """``COURTSIDE_DATA_FAST_PARSE=1`` selects the selectolax backend."""
+    monkeypatch.delenv("COURTSIDE_DATA_PARSE_BACKEND", raising=False)
+    monkeypatch.setenv("COURTSIDE_DATA_FAST_PARSE", "1")
+    assert get_parse_backend() == "selectolax"
+    assert is_selectolax_backend() is True
+    assert is_parsel_backend() is False
+    assert is_fast_parse_enabled() is True
+
+
+def test_legacy_fast_parse_0_treated_as_parsel(monkeypatch: pytest.MonkeyPatch) -> None:
+    """``COURTSIDE_DATA_FAST_PARSE=0`` selects the parsel backend."""
+    monkeypatch.delenv("COURTSIDE_DATA_PARSE_BACKEND", raising=False)
+    monkeypatch.setenv("COURTSIDE_DATA_FAST_PARSE", "0")
+    assert get_parse_backend() == "parsel"
+    assert is_selectolax_backend() is False
+    assert is_parsel_backend() is True
+    assert is_fast_parse_enabled() is False
+
+
+def test_new_env_var_wins_over_legacy_flag(monkeypatch: pytest.MonkeyPatch) -> None:
+    """When both env vars are set, ``COURTSIDE_DATA_PARSE_BACKEND`` wins."""
+    # Contradictory legacy flag (parsel) plus new flag (selectolax) — new wins.
+    monkeypatch.setenv("COURTSIDE_DATA_PARSE_BACKEND", "selectolax")
+    monkeypatch.setenv("COURTSIDE_DATA_FAST_PARSE", "0")
+    assert get_parse_backend() == "selectolax"
+
+    monkeypatch.setenv("COURTSIDE_DATA_PARSE_BACKEND", "parsel")
+    monkeypatch.setenv("COURTSIDE_DATA_FAST_PARSE", "1")
+    assert get_parse_backend() == "parsel"
+
+
+def test_legacy_fast_parse_unknown_value_falls_back_to_default(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Unknown legacy values are ignored; the new env var / default still applies."""
+    monkeypatch.delenv("COURTSIDE_DATA_PARSE_BACKEND", raising=False)
+    monkeypatch.setenv("COURTSIDE_DATA_FAST_PARSE", "true")  # not "1" / "0"
+    assert get_parse_backend() == "selectolax"
+    assert is_selectolax_backend() is True
+
+    monkeypatch.setenv("COURTSIDE_DATA_PARSE_BACKEND", "parsel")
+    monkeypatch.setenv("COURTSIDE_DATA_FAST_PARSE", "true")
+    assert get_parse_backend() == "parsel"
+
+
+def test_legacy_fast_parse_routes_through_generic_table(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The legacy ``FAST_PARSE=1`` shim wires through ``GenericTable`` end-to-end."""
+    from courtside_data.parsing._selectolax_backend import _SelectolaxGenericTableRow
+
+    monkeypatch.delenv("COURTSIDE_DATA_PARSE_BACKEND", raising=False)
+    monkeypatch.setenv("COURTSIDE_DATA_FAST_PARSE", "1")
+
+    path = RAW_ROOT / "team_roster" / "BOS_2024.html"
+    if not path.is_file():
+        pytest.skip(f"missing fixture: {path}")
+    html = path.read_text(encoding="utf-8", errors="replace")
+    sel = Selector(text=html)
+    table = sel.css("table#roster")[0]
+
+    env_table = GenericTable(table)
+    assert all(isinstance(row, _SelectolaxGenericTableRow) for row in env_table.rows), (
+        "legacy FAST_PARSE=1 should still route to _SelectolaxGenericTableRow"
+    )
+    assert "COURTSIDE_DATA_FAST_PARSE" in os.environ
