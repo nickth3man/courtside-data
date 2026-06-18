@@ -845,6 +845,10 @@ def _resolve_endpoint(endpoint_name: str, endpoint: TableEndpoint) -> tuple[list
                 if not m:
                     return None, f"unexpected fixture '{path.name}'"
                 params = {"season_end_year": int(stem)}
+                # players_advanced_season_totals declares include_combined_values;
+                # bare YYYY.html fixtures default it to False (non-combined row set).
+                if "include_combined_values" in endpoint.params:
+                    params["include_combined_values"] = False
             url = _render(endpoint, params)
             cases.append(
                 Case(
