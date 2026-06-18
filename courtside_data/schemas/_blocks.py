@@ -17,16 +17,43 @@ attribute holders that Pydantic picks up at class-creation time via MRO.
 
 from __future__ import annotations
 
-from pydantic import Field
+from typing import Annotated
 
+from pydantic import BeforeValidator, Field
+
+from courtside_data.data import Team
 from courtside_data.schemas._fields import (
     BRFloatOrNone,
     BRIntOrNone,
     BRPercentage,
     PositionsField,
     StrOrNone,
+    _is_empty,
+    _team_field,
 )
-from courtside_data.schemas.league import TeamOrAggregateFieldOrNone
+
+# ---------------------------------------------------------------------------
+# Shared field type aliases
+# ---------------------------------------------------------------------------
+
+
+_AGGREGATE_TEAM_ABBREVIATIONS = frozenset({"TOT", "2TM", "3TM"})
+
+
+def _team_or_aggregate_field_or_none(value: object) -> Team | str | None:
+    """Team abbreviation parser that also accepts BR multi-team aggregate rows."""
+    if _is_empty(value):
+        return None
+    if isinstance(value, Team):
+        return value
+    s = str(value).strip()
+    if s in _AGGREGATE_TEAM_ABBREVIATIONS:
+        return s
+    return _team_field(value)
+
+
+TeamOrAggregateFieldOrNone = Annotated[Team | str | None, BeforeValidator(_team_or_aggregate_field_or_none)]
+
 
 # ---------------------------------------------------------------------------
 # Identity block
@@ -44,7 +71,7 @@ class IdentityBlock:
         name_display: str = Field(validation_alias="name_display")
 
     ``team`` uses the league-wide aggregate abbreviations (``TOT``, ``2TM``,
-    ``3TM``) via :data:`~courtside_data.schemas.league.TeamOrAggregateFieldOrNone`;
+    ``3TM``) via :data:`~courtside_data.schemas._blocks.TeamOrAggregateFieldOrNone`;
     rows that need a stricter ``TeamField`` can override the field.
     """
 
