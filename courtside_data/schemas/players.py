@@ -13,6 +13,7 @@ from pydantic import AliasChoices, Field
 
 from courtside_data.schemas import register
 from courtside_data.schemas._base import BRRow
+from courtside_data.schemas._blocks import PerGameRateStatsBlock
 from courtside_data.schemas._fields import (
     BRFloatOrNone,
     BRIntOrNone,
@@ -26,7 +27,7 @@ from courtside_data.schemas.league import TeamOrAggregateFieldOrNone
 # ── Per-game career tables (per_game_stats on the player page) ───────────
 
 
-class PlayerCareerStatsRow(BRRow):
+class PlayerCareerStatsRow(BRRow, PerGameRateStatsBlock):
     """Row from a player's career per-game stats table (``table#per_game_stats``)."""
 
     season: str = Field(validation_alias=AliasChoices("season", "year_id"))
@@ -36,29 +37,6 @@ class PlayerCareerStatsRow(BRRow):
     positions: PositionsField = Field(default_factory=list, validation_alias="pos")
     games_played: BRIntOrNone = Field(validation_alias="games")
     games_started: BRIntOrNone = Field(validation_alias="games_started")
-    minutes_played_per_game: BRFloatOrNone = Field(validation_alias="mp_per_g")
-    made_field_goals_per_game: BRFloatOrNone = Field(validation_alias="fg_per_g")
-    attempted_field_goals_per_game: BRFloatOrNone = Field(validation_alias="fga_per_g")
-    field_goal_percentage: BRPercentage = Field(validation_alias="fg_pct")
-    made_three_point_field_goals_per_game: BRFloatOrNone = Field(validation_alias="fg3_per_g")
-    attempted_three_point_field_goals_per_game: BRFloatOrNone = Field(validation_alias="fg3a_per_g")
-    three_point_field_goal_percentage: BRPercentage = Field(validation_alias="fg3_pct")
-    made_two_point_field_goals_per_game: BRFloatOrNone = Field(default=None, validation_alias="fg2_per_g")
-    attempted_two_point_field_goals_per_game: BRFloatOrNone = Field(default=None, validation_alias="fg2a_per_g")
-    two_point_field_goal_percentage: BRPercentage = Field(default=None, validation_alias="fg2_pct")
-    effective_field_goal_percentage: BRPercentage = Field(validation_alias="efg_pct")
-    made_free_throws_per_game: BRFloatOrNone = Field(validation_alias="ft_per_g")
-    attempted_free_throws_per_game: BRFloatOrNone = Field(validation_alias="fta_per_g")
-    free_throw_percentage: BRPercentage = Field(validation_alias="ft_pct")
-    offensive_rebounds_per_game: BRFloatOrNone = Field(validation_alias="orb_per_g")
-    defensive_rebounds_per_game: BRFloatOrNone = Field(validation_alias="drb_per_g")
-    total_rebounds_per_game: BRFloatOrNone = Field(validation_alias="trb_per_g")
-    assists_per_game: BRFloatOrNone = Field(validation_alias="ast_per_g")
-    steals_per_game: BRFloatOrNone = Field(validation_alias="stl_per_g")
-    blocks_per_game: BRFloatOrNone = Field(validation_alias="blk_per_g")
-    turnovers_per_game: BRFloatOrNone = Field(validation_alias="tov_per_g")
-    personal_fouls_per_game: BRFloatOrNone = Field(validation_alias="pf_per_g")
-    points_per_game: BRFloatOrNone = Field(validation_alias="pts_per_g")
     awards: StrOrNone = Field(default=None, validation_alias="awards")
 
 

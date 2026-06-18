@@ -16,6 +16,7 @@ defining the lists; no registries or adapters are wired up by import.
 
 # Domain modules — each defines one or more ``*_COLUMN_NAMES`` lists.
 from courtside_data.output.columns import (
+    _blocks,
     _common,
     _misc,
     boxscores,
@@ -154,6 +155,7 @@ __all__ = [
     "TEAM_SPLITS_COLUMN_NAMES",
     "TEAM_STARTING_LINEUPS_COLUMN_NAMES",
     "TEAM_TRANSACTIONS_COLUMN_NAMES",
+    "_blocks",
     "_common",
     "_misc",
     "boxscores",

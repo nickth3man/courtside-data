@@ -6,6 +6,12 @@ transactions, arena attendance, the season awards / voting tables, and the
 season / career leader indexes.
 """
 
+from courtside_data.output.columns._blocks import (
+    COUNTING_STAT_COLUMNS,
+    IDENTITY_COLUMNS,
+    PER_GAME_STAT_COLUMNS,
+)
+
 ATTENDANCE_COLUMN_NAMES = [
     "team",
     "home_games",
@@ -19,45 +25,13 @@ ATTENDANCE_COLUMN_NAMES = [
 CAREER_LEADERS_COLUMN_NAMES = ["rank", "player", "value"]
 
 LEAGUE_PER_GAME_COLUMN_NAMES = [
-    "name_display",
-    "age",
-    "team_name_abbr",
-    "pos",
-    "games",
-    "games_started",
-    "mp_per_g",
-    "fg_per_g",
-    "fga_per_g",
-    "fg_pct",
-    "fg3_per_g",
-    "fg3a_per_g",
-    "fg3_pct",
-    "fg2_per_g",
-    "fg2a_per_g",
-    "fg2_pct",
-    "efg_pct",
-    "ft_per_g",
-    "fta_per_g",
-    "ft_pct",
-    "orb_per_g",
-    "drb_per_g",
-    "trb_per_g",
-    "ast_per_g",
-    "stl_per_g",
-    "blk_per_g",
-    "tov_per_g",
-    "pf_per_g",
-    "pts_per_g",
+    *IDENTITY_COLUMNS,
+    *PER_GAME_STAT_COLUMNS,
     "awards",
 ]
 
 LEAGUE_PER_36_COLUMN_NAMES = [
-    "name_display",
-    "age",
-    "team_name_abbr",
-    "pos",
-    "games",
-    "games_started",
+    *IDENTITY_COLUMNS,
     "mp",
     "fg_per_minute_36",
     "fga_per_minute_36",
@@ -85,46 +59,15 @@ LEAGUE_PER_36_COLUMN_NAMES = [
 ]
 
 LEAGUE_TOTALS_COLUMN_NAMES = [
-    "name_display",
-    "age",
-    "team_name_abbr",
-    "pos",
-    "games",
-    "games_started",
+    *IDENTITY_COLUMNS,
     "mp",
-    "fg",
-    "fga",
-    "fg_pct",
-    "fg3",
-    "fg3a",
-    "fg3_pct",
-    "fg2",
-    "fg2a",
-    "fg2_pct",
-    "efg_pct",
-    "ft",
-    "fta",
-    "ft_pct",
-    "orb",
-    "drb",
-    "trb",
-    "ast",
-    "stl",
-    "blk",
-    "tov",
-    "pf",
-    "pts",
+    *COUNTING_STAT_COLUMNS,
     "tpl_dbl",
     "awards",
 ]
 
 LEAGUE_PER_100_POSSESSIONS_COLUMN_NAMES = [
-    "name_display",
-    "age",
-    "team_name_abbr",
-    "pos",
-    "games",
-    "games_started",
+    *IDENTITY_COLUMNS,
     "mp",
     "fg_per_poss",
     "fga_per_poss",
@@ -154,12 +97,7 @@ LEAGUE_PER_100_POSSESSIONS_COLUMN_NAMES = [
 ]
 
 LEAGUE_SHOOTING_COLUMN_NAMES = [
-    "name_display",
-    "age",
-    "team_name_abbr",
-    "pos",
-    "games",
-    "games_started",
+    *IDENTITY_COLUMNS,
     "mp",
     "fg_pct",
     "avg_dist",
@@ -187,12 +125,7 @@ LEAGUE_SHOOTING_COLUMN_NAMES = [
 ]
 
 LEAGUE_PLAY_BY_PLAY_COLUMN_NAMES = [
-    "name_display",
-    "age",
-    "team_name_abbr",
-    "pos",
-    "games",
-    "games_started",
+    *IDENTITY_COLUMNS,
     "mp",
     "pct_1",
     "pct_2",
