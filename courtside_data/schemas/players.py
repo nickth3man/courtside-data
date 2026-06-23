@@ -19,6 +19,7 @@ from courtside_data.schemas._fields import (
     BRIntOrNone,
     BRPercentage,
     PositionsField,
+    SecondsPlayedOrNone,
     StrOrNone,
     TeamField,
 )
@@ -32,11 +33,11 @@ class PlayerCareerStatsRow(BRRow, PerGameRateStatsBlock):
 
     season: str = Field(validation_alias=AliasChoices("season", "year_id"))
     age: BRIntOrNone = Field(validation_alias="age")
-    team_name_abbr: TeamField = Field(validation_alias="team_name_abbr")
+    team_name_abbr: TeamOrAggregateFieldOrNone = Field(default=None, validation_alias="team_name_abbr")
     comp_name_abbr: StrOrNone = Field(default=None, validation_alias=AliasChoices("comp_name_abbr", "league_id"))
     positions: PositionsField = Field(default_factory=list, validation_alias="pos")
     games_played: BRIntOrNone = Field(validation_alias="games")
-    games_started: BRIntOrNone = Field(validation_alias="games_started")
+    games_started: BRIntOrNone = Field(default=None, validation_alias="games_started")
     awards: StrOrNone = Field(default=None, validation_alias="awards")
 
 
@@ -98,7 +99,7 @@ class PlayerAllStarRow(BRRow):
     positions: PositionsField = Field(default_factory=list, validation_alias="pos")
     games_played: BRIntOrNone = Field(default=None, validation_alias="g")
     games_started: BRIntOrNone = Field(default=None, validation_alias="gs")
-    minutes_played: BRIntOrNone = Field(default=None, validation_alias="mp")
+    minutes_played: SecondsPlayedOrNone = Field(default=None, validation_alias="mp")
     made_field_goals: BRIntOrNone = Field(default=None, validation_alias="fg")
     attempted_field_goals: BRIntOrNone = Field(default=None, validation_alias="fga")
     field_goal_percentage: BRPercentage = Field(default=None, validation_alias="fg_pct")
@@ -384,96 +385,7 @@ register("player_on_off", PlayerOnOffRow)
 # ── League-wide season totals (basic + advanced) ─────────────────────────
 
 
-class PlayerSeasonTotalsRow(BRRow):
-    """Row from the league-wide basic season totals table
-    (``leagues/NBA_<year>_totals.html``).
-
-    One row per (player, team) for a given season. Combined-totals rows
-    (``"2TM"``/``"3TM"``) are filtered out by the legacy table extractor
-    before they reach this schema, so ``team`` is always a real
-    :class:`Team` abbreviation.
-    """
-
-    slug: str = Field(validation_alias="slug")
-    name: str = Field(validation_alias="name_display")
-    positions: PositionsField = Field(default_factory=list, validation_alias="pos")
-    age: BRIntOrNone = Field(default=None, validation_alias="age")
-    team: TeamField = Field(validation_alias="team_name_abbr")
-    games_played: BRIntOrNone = Field(default=None, validation_alias="games")
-    games_started: BRIntOrNone = Field(default=None, validation_alias="games_started")
-    minutes_played: BRIntOrNone = Field(default=None, validation_alias="mp")
-    made_field_goals: BRIntOrNone = Field(default=None, validation_alias="fg")
-    attempted_field_goals: BRIntOrNone = Field(default=None, validation_alias="fga")
-    field_goal_percentage: BRPercentage = Field(default=None, validation_alias="fg_pct")
-    made_three_point_field_goals: BRIntOrNone = Field(default=None, validation_alias="fg3")
-    attempted_three_point_field_goals: BRIntOrNone = Field(default=None, validation_alias="fg3a")
-    three_point_field_goal_percentage: BRPercentage = Field(default=None, validation_alias="fg3_pct")
-    made_two_point_field_goals: BRIntOrNone = Field(default=None, validation_alias="fg2")
-    attempted_two_point_field_goals: BRIntOrNone = Field(default=None, validation_alias="fg2a")
-    two_point_field_goal_percentage: BRPercentage = Field(default=None, validation_alias="fg2_pct")
-    effective_field_goal_percentage: BRPercentage = Field(default=None, validation_alias="efg_pct")
-    made_free_throws: BRIntOrNone = Field(default=None, validation_alias="ft")
-    attempted_free_throws: BRIntOrNone = Field(default=None, validation_alias="fta")
-    free_throw_percentage: BRPercentage = Field(default=None, validation_alias="ft_pct")
-    offensive_rebounds: BRIntOrNone = Field(default=None, validation_alias="orb")
-    defensive_rebounds: BRIntOrNone = Field(default=None, validation_alias="drb")
-    total_rebounds: BRIntOrNone = Field(default=None, validation_alias="trb")
-    assists: BRIntOrNone = Field(default=None, validation_alias="ast")
-    steals: BRIntOrNone = Field(default=None, validation_alias="stl")
-    blocks: BRIntOrNone = Field(default=None, validation_alias="blk")
-    turnovers: BRIntOrNone = Field(default=None, validation_alias="tov")
-    personal_fouls: BRIntOrNone = Field(default=None, validation_alias="pf")
-    points: BRIntOrNone = Field(default=None, validation_alias="pts")
-    triple_doubles: BRIntOrNone = Field(default=None, validation_alias="tpl_dbl")
-    awards: StrOrNone = Field(default=None, validation_alias="awards")
-
-
-register("players_season_totals", PlayerSeasonTotalsRow)
-
-
-class PlayerAdvancedSeasonTotalsRow(BRRow):
-    """Row from the league-wide advanced season totals table
-    (``leagues/NBA_<year>_advanced.html``).
-
-    Carries the advanced rate/percentage stat block (PER, TS%, rebound/assist/
-    steal/block/turnover/usage percentages, win shares, BPM, VORP) on top of
-    the standard identity columns. ``is_combined_totals`` is a derived flag
-    computed from the team cell in the legacy extractor (``True`` for
-    ``"2TM"``/``"3TM"`` rows); it is included as an optional field so the
-    schema matches :data:`PLAYER_ADVANCED_SEASON_TOTALS_COLUMN_NAMES` and
-    default-initialises to ``False`` when the raw row omits the key.
-    """
-
-    slug: str = Field(validation_alias="slug")
-    name: str = Field(validation_alias="name_display")
-    positions: PositionsField = Field(default_factory=list, validation_alias="pos")
-    age: BRIntOrNone = Field(default=None, validation_alias="age")
-    team: TeamOrAggregateFieldOrNone = Field(validation_alias="team_name_abbr")
-    games_played: BRIntOrNone = Field(default=None, validation_alias="games")
-    games_started: BRIntOrNone = Field(default=None, validation_alias="games_started")
-    minutes_played: BRIntOrNone = Field(default=None, validation_alias="mp")
-    player_efficiency_rating: BRFloatOrNone = Field(default=None, validation_alias="per")
-    true_shooting_percentage: BRPercentage = Field(default=None, validation_alias="ts_pct")
-    three_point_attempt_rate: BRFloatOrNone = Field(default=None, validation_alias="fg3a_per_fga_pct")
-    free_throw_attempt_rate: BRFloatOrNone = Field(default=None, validation_alias="fta_per_fga_pct")
-    offensive_rebound_percentage: BRPercentage = Field(default=None, validation_alias="orb_pct")
-    defensive_rebound_percentage: BRPercentage = Field(default=None, validation_alias="drb_pct")
-    total_rebound_percentage: BRPercentage = Field(default=None, validation_alias="trb_pct")
-    assist_percentage: BRPercentage = Field(default=None, validation_alias="ast_pct")
-    steal_percentage: BRPercentage = Field(default=None, validation_alias="stl_pct")
-    block_percentage: BRPercentage = Field(default=None, validation_alias="blk_pct")
-    turnover_percentage: BRPercentage = Field(default=None, validation_alias="tov_pct")
-    usage_percentage: BRPercentage = Field(default=None, validation_alias="usg_pct")
-    offensive_win_shares: BRFloatOrNone = Field(default=None, validation_alias="ows")
-    defensive_win_shares: BRFloatOrNone = Field(default=None, validation_alias="dws")
-    win_shares: BRFloatOrNone = Field(default=None, validation_alias="ws")
-    win_shares_per_48_minutes: BRFloatOrNone = Field(default=None, validation_alias="ws_per_48")
-    offensive_box_plus_minus: BRFloatOrNone = Field(default=None, validation_alias="obpm")
-    defensive_box_plus_minus: BRFloatOrNone = Field(default=None, validation_alias="dbpm")
-    box_plus_minus: BRFloatOrNone = Field(default=None, validation_alias="bpm")
-    value_over_replacement_player: BRFloatOrNone = Field(default=None, validation_alias="vorp")
-    awards: StrOrNone = Field(default=None, validation_alias="awards")
-    is_combined_totals: bool = Field(default=False, validation_alias="is_combined_totals")
-
-
-register("players_advanced_season_totals", PlayerAdvancedSeasonTotalsRow)
+from courtside_data.schemas.player_totals import (  # noqa: E402,F401
+    PlayerAdvancedSeasonTotalsRow,
+    PlayerSeasonTotalsRow,
+)
