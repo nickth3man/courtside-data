@@ -14,12 +14,9 @@ from courtside_data.output.columns._blocks import (
 
 ATTENDANCE_COLUMN_NAMES = [
     "team",
-    "home_games",
-    "home_attendance",
-    "home_attendance_per_g",
-    "away_games",
-    "away_attendance",
-    "away_attendance_per_g",
+    "arena_name",
+    "attendance",
+    "attendance_per_game",
 ]
 
 CAREER_LEADERS_COLUMN_NAMES = ["rank", "player", "value"]
@@ -241,4 +238,4 @@ SEASON_AWARDS_VOTING_COLUMN_NAMES = [
     "def_rtg",
 ]
 
-SEASON_LEADERS_COLUMN_NAMES = ["rank", "player", "value", "season", "team_id"]
+SEASON_LEADERS_COLUMN_NAMES = ["rank", "player", "value", "season", "team"]

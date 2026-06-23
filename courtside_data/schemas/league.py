@@ -385,9 +385,8 @@ class AttendanceRow(BRRow):
     The endpoint's ``projection`` keeps only ``team``, ``arena_name``,
     ``attendance``, and ``attendance_per_g`` from the underlying
     ``#advanced-team`` table, so the row is keyed off those four columns.
-    The historical ``ATTENDANCE_COLUMN_NAMES`` CSV contract (with separate
-    home/away game and attendance columns) does not match the BR data and is
-    intentionally not modelled here.
+    ``attendance_per_game`` is the output field name (mapped from the raw
+    ``attendance_per_g`` data-stat key).
     """
 
     team: TeamNameOrAbbreviationField = Field(validation_alias="team")

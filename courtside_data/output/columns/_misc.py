@@ -20,10 +20,18 @@ PLAY_BY_PLAY_COLUMN_NAMES = [
 
 SCHEDULE_COLUMN_NAMES = [
     "start_time",
+    "date_game",
+    "game_start_time",
     "away_team",
     "away_team_score",
     "home_team",
     "home_team_score",
+    "box_score_text",
+    "overtimes",
+    "attendance",
+    "game_duration",
+    "arena_name",
+    "game_remarks",
 ]
 
 SEARCH_RESULTS_COLUMN_NAMES = [
