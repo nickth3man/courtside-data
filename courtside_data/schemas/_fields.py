@@ -135,6 +135,10 @@ def _team_name_field(value: object) -> Team:
     s = str(value).strip().upper()
     team = TEAM_NAME_TO_TEAM.get(s)
     if team is None:
+        normalized = " ".join(s.replace(".", "").split())
+        for name, mapped in TEAM_NAME_TO_TEAM.items():
+            if normalized == " ".join(name.replace(".", "").split()):
+                return mapped
         raise ValueError(f"Unknown team name: {value!r}")
     return team
 

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+from contextlib import nullcontext
 from typing import TYPE_CHECKING, Any
 
 from parsel import Selector
@@ -120,7 +121,9 @@ class GenericEndpointHandler:
             )
         selector = self._http._get_selector(url=url)
 
-        table_selector, table_source = self._resolve_table_selector(selector, endpoint, params)
+        resolve_context = trace.span("table_resolve", stage="table_resolution") if trace is not None else nullcontext()
+        with resolve_context:
+            table_selector, table_source = self._resolve_table_selector(selector, endpoint, params)
 
         if table_selector is None:
             if endpoint.transaction_list_fallback:
@@ -134,17 +137,20 @@ class GenericEndpointHandler:
                 trace.record("table_resolution", "no_table_found", returned_row_count=0)
             return []
 
-        table = GenericTable(
-            table_selector,
-            use_header_fallback=endpoint.use_header_fallback,
-            exclude_summary_rows=endpoint.exclude_summary_rows,
-            value_column=endpoint.value_column,
-        )
-        rows = [row.to_dict() for row in table.rows]
-        if endpoint.projection is not None:
-            rows = [{key: row.get(key, "") for key in endpoint.projection} for row in rows]
+        parse_rows_context = trace.span("row_parse", stage="parse") if trace is not None else nullcontext()
+        with parse_rows_context:
+            table = GenericTable(
+                table_selector,
+                use_header_fallback=endpoint.use_header_fallback,
+                exclude_summary_rows=endpoint.exclude_summary_rows,
+                value_column=endpoint.value_column,
+            )
+            rows = [row.to_dict() for row in table.rows]
+            if endpoint.projection is not None:
+                rows = [{key: row.get(key, "") for key in endpoint.projection} for row in rows]
         if trace is not None:
-            raw_table_html = table_selector.get() or ""
+            include_html_meta = trace.config.detail_level != "summary"
+            raw_table_html = table_selector.get() or "" if include_html_meta else ""
             row_class_counts: dict[str, int] = {}
             for row_selector in table_selector.css("tr"):
                 classes = row_selector.attrib.get("class", "").split()

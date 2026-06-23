@@ -75,6 +75,17 @@ def _record_schedule_diagnostics(
             "candidate_row_count": stats.get("candidate_row_count"),
         },
     )
+    trace.artifact(
+        "schedule_diagnostics",
+        {
+            "ignored_row_reason_counts": dict(ignored) if isinstance(ignored, dict) else {},
+            "game_count": stats.get("game_count"),
+            "postponed_game_count": stats.get("postponed_game_count"),
+            "missing_box_score_link_count": stats.get("missing_box_score_link_count"),
+            "candidate_row_count": stats.get("candidate_row_count"),
+            "month_page_count": month_page_count,
+        },
+    )
 
 
 def schedule_for_month(facade: FetchFacade, url: str) -> list[dict[str, Any]]:
