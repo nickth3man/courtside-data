@@ -86,7 +86,7 @@ def _validate_row_model_rows(
             if drop_reason is not None:
                 dropped_reasons[drop_reason] = dropped_reasons.get(drop_reason, 0) + 1
                 continue
-            reason = validation_error_drop_reason(exc.errors())
+            reason = validation_error_drop_reason(exc.errors(), row=row)
             dropped_reasons[reason] = dropped_reasons.get(reason, 0) + 1
             if reason == DROP_REASON_SCHEMA_VALIDATION_ERROR:
                 for error in exc.errors():

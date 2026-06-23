@@ -40,6 +40,7 @@ from courtside_data.client._runtime._flush import _flush_trace
 from courtside_data.client._runtime._locator import _resolve_service, _service_override
 from courtside_data.data import OutputType, OutputWriteOption
 from courtside_data.debug import DebugTrace, debug_trace_context
+from courtside_data.debug.config import debug_config_from_env
 from courtside_data.endpoints import ENDPOINTS
 from courtside_data.parsing.custom import dispatch_custom_endpoint
 from courtside_data.parsing.generic import GenericEndpointHandler
@@ -74,7 +75,7 @@ def _run_endpoint(
     # same way. Generic (non-custom) endpoints are unaffected; ``str``/``int``
     # URL params are idempotent.
     coerced_params = _coerce_params(name, params) if endpoint.custom else params
-    trace = DebugTrace(endpoint=name, params=coerced_params) if debug else None
+    trace = DebugTrace(endpoint=name, params=coerced_params, config=debug_config_from_env()) if debug else None
     if trace is not None:
         trace.record(
             "endpoint",

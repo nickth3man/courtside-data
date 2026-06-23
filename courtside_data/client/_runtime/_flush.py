@@ -78,29 +78,32 @@ def _flush_trace(
     if _flushed_traces.get(trace):
         return
     try:
-        trace.record("debug", "envelope_created", data_type=type(data).__name__)
-        trace.observe_rows("result_data", data)
-        trace.record(
-            "output",
-            "debug_output_start",
-            output_type=output_type.name if output_type is not None else None,
-            output_file_path=output_file_path,
-            output_write_option=output_write_option.name if output_write_option is not None else None,
-        )
-        trace.record("output", "debug_output_ready", envelope_keys=["data", "debug"])
-        log_path = debug_log_path(trace)
-        trace.record("output", "trace_log", path=str(log_path))
-        envelope = {"data": data, "debug": trace.to_dict()}
-        if prepare_log_dir(log_path):
-            _make_output_service().output(
-                data=envelope,
-                options=OutputOptions.of(
-                    file_options=FileOptions.of(path=str(log_path), mode=OutputWriteOption.WRITE),
-                    output_type=OutputType.JSON,
-                    json_options=json_options,
-                    csv_options={"column_names": None},
-                ),
+        artifact_context = trace.span("debug_artifact", stage="debug")
+        with artifact_context:
+            trace.record("debug", "envelope_created", data_type=type(data).__name__)
+            trace.observe_rows("result_data", data)
+            trace.record(
+                "output",
+                "debug_output_start",
+                output_type=output_type.name if output_type is not None else None,
+                output_file_path=output_file_path,
+                output_write_option=output_write_option.name if output_write_option is not None else None,
             )
+            trace.record("output", "debug_output_ready", envelope_keys=["data", "debug"])
+            log_path = debug_log_path(trace)
+            trace.record("output", "trace_log", path=str(log_path))
+            envelope = {"data": data, "debug": trace.to_dict()}
+        if prepare_log_dir(log_path):
+            with trace.span("trace_export", stage="output"):
+                _make_output_service().output(
+                    data=envelope,
+                    options=OutputOptions.of(
+                        file_options=FileOptions.of(path=str(log_path), mode=OutputWriteOption.WRITE),
+                        output_type=OutputType.JSON,
+                        json_options=json_options,
+                        csv_options={"column_names": None},
+                    ),
+                )
     except Exception as error:  # best-effort disk write, must not raise
         warnings.warn(
             f"Failed to flush debug trace {trace.trace_id} for endpoint {trace.endpoint!r}: {error}",
