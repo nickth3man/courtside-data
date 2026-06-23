@@ -9,6 +9,8 @@ no-match fall-throughs).
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import pytest
 from courtside_data.data import (
     TEAM_ABBREVIATIONS_TO_TEAM,
@@ -89,6 +91,28 @@ def test_standings_team_value() -> None:
     team = next(iter(Team))
     assert cells.standings_team_value(f"{team.value} (1)") == team.value
     assert cells.standings_team_value("ZZZ NOT A TEAM") == "ZZZ NOT A TEAM"
+    assert cells.standings_team_value("Buffalo Braves") == Team.BUFFALO_BRAVES.value
+    assert cells.standings_team_value("Capital Bullets") == Team.CAPITAL_BULLETS.value
+    assert cells.standings_team_value("Kansas City-Omaha Kings") == Team.KANSAS_CITY_OMAHA_KINGS.value
+
+
+STANDINGS_1974_FIXTURE = Path(__file__).resolve().parents[2] / "raw" / "standings" / "1974.html"
+
+
+@pytest.mark.skipif(not STANDINGS_1974_FIXTURE.exists(), reason="1974 standings fixture missing")
+def test_standings_1974_validates_all_teams() -> None:
+    from courtside_data.client._pipelines.pydantic import _validate_row_model_rows
+    from courtside_data.schemas.standings import StandingsRow
+
+    html = STANDINGS_1974_FIXTURE.read_text(encoding="utf-8")
+    selector = Selector(text=html)
+    parsed_rows, _stats = rows.parse_standings_with_stats(selector)
+
+    assert len(parsed_rows) == 17
+    validated, dropped = _validate_row_model_rows(StandingsRow, parsed_rows)
+
+    assert len(validated) == 17
+    assert dropped == {}
 
 
 def test_division_value() -> None:
