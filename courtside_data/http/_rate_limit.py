@@ -38,7 +38,6 @@ import logging
 import threading
 import time
 from collections.abc import Callable
-from typing import Final
 
 import httpx
 import orjson
@@ -46,13 +45,12 @@ import orjson
 from courtside_data import config
 from courtside_data.debug import current_debug_trace
 from courtside_data.errors import RateLimitJailed
+from courtside_data.http._constants import _JAIL_THRESHOLD_SECONDS
 
 logger = logging.getLogger(__name__)
 
-# Re-exported so tests and downstream code can import the same constant
-# the production path uses. Matches the previous ``_JAIL_THRESHOLD_SECONDS``
-# in :mod:`courtside_data.http_service` byte-for-byte.
-_JAIL_THRESHOLD_SECONDS: Final[float] = 300.0  # 5 minutes
+# 5 minutes — cutoff above which a ``Retry-After`` value flips the circuit
+# breaker open. Imported from ``_constants`` so there is a single source of truth.
 
 # Process-wide (singleton) pacing + jail state. Every read and write is
 # serialized by :data:`_rate_limit_lock`. Kept as module-level (not

@@ -135,7 +135,7 @@ def _orjson_default(value: Any) -> Any:
 
     orjson natively serializes ``datetime``/``date``/``UUID``/``Enum``/
     ``dataclass``; only ``set``/``frozenset`` need to be coerced to ``list``,
-    matching the previous ``BasketballReferenceJSONEncoder`` behaviour.
+    matching the previous legacy stdlib encoder behaviour.
     """
     if isinstance(value, (set, frozenset)):
         return list(value)

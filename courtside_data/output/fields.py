@@ -1,6 +1,4 @@
-from datetime import date, datetime
 from enum import Enum
-from json import JSONEncoder
 
 
 class FieldFormatter:
@@ -70,17 +68,3 @@ def format_value(value):
         return value
 
     return formatter_class(data=value).format()
-
-
-class BasketballReferenceJSONEncoder(JSONEncoder):
-    def default(self, o):
-        if isinstance(o, datetime | date):
-            return o.isoformat()
-
-        if isinstance(o, Enum):
-            return o.value
-
-        if isinstance(o, set):
-            return list(o)
-
-        return JSONEncoder.default(self, o)

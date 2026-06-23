@@ -13,10 +13,16 @@ path.
 
 from __future__ import annotations
 
-import re
 from typing import TYPE_CHECKING, Any, Protocol
 
 from parsel import Selector
+
+from courtside_data.parsing._table_shared import (
+    clean_text,
+    normalize_header,
+    normalize_value_column,
+    selector_subtree_to_html,
+)
 
 
 def _is_parsel_backend() -> bool:
@@ -96,13 +102,6 @@ class GenericTableRow:
     def metadata(self) -> dict[str, dict[str, str]]:
         """Return all cell attributes (except data-stat) keyed by stat name."""
         return dict(self._metadata)
-
-
-# Column keys on the leaders pages that are NEVER the rotating stat value.
-# They are text/identity columns whose header does not rotate with the active
-# stat category. Used by :attr:`GenericTable.value_column` to identify the
-# rightmost non-text column and rename it to ``value``.
-_LEADER_TEXT_COLUMN_KEYS: frozenset[str] = frozenset({"rank", "player", "season", "team", "team_id"})
 
 
 class GenericTable:
@@ -204,50 +203,19 @@ class GenericTable:
     def _normalize_value_column(self) -> None:
         """Normalize leaderboard rows for downstream row-model validation.
 
-        Two passes per row:
-
-        1. **Rank period strip**: BR renders rank values as ``"1."``,
-           ``"2."`` (trailing period). The shared ``_br_int`` validator
-           rejects ``"1."`` as non-integer, so we strip the trailing
-           period before the row reaches the schema.
-        2. **Value column rename**: the leaders pages emit a column whose
-           header rotates with the active stat category (``per``,
-           ``pts``, ``ast``, ``blk`` …). A static ``validation_alias``
-           cannot cover every category, so this pass renames the rotating
-           column to a stable ``value`` key that downstream row models
-           can match. The rename target is the rightmost key on each row
-           that is NOT one of :data:`_LEADER_TEXT_COLUMN_KEYS`. Rows that
-           already expose a ``value`` key are left untouched.
+        Two passes per row — delegates to the shared
+        :func:`courtside_data.parsing._table_shared.normalize_value_column`
+        helper.
         """
-        for row in self.rows:
-            data = row._data
-            # Pass 1: strip the trailing period from rank values.
-            rank_value = data.get("rank")
-            if isinstance(rank_value, str) and rank_value.endswith("."):
-                data["rank"] = rank_value.rstrip(".")
-            # Pass 2: rename the rotating stat column to a stable key.
-            if "value" not in data:
-                value_key = next(
-                    (key for key in reversed(list(data)) if key not in _LEADER_TEXT_COLUMN_KEYS),
-                    None,
-                )
-                if value_key is not None:
-                    data["value"] = data.pop(value_key)
+        normalize_value_column(self.rows)
 
     @classmethod
     def _fallback_headers(cls, table_selector: Selector) -> list[str]:
         for row in table_selector.css("tr"):
             cells = row.css("td, th")
             if cells and not row.css("td") and row.css("th"):
-                return [
-                    cls._normalize_header(cell.attrib.get("data-stat") or cell.css("::text").get("")) for cell in cells
-                ]
+                return [normalize_header(cell.attrib.get("data-stat") or cell.css("::text").get("")) for cell in cells]
         return []
-
-    @staticmethod
-    def _normalize_header(value: str) -> str:
-        header = re.sub(r"[^0-9A-Za-z]+", "_", value.strip().lower()).strip("_")
-        return header or "col"
 
 
 def extract_commented_table(selector: Selector, table_id: str) -> Selector | None:
@@ -275,8 +243,6 @@ def extract_commented_table(selector: Selector, table_id: str) -> Selector | Non
         A Selector for the extracted table, or None if not found
     """
     if not _is_parsel_backend():
-        from lxml.html import tostring
-
         from courtside_data.parsing._selectolax_backend import selectolax_extract_commented_table
 
         # Serialize the page Selector back to HTML so the selectolax
@@ -286,9 +252,7 @@ def extract_commented_table(selector: Selector, table_id: str) -> Selector | Non
         # ``<a data-attr-from=""></a>`` from being collapsed to
         # ``<a data-attr-from=""/>`` (the self-closing form changes how
         # selectolax's ``text()`` method sees following sibling text).
-        page_html = tostring(selector.root, encoding="unicode")
-        if isinstance(page_html, bytes):
-            page_html = page_html.decode("utf-8")
+        page_html = selector_subtree_to_html(selector.root)
         table_html = selectolax_extract_commented_table(page_html, table_id)
         if table_html is None:
             return None
@@ -305,10 +269,6 @@ def extract_commented_table(selector: Selector, table_id: str) -> Selector | Non
             if table:
                 return table[0]
     return None
-
-
-def _clean_text(values: list[str]) -> str:
-    return re.sub(r"\s+", " ", " ".join(values)).strip()
 
 
 def parse_transaction_list(selector: Selector) -> list[dict[str, Any]]:
@@ -328,22 +288,18 @@ def parse_transaction_list(selector: Selector) -> list[dict[str, Any]]:
     implementation.
     """
     if not _is_parsel_backend():
-        from lxml.html import tostring
-
         from courtside_data.parsing._selectolax_backend import selectolax_parse_transaction_list
 
         # ``lxml.html.tostring`` preserves the explicit close tag on empty
         # elements like ``<a data-attr-from=""></a>`` so selectolax's
         # text-extraction on the link returns ``""`` rather than the
         # following sibling text.
-        page_html = tostring(selector.root, encoding="unicode")
-        if isinstance(page_html, bytes):
-            page_html = page_html.decode("utf-8")
+        page_html = selector_subtree_to_html(selector.root)
         return selectolax_parse_transaction_list(page_html)
 
     transactions = []
     for day in selector.css("ul.page_index > li"):
-        date = _clean_text(day.xpath("./span//text()").getall())
+        date = clean_text(day.xpath("./span//text()").getall())
         transaction_nodes = day.xpath('./p[contains(concat(" ", normalize-space(@class), " "), " transaction ")]')
         if not transaction_nodes:
             transaction_nodes = day.xpath("./p[normalize-space()]")
@@ -360,7 +316,7 @@ def parse_transaction_list(selector: Selector) -> list[dict[str, Any]]:
                     to_team_abbreviations.append(to_team)
                 linked_resources.append(
                     {
-                        "text": _clean_text(link.css("::text").getall()),
+                        "text": clean_text(link.css("::text").getall()),
                         "href": link.attrib.get("href", ""),
                         "from_team_abbreviation": from_team or "",
                         "to_team_abbreviation": to_team or "",
@@ -370,7 +326,7 @@ def parse_transaction_list(selector: Selector) -> list[dict[str, Any]]:
             transactions.append(
                 {
                     "date": date,
-                    "transaction": _clean_text(transaction.css("::text").getall()),
+                    "transaction": clean_text(transaction.css("::text").getall()),
                     "from_team_abbreviations": from_team_abbreviations,
                     "to_team_abbreviations": to_team_abbreviations,
                     "linked_resources": linked_resources,

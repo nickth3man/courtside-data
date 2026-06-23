@@ -20,6 +20,7 @@ from pydantic import ValidationError
 from courtside_data.data import OutputType
 from courtside_data.debug import DebugTrace
 from courtside_data.errors import SchemaDriftError
+from courtside_data.http._constants import BASE_URL
 from courtside_data.schemas import ROW_ADAPTERS
 
 if TYPE_CHECKING:
@@ -136,7 +137,7 @@ def _endpoint_url_context(endpoint: Any, params: dict[str, Any] | None) -> str:
         with contextlib.suppress(IndexError, KeyError, TypeError, ValueError):
             path = path.format(**params)
     if isinstance(path, str) and path.startswith("/"):
-        return f"https://www.basketball-reference.com{path}"
+        return f"{BASE_URL}{path}"
     return str(path)
 
 

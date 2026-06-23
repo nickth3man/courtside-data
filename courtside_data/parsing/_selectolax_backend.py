@@ -54,6 +54,12 @@ import re
 from typing import TYPE_CHECKING, Any
 
 from courtside_data import config
+from courtside_data.parsing._table_shared import (
+    clean_text,
+    normalize_header,
+    normalize_value_column,
+    selector_subtree_to_html,
+)
 
 if TYPE_CHECKING:
     from selectolax.lexbor import LexborNode as _SLNode
@@ -65,11 +71,6 @@ if TYPE_CHECKING:
 _PARSE_BACKEND_ENV_VAR = config.COURTSIDE_DATA_PARSE_BACKEND_ENV
 _FAST_PARSE_ENV_VAR = config.COURTSIDE_DATA_FAST_PARSE_ENV  # legacy alias
 _VALID_BACKENDS: frozenset[str] = config._VALID_PARSE_BACKENDS
-
-# Same set of "identity" column keys used by the parsel GenericTable's
-# :meth:`GenericTable._normalize_value_column` pass to detect the rotating
-# stat column on leaderboard pages.
-_LEADER_TEXT_COLUMN_KEYS: frozenset[str] = frozenset({"rank", "player", "season", "team", "team_id"})
 
 
 def get_parse_backend() -> str:
@@ -142,11 +143,6 @@ def _node_text(node: _SLNode) -> str:
     """
     text = node.text(separator=" ", strip=True) or ""
     return text.replace("*", "").strip()
-
-
-def _clean_text(values: list[str]) -> str:
-    """Collapse runs of whitespace and strip — same shape as parsel's helper."""
-    return re.sub(r"\s+", " ", " ".join(values)).strip()
 
 
 # ─── GenericTableRow / GenericTable equivalents ─────────────────────────────
@@ -242,21 +238,13 @@ class _SelectolaxGenericTable:
         return not tds and bool(ths)
 
     def _normalize_value_column(self) -> None:
-        """Two-pass normalization for leaderboard rows (mirror of parsel version)."""
-        for row in self.rows:
-            data = row._data
-            # Pass 1: strip the trailing period from rank values.
-            rank_value = data.get("rank")
-            if isinstance(rank_value, str) and rank_value.endswith("."):
-                data["rank"] = rank_value.rstrip(".")
-            # Pass 2: rename the rotating stat column to a stable key.
-            if "value" not in data:
-                value_key = next(
-                    (key for key in reversed(list(data)) if key not in _LEADER_TEXT_COLUMN_KEYS),
-                    None,
-                )
-                if value_key is not None:
-                    data["value"] = data.pop(value_key)
+        """Two-pass normalization for leaderboard rows.
+
+        Delegates to the shared
+        :func:`courtside_data.parsing._table_shared.normalize_value_column`
+        helper.
+        """
+        normalize_value_column(self.rows)
 
     @classmethod
     def _fallback_headers(cls, table_node: _SLNode) -> list[str]:
@@ -264,45 +252,13 @@ class _SelectolaxGenericTable:
             cells = row.css("td, th")
             if cells and not row.css("td") and row.css("th"):
                 return [
-                    cls._normalize_header(
-                        cell.attributes.get("data-stat") or (cell.text(separator=" ", strip=True) or "")
-                    )
+                    normalize_header(cell.attributes.get("data-stat") or (cell.text(separator=" ", strip=True) or ""))
                     for cell in cells
                 ]
         return []
 
-    @staticmethod
-    def _normalize_header(value: str) -> str:
-        header = re.sub(r"[^0-9A-Za-z]+", "_", value.strip().lower()).strip("_")
-        return header or "col"
-
 
 # ─── parsel → selectolax table adapter ─────────────────────────────────────
-
-
-def _selector_table_to_html(table_selector: Any) -> str:
-    """Serialize a parsel ``Selector`` (a table element) back to HTML for selectolax.
-
-    lxml's ``tostring`` preserves comments and the original attribute
-    ordering, so this is a near-lossless re-serialization of the table
-    subtree. The selectolax ``LexborHTMLParser`` then builds its own tree
-    from the resulting string.
-
-    ``method="html"`` is required to keep lxml from collapsing empty
-    elements like ``<a data-attr-from=""></a>`` into the self-closing
-    form ``<a data-attr-from=""/>`` — the self-closing form changes the
-    meaning of ``node.text()`` in selectolax, which (incorrectly) hoists
-    the following sibling text into the link.
-
-    We use :func:`lxml.html.tostring` (a pure-Python helper around the
-    same machinery) so the import is resolvable by the ``ty`` type
-    checker; it produces the same output as
-    ``lxml.etree.tostring(..., method="html")``.
-    """
-    from lxml.html import tostring
-
-    encoded = tostring(table_selector.root, encoding="unicode")
-    return encoded if isinstance(encoded, str) else encoded.decode("utf-8")
 
 
 def _find_table_node_in_html(html: str, table_id: str | None) -> _SLNode | None:
@@ -390,7 +346,7 @@ def build_selectolax_table(
     ``GenericTable`` behavior for the same input.
     """
     table_id = table_selector.attrib.get("id")
-    raw_html = _selector_table_to_html(table_selector)
+    raw_html = selector_subtree_to_html(table_selector.root)
     root_tag = _detect_root_tag(table_selector)
     needs_unwrap = root_tag in {"thead", "tbody", "tfoot", "tr"}
     html = f"<table>{raw_html}</table>" if needs_unwrap else raw_html
@@ -520,7 +476,7 @@ def selectolax_parse_transaction_list(html_text: str) -> list[dict[str, Any]]:
                     to_team_abbreviations.append(to_team)
                 linked_resources.append(
                     {
-                        "text": _clean_text([(link.text(separator=" ", strip=True) or "")]),
+                        "text": clean_text([(link.text(separator=" ", strip=True) or "")]),
                         "href": attrs.get("href") or "",
                         "from_team_abbreviation": from_team,
                         "to_team_abbreviation": to_team,
@@ -529,7 +485,7 @@ def selectolax_parse_transaction_list(html_text: str) -> list[dict[str, Any]]:
             transactions.append(
                 {
                     "date": date,
-                    "transaction": _clean_text([(transaction.text(separator=" ", strip=True) or "")]),
+                    "transaction": clean_text([(transaction.text(separator=" ", strip=True) or "")]),
                     "from_team_abbreviations": from_team_abbreviations,
                     "to_team_abbreviations": to_team_abbreviations,
                     "linked_resources": linked_resources,

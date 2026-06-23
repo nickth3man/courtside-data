@@ -59,11 +59,10 @@ from courtside_data.http._constants import (
     _RETRY_ATTEMPTS,
     _SELECTOR_CACHE_SIZE,
     _SELECTOR_CACHE_TTL,
+    BASE_URL,
 )
 
 logger = logging.getLogger(__name__)
-
-BASE_URL = "https://www.basketball-reference.com"
 
 
 def _build_client(
