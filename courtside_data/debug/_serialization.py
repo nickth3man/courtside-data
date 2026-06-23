@@ -42,7 +42,7 @@ class SerializationMixin:
             "status": self.status,  # ty: ignore
             "runtime": self.runtime,  # ty: ignore
             "limits": _jsonish(asdict(self.config), config=self.config),  # ty: ignore
-            "metrics": self.metrics,  # ty: ignore
+            "metrics": self._trace_summary_metrics(),
             "stage_counts": self.stage_counts(),
             "dropped_events": self.dropped_events,  # ty: ignore
             "spans": self.spans(),  # ty: ignore
@@ -50,6 +50,20 @@ class SerializationMixin:
             "artifact_index": self.artifact_index,  # ty: ignore
             "artifacts": self.artifacts,  # ty: ignore
         }
+
+    def _trace_summary_metrics(self) -> dict[str, Any]:
+        """Merge scalar metrics with trace-size and truncation summaries."""
+        metrics = dict(self.metrics)  # ty: ignore
+        artifact_index = self.artifact_index  # ty: ignore
+        truncated_artifacts = sum(
+            1 for meta in artifact_index.values() if isinstance(meta, dict) and meta.get("truncated")
+        )
+        total_bytes = sum(int(meta.get("byte_length", 0)) for meta in artifact_index.values() if isinstance(meta, dict))
+        metrics["trace.artifact_count"] = len(artifact_index)
+        metrics["trace.truncated_artifact_count"] = truncated_artifacts
+        metrics["trace.artifact_bytes"] = total_bytes
+        metrics["trace.detail_level"] = self.config.detail_level  # ty: ignore
+        return metrics
 
     def to_json(self, *, indent: int | None = 2) -> str:
         """Serialize ``to_dict()`` to a JSON string."""

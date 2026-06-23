@@ -152,8 +152,33 @@ def _artifact_metadata(
 
 def _prepare_artifact(value: Any, config: DebugConfig) -> tuple[Any, dict[str, Any]]:
     """JSON-ify *value*, sample it, and return ``(stored_value, metadata)``."""
+    item_count = _count_items(value)
+    if config.detail_level == "summary" and isinstance(value, (list, dict)) and item_count and item_count > 5:
+        json_value = {"__truncated__": {"original_count": item_count, "reason": "detail_level_summary"}}
+        metadata = _artifact_metadata(json_value, original_count=item_count, truncated=True, stored=True)
+        return json_value, metadata
+
     json_value = _jsonish(value, config=config)
-    sampled, truncated, original_count = _sample_artifact(json_value, config)
+    max_rows = config.max_row_sample if config.max_row_sample is not None else config.max_artifact_items
+    if max_rows is not None and isinstance(json_value, list) and len(json_value) > max_rows:
+        sampled, truncated, original_count = _sample_artifact(json_value, config)
+    else:
+        sampled, truncated, original_count = _sample_artifact(json_value, config)
+
+    if config.max_artifact_bytes is not None:
+        encoded = orjson.dumps(sampled, option=orjson.OPT_SORT_KEYS | orjson.OPT_NON_STR_KEYS, default=str)
+        if len(encoded) > config.max_artifact_bytes:
+            sampled = {
+                "__truncated__": {
+                    "original_count": original_count,
+                    "stored_count": _count_items(sampled),
+                    "byte_length": len(encoded),
+                    "max_artifact_bytes": config.max_artifact_bytes,
+                    "reason": "artifact_byte_cap",
+                }
+            }
+            truncated = True
+
     metadata = _artifact_metadata(sampled, original_count=original_count, truncated=truncated, stored=True)
     return sampled, metadata
 

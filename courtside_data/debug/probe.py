@@ -29,6 +29,7 @@ from typing import Any, TypedDict, cast
 import orjson
 from tests.fixture_manifest import ALL_CASES
 
+from courtside_data.client._pipelines._data_quality import evaluate_data_quality
 from courtside_data.client._runner import _run_endpoint
 from courtside_data.debug import DebugTrace
 from courtside_data.debug.sink import resolve_log_dir
@@ -112,6 +113,13 @@ CSV_COLUMNS: tuple[str, ...] = (
     "output_row_count",
     "dropped_row_count",
     "dropped_row_reason_counts_json",
+    "data_quality_status",
+    "data_quality_warnings_json",
+    "drop_rate",
+    "drop_rate_warning",
+    "expected_drop_count",
+    "unexpected_drop_count",
+    "trace_truncated_artifact_count",
     "source_sections_json",
     "parsed_event_count",
     "ignored_event_count",
@@ -230,6 +238,13 @@ class ProbeResult(TypedDict, total=False):
     output_row_count: int | None
     dropped_row_count: int | None
     dropped_row_reason_counts_json: dict[str, int]
+    data_quality_status: str | None
+    data_quality_warnings_json: list[str]
+    drop_rate: float | None
+    drop_rate_warning: bool | None
+    expected_drop_count: int | None
+    unexpected_drop_count: int | None
+    trace_truncated_artifact_count: int | None
     source_sections_json: list[str]
     parsed_event_count: int | None
     ignored_event_count: int | None
@@ -573,6 +588,22 @@ def _summarize_report(results: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
         largest_path, largest_size = max(trace_sizes, key=lambda item: item[1])
         summary["largest_trace_log_path"] = largest_path
         summary["largest_trace_log_size_bytes"] = largest_size
+        total_bytes = summary.get("total_trace_log_size_bytes")
+        if isinstance(total_bytes, int):
+            summary["total_trace_log_size_mb"] = round(total_bytes / (1024 * 1024), 3)
+
+    truncated_counts = [
+        int(result.get("trace_truncated_artifact_count") or 0)
+        for result in results
+        if isinstance(result.get("trace_truncated_artifact_count"), int)
+    ]
+    summary["total_trace_truncated_artifact_count"] = sum(truncated_counts) if truncated_counts else None
+
+    completed = [item for item in results if item.get("ok")]
+    if completed and len(completed) < len(results):
+        avg_elapsed = sum(float(item.get("elapsed_ms") or 0) for item in completed) / len(completed)
+        remaining = len(results) - len(completed)
+        summary["estimated_remaining_runtime_ms"] = round(avg_elapsed * remaining, 3)
 
     return summary
 
@@ -1277,6 +1308,25 @@ def _with_evaluation(entry: Mapping[str, Any]) -> dict[str, Any]:
     evaluated["works"] = works
     evaluated["failure_category"] = failure_category
     evaluated["evaluation"] = _evaluation_sentence(evaluated, works=works, failure_category=failure_category)
+
+    custom_diag = evaluated.get("custom_diagnostics_json")
+    parser_ignored = None
+    if isinstance(custom_diag, dict):
+        parser_ignored = custom_diag.get("ignored_row_reason_counts")
+
+    metrics = evaluated.get("metrics")
+    truncated_artifacts = None
+    if isinstance(metrics, dict):
+        truncated_artifacts = metrics.get("trace.truncated_artifact_count")
+    evaluated["trace_truncated_artifact_count"] = truncated_artifacts
+
+    quality = evaluate_data_quality(
+        ok=bool(evaluated.get("ok")),
+        dropped_row_count=evaluated.get("dropped_row_count"),
+        dropped_row_reason_counts=evaluated.get("dropped_row_reason_counts_json"),
+        parser_ignored_row_reason_counts=parser_ignored if isinstance(parser_ignored, dict) else None,
+    )
+    evaluated.update(quality)
     return evaluated
 
 
@@ -1294,6 +1344,7 @@ def _csv_row(entry: Mapping[str, Any]) -> dict[str, str]:
         "validated_fields_json": "validated_fields_json",
         "output_fields_json": "output_fields_json",
         "dropped_row_reason_counts_json": "dropped_row_reason_counts_json",
+        "data_quality_warnings_json": "data_quality_warnings_json",
         "source_sections_json": "source_sections_json",
         "ignored_event_reason_counts_json": "ignored_event_reason_counts_json",
         "custom_diagnostics_json": "custom_diagnostics_json",
@@ -1304,10 +1355,11 @@ def _csv_row(entry: Mapping[str, Any]) -> dict[str, str]:
         "stage_counts": {},
         "metrics": {},
         "dropped_row_reason_counts_json": {},
+        "data_quality_warnings_json": [],
         "ignored_event_reason_counts_json": {},
         "custom_diagnostics_json": {},
     }
-    bool_fields = {"ok", "works", "trace_log_exists", "first_row_preview_truncated"}
+    bool_fields = {"ok", "works", "trace_log_exists", "first_row_preview_truncated", "drop_rate_warning"}
     row: dict[str, str] = {}
     for column in CSV_COLUMNS:
         if column in json_field_map:
@@ -1379,18 +1431,54 @@ def _restore_debug_trace_init(original_init: Any) -> None:
     DebugTrace.__init__ = original_init
 
 
+def _load_resume_state(resume_path: Path | None) -> tuple[list[dict[str, Any]], set[str]]:
+    """Load prior probe rows and the set of successfully probed endpoints."""
+    if resume_path is None or not resume_path.exists():
+        return [], set()
+    if resume_path.suffix.lower() == ".csv":
+        prior_rows = _read_csv_rows(resume_path)
+        completed = {row["endpoint"] for row in prior_rows if row.get("ok") == "true" and row.get("endpoint")}
+        return prior_rows, completed
+    payload = orjson.loads(resume_path.read_bytes())
+    prior_results = payload.get("results") if isinstance(payload, dict) else []
+    if not isinstance(prior_results, list):
+        return [], set()
+    completed = {str(item["endpoint"]) for item in prior_results if isinstance(item, dict) and item.get("ok")}
+    return prior_results, completed
+
+
+def _read_csv_rows(path: Path) -> list[dict[str, str]]:
+    with path.open(encoding="utf-8", newline="") as csv_file:
+        return list(csv.DictReader(csv_file))
+
+
 def probe_endpoints(
     *,
     endpoints: list[str] | None = None,
     output_path: Path | None = None,
     csv_output_path: Path | None = None,
+    resume_from: Path | None = None,
+    debug_detail_level: str | None = None,
+    use_cache: bool | None = None,
 ) -> dict[str, Any]:
     """Run one live call per endpoint and return the summary report dict."""
+    if debug_detail_level is not None:
+        import os
+
+        os.environ["COURTSIDE_DEBUG_DETAIL_LEVEL"] = debug_detail_level
+    if use_cache is True:
+        import os
+
+        os.environ.setdefault("COURTSIDE_DATA_HTTP_CACHE", "1")
+
     endpoint_names = _resolve_endpoint_names(endpoints)
+    prior_results, completed_endpoints = _load_resume_state(resume_from)
+    if completed_endpoints:
+        endpoint_names = [name for name in endpoint_names if name not in completed_endpoints]
     params_by_endpoint = _sample_params_per_endpoint()
     missing = sorted(set(endpoint_names) - set(params_by_endpoint))
     started_at = datetime.now(tz=UTC)
-    results: list[dict[str, Any]] = []
+    results: list[dict[str, Any]] = list(prior_results)
     csv_writer: _StreamingCsvWriter | None = None
 
     if csv_output_path is not None:
@@ -1462,9 +1550,11 @@ def probe_endpoints(
         "schema_version": 1,
         "started_at": started_at.isoformat(),
         "finished_at": finished_at.isoformat(),
-        "total_endpoints": len(endpoint_names),
+        "total_endpoints": len(_resolve_endpoint_names(endpoints)),
         "probed_endpoints": len(results),
-        "requested_endpoints": endpoint_names,
+        "requested_endpoints": _resolve_endpoint_names(endpoints),
+        "resumed_from": str(resume_from) if resume_from else None,
+        "skipped_completed_endpoints": sorted(completed_endpoints) if completed_endpoints else [],
         "ok_count": ok_count,
         "failed_count": len(results) - ok_count,
         "missing_sample_params": missing,
@@ -1509,13 +1599,37 @@ def _build_parser() -> argparse.ArgumentParser:
         default=None,
         help="Optional CSV report path. When omitted, only the JSON report is written.",
     )
+    parser.add_argument(
+        "--resume-from",
+        type=Path,
+        default=None,
+        help="Resume a partial probe CSV/JSON report and skip endpoints already marked ok.",
+    )
+    parser.add_argument(
+        "--debug-detail-level",
+        choices=("summary", "normal", "full"),
+        default=None,
+        help="Trace artifact detail level (sets COURTSIDE_DEBUG_DETAIL_LEVEL).",
+    )
+    parser.add_argument(
+        "--use-cache",
+        action="store_true",
+        help="Enable hishel HTTP caching for repeated probe debugging runs.",
+    )
     return parser
 
 
 def main(argv: list[str] | None = None) -> int:
     args = _build_parser().parse_args(argv)
     try:
-        report = probe_endpoints(endpoints=args.endpoints, output_path=args.output, csv_output_path=args.csv_output)
+        report = probe_endpoints(
+            endpoints=args.endpoints,
+            output_path=args.output,
+            csv_output_path=args.csv_output,
+            resume_from=args.resume_from,
+            debug_detail_level=args.debug_detail_level,
+            use_cache=args.use_cache,
+        )
     except ValueError as exc:
         print(str(exc), file=sys.stderr)
         return 2
