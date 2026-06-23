@@ -626,6 +626,35 @@ def test_status_code_is_deprecated_alias_for_debug_status() -> None:
     assert row["http_status_code"] == "200"
 
 
+def test_probe_csv_data_quality_on_success(tmp_path) -> None:
+    output_path = tmp_path / "probe.csv"
+    result = {
+        "endpoint": "league_per_game_stats",
+        "ok": True,
+        "dropped_row_count": 65,
+        "dropped_row_reason_counts_json": {"repeated_header": 40, "aggregate_row": 25},
+        "metrics": {"duration_ms.http_fetch": 1200.0, "duration_ms.row_parse": 45.0},
+    }
+    write_probe_csv_report([_with_evaluation(result)], output_path)
+    row = _read_csv_rows(output_path)[0]
+    assert row["data_quality_status"] in {"warnings", "clean"}
+    assert row["expected_drop_count"] == "65"
+    assert float(row["drop_rate"]) == 0.0
+
+
+def test_stage_timing_metrics_exposed_in_csv() -> None:
+    debug = _successful_debug_envelope()
+    debug["spans"].extend(
+        [
+            {"span_id": "span-fetch", "stage": "http_fetch", "duration_ms": 900.0},
+            {"span_id": "span-parse", "stage": "row_parse", "duration_ms": 120.0},
+        ]
+    )
+    summary = _summarize_debug_events(debug, endpoint_name="team_injury_report")
+    assert summary["metrics"]["duration_ms.http_fetch"] == 900.0
+    assert summary["metrics"]["duration_ms.row_parse"] == 120.0
+
+
 def test_zero_values_not_serialized_as_blank() -> None:
     debug = _successful_debug_envelope()
     summary = _summarize_debug_events(debug, endpoint_name="team_roster")

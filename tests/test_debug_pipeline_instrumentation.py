@@ -5,9 +5,9 @@ from pathlib import Path
 
 import pytest
 from courtside_data.client._pipelines._drop_reasons import (
+    DROP_REASON_INVALID_PLAYER_VALUE,
     DROP_REASON_INVALID_VALUE,
-    DROP_REASON_MISSING_REQUIRED_FIELD,
-    DROP_REASON_PARSER_EXCLUDED,
+    DROP_REASON_UNSUPPORTED_SENTINEL_VALUE,
     row_drop_reason,
 )
 from courtside_data.client._pipelines.pydantic import _validate_row_model_rows
@@ -84,7 +84,7 @@ def test_validation_drop_reason_missing_required_field() -> None:
     validated, dropped = _validate_row_model_rows(_SampleRow, raw_rows)
 
     assert len(validated) == 1
-    assert dropped == {DROP_REASON_MISSING_REQUIRED_FIELD: 1}
+    assert dropped == {DROP_REASON_INVALID_PLAYER_VALUE: 1}
 
 
 def test_validation_drop_reason_invalid_value() -> None:
@@ -120,7 +120,7 @@ def test_parser_excluded_sentinel_rows_drop_when_validation_fails() -> None:
 
     assert len(validated) == 1
     assert validated[0].player == "Tatum"
-    assert dropped == {DROP_REASON_PARSER_EXCLUDED: 1}
+    assert dropped == {DROP_REASON_UNSUPPORTED_SENTINEL_VALUE: 1}
 
 
 def test_validation_success_emits_explicit_zero_values() -> None:
