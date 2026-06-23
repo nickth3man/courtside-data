@@ -1,0 +1,75 @@
+"""Draft, awards, and leaderboard endpoint registrations."""
+
+from __future__ import annotations
+
+from courtside_data.endpoints._table import TableEndpoint, _season
+from courtside_data.output.columns import (
+    CAREER_LEADERS_COLUMN_NAMES,
+    DRAFT_PICKS_COLUMN_NAMES,
+    SEASON_AWARDS_COLUMN_NAMES,
+    SEASON_AWARDS_VOTING_COLUMN_NAMES,
+    SEASON_LEADERS_COLUMN_NAMES,
+)
+from courtside_data.schemas import draft, league
+
+DRAFT_AWARDS_LEADERS_ENDPOINTS = {
+    "draft_picks": _season(
+        "/draft/NBA_{season_end_year}.html",
+        table_id="stats",
+        row_model=draft.DraftPicksRow,
+        csv_columns=DRAFT_PICKS_COLUMN_NAMES,
+    ),
+    "season_awards": _season(
+        "/awards/awards_{season_end_year}.html",
+        table_id="mvp",
+        fallback_table_ids=("nba_mvp",),
+        row_model=league.SeasonAwardsRow,
+        csv_columns=SEASON_AWARDS_COLUMN_NAMES,
+    ),
+    "season_awards_voting": _season(
+        "/awards/awards_{season_end_year}.html",
+        params=("season_end_year", "award"),
+        table_id="{award}",
+        fallback_table_ids=(
+            "mvp",
+            "roy",
+            "dpoy",
+            "smoy",
+            "mip",
+            "clutch_poy",
+            "coy",
+            "leading_all_nba",
+            "leading_all_defense",
+            "leading_all_rookie",
+        ),
+        custom=True,
+        row_model=league.SeasonAwardsVotingRow,
+        csv_columns=SEASON_AWARDS_VOTING_COLUMN_NAMES,
+    ),
+    "season_leaders": TableEndpoint(
+        path="/leaders/per_season.html",
+        table_id="stats_TOT",
+        use_header_fallback=True,
+        # The third column header rotates with the active stat category
+        # (``per``, ``pts``, ``ast`` ...). ``value_column`` renames the rightmost
+        # non-text column to a stable ``value`` key so the row model validates.
+        value_column=True,
+        row_model=league.SeasonLeadersRow,
+        csv_columns=SEASON_LEADERS_COLUMN_NAMES,
+    ),
+    "career_leaders": TableEndpoint(
+        # Re-registered from ``/leaders/`` (a navigation index) to the
+        # canonical career-points leaderboard at ``/leaders/pts_career.html``.
+        # The previous registration targeted ``table#leaders_index``, a
+        # stat-category navigation page whose rows don't match the
+        # rank/player/value schema. ``/leaders/pts_career.html`` is a real
+        # per-stat leaderboard (``table#tot``, columns Rank/Player/PTS) and
+        # is the default career leaderboard BR surfaces.
+        path="/leaders/pts_career.html",
+        table_id="tot",
+        use_header_fallback=True,
+        value_column=True,
+        row_model=league.CareerLeadersRow,
+        csv_columns=CAREER_LEADERS_COLUMN_NAMES,
+    ),
+}
