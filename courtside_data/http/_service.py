@@ -40,6 +40,7 @@ from __future__ import annotations
 import hashlib
 import logging
 import random
+import threading
 import time
 from collections.abc import Callable
 from typing import Any, ClassVar
@@ -197,13 +198,13 @@ class HTTPService(metaclass=_ClassStateMeta):
         self._random = random_func if random_func is not None else random.uniform
 
         # Bounded per-instance selector cache so multiple endpoints that scrape
-        # the same URL share one fetch and one parse. TTLCache evicts on age
-        # (10 min) *and* size, so long-lived clients cannot accumulate stale
-        # Selectors and selectors for time-sensitive pages do not outlive their
-        # validity window.
-        self._selector_cache: cachetools.TTLCache[str, Selector] = cachetools.TTLCache(
+        # unchanged HTML from the same URL can reuse one parse. _get_selector()
+        # still calls _get() for every request, so hishel keeps ownership of
+        # response freshness and conditional revalidation.
+        self._selector_cache: cachetools.TTLCache[str, tuple[str, Selector]] = cachetools.TTLCache(
             maxsize=_SELECTOR_CACHE_SIZE, ttl=_SELECTOR_CACHE_TTL
         )
+        self._selector_cache_lock = threading.RLock()
 
     @classmethod
     def _url(cls, path: str = "") -> str:
@@ -302,34 +303,53 @@ class HTTPService(metaclass=_ClassStateMeta):
     def _get_selector(self, url: str) -> Selector:
         """Fetch a page (no redirects) and wrap the body in a parsel Selector.
 
-        Parsed selectors are cached per URL on this instance, so callers that
-        extract several tables from the same page (e.g. the three 7-game
-        playoff series outcome matrices) reuse one request and one parse.
+        Parsed selectors are cached per URL on this instance, but the cache is
+        only a parse-reuse layer: every call still goes through ``_get`` first
+        so the HTTP cache/transport can perform normal freshness checks and
+        revalidation. When the fetched body hash differs from the cached hash,
+        the stale selector is replaced before parsing continues.
         """
-        if url in self._selector_cache:
-            trace = current_debug_trace()
-            if trace is not None:
-                trace.record(
-                    "http",
-                    "selector_cache_hit",
-                    url=url,
-                    cache_stats=self._selector_cache_stats(),
-                )
-            return self._selector_cache[url]
-
         response = self._get(url=url, follow_redirects=False)
         response.raise_for_status()
+        response_text = response.text
+        response_text_sha256 = hashlib.sha256(response_text.encode("utf-8", errors="replace")).hexdigest()
         trace = current_debug_trace()
+
+        with self._selector_cache_lock:
+            cached = self._selector_cache.get(url)
+            if cached is not None:
+                cached_sha256, cached_selector = cached
+                if cached_sha256 == response_text_sha256:
+                    if trace is not None:
+                        trace.record(
+                            "http",
+                            "selector_cache_hit",
+                            url=url,
+                            response_text_sha256=response_text_sha256,
+                            cache_stats=self._selector_cache_stats(),
+                        )
+                    return cached_selector
+                if trace is not None:
+                    trace.record(
+                        "http",
+                        "selector_cache_stale",
+                        url=url,
+                        cached_response_text_sha256=cached_sha256,
+                        response_text_sha256=response_text_sha256,
+                        cache_stats=self._selector_cache_stats(),
+                    )
+
         if trace is not None:
             trace.record(
                 "http",
                 "selector_created",
                 url=str(response.url),
-                response_text_length=len(response.text),
-                response_text_sha256=hashlib.sha256(response.text.encode("utf-8", errors="replace")).hexdigest(),
+                response_text_length=len(response_text),
+                response_text_sha256=response_text_sha256,
             )
-        selector = Selector(text=response.text)
-        self._selector_cache[url] = selector
+        selector = Selector(text=response_text)
+        with self._selector_cache_lock:
+            self._selector_cache[url] = (response_text_sha256, selector)
         return selector
 
     def _selector_cache_stats(self) -> dict[str, int | float]:
