@@ -254,7 +254,10 @@ class HTTPService(metaclass=_ClassStateMeta):
                             "attempt_response",
                             attempt=attempt_count,
                             status_code=response.status_code,
+                            reason_phrase=response.reason_phrase,
                             url=str(response.url),
+                            response_bytes=len(response.content),
+                            redirect_count=len(response.history),
                             headers=trace.sanitize_headers(response.headers),
                             extensions={key: repr(value) for key, value in response.extensions.items()},
                         )
@@ -267,7 +270,10 @@ class HTTPService(metaclass=_ClassStateMeta):
                     "http",
                     "status_error",
                     status_code=e.response.status_code,
+                    reason_phrase=e.response.reason_phrase,
                     url=str(e.response.url),
+                    response_bytes=len(e.response.content),
+                    redirect_count=len(e.response.history),
                     attempts=attempt_count,
                 )
             if e.response.status_code == 429:
@@ -295,7 +301,10 @@ class HTTPService(metaclass=_ClassStateMeta):
                     "http",
                     "request_complete",
                     status_code=response.status_code,
+                    reason_phrase=response.reason_phrase,
                     final_url=str(response.url),
+                    response_bytes=len(response.content),
+                    redirect_count=len(response.history),
                     attempts=attempt_count,
                 )
         return response
