@@ -173,7 +173,11 @@ def apply_rate_limiting(
 
     if wait > 0.0:
         logger.debug("Rate-limit pacing: sleeping %.2fs", wait)
-        sleep(wait)
+        if trace is not None:
+            with trace.span("rate_limit_wait", stage="rate_limit_wait", wait_seconds=wait):
+                sleep(wait)
+        else:
+            sleep(wait)
 
 
 def detect_jail(response: httpx.Response, retry_after: float) -> None:

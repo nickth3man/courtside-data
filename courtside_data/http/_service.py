@@ -43,6 +43,7 @@ import random
 import threading
 import time
 from collections.abc import Callable
+from contextlib import nullcontext
 from typing import Any, ClassVar
 
 import cachetools
@@ -51,7 +52,7 @@ import stamina
 from parsel import Selector
 
 from courtside_data import config
-from courtside_data.debug import current_debug_trace
+from courtside_data.debug import DebugTrace, current_debug_trace
 from courtside_data.errors import RateLimitJailed
 from courtside_data.http import _rate_limit, _retry
 from courtside_data.http._constants import (
@@ -231,6 +232,12 @@ class HTTPService(metaclass=_ClassStateMeta):
     def _get(self, url: str, **kwargs: Any) -> httpx.Response:
         trace = current_debug_trace()
         if trace is not None:
+            with trace.span("http_fetch", stage="http_fetch"):
+                return self._get_with_trace(url, trace=trace, **kwargs)
+        return self._get_with_trace(url, trace=None, **kwargs)
+
+    def _get_with_trace(self, url: str, *, trace: DebugTrace | None, **kwargs: Any) -> httpx.Response:
+        if trace is not None:
             trace.record("http", "request_prepare", url=url, kwargs=sorted(kwargs))
         self._apply_rate_limiting()
         response = None
@@ -356,7 +363,9 @@ class HTTPService(metaclass=_ClassStateMeta):
                 response_text_length=len(response_text),
                 response_text_sha256=response_text_sha256,
             )
-        selector = Selector(text=response_text)
+        parse_context = trace.span("html_parse", stage="html_parse") if trace is not None else nullcontext()
+        with parse_context:
+            selector = Selector(text=response_text)
         with self._selector_cache_lock:
             self._selector_cache[url] = (response_text_sha256, selector)
         return selector
