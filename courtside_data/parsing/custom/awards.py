@@ -11,6 +11,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
+from courtside_data.debug import current_debug_trace
+from courtside_data.debug._pipeline_events import emit_parser_diagnostics
 from courtside_data.parsing import rows
 from courtside_data.parsing.generic import find_table
 
@@ -27,4 +29,14 @@ def season_awards_voting(facade: FetchFacade, season_end_year: int, award: str) 
     table = find_table(selector, table_id)
     if table is None:
         return []
-    return [row for row, _ in rows.raw_rows_from_table(table)]
+    parsed_rows = [row for row, _ in rows.raw_rows_from_table(table)]
+    trace = current_debug_trace()
+    if trace is not None:
+        emit_parser_diagnostics(
+            trace,
+            parser_name="season_awards_voting",
+            rows=parsed_rows,
+            source_sections=[f"table#{table_id}"],
+            custom_diagnostics={"award_table_id": table_id},
+        )
+    return parsed_rows

@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, Any
 from parsel import Selector
 
 from courtside_data.debug import current_debug_trace
+from courtside_data.debug._pipeline_events import record_parsed_rows_summary
 from courtside_data.endpoints import TableEndpoint
 from courtside_data.parsing.tables import GenericTable, extract_commented_table, parse_transaction_list
 
@@ -127,6 +128,7 @@ class GenericEndpointHandler:
                 if trace is not None:
                     trace.record("table_resolution", "transaction_list_fallback", row_count=len(rows))
                     trace.artifact("raw_rows", rows)
+                    record_parsed_rows_summary(trace, parser_name="transaction_list", rows=rows)
                 return rows
             if trace is not None:
                 trace.record("table_resolution", "no_table_found", returned_row_count=0)
@@ -154,6 +156,7 @@ class GenericEndpointHandler:
                 "parse",
                 "generic_table_parsed",
                 source=table_source,
+                source_sections=[table_source],
                 row_count=len(rows),
                 column_names=list(rows[0].keys()) if rows else [],
                 table_attributes=dict(table_selector.attrib),
@@ -166,4 +169,5 @@ class GenericEndpointHandler:
                 "row_metadata",
                 [{"row_index": index, "metadata": row.metadata} for index, row in enumerate(table.rows)],
             )
+            record_parsed_rows_summary(trace, parser_name="generic_table", rows=rows)
         return rows

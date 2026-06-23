@@ -26,12 +26,15 @@ from courtside_data.parsing.cells import (
     remaining_locations_from_text,
     remaining_seconds,
     remaining_text_from_gameslist,
+    require_slug,
     resource_identifier,
     score_outcome,
     search_result_name,
+    slug_from_metadata,
     standings_team_value,
     team_name_from_abbreviation,
 )
+from courtside_data.parsing.custom._diagnostics import IGNORE_EMPTY_TABLE, IGNORE_MISSING_FOOTER, increment_ignored
 from courtside_data.parsing.tables import GenericTable
 
 
@@ -109,21 +112,37 @@ def raw_rows_from_table(
     return rows
 
 
-def parse_standings(selector: Selector) -> list[dict[str, Any]]:
+def parse_standings_with_stats(selector: Selector) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     standings: list[dict[str, Any]] = []
+    ignored_row_reason_counts: dict[str, int] = {}
+    standings_section_count = 0
+    conferences: set[Any] = set()
+    divisions: set[Any] = set()
+
+    def ignore(reason: str) -> None:
+        ignored_row_reason_counts[reason] = ignored_row_reason_counts.get(reason, 0) + 1
+
     for table_id in ("divs_standings_E", "divs_standings_W"):
-        current_division: Division | None = None
         table = selector.css(f"table#{table_id}")
         if not table:
+            ignore("missing_table")
             continue
+        standings_section_count += 1
+        current_division: Division | None = None
         for row in table[0].css("tbody tr"):
             classes = row.attrib.get("class", "").split()
             if "thead" in classes:
                 div_val = division_value(cell_text(row.css("th")))
                 current_division = Division(div_val) if div_val is not None else None
+                if current_division is not None:
+                    divisions.add(current_division)
+                    conferences.add(DIVISIONS_TO_CONFERENCES[current_division])
+                else:
+                    ignore("division_header")
                 continue
             team = cell_text(row.css('[data-stat="team_name"]'))
             if not team:
+                ignore("missing_team")
                 continue
             standings.append(
                 {
@@ -136,7 +155,20 @@ def parse_standings(selector: Selector) -> list[dict[str, Any]]:
                     ),
                 }
             )
-    return standings
+
+    stats = {
+        "standings_section_count": standings_section_count,
+        "conference_count": len(conferences),
+        "division_count": len(divisions),
+        "team_count": len(standings),
+        "ignored_row_reason_counts": ignored_row_reason_counts,
+    }
+    return standings, stats
+
+
+def parse_standings(selector: Selector) -> list[dict[str, Any]]:
+    rows, _ = parse_standings_with_stats(selector)
+    return rows
 
 
 def resolve_pbp_game_url_path(boxscores_selector: Selector, abbr: str) -> str | None:
@@ -146,18 +178,32 @@ def resolve_pbp_game_url_path(boxscores_selector: Selector, abbr: str) -> str | 
     return None
 
 
-def parse_play_by_play_rows(selector: Selector, away_team: str, home_team_abbreviation: str) -> list[dict[str, Any]]:
+def parse_play_by_play_rows_with_stats(
+    selector: Selector,
+    away_team: str,
+    home_team_abbreviation: str,
+) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     current_period = 0
     rows: list[dict[str, Any]] = []
+    ignored_reasons: dict[str, int] = {}
+    score_event_count = 0
+    substitution_event_count = 0
+
+    def ignore(reason: str) -> None:
+        ignored_reasons[reason] = ignored_reasons.get(reason, 0) + 1
+
     for row in selector.css("table#pbp tr"):
         cells = row.css("td, th")
         if not cells:
+            ignore("blank_row")
             continue
         timestamp_cell = cells[0]
         if timestamp_cell.attrib.get("colspan") == "6":
             current_period += 1
+            ignore("period_header")
             continue
         if len(cells) < 2 or cells[1].attrib.get("colspan") == "5" or timestamp_cell.attrib.get("aria-label") == "Time":
+            ignore("parser_excluded")
             continue
 
         timestamp = cell_text(timestamp_cell)
@@ -165,6 +211,12 @@ def parse_play_by_play_rows(selector: Selector, away_team: str, home_team_abbrev
         home_description = cell_text(cells[5]) if len(cells) == 6 else ""
         scores = cell_text(cells[3]) if len(cells) == 6 else ""
         is_away_play = away_description != ""
+        description = away_description if is_away_play else home_description
+        if scores:
+            score_event_count += 1
+        lowered_description = description.lower()
+        if " enters " in lowered_description or " enters for " in lowered_description:
+            substitution_event_count += 1
         rows.append(
             {
                 "period": period_number(current_period),
@@ -175,9 +227,23 @@ def parse_play_by_play_rows(selector: Selector, away_team: str, home_team_abbrev
                 "home_team": home_team_abbreviation,
                 "away_score": scores,
                 "home_score": scores,
-                "description": away_description if is_away_play else home_description,
+                "description": description,
             }
         )
+
+    stats = {
+        "parsed_event_count": len(rows),
+        "ignored_event_count": sum(ignored_reasons.values()),
+        "ignored_event_reason_counts": ignored_reasons,
+        "period_count": current_period,
+        "score_event_count": score_event_count,
+        "substitution_event_count": substitution_event_count,
+    }
+    return rows, stats
+
+
+def parse_play_by_play_rows(selector: Selector, away_team: str, home_team_abbreviation: str) -> list[dict[str, Any]]:
+    rows, _ = parse_play_by_play_rows_with_stats(selector, away_team, home_team_abbreviation)
     return rows
 
 
@@ -207,8 +273,23 @@ def parse_playoff_bracket(table_selector: Selector) -> list[dict[str, Any]]:
     return rows
 
 
-def parse_team_box_score(selector: Selector) -> list[dict[str, Any]]:
+def parse_team_box_score_with_stats(selector: Selector) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    """Return team totals for one game page plus parser diagnostics."""
+    ignored_row_reason_counts: dict[str, int] = {}
     combined_team_totals: list[dict[str, Any]] = []
+    basic_table_count = 0
+    advanced_table_count = 0
+    empty_table_count = 0
+
+    for table in selector.css('table.stats_table[id^="box-"]'):
+        table_id = table.attrib.get("id", "")
+        if table_id.endswith("-game-advanced"):
+            advanced_table_count += 1
+        elif table_id.endswith("-game-basic"):
+            basic_table_count += 1
+
+    stat_table_count = basic_table_count + advanced_table_count
+
     for table in selector.css('table.stats_table[id$="-game-basic"]'):
         table_id = table.attrib.get("id", "")
         if not table_id.startswith("box-"):
@@ -216,11 +297,14 @@ def parse_team_box_score(selector: Selector) -> list[dict[str, Any]]:
         team_abbreviation = table_id.removeprefix("box-").removesuffix("-game-basic")
         footer = table.css("tfoot")
         if not footer:
+            increment_ignored(ignored_row_reason_counts, IGNORE_MISSING_FOOTER)
             continue
-        rows = raw_rows_from_table(footer[0])
-        if not rows:
+        footer_rows = raw_rows_from_table(footer[0])
+        if not footer_rows:
+            empty_table_count += 1
+            increment_ignored(ignored_row_reason_counts, IGNORE_EMPTY_TABLE)
             continue
-        row = rows[0][0]
+        row = footer_rows[0][0]
         row["team_name_abbr"] = team_name_from_abbreviation(team_abbreviation)
         combined_team_totals.append(row)
 
@@ -230,14 +314,64 @@ def parse_team_box_score(selector: Selector) -> list[dict[str, Any]]:
     first_team_totals, second_team_totals = combined_team_totals[:2]
     first_team_totals["outcome"] = score_outcome(first_team_totals["pts"], second_team_totals["pts"])
     second_team_totals["outcome"] = score_outcome(second_team_totals["pts"], first_team_totals["pts"])
-    return [first_team_totals, second_team_totals]
+    parsed_rows = [first_team_totals, second_team_totals]
+
+    stats = {
+        "game_count": 1,
+        "team_count": len(parsed_rows),
+        "stat_table_count": stat_table_count,
+        "basic_table_count": basic_table_count,
+        "advanced_table_count": advanced_table_count,
+        "empty_table_count": empty_table_count,
+        "ignored_row_reason_counts": ignored_row_reason_counts,
+    }
+    return parsed_rows, stats
 
 
-def parse_search_rows(selector: Selector) -> list[dict[str, Any]]:
+def parse_team_box_score(selector: Selector) -> list[dict[str, Any]]:
+    rows, _ = parse_team_box_score_with_stats(selector)
+    return rows
+
+
+def parse_player_box_scores_from_table_with_stats(
+    table_selector: Selector,
+    *,
+    endpoint_name: str = "player_box_scores",
+) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    """Return daily-leader player rows and parser diagnostics from ``table#stats``."""
+    raw_rows = list(raw_rows_from_table(table_selector))
+    parsed_rows: list[dict[str, Any]] = []
+    for row_index, (row, metadata) in enumerate(raw_rows):
+        row["slug"] = slug_from_metadata(metadata, "player")
+        require_slug(endpoint_name, row, row_index)
+        parsed_rows.append(row)
+
+    raw_column_count = len(raw_rows[0][0]) if raw_rows else 0
+    stats = {
+        "player_count": len(parsed_rows),
+        "raw_row_count": len(raw_rows),
+        "raw_column_count": raw_column_count,
+        "stat_table_count": 1,
+        "basic_table_count": 1,
+        "advanced_table_count": 0,
+        "selected_table_id": "stats",
+    }
+    return parsed_rows, stats
+
+
+def parse_player_box_scores_from_table(table_selector: Selector) -> list[dict[str, Any]]:
+    rows, _ = parse_player_box_scores_from_table_with_stats(table_selector)
+    return rows
+
+
+def parse_search_rows_with_stats(selector: Selector) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    ignored_result_reason_counts: dict[str, int] = {}
+    candidate_count = len(selector.css("div#searches div#players div.search-item"))
     rows: list[dict[str, Any]] = []
     for result in selector.css("div#searches div#players div.search-item"):
         link = result.css("div.search-item-name a")
         if not link:
+            ignored_result_reason_counts["missing_link"] = ignored_result_reason_counts.get("missing_link", 0) + 1
             continue
         rows.append(
             {
@@ -246,6 +380,16 @@ def parse_search_rows(selector: Selector) -> list[dict[str, Any]]:
                 "leagues": cell_text(result.css("div.search-item-league")),
             }
         )
+    stats = {
+        "candidate_count": candidate_count,
+        "matched_result_count": len(rows),
+        "ignored_result_reason_counts": ignored_result_reason_counts,
+    }
+    return rows, stats
+
+
+def parse_search_rows(selector: Selector) -> list[dict[str, Any]]:
+    rows, _ = parse_search_rows_with_stats(selector)
     return rows
 
 

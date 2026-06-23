@@ -12,6 +12,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
 from courtside_data.debug import current_debug_trace
+from courtside_data.debug._pipeline_events import emit_parser_diagnostics
 from courtside_data.parsing import rows
 from courtside_data.parsing.generic import find_table
 
@@ -49,6 +50,13 @@ def _friv_7_game_playoff_series_outcomes(facade: FetchFacade, table_id: str) -> 
     if trace is not None:
         trace.record("parse", "friv_playoff_outcomes_parsed", table_id=table_id, row_count=len(parsed_rows))
         trace.artifact("raw_rows", parsed_rows)
+        emit_parser_diagnostics(
+            trace,
+            parser_name="friv_playoff_outcomes",
+            rows=parsed_rows,
+            source_sections=[f"table#{table_id}"],
+            custom_diagnostics={"table_id": table_id},
+        )
     return parsed_rows
 
 

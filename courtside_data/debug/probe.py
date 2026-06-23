@@ -24,7 +24,7 @@ from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, TypedDict
+from typing import Any, TypedDict, cast
 
 import orjson
 from tests.fixture_manifest import ALL_CASES
@@ -55,6 +55,7 @@ MISSING_SAMPLE_PARAMS_ERROR = "MissingSampleParams"
 
 _PREVIEW_MAX_KEYS = 8
 _PREVIEW_MAX_STR_LEN = 80
+_PREVIEW_MAX_NESTED_DEPTH = 2
 _TRACEBACK_TAIL_LINES = 20
 
 CSV_COLUMNS: tuple[str, ...] = (
@@ -93,12 +94,38 @@ CSV_COLUMNS: tuple[str, ...] = (
     "raw_table_column_count",
     "parser_name",
     "model_name",
+    "validation_status",
     "validation_error_count",
     "validation_error_paths_json",
     "output_type",
+    "raw_column_count",
+    "raw_columns_json",
+    "parsed_field_count",
+    "parsed_fields_json",
+    "validated_field_count",
+    "validated_fields_json",
+    "output_field_count",
+    "output_fields_json",
+    "raw_row_count",
+    "parsed_row_count",
+    "validated_row_count",
+    "output_row_count",
+    "dropped_row_count",
+    "dropped_row_reason_counts_json",
+    "source_sections_json",
+    "parsed_event_count",
+    "ignored_event_count",
+    "ignored_event_reason_counts_json",
+    "period_count",
+    "score_event_count",
+    "substitution_event_count",
+    "custom_diagnostics_json",
     "column_count",
     "columns_json",
     "first_row_preview_json",
+    "first_row_preview_truncated",
+    "first_row_preview_field_count",
+    "first_row_total_field_count",
     "row_count",
     "duration_ms",
     "elapsed_ms",
@@ -158,7 +185,7 @@ class ProbeResult(TypedDict, total=False):
     failure_category: str
     error_type: str | None
     error_message: str | None
-    status_code: str | None
+    status_code: str | None  # deprecated alias for debug_status
     debug_status: str | None
     http_status_code: int | None
     http_reason: str | None
@@ -185,12 +212,38 @@ class ProbeResult(TypedDict, total=False):
     raw_table_column_count: int | None
     parser_name: str | None
     model_name: str | None
+    validation_status: str | None
     validation_error_count: int | None
     validation_error_paths_json: list[str]
     output_type: str | None
-    column_count: int | None
-    columns_json: list[str]
+    raw_column_count: int | None
+    raw_columns_json: list[str]
+    parsed_field_count: int | None
+    parsed_fields_json: list[str]
+    validated_field_count: int | None
+    validated_fields_json: list[str]
+    output_field_count: int | None
+    output_fields_json: list[str]
+    raw_row_count: int | None
+    parsed_row_count: int | None
+    validated_row_count: int | None
+    output_row_count: int | None
+    dropped_row_count: int | None
+    dropped_row_reason_counts_json: dict[str, int]
+    source_sections_json: list[str]
+    parsed_event_count: int | None
+    ignored_event_count: int | None
+    ignored_event_reason_counts_json: dict[str, int]
+    period_count: int | None
+    score_event_count: int | None
+    substitution_event_count: int | None
+    custom_diagnostics_json: dict[str, Any]
+    column_count: int | None  # deprecated; prefer output_field_count
+    columns_json: list[str]  # deprecated; prefer raw_columns_json / output_fields_json
     first_row_preview_json: Any
+    first_row_preview_truncated: bool | None
+    first_row_preview_field_count: int | None
+    first_row_total_field_count: int | None
     row_count: int | None
     duration_ms: float | None
     elapsed_ms: float | None
@@ -277,17 +330,255 @@ def _content_type_from_headers(headers: Any) -> str | None:
     return None
 
 
-def _preview_row(row: Any) -> Any:
+def _truncate_preview_value(value: Any, *, depth: int = 0) -> tuple[Any, bool]:
+    """Return a bounded preview fragment and whether truncation occurred."""
+    truncated = False
+    if isinstance(value, str):
+        if len(value) > _PREVIEW_MAX_STR_LEN:
+            return f"{value[:_PREVIEW_MAX_STR_LEN]}...", True
+        return value, False
+    if depth >= _PREVIEW_MAX_NESTED_DEPTH:
+        if isinstance(value, (dict, list, tuple)):
+            return "...", True
+        return value, False
+    if isinstance(value, dict):
+        preview: dict[str, Any] = {}
+        for index, (key, nested) in enumerate(sorted(value.items())):
+            if index >= _PREVIEW_MAX_KEYS:
+                truncated = True
+                break
+            nested_preview, nested_truncated = _truncate_preview_value(nested, depth=depth + 1)
+            preview[str(key)] = nested_preview
+            truncated = truncated or nested_truncated
+        return preview, truncated
+    if isinstance(value, list):
+        items: list[Any] = []
+        for index, item in enumerate(value):
+            if index >= _PREVIEW_MAX_KEYS:
+                truncated = True
+                break
+            nested_preview, nested_truncated = _truncate_preview_value(item, depth=depth + 1)
+            items.append(nested_preview)
+            truncated = truncated or nested_truncated
+        return items, truncated
+    return value, False
+
+
+def _preview_result(row: Any) -> tuple[Any, bool, int | None, int | None]:
+    """Build a deterministic first-row preview with truncation metadata."""
     if not isinstance(row, dict):
-        return row
+        return row, False, None, None
+    total_field_count = len(row)
     preview: dict[str, Any] = {}
+    truncated = total_field_count > _PREVIEW_MAX_KEYS
     for index, (key, value) in enumerate(sorted(row.items())):
         if index >= _PREVIEW_MAX_KEYS:
             break
-        if isinstance(value, str) and len(value) > _PREVIEW_MAX_STR_LEN:
-            preview[key] = f"{value[:_PREVIEW_MAX_STR_LEN]}..."
-        else:
-            preview[key] = value
+        preview_value, value_truncated = _truncate_preview_value(value)
+        preview[str(key)] = preview_value
+        truncated = truncated or value_truncated
+    return preview, truncated, len(preview), total_field_count
+
+
+def _field_names_from_row(row: Any) -> list[str]:
+    if isinstance(row, dict):
+        return sorted(row)
+    if hasattr(row, "model_dump"):
+        dumped = row.model_dump()
+        if isinstance(dumped, dict):
+            return sorted(dumped)
+    return []
+
+
+def _infer_output_type(data: Any, model_name: str | None) -> str | None:
+    if data is None:
+        return None
+    if isinstance(data, list):
+        return f"list[{model_name}]" if model_name else "list"
+    if isinstance(data, dict):
+        return "dict"
+    return type(data).__name__
+
+
+def _summarize_metrics(
+    debug: Mapping[str, Any],
+    *,
+    duration_ms: Any = None,
+    response_bytes: int | None = None,
+    rate_limit_wait_ms: float | None = None,
+) -> dict[str, Any]:
+    """Merge trace metrics with span timings and known probe counters."""
+    base = dict(debug.get("metrics") or {})
+    if isinstance(duration_ms, int | float):
+        base["duration_ms.total"] = round(float(duration_ms), 3)
+    if isinstance(response_bytes, int):
+        base["response_bytes"] = response_bytes
+    if isinstance(rate_limit_wait_ms, int | float) and rate_limit_wait_ms:
+        base["rate_limit_wait_ms"] = round(float(rate_limit_wait_ms), 3)
+    for span in debug.get("spans") or []:
+        if not isinstance(span, dict):
+            continue
+        stage = span.get("stage")
+        duration = span.get("duration_ms")
+        if isinstance(stage, str) and isinstance(duration, int | float):
+            key = f"duration_ms.{stage}"
+            base[key] = round(float(base.get(key, 0.0)) + float(duration), 3)
+    return base
+
+
+def _summarize_row_counts(
+    events: Sequence[Mapping[str, Any]],
+    *,
+    output_row_count: int | None,
+    raw_table_row_count: int | None,
+) -> dict[str, Any]:
+    """Cross-reference pipeline events to explain row filtering."""
+    raw_row_count: int | None = None
+    parsed_row_count: int | None = None
+    validated_row_count: int | None = None
+    dropped_reasons: dict[str, int] = {}
+
+    for event in events:
+        stage = str(event.get("stage") or "")
+        event_name = str(event.get("event") or "")
+        attributes = _event_attributes(event)
+
+        if stage == "runner" and event_name == "row_model_pipeline_start":
+            pipeline_raw = attributes.get("raw_row_count")
+            if isinstance(pipeline_raw, int):
+                raw_row_count = pipeline_raw
+
+        if stage == "parse" and event_name == "parsed_rows_summary":
+            explicit_parsed = attributes.get("parsed_row_count")
+            if isinstance(explicit_parsed, int):
+                parsed_row_count = explicit_parsed
+
+        if stage == "parse" and event_name == "generic_table_parsed":
+            table_rows = attributes.get("row_count")
+            if isinstance(table_rows, int) and parsed_row_count is None:
+                parsed_row_count = table_rows
+
+        if stage == "validation" and event_name == "pydantic_validation_complete":
+            validated = attributes.get("validated_row_count")
+            if not isinstance(validated, int):
+                validated = attributes.get("row_count")
+            if isinstance(validated, int):
+                validated_row_count = validated
+
+        if stage == "validation" and event_name == "rows_filtered":
+            reason_counts = attributes.get("dropped_row_reason_counts")
+            if isinstance(reason_counts, dict):
+                for key, value in reason_counts.items():
+                    if isinstance(value, int | float):
+                        reason_key = str(key)
+                        dropped_reasons[reason_key] = dropped_reasons.get(reason_key, 0) + int(value)
+
+        if event_name in {"rows_dropped", "row_dropped"}:
+            reason = attributes.get("reason")
+            count = attributes.get("count", 1)
+            if isinstance(count, int | float):
+                key = str(reason) if reason is not None else "unknown"
+                dropped_reasons[key] = dropped_reasons.get(key, 0) + int(count)
+
+    if raw_row_count is None and isinstance(raw_table_row_count, int):
+        raw_row_count = raw_table_row_count
+    if parsed_row_count is None and isinstance(raw_table_row_count, int):
+        parsed_row_count = raw_table_row_count
+
+    baseline = raw_row_count if raw_row_count is not None else parsed_row_count
+    after_validation = validated_row_count if validated_row_count is not None else output_row_count
+    dropped_row_count: int | None = None
+    if dropped_reasons:
+        dropped_row_count = sum(dropped_reasons.values())
+    elif isinstance(baseline, int) and isinstance(after_validation, int) and baseline > after_validation:
+        dropped_row_count = baseline - after_validation
+        dropped_reasons = {"unknown": dropped_row_count}
+
+    return {
+        "raw_row_count": raw_row_count,
+        "parsed_row_count": parsed_row_count,
+        "validated_row_count": validated_row_count,
+        "output_row_count": output_row_count,
+        "dropped_row_count": dropped_row_count,
+        "dropped_row_reason_counts_json": dropped_reasons,
+    }
+
+
+def _summarize_trace_file(trace_log_path: str | None) -> dict[str, Any]:
+    if not trace_log_path:
+        return {"trace_log_exists": False, "trace_log_size_bytes": None}
+    trace_path = Path(trace_log_path)
+    if not trace_path.is_absolute():
+        trace_path = Path.cwd() / trace_path
+    if trace_path.exists():
+        return {"trace_log_exists": True, "trace_log_size_bytes": trace_path.stat().st_size}
+    return {"trace_log_exists": False, "trace_log_size_bytes": None}
+
+
+def _slowest_stage_from_metrics(metrics: Mapping[str, Any]) -> str | None:
+    stage_durations: list[tuple[str, float]] = []
+    for key, value in metrics.items():
+        if not key.startswith("duration_ms.") or key == "duration_ms.total":
+            continue
+        if isinstance(value, int | float):
+            stage_durations.append((key.removeprefix("duration_ms."), float(value)))
+    if not stage_durations:
+        return None
+    return max(stage_durations, key=lambda item: item[1])[0]
+
+
+def _summarize_report(results: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
+    """Aggregate per-endpoint probe rows into report-level diagnostics."""
+    rate_limit_waits: list[float] = []
+    elapsed_by_endpoint: list[tuple[str, float]] = []
+    trace_sizes: list[tuple[str, int]] = []
+
+    for result in results:
+        wait_ms = result.get("rate_limit_wait_ms")
+        if isinstance(wait_ms, int | float):
+            rate_limit_waits.append(float(wait_ms))
+        endpoint = result.get("endpoint")
+        elapsed = result.get("elapsed_ms")
+        if isinstance(endpoint, str) and isinstance(elapsed, int | float):
+            elapsed_by_endpoint.append((endpoint, float(elapsed)))
+        trace_path = result.get("trace_log_path")
+        trace_size = result.get("trace_log_size_bytes")
+        if isinstance(trace_path, str) and isinstance(trace_size, int):
+            trace_sizes.append((trace_path, trace_size))
+
+    summary: dict[str, Any] = {
+        "total_rate_limit_wait_ms": round(sum(rate_limit_waits), 3) if rate_limit_waits else None,
+        "average_rate_limit_wait_ms": round(sum(rate_limit_waits) / len(rate_limit_waits), 3)
+        if rate_limit_waits
+        else None,
+        "max_rate_limit_wait_ms": round(max(rate_limit_waits), 3) if rate_limit_waits else None,
+        "slowest_endpoint": None,
+        "slowest_endpoint_elapsed_ms": None,
+        "slowest_stage": None,
+        "total_trace_log_size_bytes": sum(size for _, size in trace_sizes) if trace_sizes else None,
+        "largest_trace_log_path": None,
+        "largest_trace_log_size_bytes": None,
+    }
+
+    if elapsed_by_endpoint:
+        slowest_endpoint, slowest_elapsed = max(elapsed_by_endpoint, key=lambda item: item[1])
+        summary["slowest_endpoint"] = slowest_endpoint
+        summary["slowest_endpoint_elapsed_ms"] = round(slowest_elapsed, 3)
+        slowest_result = next(item for item in results if item.get("endpoint") == slowest_endpoint)
+        metrics = slowest_result.get("metrics")
+        if isinstance(metrics, dict):
+            summary["slowest_stage"] = _slowest_stage_from_metrics(metrics)
+
+    if trace_sizes:
+        largest_path, largest_size = max(trace_sizes, key=lambda item: item[1])
+        summary["largest_trace_log_path"] = largest_path
+        summary["largest_trace_log_size_bytes"] = largest_size
+
+    return summary
+
+
+def _preview_row(row: Any) -> Any:
+    preview, _, _, _ = _preview_result(row if isinstance(row, dict) else {"value": row})
     return preview
 
 
@@ -341,18 +632,20 @@ def _summarize_debug_events(
 ) -> dict[str, Any]:
     """Walk debug events and extract probe-friendly diagnostics."""
     events = [event for event in (debug.get("events") or []) if isinstance(event, dict)]
-    status = debug.get("status") if isinstance(debug.get("status"), dict) else {}
-    metrics = debug.get("metrics") if isinstance(debug.get("metrics"), dict) else {}
-    stage_counts = debug.get("stage_counts") if isinstance(debug.get("stage_counts"), dict) else {}
+    status_raw = debug.get("status")
+    status = status_raw if isinstance(status_raw, dict) else {}
+    stage_counts_raw = debug.get("stage_counts")
+    stage_counts = stage_counts_raw if isinstance(stage_counts_raw, dict) else {}
+    debug_status = status.get("code")
 
+    output_row_count = _row_count(data)
     summary: dict[str, Any] = {
         "duration_ms": debug.get("duration_ms"),
-        "status_code": status.get("code"),
-        "debug_status": status.get("code"),
+        "status_code": debug_status,
+        "debug_status": debug_status,
         "error_type": status.get("error_type"),
         "error_message": status.get("error_message"),
-        "row_count": _row_count(data),
-        "metrics": dict(metrics),
+        "row_count": output_row_count,
         "stage_counts": dict(stage_counts),
         "trace_id": debug.get("trace_id"),
         "event_count": len(events),
@@ -360,10 +653,20 @@ def _summarize_debug_events(
         "error_event_count": 0,
         "candidate_table_ids_json": [],
         "validation_error_paths_json": [],
-        "columns_json": [],
+        "validation_status": None,
+        "raw_columns_json": [],
+        "parsed_fields_json": [],
+        "validated_fields_json": [],
+        "output_fields_json": [],
+        "dropped_row_reason_counts_json": {},
+        "source_sections_json": [],
+        "ignored_event_reason_counts_json": {},
+        "custom_diagnostics_json": {},
         "first_row_preview_json": None,
-        "trace_log_exists": False,
-        "trace_log_size_bytes": None,
+        "first_row_preview_truncated": None,
+        "first_row_preview_field_count": None,
+        "first_row_total_field_count": None,
+        **(_summarize_trace_file(trace_log_path)),
     }
 
     last_event: str | None = None
@@ -380,14 +683,27 @@ def _summarize_debug_events(
     candidate_table_ids: list[str] = []
     raw_table_row_count: int | None = None
     raw_table_column_count: int | None = None
+    raw_columns: list[str] = []
+    parsed_fields: list[str] = []
     parser_name: str | None = None
     model_name: str | None = None
     validation_error_count: int | None = None
+    validation_status: str | None = None
     output_type: str | None = None
-    column_count: int | None = None
-    columns: list[str] = []
+    output_field_count: int | None = None
+    output_fields: list[str] = []
     first_row_preview: Any = None
+    first_row_preview_truncated: bool | None = None
+    first_row_preview_field_count: int | None = None
+    first_row_total_field_count: int | None = None
     traceback_text: str | None = None
+    parsed_event_count: int | None = None
+    ignored_event_count: int | None = None
+    period_count: int | None = None
+    score_event_count: int | None = None
+    substitution_event_count: int | None = None
+    source_sections: list[str] = []
+    custom_diagnostics: dict[str, Any] = {}
 
     for event in events:
         event_name = str(event.get("event") or "")
@@ -447,6 +763,14 @@ def _summarize_debug_events(
         if stage == "endpoint" and event_name == "generic_service_dispatch":
             parser_name = "generic"
 
+        if stage == "parse" and event_name == "parsed_rows_summary":
+            summary_parser = attributes.get("parser_name")
+            if isinstance(summary_parser, str):
+                parser_name = summary_parser
+            parsed_fields_attr = attributes.get("parsed_fields")
+            if isinstance(parsed_fields_attr, list):
+                parsed_fields = [str(name) for name in parsed_fields_attr]
+
         if stage == "parse" and event_name == "generic_table_parsed":
             parser_name = "generic_table"
             row_count_value = attributes.get("row_count")
@@ -455,13 +779,65 @@ def _summarize_debug_events(
             column_names = attributes.get("column_names")
             if isinstance(column_names, list):
                 raw_table_column_count = len(column_names)
-                columns = [str(name) for name in column_names]
+                raw_columns = [str(name) for name in column_names]
+                if not parsed_fields:
+                    parsed_fields = list(raw_columns)
 
         if stage == "parse" and event_name == "friv_playoff_outcomes_parsed":
             parser_name = "friv_playoff_outcomes"
             table_id = attributes.get("table_id")
             if isinstance(table_id, str):
                 selected_table_id = table_id
+
+        if stage == "parse" and event_name.endswith("_parsed"):
+            custom_parser = attributes.get("parser_name")
+            if isinstance(custom_parser, str):
+                parser_name = custom_parser
+            parsed_events = attributes.get("parsed_event_count")
+            if isinstance(parsed_events, int):
+                parsed_event_count = parsed_events
+            ignored_events = attributes.get("ignored_event_count")
+            if isinstance(ignored_events, int):
+                ignored_event_count = ignored_events
+            ignored_reasons = attributes.get("ignored_event_reason_counts")
+            if isinstance(ignored_reasons, dict):
+                summary["ignored_event_reason_counts_json"] = {
+                    str(key): int(value) for key, value in ignored_reasons.items() if isinstance(value, int | float)
+                }
+            sections = attributes.get("source_sections")
+            if isinstance(sections, list):
+                source_sections = [str(section) for section in sections]
+            periods = attributes.get("period_count")
+            if isinstance(periods, int):
+                period_count = periods
+            score_events = attributes.get("score_event_count")
+            if isinstance(score_events, int):
+                score_event_count = score_events
+            substitution_events = attributes.get("substitution_event_count")
+            if isinstance(substitution_events, int):
+                substitution_event_count = substitution_events
+            custom_diag = attributes.get("custom_diagnostics")
+            if isinstance(custom_diag, dict):
+                custom_diagnostics.update({str(key): value for key, value in custom_diag.items() if value is not None})
+            ignored_rows = attributes.get("ignored_row_reason_counts")
+            if isinstance(ignored_rows, dict) and ignored_rows:
+                custom_diagnostics.setdefault("ignored_row_reason_counts", {})
+                existing_ignored_rows = custom_diagnostics["ignored_row_reason_counts"]
+                if isinstance(existing_ignored_rows, dict):
+                    for key, value in ignored_rows.items():
+                        if isinstance(value, int | float):
+                            reason_key = str(key)
+                            existing_ignored_rows[reason_key] = existing_ignored_rows.get(reason_key, 0) + int(value)
+
+        if stage == "validation" and event_name == "sentinel_rows_observed":
+            sentinel_count = attributes.get("sentinel_row_count")
+            if isinstance(sentinel_count, int):
+                custom_diagnostics["sentinel_row_count"] = sentinel_count
+            sentinel_types = attributes.get("sentinel_row_types")
+            if isinstance(sentinel_types, dict):
+                custom_diagnostics["sentinel_row_types"] = {
+                    str(key): int(value) for key, value in sentinel_types.items() if isinstance(value, int | float)
+                }
 
         if stage == "table_resolution":
             selector = attributes.get("selector")
@@ -479,26 +855,40 @@ def _summarize_debug_events(
                 elif isinstance(commented_id, str):
                     selected_table_id = commented_id
 
-        if stage == "runner" and event_name == "execute_start":
-            output_type_value = attributes.get("output_type")
-            if output_type_value is not None:
-                output_type = str(output_type_value)
-
         if stage == "runner" and event_name == "row_model_pipeline_start":
             row_model = attributes.get("row_model")
             if isinstance(row_model, str):
                 model_name = row_model
 
-        if stage == "validation" and event_name == "pydantic_validation_failed":
-            errors = attributes.get("errors")
-            if isinstance(errors, list):
-                validation_error_count = len(errors)
-                summary["validation_error_paths_json"] = _validation_error_paths(errors)
+        if stage == "validation" and event_name == "pydantic_validation_complete":
+            validation_status = str(attributes.get("validation_status") or "passed")
+            explicit_error_count = attributes.get("validation_error_count")
+            validation_error_count = explicit_error_count if isinstance(explicit_error_count, int) else 0
+            explicit_paths = attributes.get("validation_error_paths")
+            if isinstance(explicit_paths, list):
+                summary["validation_error_paths_json"] = [str(path) for path in explicit_paths]
+            else:
+                summary["validation_error_paths_json"] = []
 
-        if stage == "diagnostics" and event_name == "rows_observed" and attributes.get("name") == "result_data":
+        if stage == "validation" and event_name == "pydantic_validation_failed":
+            validation_status = str(attributes.get("validation_status") or "failed")
+            explicit_error_count = attributes.get("validation_error_count")
+            if isinstance(explicit_error_count, int):
+                validation_error_count = explicit_error_count
+            explicit_paths = attributes.get("validation_error_paths")
+            if isinstance(explicit_paths, list):
+                summary["validation_error_paths_json"] = [str(path) for path in explicit_paths]
+            else:
+                errors = attributes.get("errors")
+                if isinstance(errors, list):
+                    validation_error_count = len(errors) if validation_error_count is None else validation_error_count
+                    summary["validation_error_paths_json"] = _validation_error_paths(errors)
+
+        if stage == "diagnostics" and event_name == "rows_observed":
+            observed_name = attributes.get("name")
             column_count_value = attributes.get("column_count")
-            if isinstance(column_count_value, int):
-                column_count = column_count_value
+            if observed_name == "result_data" and isinstance(column_count_value, int):
+                output_field_count = column_count_value
 
         if event_name == "exception":
             failed_stage = stage or failed_stage
@@ -506,49 +896,99 @@ def _summarize_debug_events(
             if isinstance(stacktrace, str):
                 traceback_text = stacktrace
 
-    if endpoint_name is not None and endpoint_name in ENDPOINTS:
-        endpoint = ENDPOINTS[endpoint_name]
+    endpoint = ENDPOINTS.get(endpoint_name) if endpoint_name is not None else None
+    if endpoint is not None:
         summary["endpoint_group"] = _ENDPOINT_GROUPS.get(endpoint_name)
         summary["endpoint_kind"] = "custom" if endpoint.custom else "generic"
         summary["required_params_json"] = list(endpoint.params)
         summary["url_template"] = endpoint.path
         if model_name is None and endpoint.row_model is not None:
             model_name = endpoint.row_model.__name__
+        if endpoint.row_model is not None:
+            validated_fields = sorted(endpoint.row_model.model_fields)
+            summary["validated_fields_json"] = validated_fields
+        elif validation_status is None:
+            validation_status = "not_run"
+    elif validation_status is None:
+        validation_status = "unknown"
+
+    if validation_status is None and endpoint is not None and endpoint.row_model is not None:
+        validation_status = "unknown"
 
     if isinstance(data, list) and data:
         first_item = data[0]
         if isinstance(first_item, dict):
-            if not columns:
-                columns = sorted(first_item)
-            if column_count is None:
-                column_count = len(first_item)
-            first_row_preview = _preview_row(first_item)
+            output_fields = _field_names_from_row(first_item)
+            if output_field_count is None:
+                output_field_count = len(output_fields)
+            preview = _preview_result(first_item)
+            first_row_preview = preview[0]
+            first_row_preview_truncated = preview[1]
+            first_row_preview_field_count = preview[2]
+            first_row_total_field_count = preview[3]
+        elif hasattr(first_item, "model_dump"):
+            dumped = first_item.model_dump()
+            if isinstance(dumped, dict):
+                output_fields = _field_names_from_row(dumped)
+                if output_field_count is None:
+                    output_field_count = len(output_fields)
+                preview = _preview_result(dumped)
+                first_row_preview = preview[0]
+                first_row_preview_truncated = preview[1]
+                first_row_preview_field_count = preview[2]
+                first_row_total_field_count = preview[3]
+            else:
+                first_row_preview = first_item
         else:
             first_row_preview = first_item
-            if hasattr(first_item, "model_dump"):
-                dumped = first_item.model_dump()
-                if isinstance(dumped, dict):
-                    if not columns:
-                        columns = sorted(dumped)
-                    if column_count is None:
-                        column_count = len(dumped)
-                    first_row_preview = _preview_row(dumped)
 
-    if trace_log_path:
-        trace_path = Path(trace_log_path)
-        if trace_path.exists():
-            summary["trace_log_exists"] = True
-            summary["trace_log_size_bytes"] = trace_path.stat().st_size
+    if not output_fields and summary.get("validated_fields_json"):
+        output_fields = list(summary["validated_fields_json"])
+        if output_field_count is None:
+            output_field_count = len(output_fields)
+
+    if output_type is None:
+        output_type = _infer_output_type(data, model_name)
+
+    row_count_summary = _summarize_row_counts(
+        events,
+        output_row_count=output_row_count,
+        raw_table_row_count=raw_table_row_count,
+    )
+    rounded_rate_limit_wait_ms = round(rate_limit_wait_ms, 3) if rate_limit_wait_ms else None
+    metrics = _summarize_metrics(
+        debug,
+        duration_ms=summary["duration_ms"],
+        response_bytes=response_bytes,
+        rate_limit_wait_ms=rounded_rate_limit_wait_ms,
+    )
+
+    raw_column_count = raw_table_column_count if raw_table_column_count is not None else (len(raw_columns) or None)
+    parsed_field_count = len(parsed_fields) if parsed_fields else raw_column_count
+    validated_field_count = len(summary["validated_fields_json"]) if summary["validated_fields_json"] else None
+
+    deprecated_columns = raw_columns or output_fields
+    deprecated_column_count = output_field_count
+
+    if selected_table_id is None:
+        table_from_custom = custom_diagnostics.get("selected_table_id")
+        if isinstance(table_from_custom, str):
+            selected_table_id = table_from_custom
+    if not candidate_table_ids:
+        custom_candidates = custom_diagnostics.get("candidate_table_ids")
+        if isinstance(custom_candidates, list):
+            candidate_table_ids = [str(item) for item in custom_candidates]
 
     summary.update(
         {
+            "metrics": metrics,
             "http_status_code": http_status_code,
             "http_reason": http_reason,
             "resolved_url": resolved_url,
             "content_type": content_type,
             "response_bytes": response_bytes,
             "redirect_count": redirect_count,
-            "rate_limit_wait_ms": round(rate_limit_wait_ms, 3) if rate_limit_wait_ms else None,
+            "rate_limit_wait_ms": rounded_rate_limit_wait_ms,
             "failed_stage": failed_stage,
             "last_event": last_event,
             "last_successful_stage": last_successful_stage,
@@ -558,14 +998,33 @@ def _summarize_debug_events(
             "raw_table_column_count": raw_table_column_count,
             "parser_name": parser_name,
             "model_name": model_name,
+            "validation_status": validation_status,
             "validation_error_count": validation_error_count,
             "output_type": output_type,
-            "column_count": column_count,
-            "columns_json": columns,
+            "raw_column_count": raw_column_count,
+            "raw_columns_json": raw_columns,
+            "parsed_field_count": parsed_field_count,
+            "parsed_fields_json": parsed_fields,
+            "validated_field_count": validated_field_count,
+            "output_field_count": output_field_count,
+            "output_fields_json": output_fields,
+            "source_sections_json": source_sections,
+            "parsed_event_count": parsed_event_count,
+            "ignored_event_count": ignored_event_count,
+            "period_count": period_count,
+            "score_event_count": score_event_count,
+            "substitution_event_count": substitution_event_count,
+            "custom_diagnostics_json": custom_diagnostics,
+            "column_count": deprecated_column_count,
+            "columns_json": deprecated_columns,
             "first_row_preview_json": first_row_preview,
+            "first_row_preview_truncated": first_row_preview_truncated,
+            "first_row_preview_field_count": first_row_preview_field_count,
+            "first_row_total_field_count": first_row_total_field_count,
             "trace_log_path": trace_log_path,
             "traceback_tail": _traceback_tail(traceback_text),
             "traceback_hash": _traceback_hash(traceback_text),
+            **row_count_summary,
         }
     )
     return summary
@@ -585,11 +1044,21 @@ def _default_enrichment(*, endpoint_name: str, sample: SampleParamsInfo | None =
         "error_event_count": 0,
         "candidate_table_ids_json": [],
         "validation_error_paths_json": [],
+        "raw_columns_json": [],
+        "parsed_fields_json": [],
+        "validated_fields_json": [],
+        "output_fields_json": [],
         "columns_json": [],
+        "dropped_row_reason_counts_json": {},
+        "source_sections_json": [],
+        "ignored_event_reason_counts_json": {},
+        "custom_diagnostics_json": {},
         "trace_log_exists": False,
+        "validation_status": "not_run" if endpoint and endpoint.row_model is None else None,
     }
     if endpoint and endpoint.row_model is not None:
         enrichment["model_name"] = endpoint.row_model.__name__
+        enrichment["validated_fields_json"] = sorted(endpoint.row_model.model_fields)
     return enrichment
 
 
@@ -730,9 +1199,8 @@ def _failure_category(entry: Mapping[str, Any], *, works: bool) -> str:
         )
     ):
         return FAILURE_SCHEMA_VALIDATION
-    if (
-        failed_stage in {"parse", "table_resolution"}
-        or _has_token(error_type=error_type, error_message=error_message, tokens=_PARSE_ERROR_TOKENS)
+    if failed_stage in {"parse", "table_resolution"} or _has_token(
+        error_type=error_type, error_message=error_message, tokens=_PARSE_ERROR_TOKENS
     ):
         return FAILURE_PARSE_ERROR
     if entry.get("row_count") == 0 and debug_status and debug_status != "ok":
@@ -802,6 +1270,8 @@ def _with_evaluation(entry: Mapping[str, Any]) -> dict[str, Any]:
     evaluated = dict(entry)
     if evaluated.get("debug_status") is None and evaluated.get("status_code") is not None:
         evaluated["debug_status"] = evaluated["status_code"]
+    if evaluated.get("status_code") is None and evaluated.get("debug_status") is not None:
+        evaluated["status_code"] = evaluated["debug_status"]
     works = _works(evaluated)
     failure_category = _failure_category(evaluated, works=works)
     evaluated["works"] = works
@@ -819,17 +1289,32 @@ def _csv_row(entry: Mapping[str, Any]) -> dict[str, str]:
         "required_params_json": "required_params_json",
         "candidate_table_ids_json": "candidate_table_ids_json",
         "validation_error_paths_json": "validation_error_paths_json",
+        "raw_columns_json": "raw_columns_json",
+        "parsed_fields_json": "parsed_fields_json",
+        "validated_fields_json": "validated_fields_json",
+        "output_fields_json": "output_fields_json",
+        "dropped_row_reason_counts_json": "dropped_row_reason_counts_json",
+        "source_sections_json": "source_sections_json",
+        "ignored_event_reason_counts_json": "ignored_event_reason_counts_json",
+        "custom_diagnostics_json": "custom_diagnostics_json",
         "columns_json": "columns_json",
         "first_row_preview_json": "first_row_preview_json",
     }
-    bool_fields = {"ok", "works", "trace_log_exists"}
+    json_defaults: dict[str, Any] = {
+        "stage_counts": {},
+        "metrics": {},
+        "dropped_row_reason_counts_json": {},
+        "ignored_event_reason_counts_json": {},
+        "custom_diagnostics_json": {},
+    }
+    bool_fields = {"ok", "works", "trace_log_exists", "first_row_preview_truncated"}
     row: dict[str, str] = {}
     for column in CSV_COLUMNS:
         if column in json_field_map:
             source_key = json_field_map[column]
             value = evaluated.get(source_key)
             if value is None:
-                value = {} if source_key in {"stage_counts", "metrics"} else []
+                value = json_defaults.get(source_key, [])
             row[column] = _json_cell(value)
         elif column in bool_fields:
             row[column] = _bool_cell(evaluated.get(column))
@@ -886,12 +1371,12 @@ def _capture_debug_traces() -> tuple[Any, list[DebugTrace]]:
         original_init(self, *args, **kwargs)
         captured.append(self)
 
-    DebugTrace.__init__ = capturing_init  # type: ignore[method-assign]
+    DebugTrace.__init__ = cast(Any, capturing_init)
     return original_init, captured
 
 
 def _restore_debug_trace_init(original_init: Any) -> None:
-    DebugTrace.__init__ = original_init  # type: ignore[method-assign]
+    DebugTrace.__init__ = original_init
 
 
 def probe_endpoints(
@@ -987,6 +1472,7 @@ def probe_endpoints(
         "ok_endpoints": [item["endpoint"] for item in results if item.get("ok")],
         "debug_log_dir": str(resolve_log_dir()),
         "results": results,
+        **_summarize_report(results),
     }
 
     if output_path is None:

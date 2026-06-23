@@ -10,6 +10,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
+from courtside_data.debug import current_debug_trace
+from courtside_data.debug._pipeline_events import emit_parser_diagnostics
 from courtside_data.parsing import rows
 from courtside_data.parsing.generic import find_table
 
@@ -27,4 +29,14 @@ def playoff_bracket(facade: FetchFacade, season_end_year: int) -> list[dict[str,
     table = find_table(selector, "all_playoffs")
     if table is None:
         return []
-    return rows.parse_playoff_bracket(table)
+    parsed_rows = rows.parse_playoff_bracket(table)
+    trace = current_debug_trace()
+    if trace is not None:
+        emit_parser_diagnostics(
+            trace,
+            parser_name="playoff_bracket",
+            rows=parsed_rows,
+            source_sections=["table#all_playoffs"],
+            custom_diagnostics={"series_count": len(parsed_rows)},
+        )
+    return parsed_rows

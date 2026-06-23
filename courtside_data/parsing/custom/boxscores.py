@@ -19,14 +19,22 @@ These four endpoints all read pages rooted at ``/boxscores/...``:
 
 from __future__ import annotations
 
+from collections import Counter
 from typing import TYPE_CHECKING, Any
 
 import httpx
 from parsel import Selector
 
 from courtside_data.data import TEAM_TO_TEAM_ABBREVIATION, Team
+from courtside_data.debug import current_debug_trace
+from courtside_data.debug._pipeline_events import emit_parser_diagnostics
 from courtside_data.errors import InvalidDate
 from courtside_data.parsing import cells, rows
+from courtside_data.parsing.custom._diagnostics import (
+    emit_custom_endpoint_diagnostics,
+    merge_ignored_counts,
+    merge_numeric_stats,
+)
 from courtside_data.parsing.generic import find_table
 
 if TYPE_CHECKING:
@@ -38,6 +46,21 @@ __all__ = [
     "team_box_score",
     "team_box_scores",
 ]
+
+_TEAM_BOX_SCORE_AGGREGATE_KEYS = (
+    "game_count",
+    "team_count",
+    "stat_table_count",
+    "basic_table_count",
+    "advanced_table_count",
+    "empty_table_count",
+)
+
+
+def _merge_team_box_score_stats(aggregate: dict[str, Any], page_stats: dict[str, Any]) -> None:
+    merge_numeric_stats(aggregate, page_stats, keys=_TEAM_BOX_SCORE_AGGREGATE_KEYS)
+    ignored = aggregate.setdefault("ignored_row_reason_counts", Counter())
+    merge_ignored_counts(ignored, page_stats.get("ignored_row_reason_counts") or {})
 
 
 def play_by_play(
@@ -68,7 +91,22 @@ def play_by_play(
     team_names = [cells.cell_text(team_name) for team_name in selector.css("#content div.scorebox strong a")]
     away_team = cells.team_abbreviation_from_name(team_names[0])
     home_team_abbreviation = cells.team_abbreviation_from_name(team_names[1])
-    return rows.parse_play_by_play_rows(selector, away_team, home_team_abbreviation)
+    parsed_rows, stats = rows.parse_play_by_play_rows_with_stats(selector, away_team, home_team_abbreviation)
+    trace = current_debug_trace()
+    if trace is not None:
+        emit_parser_diagnostics(
+            trace,
+            parser_name="play_by_play",
+            rows=parsed_rows,
+            source_sections=["table#pbp"],
+            parsed_event_count=stats["parsed_event_count"],
+            ignored_event_count=stats["ignored_event_count"],
+            ignored_event_reason_counts=stats["ignored_event_reason_counts"],
+            period_count=stats["period_count"],
+            score_event_count=stats["score_event_count"],
+            substitution_event_count=stats["substitution_event_count"],
+        )
+    return parsed_rows
 
 
 def player_box_scores(facade: FetchFacade, day: int, month: int, year: int) -> list[dict[str, Any]]:
@@ -90,13 +128,17 @@ def player_box_scores(facade: FetchFacade, day: int, month: int, year: int) -> l
         table = find_table(selector, "stats")
         if table is None:
             raise InvalidDate(day=day, month=month, year=year)
-        parsed_rows = []
-        for row_index, (row, metadata) in enumerate(rows.raw_rows_from_table(table)):
-            row["slug"] = cells.slug_from_metadata(metadata, "player")
-            cells.require_slug("player_box_scores", row, row_index)
-            parsed_rows.append(row)
+        parsed_rows, stats = rows.parse_player_box_scores_from_table_with_stats(table)
         if not parsed_rows:
             raise InvalidDate(day=day, month=month, year=year)
+        emit_custom_endpoint_diagnostics(
+            parser_name="player_box_scores",
+            endpoint_name="player_box_scores",
+            rows=parsed_rows,
+            source_sections=["table#stats"],
+            stats=stats,
+            selected_table_id="stats",
+        )
         return parsed_rows
 
     raise InvalidDate(day=day, month=month, year=year)
@@ -106,7 +148,15 @@ def team_box_score(facade: FetchFacade, game_url_path: str) -> list[dict[str, An
     """Return the two team totals (one row per side) for one game."""
     url = facade.url(game_url_path)
     selector = facade.get_selector(url=url)
-    return rows.parse_team_box_score(selector)
+    parsed_rows, stats = rows.parse_team_box_score_with_stats(selector)
+    emit_custom_endpoint_diagnostics(
+        parser_name="team_box_score",
+        endpoint_name="team_box_score",
+        rows=parsed_rows,
+        source_sections=['table.stats_table[id$="-game-basic"]'],
+        stats=stats,
+    )
+    return parsed_rows
 
 
 def team_box_scores(facade: FetchFacade, day: int, month: int, year: int) -> list[dict[str, Any]]:
@@ -124,8 +174,27 @@ def team_box_scores(facade: FetchFacade, day: int, month: int, year: int) -> lis
     if not game_url_paths:
         raise InvalidDate(day=day, month=month, year=year)
 
-    return [
-        box_score
-        for game_url_path in game_url_paths
-        for box_score in team_box_score(facade, game_url_path=game_url_path)
-    ]
+    aggregate_stats: dict[str, Any] = {
+        "game_count": 0,
+        "team_count": 0,
+        "stat_table_count": 0,
+        "basic_table_count": 0,
+        "advanced_table_count": 0,
+        "empty_table_count": 0,
+        "ignored_row_reason_counts": Counter(),
+    }
+    all_rows: list[dict[str, Any]] = []
+    for game_url_path in game_url_paths:
+        game_selector = facade.get_selector(url=facade.url(game_url_path))
+        game_rows, game_stats = rows.parse_team_box_score_with_stats(game_selector)
+        all_rows.extend(game_rows)
+        _merge_team_box_score_stats(aggregate_stats, game_stats)
+
+    emit_custom_endpoint_diagnostics(
+        parser_name="team_box_scores",
+        endpoint_name="team_box_scores",
+        rows=all_rows,
+        source_sections=["td.gamelink a", 'table.stats_table[id$="-game-basic"]'],
+        stats=aggregate_stats,
+    )
+    return all_rows

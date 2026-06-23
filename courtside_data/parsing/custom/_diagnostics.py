@@ -1,0 +1,95 @@
+"""Shared parser instrumentation constants and emit helpers."""
+
+from __future__ import annotations
+
+from collections import Counter
+from collections.abc import Mapping, Sequence
+from typing import Any
+
+from courtside_data.debug import current_debug_trace
+from courtside_data.debug._pipeline_events import emit_parser_diagnostics
+
+# Parser-level ignored-row reasons (emitted before validation).
+IGNORE_MISSING_DATE = "missing_date"
+IGNORE_INACTIVE_GAME = "inactive_game"
+IGNORE_MISSING_NAME_OR_TEAM = "missing_name_or_team"
+IGNORE_COMBINED_TEAM = "combined_team"
+IGNORE_MISSING_TABLE = "missing_table"
+IGNORE_MISSING_FOOTER = "missing_footer"
+IGNORE_EMPTY_TABLE = "empty_table"
+
+_CUSTOM_DIAGNOSTIC_KEYS = (
+    "game_count",
+    "team_count",
+    "player_count",
+    "starter_count",
+    "bench_count",
+    "stat_table_count",
+    "basic_table_count",
+    "advanced_table_count",
+    "missing_table_count",
+    "empty_table_count",
+    "season_count",
+    "ranked_row_count",
+    "repeated_header_count",
+    "raw_row_count",
+    "raw_column_count",
+)
+
+
+def increment_ignored(ignored: dict[str, int], reason: str) -> None:
+    ignored[reason] = ignored.get(reason, 0) + 1
+
+
+def merge_ignored_counts(aggregate: Counter[str], page: Mapping[str, int]) -> None:
+    for reason, count in page.items():
+        aggregate[reason] += int(count)
+
+
+def merge_numeric_stats(aggregate: dict[str, Any], page: Mapping[str, Any], *, keys: Sequence[str]) -> None:
+    for key in keys:
+        value = page.get(key)
+        if isinstance(value, int | float):
+            aggregate[key] = int(aggregate.get(key, 0)) + int(value)
+
+
+def emit_custom_endpoint_diagnostics(
+    *,
+    parser_name: str,
+    endpoint_name: str,
+    rows: Sequence[Mapping[str, Any]],
+    source_sections: Sequence[str],
+    stats: Mapping[str, Any],
+    selected_table_id: str | None = None,
+    candidate_table_ids: Sequence[str] | None = None,
+) -> None:
+    """Emit compact parser summary events when a debug trace is active."""
+    trace = current_debug_trace()
+    if trace is None:
+        return
+
+    ignored = stats.get("ignored_row_reason_counts") or {}
+    ignored_mapping = dict(ignored) if isinstance(ignored, Mapping) else {}
+    custom: dict[str, Any] = {"endpoint_name": endpoint_name}
+    for key in _CUSTOM_DIAGNOSTIC_KEYS:
+        if key in stats and stats[key] is not None:
+            custom[key] = stats[key]
+
+    table_id = selected_table_id or stats.get("selected_table_id")
+    if isinstance(table_id, str):
+        custom["selected_table_id"] = table_id
+    if candidate_table_ids:
+        custom["candidate_table_ids"] = [str(table_id) for table_id in candidate_table_ids]
+    elif isinstance(stats.get("candidate_table_ids"), list):
+        custom["candidate_table_ids"] = [str(table_id) for table_id in stats["candidate_table_ids"]]
+
+    emit_parser_diagnostics(
+        trace,
+        parser_name=parser_name,
+        rows=rows,
+        source_sections=source_sections,
+        ignored_event_count=sum(ignored_mapping.values()) if ignored_mapping else None,
+        ignored_event_reason_counts=ignored_mapping,
+        ignored_row_reason_counts=ignored_mapping,
+        custom_diagnostics=custom,
+    )

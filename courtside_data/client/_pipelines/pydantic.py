@@ -17,8 +17,20 @@ from typing import TYPE_CHECKING, Any, cast
 
 from pydantic import ValidationError
 
+from courtside_data.client._pipelines._drop_reasons import (
+    DROP_REASON_SCHEMA_VALIDATION_ERROR,
+    row_drop_reason,
+    sentinel_row_diagnostics,
+    validation_error_drop_reason,
+)
 from courtside_data.data import OutputType
 from courtside_data.debug import DebugTrace
+from courtside_data.debug._pipeline_events import (
+    record_rows_filtered,
+    record_sentinel_rows,
+    record_validation_failed,
+    record_validation_passed,
+)
 from courtside_data.errors import SchemaDriftError
 from courtside_data.http._constants import BASE_URL
 from courtside_data.schemas import ROW_ADAPTERS
@@ -26,70 +38,18 @@ from courtside_data.schemas import ROW_ADAPTERS
 if TYPE_CHECKING:
     from pydantic_core import InitErrorDetails
 
-_SENTINEL_ROW_VALUES = {
-    "did not dress",
-    "did not play",
-    "inactive",
-    "not with team",
-    "player suspended",
-    "suspended",
-    "traded",
-    "forfeited",
-}
+# Backward-compatible alias for tests and internal callers.
+_row_drop_reason = row_drop_reason
 
 
-_HEADER_ROW_VALUES = {
-    "2p",
-    "2p%",
-    "2pa",
-    "3p",
-    "3p%",
-    "3pa",
-    "age",
-    "ast",
-    "blk",
-    "date",
-    "drb",
-    "efg%",
-    "fg",
-    "fg%",
-    "fga",
-    "ft",
-    "ft%",
-    "fta",
-    "g",
-    "gs",
-    "lg",
-    "mp",
-    "opp",
-    "orb",
-    "pf",
-    "player",
-    "pos",
-    "pts",
-    "rk",
-    "season",
-    "stl",
-    "team",
-    "tov",
-    "trb",
-    "w/l",
-}
-
-
-def _normalized_cell_value(value: Any) -> str:
-    return " ".join(str(value).strip().lower().replace("\xa0", " ").split())
-
-
-def _is_skippable_bref_row(row: dict[str, Any]) -> bool:
-    values = {_normalized_cell_value(value) for value in row.values() if value not in (None, "")}
-    if any(any(marker in value for marker in _SENTINEL_ROW_VALUES) for value in values):
-        return True
-    # Some BREF tables repeat header rows or section rows that survive table
-    # extraction because they use data-stat attributes like normal cells.
-    if bool(values) and all(_normalized_cell_value(key) in values for key in row):
-        return True
-    return bool(values) and all(value in _HEADER_ROW_VALUES for value in values)
+def _row_as_mapping(row: Any) -> dict[str, Any]:
+    if isinstance(row, dict):
+        return row
+    if hasattr(row, "model_dump"):
+        dumped = row.model_dump()
+        if isinstance(dumped, dict):
+            return dumped
+    return {}
 
 
 def _extract_raw_rows(values: Any) -> list[dict[str, Any]]:
@@ -105,7 +65,10 @@ def _extract_raw_rows(values: Any) -> list[dict[str, Any]]:
     return []
 
 
-def _validate_row_model_rows(row_model: Any, raw_rows: list[dict[str, Any]]) -> list[Any]:
+def _validate_row_model_rows(
+    row_model: Any,
+    raw_rows: list[dict[str, Any]],
+) -> tuple[list[Any], dict[str, int]]:
     """Validate rows one at a time, dropping invalid BREF sentinel/header rows.
 
     Basketball-Reference can interleave non-data rows with otherwise valid
@@ -114,19 +77,25 @@ def _validate_row_model_rows(row_model: Any, raw_rows: list[dict[str, Any]]) -> 
     """
     values: list[Any] = []
     drift_errors: list[dict[str, Any]] = []
+    dropped_reasons: dict[str, int] = {}
     for index, row in enumerate(raw_rows):
         try:
             values.append(row_model.model_validate(row))
         except ValidationError as exc:
-            if _is_skippable_bref_row(row):
+            drop_reason = row_drop_reason(row)
+            if drop_reason is not None:
+                dropped_reasons[drop_reason] = dropped_reasons.get(drop_reason, 0) + 1
                 continue
-            for error in exc.errors():
-                enriched = dict(error)
-                enriched["row_index"] = index
-                drift_errors.append(enriched)
+            reason = validation_error_drop_reason(exc.errors())
+            dropped_reasons[reason] = dropped_reasons.get(reason, 0) + 1
+            if reason == DROP_REASON_SCHEMA_VALIDATION_ERROR:
+                for error in exc.errors():
+                    enriched = dict(error)
+                    enriched["row_index"] = index
+                    drift_errors.append(enriched)
     if drift_errors and not values:
         raise ValidationError.from_exception_data(row_model.__name__, cast("list[InitErrorDetails]", drift_errors))
-    return values
+    return values, dropped_reasons
 
 
 def _endpoint_url_context(endpoint: Any, params: dict[str, Any] | None) -> str:
@@ -180,25 +149,25 @@ def validate_rows_pydantic(
     try:
         if trace is not None:
             with trace.span("pydantic_validation", stage="validation", row_model=row_model.__name__):
-                validated = _validate_row_model_rows(row_model, raw_rows)
+                validated, dropped_reasons = _validate_row_model_rows(row_model, raw_rows)
         else:
-            validated = _validate_row_model_rows(row_model, raw_rows)
+            validated, dropped_reasons = _validate_row_model_rows(row_model, raw_rows)
         if trace is not None:
-            trace.record(
-                "validation",
-                "pydantic_validation_complete",
-                adapter_registered=True,
+            record_rows_filtered(trace, dropped_row_reason_counts=dropped_reasons)
+            sentinel_stats = sentinel_row_diagnostics([_row_as_mapping(row) for row in validated])
+            record_sentinel_rows(
+                trace,
+                sentinel_row_count=sentinel_stats["sentinel_row_count"],
+                sentinel_row_types=sentinel_stats["sentinel_row_types"],
+            )
+            record_validation_passed(
+                trace,
                 row_model=row_model.__name__,
-                row_count=len(validated),
+                validated_row_count=len(validated),
             )
     except ValidationError as exc:
         if trace is not None:
-            trace.record(
-                "validation",
-                "pydantic_validation_failed",
-                row_model=row_model.__name__,
-                errors=exc.errors(),
-            )
+            record_validation_failed(trace, row_model=row_model.__name__, errors=exc.errors())
             trace.record_exception(exc, stage="validation")
         raise SchemaDriftError(
             endpoint_name=endpoint_name or "<unknown>",

@@ -7,7 +7,10 @@ from pathlib import Path
 from courtside_data.debug.probe import (
     _csv_row,
     _default_enrichment,
+    _infer_output_type,
+    _preview_result,
     _summarize_debug_events,
+    _summarize_report,
     _with_evaluation,
     write_probe_csv_report,
 )
@@ -61,6 +64,17 @@ def _successful_debug_envelope(*, trace_log_path: str | None = None) -> dict:
         },
         {
             "stage": "parse",
+            "event": "parsed_rows_summary",
+            "status": "ok",
+            "attributes": {
+                "parser_name": "generic_table",
+                "parsed_row_count": 17,
+                "parsed_field_count": 3,
+                "parsed_fields": ["player", "age", "pts"],
+            },
+        },
+        {
+            "stage": "parse",
             "event": "generic_table_parsed",
             "status": "ok",
             "attributes": {
@@ -70,10 +84,23 @@ def _successful_debug_envelope(*, trace_log_path: str | None = None) -> dict:
             },
         },
         {
+            "stage": "runner",
+            "event": "row_model_pipeline_start",
+            "status": "ok",
+            "attributes": {"row_model": "TeamRosterRow", "raw_row_count": 17, "raw_requested": False},
+        },
+        {
             "stage": "validation",
             "event": "pydantic_validation_complete",
             "status": "ok",
-            "attributes": {"row_model": "TeamRosterRow", "row_count": 17},
+            "attributes": {
+                "validation_status": "passed",
+                "row_model": "TeamRosterRow",
+                "validated_row_count": 17,
+                "row_count": 17,
+                "validation_error_count": 0,
+                "validation_error_paths": [],
+            },
         },
         {
             "stage": "diagnostics",
@@ -94,7 +121,19 @@ def _successful_debug_envelope(*, trace_log_path: str | None = None) -> dict:
         "duration_ms": 12.5,
         "status": {"code": "ok", "error_type": None, "error_message": None},
         "metrics": {"debug.enabled": True},
-        "stage_counts": {"http": 2, "parse": 1, "validation": 1},
+        "stage_counts": {"http": 2, "parse": 1, "validation": 1, "runner": 1},
+        "spans": [
+            {
+                "span_id": "span-http",
+                "stage": "http",
+                "duration_ms": 1200.0,
+            },
+            {
+                "span_id": "span-validation",
+                "stage": "validation",
+                "duration_ms": 45.2,
+            },
+        ],
         "events": events,
     }
 
@@ -102,7 +141,9 @@ def _successful_debug_envelope(*, trace_log_path: str | None = None) -> dict:
 def test_probe_csv_happy_path_marks_endpoint_working(tmp_path: Path) -> None:
     output_path = tmp_path / "reports" / "probe.csv"
     debug = _successful_debug_envelope()
-    summary = _summarize_debug_events(debug, data=[{"player": "Tatum", "age": 26, "pts": 26.9}], endpoint_name="team_roster")
+    summary = _summarize_debug_events(
+        debug, data=[{"player": "Tatum", "age": 26, "pts": 26.9}], endpoint_name="team_roster"
+    )
     result = {
         "endpoint": "team_roster",
         "params": {"season_end_year": 2024, "team_abbreviation": "BOS"},
@@ -138,8 +179,15 @@ def test_probe_csv_happy_path_marks_endpoint_working(tmp_path: Path) -> None:
     assert json.loads(row["candidate_table_ids_json"]) == ["roster"]
     assert row["raw_table_row_count"] == "17"
     assert row["raw_table_column_count"] == "3"
+    assert json.loads(row["raw_columns_json"]) == ["player", "age", "pts"]
+    assert row["output_field_count"] == "3"
+    assert json.loads(row["output_fields_json"]) == ["age", "player", "pts"]
+    assert row["validation_status"] == "passed"
+    assert row["validation_error_count"] == "0"
+    assert json.loads(row["validation_error_paths_json"]) == []
+    assert row["output_type"] == "list[TeamRosterRow]"
     assert row["row_count"] == "1"
-    assert row["event_count"] == "8"
+    assert row["event_count"] == "10"
     assert "HTTP 200 OK" in row["evaluation"]
     assert "parser=generic_table" in row["evaluation"]
     assert "table=roster" in row["evaluation"]
@@ -170,7 +218,7 @@ def test_probe_csv_failure_path_includes_category_and_evaluation(tmp_path: Path)
                 "attributes": {
                     "exception.type": "ValidationError",
                     "exception.message": "validation failed",
-                    "exception.stacktrace": "Traceback (most recent call last):\n  File \"x.py\", line 1, in <module>\n    raise Error\nError\n",
+                    "exception.stacktrace": 'Traceback (most recent call last):\n  File "x.py", line 1, in <module>\n    raise Error\nError\n',
                 },
             },
         ],
@@ -194,6 +242,7 @@ def test_probe_csv_failure_path_includes_category_and_evaluation(tmp_path: Path)
     assert row["works"] == "false"
     assert row["failure_category"] == "schema_validation"
     assert row["failed_stage"] == "validation"
+    assert row["validation_status"] == "failed"
     assert row["validation_error_count"] == "1"
     assert json.loads(row["validation_error_paths_json"]) == ["fg3_pct"]
     assert "schema validation" in row["evaluation"]
@@ -378,3 +427,211 @@ def test_probe_csv_trace_file_fields_populated_when_trace_exists(tmp_path: Path)
     assert row["trace_log_exists"] == "true"
     assert row["trace_log_size_bytes"] == str(trace_path.stat().st_size)
     assert row["trace_log_path"] == str(trace_path)
+
+
+def test_validation_success_sets_explicit_zero_values() -> None:
+    debug = _successful_debug_envelope()
+    summary = _summarize_debug_events(
+        debug, data=[{"player": "Tatum", "age": 26, "pts": 26.9}], endpoint_name="team_roster"
+    )
+    row = _csv_row({"endpoint": "team_roster", "ok": True, **summary})
+
+    assert row["validation_status"] == "passed"
+    assert row["validation_error_count"] == "0"
+    assert json.loads(row["validation_error_paths_json"]) == []
+
+
+def test_raw_columns_and_output_fields_are_separate() -> None:
+    debug = _successful_debug_envelope()
+    summary = _summarize_debug_events(
+        debug,
+        data=[{"player": "Tatum", "age": 26, "pts": 26.9}],
+        endpoint_name="team_roster",
+    )
+
+    assert summary["raw_columns_json"] == ["player", "age", "pts"]
+    assert summary["output_fields_json"] == ["age", "player", "pts"]
+    assert summary["validated_fields_json"]
+    assert "number" in summary["validated_fields_json"]
+
+
+def test_row_filtering_computes_dropped_count() -> None:
+    events = [
+        {
+            "stage": "parse",
+            "event": "parsed_rows_summary",
+            "status": "ok",
+            "attributes": {
+                "parser_name": "generic_table",
+                "parsed_row_count": 20,
+                "parsed_field_count": 3,
+                "parsed_fields": ["player", "age", "pts"],
+            },
+        },
+        {
+            "stage": "runner",
+            "event": "row_model_pipeline_start",
+            "status": "ok",
+            "attributes": {"row_model": "TeamRosterRow", "raw_row_count": 20},
+        },
+        {
+            "stage": "validation",
+            "event": "rows_filtered",
+            "status": "ok",
+            "attributes": {
+                "dropped_row_count": 3,
+                "dropped_row_reason_counts": {"repeated_header": 2, "parser_excluded": 1},
+            },
+        },
+        {
+            "stage": "validation",
+            "event": "pydantic_validation_complete",
+            "status": "ok",
+            "attributes": {
+                "validation_status": "passed",
+                "row_model": "TeamRosterRow",
+                "validated_row_count": 17,
+                "row_count": 17,
+                "validation_error_count": 0,
+                "validation_error_paths": [],
+            },
+        },
+    ]
+    debug = {
+        "trace_id": "trace-rows",
+        "duration_ms": 1.0,
+        "status": {"code": "ok", "error_type": None, "error_message": None},
+        "metrics": {},
+        "stage_counts": {},
+        "events": events,
+    }
+    summary = _summarize_debug_events(debug, data=[{}] * 17, endpoint_name="team_roster")
+
+    assert summary["parsed_row_count"] == 20
+    assert summary["raw_row_count"] == 20
+    assert summary["validated_row_count"] == 17
+    assert summary["output_row_count"] == 17
+    assert summary["dropped_row_count"] == 3
+    assert summary["dropped_row_reason_counts_json"] == {"repeated_header": 2, "parser_excluded": 1}
+
+
+def test_metrics_includes_span_timing() -> None:
+    debug = _successful_debug_envelope()
+    summary = _summarize_debug_events(debug, endpoint_name="team_roster")
+
+    assert summary["metrics"]["debug.enabled"] is True
+    assert summary["metrics"]["duration_ms.http"] == 1200.0
+    assert summary["metrics"]["duration_ms.validation"] == 45.2
+    assert summary["metrics"]["duration_ms.total"] == 12.5
+    assert summary["metrics"]["response_bytes"] == 120_000
+
+
+def test_output_type_inferred_from_data_and_model() -> None:
+    assert _infer_output_type([{"a": 1}], "TeamRosterRow") == "list[TeamRosterRow]"
+    assert _infer_output_type([{"a": 1}], None) == "list"
+    assert _infer_output_type({"rows": []}, None) == "dict"
+
+
+def test_custom_endpoint_has_no_raw_table_columns() -> None:
+    debug = {
+        "trace_id": "trace-custom",
+        "duration_ms": 5.0,
+        "status": {"code": "ok", "error_type": None, "error_message": None},
+        "metrics": {"debug.enabled": True},
+        "stage_counts": {"endpoint": 2},
+        "events": [
+            {
+                "stage": "endpoint",
+                "event": "run_endpoint_start",
+                "status": "ok",
+                "attributes": {"row_model": "PlayByPlayRow", "custom": True},
+            },
+            {
+                "stage": "endpoint",
+                "event": "custom_service_dispatch",
+                "status": "ok",
+                "attributes": {"method": "play_by_play"},
+            },
+        ],
+    }
+    summary = _summarize_debug_events(
+        debug,
+        data=[{"period": 1, "description": "made shot"}],
+        endpoint_name="play_by_play",
+    )
+
+    assert summary["parser_name"] == "custom"
+    assert summary["raw_columns_json"] == []
+    assert summary["raw_column_count"] is None
+    assert summary["selected_table_id"] is None
+    assert summary["parsed_event_count"] is None
+
+
+def test_first_row_preview_truncation_flags() -> None:
+    row = {f"field_{index}": "x" * 120 for index in range(15)}
+    preview, truncated, preview_count, total_count = _preview_result(row)
+
+    assert truncated is True
+    assert preview_count == 8
+    assert total_count == 15
+    assert len(preview) == 8
+    assert all(str(value).endswith("...") for value in preview.values())
+
+
+def test_summarize_report_computes_rate_limit_and_trace_aggregates(tmp_path: Path) -> None:
+    trace_a = tmp_path / "a.json"
+    trace_b = tmp_path / "b.json"
+    trace_a.write_text("a" * 10, encoding="utf-8")
+    trace_b.write_text("b" * 20, encoding="utf-8")
+    results = [
+        {
+            "endpoint": "team_roster",
+            "elapsed_ms": 100.0,
+            "rate_limit_wait_ms": 250.0,
+            "trace_log_path": str(trace_a),
+            "trace_log_size_bytes": trace_a.stat().st_size,
+            "metrics": {"duration_ms.http": 80.0, "duration_ms.validation": 10.0},
+        },
+        {
+            "endpoint": "play_by_play",
+            "elapsed_ms": 500.0,
+            "rate_limit_wait_ms": 750.0,
+            "trace_log_path": str(trace_b),
+            "trace_log_size_bytes": trace_b.stat().st_size,
+            "metrics": {"duration_ms.http": 400.0},
+        },
+    ]
+
+    summary = _summarize_report(results)
+
+    assert summary["total_rate_limit_wait_ms"] == 1000.0
+    assert summary["average_rate_limit_wait_ms"] == 500.0
+    assert summary["max_rate_limit_wait_ms"] == 750.0
+    assert summary["slowest_endpoint"] == "play_by_play"
+    assert summary["slowest_endpoint_elapsed_ms"] == 500.0
+    assert summary["slowest_stage"] == "http"
+    assert summary["total_trace_log_size_bytes"] == trace_a.stat().st_size + trace_b.stat().st_size
+    assert summary["largest_trace_log_path"] == str(trace_b)
+    assert summary["largest_trace_log_size_bytes"] == trace_b.stat().st_size
+
+
+def test_status_code_is_deprecated_alias_for_debug_status() -> None:
+    debug = _successful_debug_envelope()
+    summary = _summarize_debug_events(debug, endpoint_name="team_roster")
+    evaluated = _with_evaluation({"endpoint": "team_roster", "ok": True, **summary})
+    row = _csv_row(evaluated)
+
+    assert row["debug_status"] == "ok"
+    assert row["status_code"] == "ok"
+    assert row["http_status_code"] == "200"
+
+
+def test_zero_values_not_serialized_as_blank() -> None:
+    debug = _successful_debug_envelope()
+    summary = _summarize_debug_events(debug, endpoint_name="team_roster")
+    row = _csv_row({"endpoint": "team_roster", "ok": True, **summary})
+
+    assert row["validation_error_count"] == "0"
+    assert row["redirect_count"] == "0"
+    assert row["warning_count"] == "0"
+    assert row["error_event_count"] == "0"

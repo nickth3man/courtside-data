@@ -11,8 +11,11 @@ attached ``"conference"`` key.
 
 from __future__ import annotations
 
+from collections import Counter
 from typing import TYPE_CHECKING, Any
 
+from courtside_data.debug import current_debug_trace
+from courtside_data.debug._pipeline_events import emit_parser_diagnostics
 from courtside_data.endpoints import ENDPOINTS
 from courtside_data.parsing import rows
 from courtside_data.parsing.tables import GenericTable
@@ -23,11 +26,50 @@ if TYPE_CHECKING:
 __all__ = ["standings", "standings_by_date"]
 
 
+def _record_standings_diagnostics(
+    *,
+    parser_name: str,
+    parsed_rows: list[dict[str, Any]],
+    source_sections: list[str],
+    stats: dict[str, Any],
+) -> None:
+    trace = current_debug_trace()
+    if trace is None:
+        return
+    ignored = stats.get("ignored_row_reason_counts") or {}
+    emit_parser_diagnostics(
+        trace,
+        parser_name=parser_name,
+        rows=parsed_rows,
+        source_sections=source_sections,
+        ignored_event_count=sum(ignored.values()) if isinstance(ignored, dict) else None,
+        ignored_event_reason_counts=ignored if isinstance(ignored, dict) else None,
+        ignored_row_reason_counts=ignored if isinstance(ignored, dict) else None,
+        custom_diagnostics={
+            key: stats[key]
+            for key in (
+                "conference_count",
+                "division_count",
+                "team_count",
+                "standings_section_count",
+            )
+            if key in stats
+        },
+    )
+
+
 def standings(facade: FetchFacade, season_end_year: int) -> list[dict[str, Any]]:
     """Return both-conference standings for ``season_end_year``."""
     url = facade.url(f"/leagues/NBA_{season_end_year}.html")
     selector = facade.get_selector(url=url)
-    return rows.parse_standings(selector)
+    parsed_rows, stats = rows.parse_standings_with_stats(selector)
+    _record_standings_diagnostics(
+        parser_name="standings",
+        parsed_rows=parsed_rows,
+        source_sections=["table#divs_standings_E", "table#divs_standings_W"],
+        stats=stats,
+    )
+    return parsed_rows
 
 
 def standings_by_date(facade: FetchFacade, season_end_year: int) -> list[dict[str, Any]]:
@@ -41,6 +83,10 @@ def standings_by_date(facade: FetchFacade, season_end_year: int) -> list[dict[st
     """
     endpoint = ENDPOINTS["standings_by_date"]
     standings_rows: list[dict[str, Any]] = []
+    source_sections: list[str] = []
+    ignored_row_reason_counts: Counter[str] = Counter()
+    conference_names: set[str] = set()
+
     for conference, conference_name in [
         ("eastern_conference", "Eastern"),
         ("western_conference", "Western"),
@@ -48,8 +94,27 @@ def standings_by_date(facade: FetchFacade, season_end_year: int) -> list[dict[st
         url = facade.url(endpoint.path.format(season_end_year=season_end_year, conference=conference))
         selector = facade.get_selector(url=url)
         table_selector = selector.css(f"table#{endpoint.table_id}")
-        if table_selector:
-            table = GenericTable(table_selector[0])
-            for row in table.rows:
-                standings_rows.append({"conference": conference_name, **row.to_dict()})
+        if not table_selector:
+            ignored_row_reason_counts["missing_table"] += 1
+            continue
+        source_sections.append(f"table#{endpoint.table_id}")
+        conference_names.add(conference_name)
+        table = GenericTable(table_selector[0])
+        for row in table.rows:
+            standings_rows.append({"conference": conference_name, **row.to_dict()})
+
+    trace = current_debug_trace()
+    if trace is not None:
+        emit_parser_diagnostics(
+            trace,
+            parser_name="standings_by_date",
+            rows=standings_rows,
+            source_sections=source_sections,
+            ignored_row_reason_counts=dict(ignored_row_reason_counts),
+            custom_diagnostics={
+                "conference_count": len(conference_names),
+                "team_count": len(standings_rows),
+                "standings_section_count": len(source_sections),
+            },
+        )
     return standings_rows

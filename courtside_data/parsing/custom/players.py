@@ -25,9 +25,10 @@ from parsel import Selector
 
 from courtside_data.errors import InvalidPlayerAndSeason
 from courtside_data.parsing.custom._common import (
-    _player_season_box_score_rows,
-    _player_totals_rows,
+    _player_season_box_score_rows_with_stats,
+    _player_totals_rows_with_stats,
 )
+from courtside_data.parsing.custom._diagnostics import emit_custom_endpoint_diagnostics
 from courtside_data.parsing.generic import find_table
 
 if TYPE_CHECKING:
@@ -47,6 +48,30 @@ def _player_season_box_scores_selector(facade: FetchFacade, player_identifier: s
     return facade.get_selector(url=url)
 
 
+def _emit_player_game_log_diagnostics(
+    *,
+    parser_name: str,
+    endpoint_name: str,
+    parsed_rows: list[dict[str, Any]],
+    stats: dict[str, Any],
+    table_id: str,
+) -> None:
+    stats = {
+        **stats,
+        "season_count": 1,
+        "selected_table_id": table_id,
+    }
+    emit_custom_endpoint_diagnostics(
+        parser_name=parser_name,
+        endpoint_name=endpoint_name,
+        rows=parsed_rows,
+        source_sections=[f"table#{table_id}"],
+        stats=stats,
+        selected_table_id=table_id,
+        candidate_table_ids=[table_id],
+    )
+
+
 def regular_season_player_box_scores(
     facade: FetchFacade,
     player_identifier: str,
@@ -55,11 +80,20 @@ def regular_season_player_box_scores(
 ) -> list[dict[str, Any]]:
     """Return the regular-season game log for ``player_identifier``."""
     selector = _player_season_box_scores_selector(facade, player_identifier, season_end_year)
-    table = find_table(selector, "player_game_log_reg")
+    table_id = "player_game_log_reg"
+    table = find_table(selector, table_id)
     if table is None:
         raise InvalidPlayerAndSeason(player_identifier=player_identifier, season_end_year=season_end_year)
 
-    return _player_season_box_score_rows(table, include_inactive_games=include_inactive_games)
+    parsed_rows, stats = _player_season_box_score_rows_with_stats(table, include_inactive_games=include_inactive_games)
+    _emit_player_game_log_diagnostics(
+        parser_name="regular_season_player_box_scores",
+        endpoint_name="regular_season_player_box_scores",
+        parsed_rows=parsed_rows,
+        stats=stats,
+        table_id=table_id,
+    )
+    return parsed_rows
 
 
 def playoff_player_box_scores(
@@ -70,11 +104,20 @@ def playoff_player_box_scores(
 ) -> list[dict[str, Any]]:
     """Return the playoff game log for ``player_identifier``."""
     selector = _player_season_box_scores_selector(facade, player_identifier, season_end_year)
-    table = find_table(selector, "player_game_log_post")
+    table_id = "player_game_log_post"
+    table = find_table(selector, table_id)
     if table is None:
         raise InvalidPlayerAndSeason(player_identifier=player_identifier, season_end_year=season_end_year)
 
-    return _player_season_box_score_rows(table, include_inactive_games=include_inactive_games)
+    parsed_rows, stats = _player_season_box_score_rows_with_stats(table, include_inactive_games=include_inactive_games)
+    _emit_player_game_log_diagnostics(
+        parser_name="playoff_player_box_scores",
+        endpoint_name="playoff_player_box_scores",
+        parsed_rows=parsed_rows,
+        stats=stats,
+        table_id=table_id,
+    )
+    return parsed_rows
 
 
 def players_advanced_season_totals(
@@ -86,7 +129,18 @@ def players_advanced_season_totals(
     url = facade.url(f"/leagues/NBA_{season_end_year}_advanced.html")
 
     selector = facade.get_selector(url=url)
-    return _player_totals_rows(selector, "advanced", include_combined=include_combined_values)
+    table_id = "advanced"
+    parsed_rows, stats = _player_totals_rows_with_stats(selector, table_id, include_combined=include_combined_values)
+    emit_custom_endpoint_diagnostics(
+        parser_name="players_advanced_season_totals",
+        endpoint_name="players_advanced_season_totals",
+        rows=parsed_rows,
+        source_sections=[f"table#{table_id}"],
+        stats=stats,
+        selected_table_id=table_id,
+        candidate_table_ids=[table_id],
+    )
+    return parsed_rows
 
 
 def players_season_totals(facade: FetchFacade, season_end_year: int) -> list[dict[str, Any]]:
@@ -94,4 +148,15 @@ def players_season_totals(facade: FetchFacade, season_end_year: int) -> list[dic
     url = facade.url(f"/leagues/NBA_{season_end_year}_totals.html")
 
     selector = facade.get_selector(url=url)
-    return _player_totals_rows(selector, "totals_stats", include_combined=False)
+    table_id = "totals_stats"
+    parsed_rows, stats = _player_totals_rows_with_stats(selector, table_id, include_combined=False)
+    emit_custom_endpoint_diagnostics(
+        parser_name="players_season_totals",
+        endpoint_name="players_season_totals",
+        rows=parsed_rows,
+        source_sections=[f"table#{table_id}"],
+        stats=stats,
+        selected_table_id=table_id,
+        candidate_table_ids=[table_id],
+    )
+    return parsed_rows
