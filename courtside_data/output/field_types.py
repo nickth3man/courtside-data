@@ -21,6 +21,7 @@ coerce_float_or_none = _coercions.coerce_float_or_none
 coerce_int = _coercions.coerce_int
 coerce_int_or_clock = _coercions.coerce_int_or_clock
 coerce_int_or_none = _coercions.coerce_int_or_none
+coerce_years_experience = _coercions.coerce_years_experience
 
 
 def get_coercion(column_name: str) -> Callable[[Any], Any]:

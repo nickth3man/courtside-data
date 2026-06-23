@@ -33,6 +33,8 @@ def _get_target_type(column_name: str) -> type | tuple[type, ...] | None:
         return (int, float)  # int is acceptable for float columns
     if name == "coerce_int_or_none":
         return (int, type(None))
+    if name == "coerce_years_experience":
+        return (int, type(None))
     if name == "coerce_float_or_none":
         return (int, float, type(None))
     # lambda v: v or other pass-through — no type expectation (legacy

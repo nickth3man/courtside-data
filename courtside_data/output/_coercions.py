@@ -37,6 +37,13 @@ coerce_int_or_none = _make_coercion("coerce_int_or_none", int, None)
 coerce_float_or_none = _make_coercion("coerce_float_or_none", float, None)
 
 
+def coerce_years_experience(value: Any) -> Any:
+    """Coerce years_experience: int for veterans, None for BR rookie marker 'R'."""
+    if isinstance(value, str) and value.strip().upper() == "R":
+        return None
+    return coerce_int_or_none(value)
+
+
 def coerce_int_or_clock(value: Any) -> Any:
     """Coerce numeric minutes while preserving Basketball-Reference clock strings."""
 

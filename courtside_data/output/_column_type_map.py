@@ -10,6 +10,7 @@ from courtside_data.output._coercions import (
     coerce_int,
     coerce_int_or_clock,
     coerce_int_or_none,
+    coerce_years_experience,
 )
 
 # Count / integer stat patterns used by ``_infer_coercion`` to identify
@@ -182,7 +183,7 @@ _COLUMN_TYPE_MAP: dict[str, Callable] = {
     "rank": coerce_int,
     "pick_overall": coerce_int,
     "seasons": coerce_int,
-    "years_experience": coerce_int,
+    "years_experience": coerce_years_experience,
     "years_remaining": coerce_int,
     "salary": coerce_int,  # NBA salaries are whole dollars
     "overtimes": coerce_int,
