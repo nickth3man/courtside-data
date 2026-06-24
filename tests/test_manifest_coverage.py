@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from courtside_data.endpoints import ENDPOINTS
+from courtside_data.endpoints import ENDPOINTS, EndpointFeature, RequestShape
 
 from tests.fixture_manifest import (
     ALL_CASES,
@@ -35,6 +35,20 @@ def test_multi_request_endpoints_have_cases() -> None:
     covered = {case.endpoint_name for case in ALL_CASES}
     missing = MULTI_REQUEST_ENDPOINTS - covered
     assert not missing, f"Multi-request endpoints missing manifest cases: {sorted(missing)}"
+
+
+def test_multi_request_endpoint_set_is_metadata_derived() -> None:
+    metadata_multi_request_endpoints = {
+        name
+        for name, endpoint in ENDPOINTS.items()
+        if endpoint.metadata is not None
+        and (
+            endpoint.metadata.request_shape is RequestShape.MULTI_REQUEST
+            or EndpointFeature.FANOUT_LINKS in endpoint.metadata.features
+        )
+    }
+
+    assert metadata_multi_request_endpoints == MULTI_REQUEST_ENDPOINTS
 
 
 def test_manifest_meets_coverage_target() -> None:

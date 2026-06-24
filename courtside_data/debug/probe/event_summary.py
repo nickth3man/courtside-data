@@ -29,7 +29,7 @@ from courtside_data.debug.probe.previews import (
     _preview_result,
     _row_count,
 )
-from courtside_data.debug.probe.samples import _ENDPOINT_GROUPS
+from courtside_data.debug.probe.samples import _ENDPOINT_GROUPS, _endpoint_domain, _endpoint_kind, _legacy_endpoint_kind
 from courtside_data.endpoints import ENDPOINTS
 
 
@@ -233,7 +233,9 @@ def _apply_endpoint_metadata(summary: dict[str, Any], scan: _EventScan, endpoint
     endpoint = ENDPOINTS.get(endpoint_name) if endpoint_name is not None else None
     if endpoint is not None:
         summary["endpoint_group"] = _ENDPOINT_GROUPS.get(endpoint_name)
-        summary["endpoint_kind"] = "custom" if endpoint.custom else "generic"
+        summary["endpoint_domain"] = _endpoint_domain(endpoint)
+        summary["endpoint_kind"] = _endpoint_kind(endpoint)
+        summary["endpoint_legacy_kind"] = _legacy_endpoint_kind(endpoint)
         summary["required_params_json"] = list(endpoint.params)
         summary["url_template"] = endpoint.path
         if scan.model_name is None and endpoint.row_model is not None:

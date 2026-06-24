@@ -5,7 +5,7 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
-from courtside_data.endpoints import TableEndpoint
+from courtside_data.endpoints import EndpointFeature, RequestShape, TableEndpoint
 
 from tests._fixture_manifest_common import (
     BASE_URL,
@@ -25,20 +25,20 @@ from tests._fixture_manifest_common import (
 )
 from tests.fixture_transport import FixtureValue
 
-MULTI_REQUEST_ENDPOINT_NAMES: frozenset[str] = frozenset(
-    {
-        "team_box_scores",
-        "play_by_play",
-        "season_schedule",
-        "standings_by_date",
-        "search",
-    }
-)
+
+def is_multi_request_fixture_endpoint(endpoint: TableEndpoint) -> bool:
+    """Return whether an endpoint's fixture case needs a multi-URL map."""
+    if endpoint.metadata is None:
+        return False
+    return (
+        endpoint.metadata.request_shape is RequestShape.MULTI_REQUEST
+        or EndpointFeature.FANOUT_LINKS in endpoint.metadata.features
+    )
 
 
 def resolve_endpoint(endpoint_name: str, endpoint: TableEndpoint) -> ResolveResult:
     """Dispatch an endpoint to the resolver matching its fixture layout."""
-    if endpoint_name in MULTI_REQUEST_ENDPOINT_NAMES:
+    if is_multi_request_fixture_endpoint(endpoint):
         return _resolve_multi_request_endpoint(endpoint_name)
 
     if endpoint_name in ("standings", "attendance", "playoff_bracket"):

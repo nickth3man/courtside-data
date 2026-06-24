@@ -12,7 +12,7 @@ from courtside_data.endpoints import ENDPOINTS
 
 from tests._fixture_manifest_common import BASE_URL, PROJECT_ROOT, RAW_ROOT, Case
 from tests._fixture_manifest_errors import build_error_cases
-from tests._fixture_manifest_resolvers import MULTI_REQUEST_ENDPOINT_NAMES, resolve_endpoint
+from tests._fixture_manifest_resolvers import is_multi_request_fixture_endpoint, resolve_endpoint
 from tests.fixture_transport import FixtureValue
 
 
@@ -34,11 +34,7 @@ _ALL_CASES_RAW, _UNRESOLVED = _build_all_cases()
 _ERROR_CASES = build_error_cases()
 
 _MULTI_REQUEST_NAMES: frozenset[str] = frozenset(
-    {
-        case.endpoint_name
-        for case in _ALL_CASES_RAW
-        if ENDPOINTS[case.endpoint_name].custom and case.endpoint_name in MULTI_REQUEST_ENDPOINT_NAMES
-    }
+    {case.endpoint_name for case in _ALL_CASES_RAW if is_multi_request_fixture_endpoint(ENDPOINTS[case.endpoint_name])}
 )
 
 

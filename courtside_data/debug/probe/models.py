@@ -31,7 +31,9 @@ class ProbeResult(TypedDict, total=False):
     redirect_count: int | None
     rate_limit_wait_ms: float | None
     endpoint_group: str | None
+    endpoint_domain: str | None
     endpoint_kind: str | None
+    endpoint_legacy_kind: str | None
     sample_case_id: str | None
     sample_params_source: str | None
     required_params_json: list[str] | None

@@ -15,6 +15,8 @@ from courtside_data.debug.probe import (
     _with_evaluation,
     write_probe_csv_report,
 )
+from courtside_data.debug.probe.samples import _ENDPOINT_GROUPS
+from courtside_data.endpoints import ENDPOINTS
 
 
 def _read_csv_rows(path: Path) -> list[dict[str, str]]:
@@ -172,7 +174,9 @@ def test_probe_csv_happy_path_marks_endpoint_working(tmp_path: Path) -> None:
     assert row["redirect_count"] == "0"
     assert row["rate_limit_wait_ms"] == "250.0"
     assert row["endpoint_group"] == "teams"
-    assert row["endpoint_kind"] == "generic"
+    assert row["endpoint_domain"] == "teams"
+    assert row["endpoint_kind"] == "generic_table"
+    assert row["endpoint_legacy_kind"] == "generic"
     assert row["sample_params_source"] == "fixture_manifest"
     assert row["parser_name"] == "generic_table"
     assert row["model_name"] == "TeamRosterRow"
@@ -566,6 +570,34 @@ def test_custom_endpoint_has_no_raw_table_columns() -> None:
     assert summary["raw_column_count"] is None
     assert summary["selected_table_id"] is None
     assert summary["parsed_event_count"] is None
+
+
+def test_probe_grouping_comes_from_endpoint_metadata() -> None:
+    groups_from_metadata = {
+        name: endpoint.metadata.domain.value for name, endpoint in ENDPOINTS.items() if endpoint.metadata is not None
+    }
+
+    assert groups_from_metadata == _ENDPOINT_GROUPS
+
+
+def test_custom_module_endpoint_uses_metadata_domain_not_custom_group() -> None:
+    summary = _summarize_debug_events(
+        {
+            "trace_id": "trace-pbp-domain",
+            "duration_ms": 1.0,
+            "status": {"code": "ok", "error_type": None, "error_message": None},
+            "metrics": {},
+            "stage_counts": {},
+            "events": [],
+        },
+        endpoint_name="play_by_play",
+    )
+
+    assert summary["endpoint_group"] == "games"
+    assert summary["endpoint_domain"] == "games"
+    assert summary["endpoint_kind"] == "workflow"
+    assert summary["endpoint_legacy_kind"] == "custom"
+    assert summary["endpoint_group"] != "custom"
 
 
 def test_first_row_preview_truncation_flags() -> None:

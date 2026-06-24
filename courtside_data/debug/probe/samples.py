@@ -13,31 +13,37 @@ from courtside_data.debug.live_probe_cases import (
     get_live_audit_sample,
 )
 from courtside_data.debug.probe.models import SampleParamsInfo
-from courtside_data.endpoints import ENDPOINTS
-from courtside_data.endpoints._custom import CUSTOM_ENDPOINTS
-from courtside_data.endpoints._draft_awards_leaders import DRAFT_AWARDS_LEADERS_ENDPOINTS
-from courtside_data.endpoints._league import LEAGUE_ENDPOINTS
-from courtside_data.endpoints._players import PLAYER_ENDPOINTS
-from courtside_data.endpoints._playoffs import PLAYOFF_ENDPOINTS
-from courtside_data.endpoints._teams import TEAM_ENDPOINTS
+from courtside_data.endpoints import ENDPOINTS, TableEndpoint
 
 
 def _endpoint_group_map() -> dict[str, str]:
-    groups: dict[str, str] = {}
-    for group_name, mapping in (
-        ("league", LEAGUE_ENDPOINTS),
-        ("playoffs", PLAYOFF_ENDPOINTS),
-        ("draft_awards_leaders", DRAFT_AWARDS_LEADERS_ENDPOINTS),
-        ("players", PLAYER_ENDPOINTS),
-        ("teams", TEAM_ENDPOINTS),
-        ("custom", CUSTOM_ENDPOINTS),
-    ):
-        for endpoint_name in mapping:
-            groups[endpoint_name] = group_name
-    return groups
+    return {
+        endpoint_name: endpoint.metadata.domain.value
+        for endpoint_name, endpoint in ENDPOINTS.items()
+        if endpoint.metadata is not None
+    }
 
 
 _ENDPOINT_GROUPS = _endpoint_group_map()
+
+
+def _endpoint_domain(endpoint: TableEndpoint | None) -> str | None:
+    if endpoint is None or endpoint.metadata is None:
+        return None
+    return endpoint.metadata.domain.value
+
+
+def _endpoint_kind(endpoint: TableEndpoint | None) -> str | None:
+    if endpoint is None or endpoint.metadata is None:
+        return None
+    return endpoint.metadata.kind.value
+
+
+def _legacy_endpoint_kind(endpoint: TableEndpoint | None) -> str | None:
+    """Return the old implementation label kept for CSV/report compatibility."""
+    if endpoint is None:
+        return None
+    return "custom" if endpoint.custom else "generic"
 
 
 def _sample_params_per_endpoint() -> dict[str, SampleParamsInfo]:
