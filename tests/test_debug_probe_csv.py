@@ -9,6 +9,7 @@ from courtside_data.debug.probe import (
     _default_enrichment,
     _infer_output_type,
     _preview_result,
+    _sample_params_per_endpoint,
     _summarize_debug_events,
     _summarize_report,
     _with_evaluation,
@@ -664,3 +665,76 @@ def test_zero_values_not_serialized_as_blank() -> None:
     assert row["redirect_count"] == "0"
     assert row["warning_count"] == "0"
     assert row["error_event_count"] == "0"
+
+
+# ---------------------------------------------------------------------------
+# Live probe sampler tests (live-audit overrides vs fixture manifest fallback)
+# ---------------------------------------------------------------------------
+
+
+def test_live_probe_sampler_uses_recent_overrides_for_known_noisy_endpoints() -> None:
+    """Known historical fixture cases must not be returned for overridden endpoints."""
+    samples = _sample_params_per_endpoint()
+
+    # rookie_stats used 1980 (no team column) in historical fixture
+    rs = samples["rookie_stats"]
+    assert rs.params == {"season_end_year": 2024}
+    assert rs.source == "live_audit"
+    assert rs.case_id == "live_audit:rookie_stats"
+    assert rs.params != {"season_end_year": 1980}
+
+    # draft_picks used 1965 (historical team names causing invalid_team_value)
+    dp = samples["draft_picks"]
+    assert dp.params == {"season_end_year": 2024}
+    assert dp.source == "live_audit"
+    assert dp.case_id == "live_audit:draft_picks"
+    assert dp.params != {"season_end_year": 1965}
+
+
+def test_live_probe_sampler_overrides_historical_league_and_schedule_endpoints() -> None:
+    samples = _sample_params_per_endpoint()
+
+    for ep in ("league_per_game_stats", "league_totals", "season_schedule", "season_awards"):
+        s = samples[ep]
+        assert s.params == {"season_end_year": 2024}, f"{ep} should use live 2024"
+        assert s.source == "live_audit"
+        assert s.case_id == f"live_audit:{ep}"
+
+    # team_and_opponent (required team + year) used 1974 historically
+    tao = samples["team_and_opponent"]
+    assert tao.params == {"team_abbreviation": "BOS", "season_end_year": 2024}
+    assert tao.source == "live_audit"
+
+
+def test_live_probe_sampler_falls_back_to_fixture_manifest_for_non_overridden() -> None:
+    """Endpoints without a live override must keep their manifest-derived sample."""
+    samples = _sample_params_per_endpoint()
+
+    # team_roster is not overridden; must come from fixture manifest (or empty)
+    tr = samples.get("team_roster")
+    assert tr is not None
+    assert tr.source == "fixture_manifest"
+    # case_id should look like a manifest id (contains endpoint or year), not live_audit
+    assert tr.case_id is None or "live_audit" not in str(tr.case_id)
+
+    # attendance likewise
+    att = samples.get("attendance")
+    assert att is not None
+    assert att.source == "fixture_manifest"
+
+
+def test_live_probe_sampler_metadata_distinguishes_sources() -> None:
+    """sample_params_source in enrichment must reflect live vs manifest."""
+    samples = _sample_params_per_endpoint()
+
+    # overridden
+    rs = samples["rookie_stats"]
+    enrich = _default_enrichment(endpoint_name="rookie_stats", sample=rs)
+    assert enrich["sample_params_source"] == "live_audit"
+    assert enrich["sample_case_id"] == "live_audit:rookie_stats"
+
+    # fallback
+    tr = samples.get("team_roster")
+    if tr and tr.source == "fixture_manifest":
+        enrich = _default_enrichment(endpoint_name="team_roster", sample=tr)
+        assert enrich["sample_params_source"] == "fixture_manifest"

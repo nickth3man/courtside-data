@@ -1,9 +1,11 @@
 """Live endpoint probe: call each registry endpoint once and record outcomes.
 
-Uses fixture-manifest sample params (one case per endpoint) and the standard
-``debug=True`` path so every call writes a full trace envelope to the debug
-log directory. Emits a summary report JSON, and optionally a CSV report,
-alongside those per-call traces.
+Sample params prefer explicit recent "live audit" overrides (see
+courtside_data.debug.live_probe_cases) when present; otherwise fall back to
+the first case from ``tests.fixture_manifest.ALL_CASES``. The
+``debug=True`` path ensures every call writes a full trace envelope.
+Emits a summary report JSON (with ``sample_params_source`` distinguishing
+"live_audit" vs "fixture_manifest"), and optionally a CSV report.
 
 Usage::
 
@@ -32,6 +34,10 @@ from tests.fixture_manifest import ALL_CASES
 from courtside_data.client._pipelines._data_quality import evaluate_data_quality
 from courtside_data.client._runner import _run_endpoint
 from courtside_data.debug import DebugTrace
+from courtside_data.debug.live_probe_cases import (
+    LIVE_AUDIT_SOURCE,
+    get_live_audit_sample,
+)
 from courtside_data.debug.sink import resolve_log_dir
 from courtside_data.endpoints import ENDPOINTS
 from courtside_data.endpoints._custom import CUSTOM_ENDPOINTS
@@ -300,7 +306,15 @@ _ENDPOINT_GROUPS = _endpoint_group_map()
 
 
 def _sample_params_per_endpoint() -> dict[str, SampleParamsInfo]:
-    """Pick the first manifest case for each endpoint (stable sort by case id)."""
+    """Build sample params for the live probe.
+
+    Base set comes from the first sorted case in ``tests.fixture_manifest.ALL_CASES``
+    (for backward compatibility and to cover every registered endpoint).
+
+    Live-audit overrides (recent dense seasons) are applied on top for
+    selected endpoints so that probe reports reflect modern tables instead
+    of old historical fixtures that produce many expected nulls/drops.
+    """
     params_by_endpoint: dict[str, SampleParamsInfo] = {}
     for case in sorted(ALL_CASES, key=lambda item: item.id):
         if case.endpoint_name not in params_by_endpoint:
@@ -312,6 +326,18 @@ def _sample_params_per_endpoint() -> dict[str, SampleParamsInfo]:
     for name, endpoint in ENDPOINTS.items():
         if name not in params_by_endpoint and not endpoint.params:
             params_by_endpoint[name] = SampleParamsInfo(params={}, case_id=None, source="empty_default")
+
+    # Overlay explicit live-audit samples (preferred for the probe).
+    # These do not affect ALL_CASES or any offline regression tests.
+    for name in ENDPOINTS:
+        live = get_live_audit_sample(name)
+        if live is not None:
+            params_by_endpoint[name] = SampleParamsInfo(
+                params=dict(live),
+                case_id=f"live_audit:{name}",
+                source=LIVE_AUDIT_SOURCE,
+            )
+
     return params_by_endpoint
 
 
