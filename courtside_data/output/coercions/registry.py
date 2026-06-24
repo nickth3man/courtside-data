@@ -82,7 +82,7 @@ _COLUMN_TYPE_MAP: dict[str, Callable] = {
     "team_name_abbr": _pass_through,
     "team_id": _pass_through,
     "team_abbreviation": _pass_through,
-    "team": _pass_through,  # could be Team enum (legacy) or str (generic)
+    "team": _pass_through,  # could be Team enum (custom endpoint) or str (generic)
     "opponent": _pass_through,
     "location": _pass_through,
     "outcome": _pass_through,

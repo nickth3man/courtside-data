@@ -10,7 +10,7 @@ Goals
 3. Exercise the ``COURTSIDE_DATA_PARSE_BACKEND`` env-var switch through
    the public surface (``GenericTable``) to confirm the dispatch is wired
    and both backends return the same rows as a direct selectolax build.
-4. Exercise the legacy ``COURTSIDE_DATA_FAST_PARSE`` shim to confirm
+4. Exercise the ``COURTSIDE_DATA_FAST_PARSE`` compatibility shim to confirm
    backward compatibility (``=1`` → selectolax, ``=0`` → parsel).
 
 These tests are offline-only and parallel-safe; they read fixture HTML
@@ -285,7 +285,7 @@ def test_env_var_parsel_backend_routes_generic_table_to_parsel(
     )
 
 
-# ─── Legacy COURTSIDE_DATA_FAST_PARSE shim ────────────────────────────────
+# ─── COURTSIDE_DATA_FAST_PARSE compatibility shim ─────────────────────────────
 
 
 def test_legacy_fast_parse_1_treated_as_selectolax(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -310,7 +310,7 @@ def test_legacy_fast_parse_0_treated_as_parsel(monkeypatch: pytest.MonkeyPatch) 
 
 def test_new_env_var_wins_over_legacy_flag(monkeypatch: pytest.MonkeyPatch) -> None:
     """When both env vars are set, ``COURTSIDE_DATA_PARSE_BACKEND`` wins."""
-    # Contradictory legacy flag (parsel) plus new flag (selectolax) — new wins.
+    # Contradictory FAST_PARSE flag (parsel) plus PARSE_BACKEND flag (selectolax) — PARSE_BACKEND wins.
     monkeypatch.setenv("COURTSIDE_DATA_PARSE_BACKEND", "selectolax")
     monkeypatch.setenv("COURTSIDE_DATA_FAST_PARSE", "0")
     assert get_parse_backend() == "selectolax"
@@ -323,7 +323,7 @@ def test_new_env_var_wins_over_legacy_flag(monkeypatch: pytest.MonkeyPatch) -> N
 def test_legacy_fast_parse_unknown_value_falls_back_to_default(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Unknown legacy values are ignored; the new env var / default still applies."""
+    """Unknown FAST_PARSE values are ignored; the PARSE_BACKEND env var / default still applies."""
     monkeypatch.delenv("COURTSIDE_DATA_PARSE_BACKEND", raising=False)
     monkeypatch.setenv("COURTSIDE_DATA_FAST_PARSE", "true")  # not "1" / "0"
     assert get_parse_backend() == "selectolax"
@@ -337,7 +337,7 @@ def test_legacy_fast_parse_unknown_value_falls_back_to_default(
 def test_legacy_fast_parse_routes_through_generic_table(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """The legacy ``FAST_PARSE=1`` shim wires through ``GenericTable`` end-to-end."""
+    """The ``FAST_PARSE=1`` compatibility shim wires through ``GenericTable`` end-to-end."""
     from courtside_data.parsing._selectolax_backend import _SelectolaxGenericTableRow
 
     monkeypatch.delenv("COURTSIDE_DATA_PARSE_BACKEND", raising=False)
@@ -352,6 +352,6 @@ def test_legacy_fast_parse_routes_through_generic_table(
 
     env_table = GenericTable(table)
     assert all(isinstance(row, _SelectolaxGenericTableRow) for row in env_table.rows), (
-        "legacy FAST_PARSE=1 should still route to _SelectolaxGenericTableRow"
+        "FAST_PARSE=1 compatibility flag should still route to _SelectolaxGenericTableRow"
     )
     assert "COURTSIDE_DATA_FAST_PARSE" in os.environ

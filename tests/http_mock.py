@@ -1,10 +1,9 @@
 """requests-mock-compatible facade over respx.
 
-The test suite was written against requests-mock's ``Mocker`` API
-(``@requests_mock.Mocker()`` decorator injecting ``m``, and
-``with requests_mock.Mocker() as m``). After the requests -> httpx
-migration, this shim preserves that API on top of respx so the ~160
-existing ``m.get(...)`` call sites stay untouched.
+Exposes the requests-mock ``Mocker`` API (``@requests_mock.Mocker()``
+decorator injecting ``m``, and ``with requests_mock.Mocker() as m``)
+on top of respx, so ``m.get(...)`` call sites keep working against the
+httpx transport.
 """
 
 import functools
@@ -17,8 +16,8 @@ import respx
 def http_status_error(status_code):
     """Build an httpx.HTTPStatusError carrying the given status code.
 
-    Replaces the old ``requests.HTTPError(response=Mock(status_code=...))``
-    test idiom; httpx requires request and response objects.
+    httpx requires request and response objects, unlike the
+    ``requests.HTTPError(response=Mock(status_code=...))`` idiom.
     """
     request = httpx.Request("GET", "https://www.basketball-reference.com")
     response = httpx.Response(status_code, request=request)
@@ -36,8 +35,8 @@ class Mocker:
         if self._router is None:
             raise RuntimeError("Mocker must be active (used as a context manager) before registering routes")
         # requests-mock collapsed duplicate slashes when matching; respx is
-        # exact. Normalize registrations so legacy "BASE_URL//path" entries
-        # still match the single-slash URLs the client now requests.
+        # exact. Normalize registrations so "BASE_URL//path" entries
+        # still match the single-slash URLs the client requests.
         parsed = httpx.URL(url)
         if "//" in parsed.path:
             url = str(parsed.copy_with(path=re.sub(r"/{2,}", "/", parsed.path)))

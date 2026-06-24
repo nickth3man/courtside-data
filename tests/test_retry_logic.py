@@ -43,7 +43,7 @@ def _http_status_error(status_code: int, retry_after: str | None = None) -> http
     """Build an ``httpx.HTTPStatusError`` carrying a status code and optional Retry-After header.
 
     The httpx constructor requires a real ``Request``/``Response`` pair (the
-    legacy requests-style ``HTTPError(response=...)`` idiom doesn't translate).
+    requests-style ``HTTPError(response=...)`` idiom doesn't translate).
     The pattern mirrors the helper in ``tests/http_mock.py`` but is kept local
     to avoid pulling respx into a pure-function test.
     """

@@ -1,15 +1,14 @@
-"""Refactor contract tests.
+"""Public-API contract tests.
 
 These tests lock down *public-surface* contracts (importable names, constant
-values, parser CLI argument shapes) that an aggressive structural refactor of
-the debug / probe / parsing / schemas packages must not break.
+values, parser CLI argument shapes) that must not change unless the change
+is intentional and accompanied by a compatibility plan.
 
 They are deliberately hermetic: no live network, no fixtures, no I/O. They
 verify the wiring and the contract surface that downstream tooling and the
 ``uv run python -m courtside_data.debug`` / ``courtside-data probe`` flows
-depend on. If any of these tests fail, the refactor has either removed a
-public name, changed a stable constant, or reshaped a CLI flag in a
-backwards-incompatible way.
+depend on. If any of these tests fail, a public name was removed, a stable
+constant changed, or a CLI flag was reshaped in a backwards-incompatible way.
 
 Note: the contract tests intentionally *import* a long list of public names
 without using them — the import itself is the test. ``# ruff: noqa: F401``
@@ -380,10 +379,9 @@ def test_row_adapters_registry_populated():
 
     assert len(ROW_ADAPTERS) >= 50, f"Expected >=50 registered models, got {len(ROW_ADAPTERS)}"
     # All register() calls happen at import time — every domain module must
-    # have contributed its models. The count must be stable across refactors.
+    # have contributed its models. The count must remain stable.
     assert len(ROW_ADAPTERS) == 55, (
-        f"ROW_ADAPTERS count changed from 55 to {len(ROW_ADAPTERS)} — "
-        "a model was accidentally dropped or added during refactor"
+        f"ROW_ADAPTERS count changed from 55 to {len(ROW_ADAPTERS)} — a model was accidentally dropped or added"
     )
 
 
@@ -393,9 +391,9 @@ def test_row_adapters_registry_populated():
 
 
 def test_probe_report_shim_reexports():
-    """The legacy ``courtside_data.debug.probe_report`` import path must keep
-    re-exporting the evaluation + CSV names after the split into
-    ``probe.report`` / ``probe.csv_report``.
+    """The ``courtside_data.debug.probe_report`` import path must keep
+    re-exporting the evaluation and CSV names from
+    ``probe.report`` and ``probe.csv_report``.
     """
     from courtside_data.debug import probe_report
     from courtside_data.debug.probe import csv_report, report

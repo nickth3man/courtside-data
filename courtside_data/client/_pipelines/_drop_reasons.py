@@ -1,7 +1,7 @@
 """Backward-compatibility shim for drop-reason classification.
 
 .. deprecated::
-    This module exist solely for backward compatibility.
+    This module exists solely for backward compatibility.
     New code should import directly from
     ``courtside_data.client._pipelines.drop_reasons``.
     This shim will be removed in a future major version.

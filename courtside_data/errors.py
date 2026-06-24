@@ -94,7 +94,7 @@ def _format_loc(loc: tuple[Any, ...]) -> str:
 def _summarize_pydantic_errors(pydantic_errors: list[dict]) -> str:
     """Render a one-line summary of a Pydantic v2 ``ValidationError.errors()`` payload.
 
-    Preserves the legacy ``missing field/alias '<loc>'`` shape for the common
+    Uses the ``missing field/alias '<loc>'`` shape for the common
     "row no longer matches the schema" canary case, but degrades gracefully for
     other error types by surfacing the first error's type/loc/msg, and notes
     when additional errors are present.

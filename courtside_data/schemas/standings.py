@@ -2,9 +2,9 @@
 
 Covers the conference-division standings and the day-by-day standings. The
 ``standings`` endpoint routes through a custom :class:`HTTPService` method that
-yields typed values from the legacy parser, while ``standings_by_date`` flows
-through the generic-table pipeline and produces raw ``data-stat``-keyed
-string dicts.
+yields typed values from the conference-division standings parser, while
+``standings_by_date`` flows through the generic-table pipeline and produces raw
+``data-stat``-keyed string dicts.
 """
 
 from __future__ import annotations
@@ -17,7 +17,8 @@ from courtside_data.schemas._base import BRRow
 from courtside_data.schemas._fields import BRInt, ConferenceField, StrOrNone
 
 # ---------------------------------------------------------------------------
-# Standings (custom endpoint — typed values from the legacy parser)
+# Standings (custom endpoint — typed values from the conference-division
+# standings parser)
 # ---------------------------------------------------------------------------
 
 
@@ -25,7 +26,7 @@ class StandingsRow(BRRow):
     """Row from a conference-division standings table.
 
     The ``standings`` endpoint is custom and the bespoke HTTPService method
-    routes the page through the legacy ``ConferenceDivisionStandingsParser``,
+    routes the page through the ``ConferenceDivisionStandingsParser``,
     which already produces typed values: :class:`Team`,
     :class:`Division`, and :class:`Conference` enums and ``int`` counts. The
     keys in the dict match the schema field names exactly, so no

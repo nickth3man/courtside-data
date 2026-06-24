@@ -1,7 +1,7 @@
 """Row schema for the play-by-play endpoint.
 
 The play-by-play table is structural rather than ``data-stat`` driven, so the
-Wave-4 custom fetcher is responsible for producing rows with stable keys.  In
+custom fetcher is responsible for producing rows with stable keys.  In
 particular, ``relevant_team`` must be resolved from the event description and
 the away/home team context before the row reaches this model.
 """

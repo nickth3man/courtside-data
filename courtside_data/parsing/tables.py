@@ -4,11 +4,10 @@
 :func:`extract_commented_table`, and :func:`parse_transaction_list` all
 operate on the **selectolax (Lexbor)** backend by default — set the
 environment variable ``COURTSIDE_DATA_PARSE_BACKEND=parsel`` to switch to
-the legacy parsel + lxml implementation. The legacy
-``COURTSIDE_DATA_FAST_PARSE=1`` flag is still honored and treated as
-``selectolax``; ``COURTSIDE_DATA_FAST_PARSE=0`` is treated as ``parsel``.
-The public function signatures and return shapes are unchanged on either
-path.
+the parsel + lxml backend. The ``COURTSIDE_DATA_FAST_PARSE=1``
+compatibility flag is also honored and treated as ``selectolax``;
+``COURTSIDE_DATA_FAST_PARSE=0`` is treated as ``parsel``. The public
+function signatures and return shapes are unchanged on either path.
 """
 
 from __future__ import annotations
@@ -116,7 +115,7 @@ class GenericTable:
     :class:`GenericTableRow` (same ``to_dict`` / ``metadata`` surface) so
     callers don't need to know which backend produced them. Set the
     environment variable ``COURTSIDE_DATA_PARSE_BACKEND=parsel`` (or the
-    legacy ``COURTSIDE_DATA_FAST_PARSE=0``) to fall back to the parsel +
+    ``COURTSIDE_DATA_FAST_PARSE=0`` compatibility flag) to fall back to the parsel +
     lxml implementation.
     """
 
@@ -232,7 +231,7 @@ def extract_commented_table(selector: Selector, table_id: str) -> Selector | Non
     public ``Selector | None`` return shape; the caller's eventual
     :class:`GenericTable` call will re-parse it through selectolax. Set
     the environment variable ``COURTSIDE_DATA_PARSE_BACKEND=parsel`` (or
-    the legacy ``COURTSIDE_DATA_FAST_PARSE=0``) to fall back to the
+    the ``COURTSIDE_DATA_FAST_PARSE=0`` compatibility flag) to fall back to the
     parsel + lxml implementation.
 
     Args:
@@ -283,8 +282,8 @@ def parse_transaction_list(selector: Selector) -> list[dict[str, Any]]:
     which scans ``<ul.page_index > li>`` date groups and the ``<p>``
     transactions inside each group. The output shape is identical to the
     parsel-based path. Set the environment variable
-    ``COURTSIDE_DATA_PARSE_BACKEND=parsel`` (or the legacy
-    ``COURTSIDE_DATA_FAST_PARSE=0``) to fall back to the parsel + lxml
+    ``COURTSIDE_DATA_PARSE_BACKEND=parsel`` (or the
+    ``COURTSIDE_DATA_FAST_PARSE=0`` compatibility flag) to fall back to the parsel + lxml
     implementation.
     """
     if not _is_parsel_backend():

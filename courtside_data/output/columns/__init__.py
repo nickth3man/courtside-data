@@ -5,7 +5,7 @@ contribute one ``*_COLUMN_NAMES`` list per endpoint; consumers import the
 specific contract list they need from here.
 
 The explicit per-endpoint lists exist because there is no way to derive
-CSV column names from the legacy typed values directly — enums, lists, and
+CSV column names from typed values directly — enums, lists, and
 other non-string types do not round-trip through ``csv.DictWriter`` without
 the writer knowing which columns to emit.
 

@@ -1,11 +1,8 @@
-"""Legacy domain classes retained for backward compatibility.
+"""Pre-Pydantic container classes kept for backward compatibility.
 
-These pre-Pydantic, attr-less container classes are exposed under
-``courtside_data.data`` for historical callers. New code should prefer the
+These attr-less container classes are exposed under
+``courtside_data.data`` for existing callers. New code should prefer the
 typed schemas in :mod:`courtside_data.schemas`.
-
-Moved verbatim from :mod:`courtside_data.data` during the Phase 1 domain
-extraction refactor.
 """
 
 

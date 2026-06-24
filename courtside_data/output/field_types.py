@@ -4,7 +4,7 @@ Generic endpoints return all values as raw strings from HTML. This module
 converts them to proper Python types (int, float) using a column-name registry
 plus heuristic fallback rules.
 
-Legacy endpoints already produce typed values, so coercion is idempotent for
+Custom endpoints already produce typed values, so coercion is idempotent for
 them: values already matching the target type pass through unchanged.
 """
 

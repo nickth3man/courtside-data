@@ -14,8 +14,9 @@ The runner's per-endpoint pipeline is composed of two pieces:
 - :func:`_execute` — the template method. It (1) wires the service call
   through :func:`_call_with_error_mapping` inside a debug-trace span
   (when one is active), (2) branches on ``endpoint.row_model`` to choose
-  the modern Pydantic validation pipeline or the Strangler-Fig legacy
-  fallback, and (3) hands the validated data to :func:`_output_debug_result`
+  the Pydantic row-model validation pipeline or the dict-based
+  fallback for endpoints without a row model, and (3) hands the
+  validated data to :func:`_output_debug_result`
   (when ``debug=True``) or :func:`_format_output` (otherwise).
 """
 

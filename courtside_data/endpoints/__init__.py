@@ -10,7 +10,7 @@ single registry entry.
 Path and table-id templates are ``str.format`` templates over the endpoint's
 call parameters, e.g. ``"/players/{player_identifier[0]}/{player_identifier}.html"``.
 
-The package layout (Phase 3A of the courtside-data refactor):
+The package layout:
 
 * :mod:`courtside_data.endpoints._error_mapping` — HTTP status-code tuples
   shared by the registry and ``TableEndpoint`` defaults.

@@ -2,14 +2,12 @@
 
 :func:`scan_events` walks the ordered debug events from one endpoint call once
 and accumulates every value the probe summary needs into an :class:`_EventScan`.
-The walk used to live inline in ``event_summary._summarize_debug_events`` as a
-~230-line ``for`` loop; it is extracted here so each concern (HTTP response,
-rate-limit, dispatch, parse, provenance, table resolution, validation,
-diagnostics, exception) reads as its own focused handler.
+Each concern (HTTP response, rate-limit, dispatch, parse, provenance, table
+resolution, validation, diagnostics, exception) reads as its own focused handler.
 
-Behaviour is identical to the original loop: the per-event handlers run in the
-**same order** the inline ``if`` blocks did, so fields written by more than one
-concern (``parser_name``, ``model_name``, ``selected_table_id``,
+The per-event handlers run in the **same order** as the original inline code,
+so fields written by more than one concern (``parser_name``, ``model_name``,
+``selected_table_id``,
 ``validation_status``) keep their original last-write-wins semantics. The
 post-loop enrichment (endpoint-registry metadata, first-row preview, derived
 counts, final assembly) stays in :mod:`event_summary`.

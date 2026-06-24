@@ -83,7 +83,7 @@ class PerGameStats:
 
     Raw ``data-stat`` attributes are used as ``validation_alias`` values; the
     Python attribute names are the stable verbose names used throughout the
-    legacy output layer.
+    output layer.
     """
 
     name_display: str | None = Field(default=None, validation_alias="name_display")

@@ -1,13 +1,9 @@
 """Module-level constants for the ``courtside_data.http`` package.
 
-Phase 2A of the courtside-data refactor extracts these from
-:mod:`courtside_data.http_service` so they can be shared by the new
-``_transport`` and ``_retry`` helpers without pulling in the entire
-:class:`~courtside_data.http_service.HTTPService` class. Behavior,
-defaults, and string values are preserved exactly — the live
-:class:`~courtside_data.http_service.HTTPService` consumer still
-imports from this package's re-exports in
-:mod:`courtside_data.http_service` until Phase 2C wires the new layout.
+Shared by the ``_transport`` and ``_retry`` helpers without pulling in
+the entire :class:`~courtside_data.http_service.HTTPService` class.
+Values are re-exported through :mod:`courtside_data.http_service` for
+callers that import them by that path.
 """
 
 from __future__ import annotations
@@ -48,7 +44,7 @@ _JAIL_THRESHOLD_SECONDS = 300.0  # 5 minutes
 # Env var that controls where the on-disk jail-state blob lives. Set to
 # an empty string to disable persistence (the test suite does this to
 # stay hermetic). Re-exported from :mod:`courtside_data.config` for tests
-# and for backward compatibility with the previous module-level constant.
+# and for backward compatibility with the module-level constant name.
 _JAIL_STATE_PATH_ENV = config.BASKETBALL_REF_JAIL_STATE_PATH_ENV
 
 # Browser-like headers proven to avoid bot-flagging.

@@ -1,11 +1,11 @@
-"""Backward-compatibility shim for :mod:`courtside_data.data`.
+"""Re-export module that preserves the ``courtside_data.data`` import path.
 
-Historically this module hosted the project's core domain types — enums
-(``Team``, ``Location``, …), abbreviation lookup tables, and a pair of
-legacy container classes (``TeamTotal``, ``PlayerData``). Those definitions
-now live in :mod:`courtside_data.domain`; this module exists solely to
-preserve the existing ``from courtside_data.data import X`` public surface
-for downstream callers.
+The project's core domain types — enums
+(``Team``, ``Location``, …), abbreviation lookup tables, and the
+container classes (``TeamTotal``, ``PlayerData``) — live in
+:mod:`courtside_data.domain`; this module re-exports them so the
+existing ``from courtside_data.data import X`` public surface keeps
+working for downstream callers.
 
 New code should import from :mod:`courtside_data.domain` directly.
 """

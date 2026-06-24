@@ -18,6 +18,14 @@
       "problemMatcher": []
     },
     {
+      "label": "bench",
+      "detail": "Parse pipeline benchmarks (serial, opt-in)",
+      "type": "shell",
+      "command": "uv run task bench",
+      "group": "test",
+      "problemMatcher": []
+    },
+    {
       "label": "lint",
       "detail": "Ruff lint check",
       "type": "shell",

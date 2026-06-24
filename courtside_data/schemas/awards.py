@@ -1,8 +1,7 @@
 """Row schemas for Basketball-Reference awards and leaders endpoints.
 
-.. versionadded:: next
-    Extracted from ``league.py`` during an internal split. All models remain
-    importable from ``courtside_data.schemas.league`` for backward compat.
+All models remain importable from ``courtside_data.schemas.league`` for
+backward compatibility.
 """
 
 from __future__ import annotations

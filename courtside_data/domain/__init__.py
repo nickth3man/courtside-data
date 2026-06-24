@@ -1,11 +1,10 @@
 """Domain layer for courtside-data.
 
 This package hosts the core domain types — enums, lookup tables, and the
-legacy container classes — extracted from the historical
-:mod:`courtside_data.data` module. The split is purely organizational for
-Phase 1 of the refactor: the contents here are byte-equivalent to the
-previous module surface, and :mod:`courtside_data.data` now exists only as
-a thin backward-compatible shim that re-exports these names.
+container classes (:class:`TeamTotal`, :class:`PlayerData`). The contents
+are the canonical definitions; :mod:`courtside_data.data` is a thin
+re-export module that preserves the older ``courtside_data.data`` import
+path for these names.
 """
 
 from courtside_data.domain._legacy import PlayerData, TeamTotal

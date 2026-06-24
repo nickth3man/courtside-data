@@ -11,11 +11,11 @@ first-row preview.
 
 It exists to make the *structural* decomposition of ``event_summary.py`` safe:
 the per-key assertions in ``test_debug_probe_csv.py`` cover the common keys, but
-this test pins the entire dict so a subtle merge/ordering regression in the
-refactor fails loudly.
+this test pins the entire dict so a subtle merge/ordering regression fails
+loudly.
 
 The expected outputs live in ``tests/golden/probe_event_summary.json``. They are
-generated from the **pre-refactor** implementation by running
+generated from the canonical implementation by running
 ``generate_golden()`` (see ``__main__`` guard below) and are never regenerated
 automatically — if a future change *intends* to alter the summary shape, a human
 regenerates and reviews the diff.

@@ -1,4 +1,4 @@
-"""Compatibility facade for the selectolax parsing backend.
+"""Re-export facade for the selectolax parsing backend.
 
 The backend is split into focused private modules:
 
@@ -6,8 +6,8 @@ The backend is split into focused private modules:
 * ``_selectolax_adapter`` adapts parsel selectors into selectolax tables.
 * ``_selectolax_extractors`` owns commented-table and transaction-list parsing.
 
-This module keeps the historical import surface intact for tests and any
-private callers that still import from ``courtside_data.parsing._selectolax_backend``.
+This module re-exports those names so existing imports from
+``courtside_data.parsing._selectolax_backend`` keep working.
 """
 
 from __future__ import annotations
@@ -76,6 +76,6 @@ def is_fast_parse_enabled() -> bool:
     """Return ``True`` when the selectolax backend is active.
 
     Deprecated alias for :func:`is_selectolax_backend`, retained for callers
-    that still probe the legacy ``COURTSIDE_DATA_FAST_PARSE`` flag.
+    that still probe the ``COURTSIDE_DATA_FAST_PARSE`` compatibility flag.
     """
     return is_selectolax_backend()

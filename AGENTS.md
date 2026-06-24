@@ -200,20 +200,22 @@ uv run pytest tests -n auto --randomly-seed=last
 
 ### Benchmarks (opt-in)
 
-`tests/test_benchmarks.py` contains `@pytest.mark.benchmark(group="parse")` tests covering the parsing hot paths (`GenericTable` row extraction, `extract_commented_table`, transaction-list fallback, `JSONWriter`, and debug-envelope serialization). They are **skipped by default** and only run with `--benchmark-only`:
+`tests/test_benchmarks.py` contains `@pytest.mark.benchmark(group="parse")` tests covering the parsing hot paths (`GenericTable` row extraction, `extract_commented_table`, transaction-list fallback, `JSONWriter`, and debug-envelope serialization). They are **skipped by default** and only run with `--benchmark-only`. The pytest-benchmark plugin is disabled in default `addopts` (`-p no:benchmark`) so parallel test runs do not load it.
 
 ```bash
-# Run the parse benchmarks (serial — xdist disables benchmarks)
-uv run pytest tests/test_benchmarks.py --benchmark-only -v
+# Run the parse benchmarks (serial — do not pass -n auto)
+uv run task bench
+# or:
+uv run pytest -p benchmark tests/test_benchmarks.py --benchmark-only -v
 ```
 
-pytest-benchmark auto-disables under `-n auto` (xdist parallelizes workers, which makes timing unreliable), so the benchmark suite is invisible to the normal `uv run task test` run. Run serially for meaningful numbers.
+The normal `uv run task test` run does not load pytest-benchmark and skips benchmark tests. Run benchmarks serially for meaningful numbers.
 
 ---
 
 ## taskipy (task runner)
 
-[taskipy](https://github.com/taskipy/taskipy) reads task definitions from `[tool.taskipy.tasks]` in `pyproject.toml` and exposes them as `uv run task <name>`. The project defines 11 tasks that wrap the underlying tools documented below.
+[taskipy](https://github.com/taskipy/taskipy) reads task definitions from `[tool.taskipy.tasks]` in `pyproject.toml` and exposes them as `uv run task <name>`. The project defines 12 tasks that wrap the underlying tools documented below.
 
 ### Commands
 
@@ -227,6 +229,7 @@ uv run task format      # ruff format --check .
 uv run task fix         # ruff check --fix . && ruff format .
 uv run task type        # ty check
 uv run task test        # pytest tests -n auto
+uv run task bench       # parse benchmarks (serial, opt-in)
 uv run task audit       # lint + format --check + type + test  (the full gate)
 
 # Refactor / ad-hoc audits

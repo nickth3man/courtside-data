@@ -4,10 +4,8 @@ This module is the **single** surface for every env var the library reads.
 All helpers re-read ``os.environ`` on every call so the test suite can
 flip configuration via ``monkeypatch.setenv`` without reloading modules.
 
-Phase 1 of the courtside-data refactor consolidates the previously
-scattered ``os.environ.get(...)`` reads into one place. The functions
-intentionally return plain primitives (no ``BaseSettings`` / dataclass
-framework) so they stay trivial to reason about and to call from
+The functions intentionally return plain primitives (no ``BaseSettings`` /
+dataclass framework) so they stay trivial to reason about and to call from
 non-runtime contexts (lazy ``build_client`` paths, debug probes, etc.).
 """
 
@@ -31,12 +29,11 @@ BASKETBALL_REF_RATE_LIMIT_INTERVAL_ENV = "BASKETBALL_REF_RATE_LIMIT_INTERVAL"
 BASKETBALL_REF_RATE_LIMIT_JITTER_ENV = "BASKETBALL_REF_RATE_LIMIT_JITTER"
 COURTSIDE_DEBUG_LOG_DIR_ENV = "COURTSIDE_DEBUG_LOG_DIR"
 COURTSIDE_DATA_PARSE_BACKEND_ENV = "COURTSIDE_DATA_PARSE_BACKEND"
-COURTSIDE_DATA_FAST_PARSE_ENV = "COURTSIDE_DATA_FAST_PARSE"  # legacy alias
+COURTSIDE_DATA_FAST_PARSE_ENV = "COURTSIDE_DATA_FAST_PARSE"  # compatibility alias for COURTSIDE_DATA_PARSE_BACKEND
 
 # ─── Default values ─────────────────────────────────────────────────────────
 
-# Cap (seconds) on a single Retry-After sleep. Previously an import-time
-# constant in :mod:`courtside_data.http_service`; now read on every call.
+# Cap (seconds) on a single Retry-After sleep. Read on every call.
 DEFAULT_MAX_RETRY_AFTER_WAIT: float = 60.0
 
 # Default TLS impersonation target for ``httpx-curl-cffi``. Matches the
@@ -65,9 +62,10 @@ _VALID_PARSE_BACKENDS: frozenset[str] = frozenset({"selectolax", "parsel"})
 def max_retry_after_wait() -> float:
     """Return the cap (seconds) on a single ``Retry-After`` sleep.
 
-    Reads ``BASKETBALL_REF_MAX_RETRY_AFTER`` on every call. Replaces the
-    import-time constant that previously lived in
-    :mod:`courtside_data.http_service`; behavior is otherwise identical.
+    Reads ``BASKETBALL_REF_MAX_RETRY_AFTER`` on every call. The
+    import-time constant ``_MAX_RETRY_AFTER_WAIT`` in
+    :mod:`courtside_data.http_service`/`:mod:`courtside_data.http._constants`
+    is seeded from this value for backward compatibility.
     """
     return float(os.environ.get(BASKETBALL_REF_MAX_RETRY_AFTER_ENV, str(DEFAULT_MAX_RETRY_AFTER_WAIT)))
 
@@ -118,7 +116,7 @@ def parse_backend() -> str:
 
     1. ``COURTSIDE_DATA_PARSE_BACKEND`` — case-insensitive, whitespace-stripped.
        Unknown values are ignored.
-    2. ``COURTSIDE_DATA_FAST_PARSE`` — legacy alias. ``"1"`` → ``selectolax``,
+    2. ``COURTSIDE_DATA_FAST_PARSE`` — compatibility alias. ``"1"`` → ``selectolax``,
        ``"0"`` → ``parsel``. Any other value is ignored.
     3. Default → :data:`DEFAULT_PARSE_BACKEND`.
     """

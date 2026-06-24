@@ -3,20 +3,19 @@
 The package contains the per-domain free functions used by the
 :class:`CustomEndpointHandler` dispatcher, plus the dispatcher itself.
 
-The legacy monolithic :mod:`courtside_data.parsing.custom` module grew
-to ~300 LOC and reached into private members of
-:class:`~courtside_data.http_service.HTTPService` from every method.
-Phase 4 of the courtside-data refactor reverses that coupling by:
+The handlers do not reach into private members of
+:class:`~courtside_data.http_service.HTTPService`. Instead the package is
+organized as:
 
-1. Introducing :class:`~courtside_data.parsing.custom._fetch.FetchFacade`
-   — the public surface bespoke handlers use to talk to the transport.
-2. Splitting the per-endpoint logic into per-domain modules under
+1. :class:`~courtside_data.parsing.custom._fetch.FetchFacade` — the
+   public surface bespoke handlers use to talk to the transport.
+2. The per-endpoint logic split into per-domain modules under
    :mod:`courtside_data.parsing.custom` (one module per BR page family).
-3. Turning the four shared ``_xxx_rows`` helpers into free functions in
+3. The four shared ``_xxx_rows`` helpers as free functions in
    :mod:`courtside_data.parsing.custom._common`.
-4. Re-introducing :class:`CustomEndpointHandler` here as a thin
-   dispatcher — one method per endpoint, each delegating to a domain
-   function with a :class:`FetchFacade` in hand.
+4. :class:`CustomEndpointHandler` as a thin dispatcher — one method per
+   endpoint, each delegating to a domain function with a
+   :class:`FetchFacade` in hand.
 
 The public surface is unchanged: ``from courtside_data.parsing.custom
 import CustomEndpointHandler, dispatch_custom_endpoint`` still works
@@ -56,10 +55,9 @@ class CustomEndpointHandler:
     The handler holds one :class:`FetchFacade` for the lifetime of the
     instance. Each public method is a one-liner that forwards to the
     free function in the matching domain module; the method signatures
-    must stay byte-for-byte identical to the historic
-    :class:`CustomEndpointHandler` so :func:`inspect.signature`-driven
-    param coercion in :mod:`courtside_data.client._runtime._coerce`
-    continues to work.
+    must stay identical so :func:`inspect.signature`-driven param
+    coercion in :mod:`courtside_data.client._runtime._coerce` keeps
+    working.
     """
 
     def __init__(self, http: HTTPService) -> None:
@@ -164,8 +162,7 @@ def dispatch_custom_endpoint(http: HTTPService, name: str, **params: Any) -> Any
     The runner passes the resolved :class:`HTTPService` and the
     endpoint name; the function constructs one
     :class:`CustomEndpointHandler` per call and resolves the named
-    method through ``getattr`` (the same dispatch shape as the historic
-    free function).
+    method through ``getattr``.
     """
     handler = CustomEndpointHandler(http)
     return getattr(handler, name)(**params)

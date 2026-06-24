@@ -6,11 +6,10 @@ attendance. Every field's ``validation_alias`` is the raw ``data-stat`` key the
 table emits, so the schema drift detection in the runner fires whenever BR
 renames a column.
 
-.. versionchanged:: next
-    Awards and leaders models (``SeasonAwardsRow``, ``SeasonAwardsVotingRow``,
-    ``SeasonLeadersRow``, ``CareerLeadersRow``) moved to
-    :mod:`courtside_data.schemas.awards`. They remain importable from this
-    module for backward compatibility.
+Awards and leaders models (``SeasonAwardsRow``, ``SeasonAwardsVotingRow``,
+``SeasonLeadersRow``, ``CareerLeadersRow``) are defined in
+:mod:`courtside_data.schemas.awards` and re-exported from this module for
+backward compatibility.
 """
 
 from __future__ import annotations
@@ -366,11 +365,11 @@ register("league_play_by_play", LeaguePlayByPlayRow)
 class LeagueTransactionRow(BRRow):
     """Row from a league transactions page.
 
-    The endpoint declares ``transaction_list_fallback=True``, so the Wave-3
+    The endpoint declares ``transaction_list_fallback=True``, so the custom
     fetcher produces rows from :func:`courtside_data.parsing.tables.parse_transaction_list`
     with the stable keys ``date`` and ``transaction``. The optional
     ``from_team_abbreviations`` / ``to_team_abbreviations`` / ``linked_resources``
-    keys are accepted for forward compatibility but are not part of the legacy
+    keys are accepted for forward compatibility but are not part of the
     CSV column contract.
     """
 

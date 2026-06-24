@@ -3,7 +3,7 @@
 This package owns the HTTP transport for courtside-data: rate-limited
 pacing, persistent circuit-breaker ("jail") state, retry predicates, and
 the slim :class:`HTTPService` class that ties them together. The split
-mirrors Phase 2A/2B/2C of the courtside-data refactor:
+across focused private modules:
 
 * :mod:`._constants` — module-level constants (timeouts, headers, cache
   sizing, jail threshold).
@@ -15,10 +15,10 @@ mirrors Phase 2A/2B/2C of the courtside-data refactor:
   :func:`apply_rate_limiting` primitive.
 * :mod:`._service` — the slim :class:`HTTPService` class.
 
-The legacy :mod:`courtside_data.http_service` module is a thin
-backward-compat shim that re-exports the public names so existing
-imports (``from courtside_data.http_service import HTTPService``) keep
-working.
+:mod:`courtside_data.http_service` is a thin re-export module that
+preserves the older ``courtside_data.http_service`` import path
+(``from courtside_data.http_service import HTTPService``) for existing
+callers.
 """
 
 from __future__ import annotations

@@ -2,7 +2,7 @@
 
 Reads the ``/playoffs/NBA_{year}.html`` page and walks the single
 ``table#all_playoffs`` element. The row parser is a thin
-:func:`rows.parse_playoff_bracket` shim around the table's ``<tbody>/<tr>``
+:func:`rows.parse_playoff_bracket` wrapper around the table's ``<tbody>/<tr>``
 hierarchy.
 """
 

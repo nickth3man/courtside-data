@@ -1,9 +1,10 @@
-"""Legacy coerce/validate pipeline (Strangler-Fig fallback).
+"""Dict-based coerce/validate pipeline.
 
 Used by :func:`courtside_data.client._runner._execute` for endpoints
-without a Pydantic row model. Coerces raw ``list[dict]`` values through
+without a Pydantic row model (``row_model is None``). Coerces raw
+``list[dict]`` values through
 :func:`courtside_data.output.field_types.coerce_data` and (when enabled)
-runs the legacy row validator over the result.
+runs the row validator over the result.
 
 Output formatting is the runner's responsibility: this module returns
 ``(data, csv_column_names)`` and never touches the output service.

@@ -12,25 +12,30 @@ Benchmarks the five hot paths in the parse + serialize + debug surface:
 How to run
 ----------
 
-The suite is opt-in. The autouse ``_require_benchmark_mode`` fixture below
-calls :func:`pytest.skip` unless pytest-benchmark's ``--benchmark-only`` flag
-is set, so the default ``pytest tests`` run is unaffected.
+The suite is opt-in. pytest-benchmark is disabled by default (``-p no:benchmark``
+in ``pyproject.toml`` addopts) so parallel ``pytest tests -n auto`` runs do not
+load the plugin. The autouse ``_require_benchmark_mode`` fixture below calls
+:func:`pytest.skip` unless ``--benchmark-only`` was passed.
 
-Run all benchmarks::
+Run all benchmarks (serial — do not pass ``-n auto``)::
 
-    uv run pytest tests/test_benchmarks.py --benchmark-only -v
+    uv run pytest -p benchmark tests/test_benchmarks.py --benchmark-only -v
+
+Or via taskipy::
+
+    uv run task bench
 
 Run a single benchmark by node id::
 
-    uv run pytest tests/test_benchmarks.py --benchmark-only -v -k generic_table
+    uv run pytest -p benchmark tests/test_benchmarks.py --benchmark-only -v -k generic_table
 
 Capture historical results in ``.benchmarks/`` for trend comparison::
 
-    uv run pytest tests/test_benchmarks.py --benchmark-only --benchmark-autosave
+    uv run pytest -p benchmark tests/test_benchmarks.py --benchmark-only --benchmark-autosave
 
 Compare against a saved run::
 
-    uv run pytest tests/test_benchmarks.py --benchmark-only --benchmark-compare=0001
+    uv run pytest -p benchmark tests/test_benchmarks.py --benchmark-only --benchmark-compare=0001
 
 Fixture loading
 ---------------

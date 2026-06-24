@@ -4,7 +4,7 @@ Box-score tables use ``data-stat="mp"`` to carry an "MM:SS" playing-time
 string.  :class:`SecondsPlayed` ports that into a total-seconds ``int`` so
 consumers can compare or aggregate without re-parsing the original string.
 
-The custom fetchers (Wave 3) own the orchestration that injects the
+The custom fetchers own the orchestration that injects the
 player ``slug`` (extracted from the ``data-append-csv`` cell attribute,
 not a ``data-stat``) for the per-day leaders endpoint.
 """
@@ -68,7 +68,7 @@ class _BoxScoreTeamCountingStats:
     Differs from :class:`_BoxScoreCountingStats` in two ways: ``mp`` is
     a bare-integer total (not an "MM:SS" string) and ``points`` is the
     canonical Python name (vs. ``points`` in the player shape — the
-    legacy column contract already uses ``points`` here, so no rename).
+    CSV column contract already uses ``points`` here, so no rename).
     """
 
     minutes_played: BRInt = Field(validation_alias="mp")
@@ -174,7 +174,7 @@ class TeamBoxScoreRow(BRRow, _BoxScoreTeamCountingStats, _BoxScorePctStats):
 
     The team-level ``mp`` cell holds a bare integer (the total team
     minutes summed across players), exposed as :attr:`minutes_played` to
-    match the legacy column contract.
+    match the CSV column contract.
     """
 
     team: TeamNameField = Field(validation_alias=AliasChoices("team_name_abbr", "team_id"))

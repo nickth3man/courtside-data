@@ -1,8 +1,5 @@
-"""Enum definitions for the courtside-data domain.
+"""Enum definitions for the courtside-data domain."""
 
-Moved verbatim from :mod:`courtside_data.data` during the Phase 1 domain
-extraction refactor.
-"""
 
 from enum import Enum
 

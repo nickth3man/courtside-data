@@ -1,8 +1,5 @@
-"""Lookup dictionaries that map abbreviations to domain enum values.
+"""Lookup dictionaries that map abbreviations to domain enum values."""
 
-Moved verbatim from :mod:`courtside_data.data` during the Phase 1 domain
-extraction refactor.
-"""
 
 from courtside_data.domain.enums import (
     Conference,

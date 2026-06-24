@@ -1,8 +1,7 @@
 """Runtime plumbing shared by :func:`courtside_data.client._runner._run_endpoint`.
 
-Private subpackage (leading underscore). The modules here hold the clearly-
-separable moving parts that used to live in the monolithic
-:mod:`courtside_data.client._runner`:
+Private subpackage (leading underscore). The modules here hold the
+clearly-separable moving parts of the per-endpoint pipeline:
 
 - :mod:`courtside_data.client._runtime._locator` — process-wide
   :class:`~courtside_data.http_service.HTTPService` singleton and the
@@ -21,7 +20,7 @@ separable moving parts that used to live in the monolithic
 - :mod:`courtside_data.client._runtime._execute` — the
   :func:`_call_with_error_mapping` HTTP-status-to-domain-error translator
   and the :func:`_execute` template method that ties the service call to
-  the dual Pydantic / legacy validation pipelines and the output
+  the Pydantic and dict-based validation pipelines and the output
   formatter.
 
 The :func:`_run_endpoint` template itself stays in

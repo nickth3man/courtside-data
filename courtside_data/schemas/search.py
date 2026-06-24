@@ -1,7 +1,7 @@
 """Row schema for the player search endpoint.
 
 Basketball-Reference's search results page is a div-based listing rather than a
-table, so the Wave-4 fetcher is expected to normalize each result into a dict
+table, so the fetcher is expected to normalize each result into a dict
 with the stable keys ``name``, ``identifier``, and ``leagues`` before passing it
 to :class:`SearchResultRow`.  No ``data-stat`` aliases are required.
 """

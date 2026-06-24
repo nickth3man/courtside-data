@@ -1,6 +1,6 @@
 """Pure-function retry helpers used by :class:`HTTPService`.
 
-Phase 2A of the courtside-data refactor moves these out of
+Owns the retry predicates extracted from
 :mod:`courtside_data.http_service`:
 
 * :func:`_parse_retry_after` — parse a ``Retry-After`` header value per

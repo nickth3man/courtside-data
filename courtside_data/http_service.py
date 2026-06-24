@@ -1,15 +1,14 @@
-"""Backwards-compatibility shim for the HTTP transport.
+"""Re-export module that preserves the ``courtside_data.http_service`` import path.
 
-Phase 2C of the courtside-data refactor moves the implementation into
-:mod:`courtside_data.http._service` and the rate-limit singleton into
-:mod:`courtside_data.http._rate_limit`. This module re-exports the
-public (and previously private) names that lived here so existing
+The HTTP implementation lives in :mod:`courtside_data.http._service` and
+the rate-limit singleton in :mod:`courtside_data.http._rate_limit`. This
+module re-exports the public (and previously private) names so existing
 imports keep working:
 
 * :class:`HTTPService` — the rate-limited, retried, selector-cached
   HTTP client.
 * :func:`build_client` — the rate-limit-aware ``httpx.Client`` factory.
-* :class:`_SafeCurlTransport` — the curl-cffi transport shim used by
+* :class:`_SafeCurlTransport` — the curl-cffi transport adapter used by
   :func:`build_client`.
 * Module-level constants: ``_DEFAULT_TIMEOUT``, ``_RETRY_ATTEMPTS``,
   ``_SELECTOR_CACHE_SIZE``, ``_SELECTOR_CACHE_TTL``, ``_DEFAULT_HEADERS``,
@@ -29,8 +28,8 @@ forwarder, so existing test resets
 (``HTTPService._last_request_time = float('-inf')``) keep working
 without code changes.
 
-The shim is intended to be removed in a future major release once the
-new module path is the public surface.
+This re-export module is intended to be removed in a future major
+release once :mod:`courtside_data.http` is the sole public surface.
 """
 
 from __future__ import annotations
@@ -42,7 +41,7 @@ from courtside_data.http._transport import _SafeCurlTransport, build_client
 
 # Re-export the module-level constants. Defined as module attributes
 # (not bare imports) so they appear as ``http_service._DEFAULT_TIMEOUT``
-# etc. on the legacy module — matching the previous layout.
+# etc. on this module, matching the layout callers import by name.
 _DEFAULT_TIMEOUT = _constants._DEFAULT_TIMEOUT
 _RETRY_ATTEMPTS = _constants._RETRY_ATTEMPTS
 _SELECTOR_CACHE_SIZE = _constants._SELECTOR_CACHE_SIZE

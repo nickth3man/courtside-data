@@ -107,7 +107,9 @@ testpaths = "tests"
 #   uv run pytest tests -n auto
 # Do NOT add -n to addopts: the CI coverage job runs `coverage run -m pytest`
 # and would not measure xdist worker subprocesses, collapsing coverage.
-addopts = ["--disable-socket", "--timeout=300"]
+# -p no:benchmark: opt-in parse benchmarks; avoids xdist worker warnings and
+# plugin overhead on the default parallel test run. Re-enable with -p benchmark.
+addopts = ["--disable-socket", "--timeout=300", "-p", "no:benchmark"]
 
 [tool.ruff]
 target-version = "py312"
@@ -186,3 +188,4 @@ refactor = "ruff check --fix . && ruff format . && flynt -tc -tj courtside_data/
 vulture  = "vulture courtside_data --min-confidence 80"
 deptry   = "deptry ."
 bandit   = "bandit -r courtside_data -lll"
+bench    = "pytest -p benchmark tests/test_benchmarks.py --benchmark-only -v"

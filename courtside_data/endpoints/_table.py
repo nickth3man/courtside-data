@@ -1,9 +1,8 @@
 """``TableEndpoint`` dataclass and factory helpers used to build the ``ENDPOINTS`` dict.
 
-Split out of the legacy monolithic :mod:`courtside_data.endpoints` module so
-the registry (:mod:`courtside_data.endpoints._registry`) can stay focused on
+The registry (:mod:`courtside_data.endpoints._registry`) stays focused on
 its per-domain wiring and the per-endpoint ``output.columns``/``schemas``
-imports.
+imports; the shared spec type and factories live here.
 """
 
 from __future__ import annotations
@@ -49,8 +48,8 @@ class TableEndpoint:
     # fetch_table() must not be used for these.
     custom: bool = False
     # If set, the runner validates each extracted row with this BRRow subclass
-    # instead of the legacy coerce_data/validate_rows path. Endpoints with
-    # row_model=None keep the legacy pipeline (strangler-fig coexistence).
+    # via the Pydantic pipeline. Endpoints with row_model=None use the
+    # dict-based coerce_data/validate_rows path instead.
     row_model: type[BRRow] | None = None
     # When set, fetch_table() projects each row down to exactly these keys
     # (missing keys become empty strings).

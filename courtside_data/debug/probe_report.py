@@ -1,10 +1,10 @@
-"""Backward-compatible facade for the probe report/evaluation code.
+"""Re-export facade for the probe report/evaluation code.
 
-The evaluation/classification logic now lives in
+The evaluation/classification logic lives in
 :mod:`courtside_data.debug.probe.report` and the CSV serialization in
-:mod:`courtside_data.debug.probe.csv_report`. This module re-exports every name
-from those modules so existing ``courtside_data.debug.probe_report`` imports keep
-working unchanged.
+:mod:`courtside_data.debug.probe.csv_report`. This module re-exports every
+name from those modules so existing ``courtside_data.debug.probe_report``
+imports keep working unchanged.
 """
 
 from __future__ import annotations

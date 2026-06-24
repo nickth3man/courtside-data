@@ -1,14 +1,14 @@
-"""HTTP client construction and the curl-cffi transport shim.
+"""HTTP client construction and the curl-cffi transport adapter.
 
-Phase 2A of the courtside-data refactor extracts the transport pieces
-from :mod:`courtside_data.http_service`:
+Owns the transport pieces for the ``courtside_data.http`` package:
 
 * :class:`_SafeCurlTransport` — workarounds for hishel 1.x + curl-cffi.
 * :func:`build_client` — the rate-limit-aware ``httpx.Client`` factory.
 
-The :class:`~courtside_data.http_service.HTTPService` consumer still
-lives in :mod:`courtside_data.http_service` and will switch to calling
-this module in Phase 2C. Until then both surfaces exist in parallel.
+:class:`HTTPService` (in :mod:`courtside_data.http._service`) consumes
+:func:`build_client` via a late-bound indirection through
+:mod:`courtside_data.http_service` so the offline test suite's patch of
+``http_service.build_client`` flows through.
 """
 
 from __future__ import annotations

@@ -3,11 +3,8 @@
 Every ``Annotated[..., BeforeValidator(fn)]`` alias you see in row models
 originates here. The actual validation functions live in
 :mod:`courtside_data.schemas._validators` and are re-exported from this
-module for backward compatibility.
-
-.. versionchanged:: next
-    Validator functions moved to ``_validators.py``. All names that were
-    previously importable from ``_fields`` remain importable here.
+module for backward compatibility. All names that were importable from
+``_fields`` remain importable here.
 """
 
 from __future__ import annotations

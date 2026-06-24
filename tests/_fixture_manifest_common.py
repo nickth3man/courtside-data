@@ -26,8 +26,8 @@ class Case:
     id: str
 
 
-# Keep the public-looking class path stable for repr/debugging even though the
-# implementation now lives in this private helper module.
+# Pin the repr/debug class path to the public ``tests.fixture_manifest``
+# location; ``Case`` is defined here but re-homed for its repr.
 Case.__module__ = "tests.fixture_manifest"
 
 

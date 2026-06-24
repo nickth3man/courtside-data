@@ -1,38 +1,33 @@
 """Slim :class:`HTTPService` — the rate-limited, retried, cache-aware transport.
 
-Phase 2C of the courtside-data refactor. Pure state + I/O lives here;
-rate-limit pacing and the persistent circuit-breaker ("jail") state live
-in :mod:`courtside_data.http._rate_limit`, retry predicates in
+Pure state + I/O lives here; rate-limit pacing and the persistent
+circuit-breaker ("jail") state live in
+:mod:`courtside_data.http._rate_limit`, retry predicates in
 :mod:`courtside_data.http._retry`, transport construction in
 :mod:`courtside_data.http._transport`, and module-level constants in
 :mod:`courtside_data.http._constants`.
 
-Behavior is identical to the previous
-:class:`courtside_data.http_service.HTTPService` implementation. The
-:class:`HTTPService` symbol is re-exported from the
-:mod:`courtside_data.http` package and from the back-compat shim
+The :class:`HTTPService` symbol is re-exported from the
+:mod:`courtside_data.http` package and from the re-export module
 :mod:`courtside_data.http_service` so existing imports keep working.
 
 Backwards-compatibility class attribute surface
 -----------------------------------------------
 
-The previous implementation carried the process-wide pacing state as
-``ClassVar`` on :class:`HTTPService` and let tests reset it via direct
-assignment::
+The process-wide pacing state lives as module-level singletons in
+:mod:`courtside_data.http._rate_limit` (so one budget is shared per
+process). Tests reset it via direct assignment on :class:`HTTPService`::
 
     HTTPService._last_request_time = float("-inf")
     HTTPService._jailed_until = 0.0
     HTTPService._jail_state_loaded = False
 
-In Phase 2C the state moved to
-:mod:`courtside_data.http._rate_limit` (so a future split of this class
-still shares one budget per process). The :class:`_ClassStateMeta`
-metaclass re-routes the four legacy names — ``_last_request_time``,
-``_jailed_until``, ``_jail_state_loaded``, and ``_rate_limit_lock`` —
-through to the module-level singleton so the test surface and any
-external code that pokes at those names keep working unchanged. The
-forwarder list is meant to be removed in a future major release once
-the new module path is the public surface.
+The :class:`_ClassStateMeta` metaclass re-routes the four names —
+``_last_request_time``, ``_jailed_until``, ``_jail_state_loaded``, and
+``_rate_limit_lock`` — through to the module-level singleton so the test
+surface and any external code that pokes at those names keep working
+unchanged. The forwarder list is meant to be removed in a future major
+release once :mod:`courtside_data.http` is the sole public surface.
 """
 
 from __future__ import annotations
@@ -74,19 +69,19 @@ def _build_client(
     headers: dict[str, str] | None,
     impersonate: str | None,
 ) -> httpx.Client:
-    """Late-bound reference to the shim's :func:`build_client`.
+    """Late-bound reference to :func:`build_client` via the re-export module.
 
     The :mod:`tests.conftest` session fixture patches
     :data:`courtside_data.http_service.build_client` to force
     ``impersonate=None`` so the offline suite doesn't drag in
-    ``httpx-curl-cffi``. Resolving through the shim — rather than
-    importing :mod:`courtside_data.http._transport` directly here —
-    means the patch flows through to the new
-    :class:`HTTPService` constructor.
+    ``httpx-curl-cffi``. Resolving through :mod:`courtside_data.http_service`
+    — rather than importing :mod:`courtside_data.http._transport` directly
+    here — means the patch flows through to the :class:`HTTPService`
+    constructor.
 
     The import is delayed until the first :class:`HTTPService` is
-    constructed, which is after both the shim and
-    :mod:`courtside_data.http._transport` are fully loaded, so the
+    constructed, which is after both :mod:`courtside_data.http_service`
+    and :mod:`courtside_data.http._transport` are fully loaded, so the
     late import cannot create a cycle.
     """
     from courtside_data import http_service as _shim
