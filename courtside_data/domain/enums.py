@@ -1,6 +1,5 @@
 """Enum definitions for the courtside-data domain."""
 
-
 from enum import Enum
 
 

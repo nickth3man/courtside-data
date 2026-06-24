@@ -23,6 +23,15 @@ The package layout:
 from __future__ import annotations
 
 from courtside_data.endpoints._error_mapping import NOT_FOUND, NOT_FOUND_OR_SERVER_ERROR
+from courtside_data.endpoints._metadata import (
+    EndpointDomain,
+    EndpointFeature,
+    EndpointKind,
+    EndpointMetadata,
+    EndpointScope,
+    ParserShape,
+    RequestShape,
+)
 from courtside_data.endpoints._registry import ENDPOINTS
 from courtside_data.endpoints._table import (
     _DEFAULT_SEASON_MIN_YEAR,
@@ -38,6 +47,13 @@ __all__ = [
     "NOT_FOUND",
     "NOT_FOUND_OR_SERVER_ERROR",
     "_DEFAULT_SEASON_MIN_YEAR",
+    "EndpointDomain",
+    "EndpointFeature",
+    "EndpointKind",
+    "EndpointMetadata",
+    "EndpointScope",
+    "ParserShape",
+    "RequestShape",
     "TableEndpoint",
     "_endpoint",
     "_player",

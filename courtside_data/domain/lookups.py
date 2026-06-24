@@ -1,6 +1,5 @@
 """Lookup dictionaries that map abbreviations to domain enum values."""
 
-
 from courtside_data.domain.enums import (
     Conference,
     Division,
