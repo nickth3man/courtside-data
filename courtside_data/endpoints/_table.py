@@ -20,6 +20,7 @@ from courtside_data.errors import (
 
 if TYPE_CHECKING:
     from courtside_data.endpoints._metadata import EndpointMetadata
+    from courtside_data.endpoints._workflow import WorkflowSpec
     from courtside_data.schemas._base import BRRow
 
 
@@ -77,6 +78,9 @@ class TableEndpoint:
     # without affecting runtime behaviour. Endpoints are annotated
     # incrementally; ``None`` means "not yet described".
     metadata: EndpointMetadata | None = None
+    # Optional documentation-only workflow descriptor for custom endpoint
+    # handlers. Dispatch does not consume this field.
+    workflow: WorkflowSpec | None = None
 
     def error_mappings(self, params: dict[str, object]) -> dict[int, Callable[[], Exception]] | None:
         """Build the per-call ``{status_code: exception_factory}`` mapping."""
@@ -112,6 +116,7 @@ def _endpoint(
     max_year: int | None = None,
     value_column: bool = False,
     metadata: EndpointMetadata | None = None,
+    workflow: WorkflowSpec | None = None,
 ) -> TableEndpoint:
     return TableEndpoint(
         path=path,
@@ -133,6 +138,7 @@ def _endpoint(
         max_year=max_year,
         value_column=value_column,
         metadata=metadata,
+        workflow=workflow,
     )
 
 

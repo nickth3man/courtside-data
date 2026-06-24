@@ -13,6 +13,7 @@ from courtside_data.endpoints._metadata import (
     RequestShape,
 )
 from courtside_data.endpoints._table import _endpoint, _season
+from courtside_data.endpoints._workflow import WorkflowSpec, WorkflowStep
 from courtside_data.errors import InvalidDate, InvalidPlayerAndSeason, InvalidSearch
 from courtside_data.output.columns import (
     BOX_SCORE_COLUMN_NAMES,
@@ -24,6 +25,351 @@ from courtside_data.output.columns import (
     TEAM_BOX_SCORES_COLUMN_NAMES,
 )
 from courtside_data.schemas import boxscores, playbyplay, players, schedule, search
+
+_PLAYER_BOX_SCORES_WORKFLOW = WorkflowSpec(
+    steps=(
+        WorkflowStep(
+            id="fetch_daily_leaders",
+            kind="fetch",
+            description="Fetch the Basketball Reference daily player leaders page without following redirects.",
+            inputs=("day", "month", "year"),
+            outputs=("daily_leaders_response",),
+        ),
+        WorkflowStep(
+            id="select_stats_table",
+            kind="select",
+            description="Select table#stats and fail the date lookup when the table is missing.",
+            inputs=("daily_leaders_response",),
+            outputs=("stats_table",),
+        ),
+        WorkflowStep(
+            id="parse_player_box_scores",
+            kind="parse",
+            description="Parse each player leader row and require at least one parsed row.",
+            inputs=("stats_table",),
+            outputs=("rows", "parser_stats"),
+        ),
+        WorkflowStep(
+            id="emit_diagnostics",
+            kind="diagnostics",
+            description="Record parser diagnostics for table selection, parsed rows, and ignored rows.",
+            inputs=("rows", "parser_stats"),
+        ),
+    ),
+)
+
+_TEAM_BOX_SCORES_WORKFLOW = WorkflowSpec(
+    steps=(
+        WorkflowStep(
+            id="fetch_daily_index",
+            kind="fetch",
+            description="Fetch the daily box-score index for the requested date.",
+            inputs=("day", "month", "year"),
+            outputs=("daily_index",),
+        ),
+        WorkflowStep(
+            id="select_game_links",
+            kind="select",
+            description="Collect every td.gamelink anchor from the daily index.",
+            inputs=("daily_index",),
+            outputs=("game_url_paths",),
+        ),
+        WorkflowStep(
+            id="fetch_each_game",
+            kind="fetch",
+            description="Fetch each linked game box-score page.",
+            inputs=("game_url_paths",),
+            outputs=("game_pages",),
+        ),
+        WorkflowStep(
+            id="parse_team_box_score",
+            kind="parse",
+            description="Parse team total rows from each game's basic and advanced box-score tables.",
+            inputs=("game_pages",),
+            outputs=("game_rows", "game_stats"),
+        ),
+        WorkflowStep(
+            id="merge_rows",
+            kind="merge",
+            description="Append rows from every game and merge parser statistics across pages.",
+            inputs=("game_rows", "game_stats"),
+            outputs=("rows", "parser_stats"),
+        ),
+        WorkflowStep(
+            id="emit_diagnostics",
+            kind="diagnostics",
+            description="Record aggregate parser diagnostics for the daily fanout.",
+            inputs=("rows", "parser_stats"),
+        ),
+    ),
+)
+
+_PLAY_BY_PLAY_WORKFLOW = WorkflowSpec(
+    steps=(
+        WorkflowStep(
+            id="fetch_daily_index",
+            kind="fetch",
+            description="Fetch the daily box-score index for the requested date.",
+            inputs=("home_team", "day", "month", "year"),
+            outputs=("daily_index",),
+        ),
+        WorkflowStep(
+            id="resolve_game_link",
+            kind="select",
+            description="Resolve the play-by-play game path for the requested home team.",
+            inputs=("daily_index", "home_team"),
+            outputs=("game_url_path",),
+        ),
+        WorkflowStep(
+            id="fetch_play_by_play",
+            kind="fetch",
+            description="Fetch the selected per-game play-by-play page.",
+            inputs=("game_url_path",),
+            outputs=("play_by_play_page",),
+        ),
+        WorkflowStep(
+            id="resolve_team_labels",
+            kind="derive",
+            description="Read the scorebox team names and convert them to away/home abbreviations.",
+            inputs=("play_by_play_page",),
+            outputs=("away_team", "home_team_abbreviation"),
+        ),
+        WorkflowStep(
+            id="parse_play_by_play",
+            kind="parse",
+            description="Parse scoring, substitution, period, and possession events from table#pbp.",
+            inputs=("play_by_play_page", "away_team", "home_team_abbreviation"),
+            outputs=("rows", "parser_stats"),
+        ),
+        WorkflowStep(
+            id="emit_diagnostics",
+            kind="diagnostics",
+            description="Record parser diagnostics for parsed and ignored play-by-play events.",
+            inputs=("rows", "parser_stats"),
+        ),
+    ),
+)
+
+_REGULAR_SEASON_PLAYER_BOX_SCORES_WORKFLOW = WorkflowSpec(
+    steps=(
+        WorkflowStep(
+            id="fetch_player_gamelog",
+            kind="fetch",
+            description="Fetch the player's season game-log page.",
+            inputs=("player_identifier", "season_end_year"),
+            outputs=("gamelog_page",),
+        ),
+        WorkflowStep(
+            id="select_regular_season_table",
+            kind="select",
+            description="Select table#player_game_log_reg and fail the player-season lookup when it is missing.",
+            inputs=("gamelog_page",),
+            outputs=("game_log_table",),
+        ),
+        WorkflowStep(
+            id="parse_player_game_log",
+            kind="parse",
+            description="Parse regular-season game rows, optionally retaining inactive games.",
+            inputs=("game_log_table", "include_inactive_games"),
+            outputs=("rows", "parser_stats"),
+        ),
+        WorkflowStep(
+            id="emit_diagnostics",
+            kind="diagnostics",
+            description="Record parser diagnostics for the selected regular-season game-log table.",
+            inputs=("rows", "parser_stats"),
+        ),
+    ),
+)
+
+_PLAYOFF_PLAYER_BOX_SCORES_WORKFLOW = WorkflowSpec(
+    steps=(
+        WorkflowStep(
+            id="fetch_player_gamelog",
+            kind="fetch",
+            description="Fetch the player's season game-log page.",
+            inputs=("player_identifier", "season_end_year"),
+            outputs=("gamelog_page",),
+        ),
+        WorkflowStep(
+            id="select_playoff_table",
+            kind="select",
+            description="Select table#player_game_log_post and fail the player-season lookup when it is missing.",
+            inputs=("gamelog_page",),
+            outputs=("game_log_table",),
+        ),
+        WorkflowStep(
+            id="parse_player_game_log",
+            kind="parse",
+            description="Parse playoff game rows, optionally retaining inactive games.",
+            inputs=("game_log_table", "include_inactive_games"),
+            outputs=("rows", "parser_stats"),
+        ),
+        WorkflowStep(
+            id="emit_diagnostics",
+            kind="diagnostics",
+            description="Record parser diagnostics for the selected playoff game-log table.",
+            inputs=("rows", "parser_stats"),
+        ),
+    ),
+)
+
+_SEASON_SCHEDULE_WORKFLOW = WorkflowSpec(
+    steps=(
+        WorkflowStep(
+            id="fetch_season_index",
+            kind="fetch",
+            description="Fetch the season schedule index page.",
+            inputs=("season_end_year",),
+            outputs=("season_index",),
+        ),
+        WorkflowStep(
+            id="parse_inline_month",
+            kind="parse",
+            description="Parse schedule rows from the inline current-month table.",
+            inputs=("season_index",),
+            outputs=("inline_rows", "inline_stats"),
+        ),
+        WorkflowStep(
+            id="select_month_links",
+            kind="select",
+            description="Collect links for non-current month schedule pages.",
+            inputs=("season_index",),
+            outputs=("month_url_paths",),
+        ),
+        WorkflowStep(
+            id="fetch_months",
+            kind="fetch",
+            description="Fetch each linked month schedule page.",
+            inputs=("month_url_paths",),
+            outputs=("month_pages",),
+        ),
+        WorkflowStep(
+            id="parse_months",
+            kind="parse",
+            description="Parse schedule rows and statistics from each fetched month page.",
+            inputs=("month_pages",),
+            outputs=("month_rows", "month_stats"),
+        ),
+        WorkflowStep(
+            id="merge_rows",
+            kind="merge",
+            description="Append inline and fetched month rows while merging schedule diagnostics.",
+            inputs=("inline_rows", "inline_stats", "month_rows", "month_stats"),
+            outputs=("rows", "parser_stats"),
+        ),
+        WorkflowStep(
+            id="emit_diagnostics",
+            kind="diagnostics",
+            description="Record aggregate parser diagnostics for the season schedule.",
+            inputs=("rows", "parser_stats"),
+        ),
+    ),
+)
+
+_PLAYERS_SEASON_TOTALS_WORKFLOW = WorkflowSpec(
+    steps=(
+        WorkflowStep(
+            id="fetch_totals_page",
+            kind="fetch",
+            description="Fetch the league-wide player totals page for the season.",
+            inputs=("season_end_year",),
+            outputs=("totals_page",),
+        ),
+        WorkflowStep(
+            id="select_totals_table",
+            kind="select",
+            description="Select table#totals_stats.",
+            inputs=("totals_page",),
+            outputs=("totals_table",),
+        ),
+        WorkflowStep(
+            id="parse_player_totals",
+            kind="parse",
+            description="Parse player totals rows while dropping combined-team rows.",
+            inputs=("totals_table",),
+            outputs=("rows", "parser_stats"),
+        ),
+        WorkflowStep(
+            id="emit_diagnostics",
+            kind="diagnostics",
+            description="Record parser diagnostics for the selected totals table.",
+            inputs=("rows", "parser_stats"),
+        ),
+    ),
+)
+
+_PLAYERS_ADVANCED_SEASON_TOTALS_WORKFLOW = WorkflowSpec(
+    steps=(
+        WorkflowStep(
+            id="fetch_advanced_page",
+            kind="fetch",
+            description="Fetch the league-wide advanced player totals page for the season.",
+            inputs=("season_end_year",),
+            outputs=("advanced_page",),
+        ),
+        WorkflowStep(
+            id="select_advanced_table",
+            kind="select",
+            description="Select table#advanced.",
+            inputs=("advanced_page",),
+            outputs=("advanced_table",),
+        ),
+        WorkflowStep(
+            id="parse_advanced_totals",
+            kind="parse",
+            description="Parse advanced player totals rows, optionally retaining combined-team values.",
+            inputs=("advanced_table", "include_combined_values"),
+            outputs=("rows", "parser_stats"),
+        ),
+        WorkflowStep(
+            id="emit_diagnostics",
+            kind="diagnostics",
+            description="Record parser diagnostics for the selected advanced totals table.",
+            inputs=("rows", "parser_stats"),
+        ),
+    ),
+)
+
+_SEARCH_WORKFLOW = WorkflowSpec(
+    steps=(
+        WorkflowStep(
+            id="fetch_search",
+            kind="fetch",
+            description="Fetch Basketball Reference search results for the requested term.",
+            inputs=("term",),
+            outputs=("search_response",),
+        ),
+        WorkflowStep(
+            id="branch_redirect_or_results",
+            kind="branch",
+            description="Choose the search-index parser or direct-player parser based on the final response URL.",
+            inputs=("search_response",),
+            outputs=("result_source", "first_page_rows", "pagination_url"),
+        ),
+        WorkflowStep(
+            id="paginate_results",
+            kind="fetch",
+            description="Follow Next 100 pagination links with a cycle guard and merge page results.",
+            inputs=("pagination_url",),
+            outputs=("paginated_rows", "parser_stats"),
+        ),
+        WorkflowStep(
+            id="parse_search_results",
+            kind="parse",
+            description="Return the stable players result wrapper for either branch.",
+            inputs=("first_page_rows", "paginated_rows", "parser_stats"),
+            outputs=("players",),
+        ),
+        WorkflowStep(
+            id="emit_diagnostics",
+            kind="diagnostics",
+            description="Record search diagnostics including source branch, counts, and ignored results.",
+            inputs=("players", "parser_stats", "result_source"),
+        ),
+    ),
+    result="players",
+)
 
 CUSTOM_ENDPOINTS = {
     "player_box_scores": _endpoint(
@@ -42,6 +388,7 @@ CUSTOM_ENDPOINTS = {
             parser_shape=ParserShape.TABLE,
             features=frozenset({EndpointFeature.REQUIRES_NON_EMPTY, EndpointFeature.CUSTOM_DIAGNOSTICS}),
         ),
+        workflow=_PLAYER_BOX_SCORES_WORKFLOW,
     ),
     "team_box_scores": _endpoint(
         "/boxscores/?month={month}&day={day}&year={year}",
@@ -65,6 +412,7 @@ CUSTOM_ENDPOINTS = {
                 }
             ),
         ),
+        workflow=_TEAM_BOX_SCORES_WORKFLOW,
     ),
     "play_by_play": _endpoint(
         "/boxscores/pbp/",
@@ -89,6 +437,7 @@ CUSTOM_ENDPOINTS = {
                 }
             ),
         ),
+        workflow=_PLAY_BY_PLAY_WORKFLOW,
     ),
     "regular_season_player_box_scores": _endpoint(
         "/players/{player_identifier[0]}/{player_identifier}/gamelog/{season_end_year}",
@@ -107,6 +456,7 @@ CUSTOM_ENDPOINTS = {
             parser_shape=ParserShape.TABLE,
             features=frozenset({EndpointFeature.CUSTOM_DIAGNOSTICS}),
         ),
+        workflow=_REGULAR_SEASON_PLAYER_BOX_SCORES_WORKFLOW,
     ),
     "playoff_player_box_scores": _endpoint(
         "/players/{player_identifier[0]}/{player_identifier}/gamelog/{season_end_year}",
@@ -125,6 +475,7 @@ CUSTOM_ENDPOINTS = {
             parser_shape=ParserShape.TABLE,
             features=frozenset({EndpointFeature.CUSTOM_DIAGNOSTICS}),
         ),
+        workflow=_PLAYOFF_PLAYER_BOX_SCORES_WORKFLOW,
     ),
     "season_schedule": _season(
         "/leagues/NBA_{season_end_year}_games.html",
@@ -145,6 +496,7 @@ CUSTOM_ENDPOINTS = {
                 }
             ),
         ),
+        workflow=_SEASON_SCHEDULE_WORKFLOW,
     ),
     "players_season_totals": _season(
         "/leagues/NBA_{season_end_year}_totals.html",
@@ -159,6 +511,7 @@ CUSTOM_ENDPOINTS = {
             parser_shape=ParserShape.TABLE,
             features=frozenset({EndpointFeature.CUSTOM_DIAGNOSTICS}),
         ),
+        workflow=_PLAYERS_SEASON_TOTALS_WORKFLOW,
     ),
     "players_advanced_season_totals": _season(
         "/leagues/NBA_{season_end_year}_advanced.html",
@@ -174,6 +527,7 @@ CUSTOM_ENDPOINTS = {
             parser_shape=ParserShape.TABLE,
             features=frozenset({EndpointFeature.DERIVED_FIELDS, EndpointFeature.CUSTOM_DIAGNOSTICS}),
         ),
+        workflow=_PLAYERS_ADVANCED_SEASON_TOTALS_WORKFLOW,
     ),
     # csv_columns omitted - auto-detected from data so empty columns are stripped.
     "search": _endpoint(
@@ -198,5 +552,6 @@ CUSTOM_ENDPOINTS = {
                 }
             ),
         ),
+        workflow=_SEARCH_WORKFLOW,
     ),
 }

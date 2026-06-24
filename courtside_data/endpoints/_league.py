@@ -12,6 +12,7 @@ from courtside_data.endpoints._metadata import (
     RequestShape,
 )
 from courtside_data.endpoints._table import _season
+from courtside_data.endpoints._workflow import WorkflowSpec, WorkflowStep
 from courtside_data.output.columns import (
     ATTENDANCE_COLUMN_NAMES,
     LEAGUE_PER_36_COLUMN_NAMES,
@@ -26,6 +27,70 @@ from courtside_data.output.columns import (
     STANDINGS_COLUMNS_NAMES,
 )
 from courtside_data.schemas import league, standings
+
+_STANDINGS_WORKFLOW = WorkflowSpec(
+    steps=(
+        WorkflowStep(
+            id="fetch_league_page",
+            kind="fetch",
+            description="Fetch the league season page containing both conference standings blocks.",
+            inputs=("season_end_year",),
+            outputs=("league_page",),
+        ),
+        WorkflowStep(
+            id="parse_standings_blocks",
+            kind="parse",
+            description="Parse Eastern and Western conference standings sections.",
+            inputs=("league_page",),
+            outputs=("rows", "parser_stats"),
+        ),
+        WorkflowStep(
+            id="emit_diagnostics",
+            kind="diagnostics",
+            description="Record parser diagnostics for conference, division, and team counts.",
+            inputs=("rows", "parser_stats"),
+        ),
+    ),
+)
+
+_STANDINGS_BY_DATE_WORKFLOW = WorkflowSpec(
+    steps=(
+        WorkflowStep(
+            id="expand_conferences",
+            kind="derive",
+            description="Expand the internal conference template parameter for Eastern and Western pages.",
+            inputs=("season_end_year",),
+            outputs=("conference_urls",),
+        ),
+        WorkflowStep(
+            id="fetch_conference_pages",
+            kind="fetch",
+            description="Fetch one standings-by-date page per conference.",
+            inputs=("conference_urls",),
+            outputs=("conference_pages",),
+        ),
+        WorkflowStep(
+            id="parse_conference_tables",
+            kind="parse",
+            description="Parse table#standings_by_date rows from each conference page.",
+            inputs=("conference_pages",),
+            outputs=("conference_rows", "parser_stats"),
+        ),
+        WorkflowStep(
+            id="attach_conference",
+            kind="derive",
+            description="Attach the human conference label to each parsed row.",
+            inputs=("conference_rows",),
+            outputs=("rows",),
+        ),
+        WorkflowStep(
+            id="emit_diagnostics",
+            kind="diagnostics",
+            description="Record parser diagnostics for fetched sections and parsed teams.",
+            inputs=("rows", "parser_stats"),
+        ),
+    ),
+)
 
 LEAGUE_ENDPOINTS = {
     "league_per_game_stats": _season(
@@ -161,6 +226,7 @@ LEAGUE_ENDPOINTS = {
             parser_shape=ParserShape.STANDINGS_BLOCKS,
             features=frozenset({EndpointFeature.CUSTOM_DIAGNOSTICS}),
         ),
+        workflow=_STANDINGS_WORKFLOW,
     ),
     "standings_by_date": _season(
         "/leagues/NBA_{season_end_year}_standings_by_date_{conference}.html",
@@ -187,6 +253,7 @@ LEAGUE_ENDPOINTS = {
                 }
             ),
         ),
+        workflow=_STANDINGS_BY_DATE_WORKFLOW,
     ),
     "attendance": _season(
         "/leagues/NBA_{season_end_year}.html",

@@ -45,6 +45,45 @@ def test_metadata_kind_matches_custom_flag(name: str) -> None:
 
 
 @pytest.mark.parametrize("name", ENDPOINTS)
+def test_workflow_endpoints_declare_workflow_spec(name: str) -> None:
+    endpoint = ENDPOINTS[name]
+    assert endpoint.metadata is not None
+    if endpoint.metadata.kind is EndpointKind.WORKFLOW:
+        assert endpoint.workflow is not None
+
+
+@pytest.mark.parametrize("name", ENDPOINTS)
+def test_generic_table_endpoints_do_not_declare_workflow_spec(name: str) -> None:
+    endpoint = ENDPOINTS[name]
+    assert endpoint.metadata is not None
+    if endpoint.metadata.kind is EndpointKind.GENERIC_TABLE:
+        assert endpoint.workflow is None
+
+
+@pytest.mark.parametrize("name", ENDPOINTS)
+def test_workflow_step_ids_are_unique_per_endpoint(name: str) -> None:
+    endpoint = ENDPOINTS[name]
+    if endpoint.workflow is None:
+        return
+
+    step_ids = [step.id for step in endpoint.workflow.steps]
+    assert len(step_ids) == len(set(step_ids))
+
+
+@pytest.mark.parametrize("name", ENDPOINTS)
+def test_workflow_step_inputs_outputs_are_stable_strings(name: str) -> None:
+    endpoint = ENDPOINTS[name]
+    if endpoint.workflow is None:
+        return
+
+    for step in endpoint.workflow.steps:
+        assert isinstance(step.inputs, tuple)
+        assert isinstance(step.outputs, tuple)
+        assert all(isinstance(value, str) for value in step.inputs)
+        assert all(isinstance(value, str) for value in step.outputs)
+
+
+@pytest.mark.parametrize("name", ENDPOINTS)
 def test_metadata_domain_is_declared(name: str) -> None:
     endpoint = ENDPOINTS[name]
     assert endpoint.metadata is not None

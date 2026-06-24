@@ -12,6 +12,7 @@ from courtside_data.endpoints._metadata import (
     RequestShape,
 )
 from courtside_data.endpoints._table import TableEndpoint, _season
+from courtside_data.endpoints._workflow import WorkflowSpec, WorkflowStep
 from courtside_data.output.columns import (
     CAREER_LEADERS_COLUMN_NAMES,
     DRAFT_PICKS_COLUMN_NAMES,
@@ -20,6 +21,45 @@ from courtside_data.output.columns import (
     SEASON_LEADERS_COLUMN_NAMES,
 )
 from courtside_data.schemas import draft, league
+
+_SEASON_AWARDS_VOTING_WORKFLOW = WorkflowSpec(
+    steps=(
+        WorkflowStep(
+            id="normalize_award_id",
+            kind="derive",
+            description="Normalize the award parameter into the Basketball Reference table id.",
+            inputs=("award",),
+            outputs=("table_id",),
+        ),
+        WorkflowStep(
+            id="fetch_awards_page",
+            kind="fetch",
+            description="Fetch the season awards page.",
+            inputs=("season_end_year",),
+            outputs=("awards_page",),
+        ),
+        WorkflowStep(
+            id="select_award_table",
+            kind="select",
+            description="Select the normalized award table, returning no rows when it is absent.",
+            inputs=("awards_page", "table_id"),
+            outputs=("award_table",),
+        ),
+        WorkflowStep(
+            id="parse_award_rows",
+            kind="parse",
+            description="Parse raw data-stat rows from the selected award voting table.",
+            inputs=("award_table",),
+            outputs=("rows",),
+        ),
+        WorkflowStep(
+            id="emit_diagnostics",
+            kind="diagnostics",
+            description="Record parser diagnostics with the selected award table id.",
+            inputs=("rows", "table_id"),
+        ),
+    ),
+)
 
 DRAFT_AWARDS_LEADERS_ENDPOINTS = {
     "draft_picks": _season(
@@ -77,6 +117,7 @@ DRAFT_AWARDS_LEADERS_ENDPOINTS = {
             parser_shape=ParserShape.TABLE,
             features=frozenset({EndpointFeature.FALLBACK_TABLE_IDS, EndpointFeature.CUSTOM_DIAGNOSTICS}),
         ),
+        workflow=_SEASON_AWARDS_VOTING_WORKFLOW,
     ),
     "season_leaders": TableEndpoint(
         path="/leaders/per_season.html",

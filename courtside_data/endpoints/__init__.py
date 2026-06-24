@@ -41,6 +41,7 @@ from courtside_data.endpoints._table import (
     _season,
     _team,
 )
+from courtside_data.endpoints._workflow import WorkflowSpec, WorkflowStep
 
 __all__ = [
     "ENDPOINTS",
@@ -55,6 +56,8 @@ __all__ = [
     "ParserShape",
     "RequestShape",
     "TableEndpoint",
+    "WorkflowSpec",
+    "WorkflowStep",
     "_endpoint",
     "_player",
     "_season",
