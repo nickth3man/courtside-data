@@ -43,6 +43,7 @@ _PLAYOFF_BRACKET_WORKFLOW = WorkflowSpec(
             description="Parse the playoff bracket table hierarchy into series rows.",
             inputs=("bracket_table",),
             outputs=("rows",),
+            parser_id="playoff_bracket_table",
         ),
         WorkflowStep(
             id="emit_diagnostics",
@@ -74,6 +75,7 @@ _FRIV_7_GAME_PLAYOFF_OUTCOMES_WORKFLOW = WorkflowSpec(
             description="Parse tbody rows from the selected outcome matrix.",
             inputs=("outcome_table",),
             outputs=("rows",),
+            parser_id="friv_playoff_outcomes_table",
         ),
         WorkflowStep(
             id="emit_diagnostics",

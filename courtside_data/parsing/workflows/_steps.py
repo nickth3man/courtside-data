@@ -7,12 +7,17 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
+from courtside_data.debug import current_debug_trace
+from courtside_data.debug._pipeline_events import emit_parser_diagnostics
+from courtside_data.errors import InvalidPlayerAndSeason
 from courtside_data.parsing import rows
 from courtside_data.parsing.custom import dispatch_custom_endpoint
 from courtside_data.parsing.custom._common import _schedule_rows_with_stats
 from courtside_data.parsing.custom._diagnostics import emit_custom_endpoint_diagnostics
 from courtside_data.parsing.custom.boxscores import _merge_team_box_score_stats
 from courtside_data.parsing.custom.schedule import _merge_schedule_stats, _record_schedule_diagnostics
+from courtside_data.parsing.generic import find_table
+from courtside_data.parsing.workflows._parser_registry import PARSER_REGISTRY
 
 if TYPE_CHECKING:
     from parsel import Selector
@@ -60,6 +65,211 @@ class FetchPathTemplateStep:
         if self.url_var is not None:
             context.scratch[self.url_var] = url
         context.scratch[self.output_var] = context.fetch.get_selector(url=url)
+
+
+@dataclass(frozen=True, slots=True)
+class FetchEndpointPathStep:
+    """Fetch the endpoint path template rendered with workflow params."""
+
+    output_var: str
+    url_var: str | None = None
+
+    def execute(self, context: WorkflowExecutionContext) -> None:
+        path = context.endpoint.path.format(**context.params)
+        url = context.fetch.url(path)
+        if self.url_var is not None:
+            context.scratch[self.url_var] = url
+        context.scratch[self.output_var] = context.fetch.get_selector(url=url)
+
+
+@dataclass(frozen=True, slots=True)
+class NormalizeAwardIdStep:
+    """Normalize an award parameter into the Basketball Reference table id."""
+
+    def execute(self, context: WorkflowExecutionContext) -> None:
+        context.scratch["table_id"] = str(context.params["award"]).strip().lower().replace("-", "_")
+
+
+@dataclass(frozen=True, slots=True)
+class SelectTableStep:
+    """Select a table from a selector scratch value."""
+
+    selector_var: str
+    output_var: str
+    table_id: str | None = None
+    table_id_var: str | None = None
+    raise_invalid_player_and_season: bool = False
+
+    def execute(self, context: WorkflowExecutionContext) -> None:
+        table_id = self.table_id
+        if self.table_id_var is not None:
+            table_id = context.scratch[self.table_id_var]
+        if table_id is None:
+            table_id = context.endpoint.table_id
+        if table_id is None:
+            raise ValueError(f"Workflow step for {context.endpoint_name!r} has no table id.")
+
+        table = find_table(context.scratch[self.selector_var], table_id)
+        if table is None and self.raise_invalid_player_and_season:
+            raise InvalidPlayerAndSeason(
+                player_identifier=context.params["player_identifier"],
+                season_end_year=context.params["season_end_year"],
+            )
+        context.scratch[self.output_var] = table
+        context.scratch["table_id"] = table_id
+
+
+@dataclass(frozen=True, slots=True)
+class ParsePlayerGameLogStep:
+    """Parse the selected player game-log table through the parser registry."""
+
+    def execute(self, context: WorkflowExecutionContext) -> None:
+        parse = PARSER_REGISTRY["player_game_log_table"]
+        rows, stats = parse(
+            context.scratch["game_log_table"],
+            include_inactive_games=context.params.get("include_inactive_games", False),
+        )
+        context.scratch["rows"] = rows
+        context.scratch["parser_stats"] = stats
+
+
+@dataclass(frozen=True, slots=True)
+class ParsePlayerTotalsStep:
+    """Parse a league-wide player totals page through the parser registry."""
+
+    table_id: str
+    include_combined_param: str | None = None
+
+    def execute(self, context: WorkflowExecutionContext) -> None:
+        include_combined = False
+        if self.include_combined_param is not None:
+            include_combined = bool(context.params.get(self.include_combined_param, False))
+        parse = PARSER_REGISTRY["player_totals_page"]
+        rows, stats = parse(
+            context.scratch["totals_page"],
+            table_id=self.table_id,
+            include_combined=include_combined,
+        )
+        context.scratch["rows"] = rows
+        context.scratch["parser_stats"] = stats
+        context.scratch["table_id"] = self.table_id
+
+
+@dataclass(frozen=True, slots=True)
+class ParseOptionalTableRowsStep:
+    """Parse selected table rows, returning an empty list when the table is missing."""
+
+    table_var: str
+    parser_id: str
+
+    def execute(self, context: WorkflowExecutionContext) -> None:
+        table = context.scratch[self.table_var]
+        context.scratch["rows"] = [] if table is None else PARSER_REGISTRY[self.parser_id](table)
+
+
+@dataclass(frozen=True, slots=True)
+class EmitPlayerGameLogDiagnosticsStep:
+    """Emit parser diagnostics for a player game-log workflow."""
+
+    parser_name: str
+    table_id: str
+
+    def execute(self, context: WorkflowExecutionContext) -> list[dict[str, Any]]:
+        parsed_rows = context.scratch["rows"]
+        stats = {
+            **context.scratch["parser_stats"],
+            "season_count": 1,
+            "selected_table_id": self.table_id,
+        }
+        emit_custom_endpoint_diagnostics(
+            parser_name=self.parser_name,
+            endpoint_name=context.endpoint_name,
+            rows=parsed_rows,
+            source_sections=[f"table#{self.table_id}"],
+            stats=stats,
+            selected_table_id=self.table_id,
+            candidate_table_ids=[self.table_id],
+        )
+        return parsed_rows
+
+
+@dataclass(frozen=True, slots=True)
+class EmitPlayerTotalsDiagnosticsStep:
+    """Emit parser diagnostics for a league-wide player totals workflow."""
+
+    parser_name: str
+    table_id: str
+
+    def execute(self, context: WorkflowExecutionContext) -> list[dict[str, Any]]:
+        parsed_rows = context.scratch["rows"]
+        emit_custom_endpoint_diagnostics(
+            parser_name=self.parser_name,
+            endpoint_name=context.endpoint_name,
+            rows=parsed_rows,
+            source_sections=[f"table#{self.table_id}"],
+            stats=context.scratch["parser_stats"],
+            selected_table_id=self.table_id,
+            candidate_table_ids=[self.table_id],
+        )
+        return parsed_rows
+
+
+@dataclass(frozen=True, slots=True)
+class EmitAwardVotingDiagnosticsStep:
+    """Emit parser diagnostics for season award voting rows."""
+
+    def execute(self, context: WorkflowExecutionContext) -> list[dict[str, Any]]:
+        parsed_rows = context.scratch["rows"]
+        table_id = context.scratch["table_id"]
+        trace = current_debug_trace()
+        if trace is not None and context.scratch["award_table"] is not None:
+            emit_parser_diagnostics(
+                trace,
+                parser_name="season_awards_voting",
+                rows=parsed_rows,
+                source_sections=[f"table#{table_id}"],
+                custom_diagnostics={"award_table_id": table_id},
+            )
+        return parsed_rows
+
+
+@dataclass(frozen=True, slots=True)
+class EmitPlayoffBracketDiagnosticsStep:
+    """Emit parser diagnostics for playoff bracket rows."""
+
+    def execute(self, context: WorkflowExecutionContext) -> list[dict[str, Any]]:
+        parsed_rows = context.scratch["rows"]
+        trace = current_debug_trace()
+        if trace is not None and context.scratch["bracket_table"] is not None:
+            emit_parser_diagnostics(
+                trace,
+                parser_name="playoff_bracket",
+                rows=parsed_rows,
+                source_sections=["table#all_playoffs"],
+                custom_diagnostics={"series_count": len(parsed_rows)},
+            )
+        return parsed_rows
+
+
+@dataclass(frozen=True, slots=True)
+class EmitFrivOutcomesDiagnosticsStep:
+    """Emit parser diagnostics and raw-row artifact for Friv outcome rows."""
+
+    def execute(self, context: WorkflowExecutionContext) -> list[dict[str, Any]]:
+        parsed_rows = context.scratch["rows"]
+        table_id = context.scratch["table_id"]
+        trace = current_debug_trace()
+        if trace is not None and context.scratch["outcome_table"] is not None:
+            trace.record("parse", "friv_playoff_outcomes_parsed", table_id=table_id, row_count=len(parsed_rows))
+            trace.artifact("raw_rows", parsed_rows)
+            emit_parser_diagnostics(
+                trace,
+                parser_name="friv_playoff_outcomes",
+                rows=parsed_rows,
+                source_sections=[f"table#{table_id}"],
+                custom_diagnostics={"table_id": table_id},
+            )
+        return parsed_rows
 
 
 @dataclass(frozen=True, slots=True)

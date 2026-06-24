@@ -51,6 +51,7 @@ _SEASON_AWARDS_VOTING_WORKFLOW = WorkflowSpec(
             description="Parse raw data-stat rows from the selected award voting table.",
             inputs=("award_table",),
             outputs=("rows",),
+            parser_id="awards_voting_table",
         ),
         WorkflowStep(
             id="emit_diagnostics",

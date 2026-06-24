@@ -19,6 +19,7 @@ class WorkflowStep:
     description: str
     inputs: tuple[str, ...] = ()
     outputs: tuple[str, ...] = ()
+    parser_id: str | None = None
 
 
 @dataclass(frozen=True, slots=True)

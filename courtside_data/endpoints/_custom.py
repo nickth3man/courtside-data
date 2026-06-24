@@ -178,6 +178,7 @@ _REGULAR_SEASON_PLAYER_BOX_SCORES_WORKFLOW = WorkflowSpec(
             description="Parse regular-season game rows, optionally retaining inactive games.",
             inputs=("game_log_table", "include_inactive_games"),
             outputs=("rows", "parser_stats"),
+            parser_id="player_game_log_table",
         ),
         WorkflowStep(
             id="emit_diagnostics",
@@ -210,6 +211,7 @@ _PLAYOFF_PLAYER_BOX_SCORES_WORKFLOW = WorkflowSpec(
             description="Parse playoff game rows, optionally retaining inactive games.",
             inputs=("game_log_table", "include_inactive_games"),
             outputs=("rows", "parser_stats"),
+            parser_id="player_game_log_table",
         ),
         WorkflowStep(
             id="emit_diagnostics",
@@ -295,6 +297,7 @@ _PLAYERS_SEASON_TOTALS_WORKFLOW = WorkflowSpec(
             description="Parse player totals rows while dropping combined-team rows.",
             inputs=("totals_table",),
             outputs=("rows", "parser_stats"),
+            parser_id="player_totals_page",
         ),
         WorkflowStep(
             id="emit_diagnostics",
@@ -327,6 +330,7 @@ _PLAYERS_ADVANCED_SEASON_TOTALS_WORKFLOW = WorkflowSpec(
             description="Parse advanced player totals rows, optionally retaining combined-team values.",
             inputs=("advanced_table", "include_combined_values"),
             outputs=("rows", "parser_stats"),
+            parser_id="player_totals_page",
         ),
         WorkflowStep(
             id="emit_diagnostics",
