@@ -43,7 +43,7 @@ from courtside_data.debug import DebugTrace, debug_trace_context
 from courtside_data.debug.config import debug_config_from_env
 from courtside_data.endpoints import ENDPOINTS
 from courtside_data.parsing.generic import GenericEndpointHandler
-from courtside_data.parsing.workflows import execute_workflow
+from courtside_data.parsing.workflows import execute_workflow, is_native_workflow_endpoint
 
 # Re-exported for ``CourtsideClient`` (``courtside_data.client.courtside_client``
 # uses ``_runner._service_override.set(self._service)`` as its injection seam
@@ -95,7 +95,12 @@ def _run_endpoint(
         if endpoint.custom:
             if trace is not None:
                 trace.record("endpoint", "workflow_service_dispatch", method=name)
-                trace.record("endpoint", "custom_service_dispatch", method=name, compatibility=True)
+                trace.record(
+                    "endpoint",
+                    "custom_service_dispatch",
+                    method=name,
+                    compatibility=not is_native_workflow_endpoint(name),
+                )
             return execute_workflow(service, name, endpoint, coerced_params)
         if trace is not None:
             trace.record("endpoint", "generic_service_dispatch", method="fetch_table")

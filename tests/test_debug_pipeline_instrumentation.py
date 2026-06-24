@@ -24,6 +24,8 @@ from courtside_data.parsing.rows import (
 from parsel import Selector
 from pydantic import BaseModel
 
+from tests.fixture_manifest import case_for
+
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 PBP_FIXTURE = PROJECT_ROOT / "raw" / "play_by_play" / "ATL_2017_01_01" / "201701010ATL.html"
 STANDINGS_FIXTURE = PROJECT_ROOT / "raw" / "standings" / "2024.html"
@@ -289,6 +291,27 @@ def test_schedule_parser_emits_custom_diagnostics() -> None:
     assert summary["parser_name"] == "season_schedule"
     assert summary["custom_diagnostics_json"]["game_count"] == len(parsed_rows)
     assert summary["custom_diagnostics_json"]["box_score_link_count"] >= 0
+
+
+def test_season_schedule_debug_diagnostics_include_aggregate_fields(make_offline_client) -> None:
+    case = case_for("season_schedule", season_end_year=1980)
+    assert case is not None
+    client = make_offline_client(case)
+
+    envelope = client.season_schedule(**case.params, debug=True)
+    summary = _summarize_debug_events(envelope["debug"], data=envelope["data"], endpoint_name="season_schedule")
+
+    diagnostics = summary["custom_diagnostics_json"]
+    assert diagnostics["game_count"] >= len(envelope["data"])
+    assert diagnostics["box_score_link_count"] >= 0
+    assert diagnostics["month_page_count"] >= 1
+    assert isinstance(diagnostics["ignored_row_reason_counts"], dict)
+    parser_events = [
+        event
+        for event in envelope["debug"]["events"]
+        if event.get("stage") == "parse" and event.get("event") == "season_schedule_parsed"
+    ]
+    assert parser_events
 
 
 def test_probe_csv_consumes_custom_diagnostics_json() -> None:

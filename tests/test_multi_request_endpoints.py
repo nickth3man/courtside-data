@@ -7,11 +7,17 @@ so the multi-request orchestration is validated without live network calls.
 
 from __future__ import annotations
 
+import json
+from pathlib import Path
+from typing import Any
+
 import pytest
 from courtside_data.data import TEAM_ABBREVIATIONS_TO_TEAM, PeriodType
 from courtside_data.endpoints import ENDPOINTS
+from courtside_data.parsing.custom import CustomEndpointHandler
+from pydantic import BaseModel
 
-from tests.fixture_manifest import MULTI_REQUEST_CASES, Case
+from tests.fixture_manifest import MULTI_REQUEST_CASES, Case, case_for
 
 # Manifest cases with known fixture gaps — tracked separately until fixtures land.
 MULTI_REQUEST_EXCLUDED_CASE_IDS: frozenset[str] = frozenset({"search-jaebaebae"})
@@ -31,6 +37,16 @@ def _resolved_params(case: Case) -> dict:
     return params
 
 
+def _season_schedule_case() -> Case:
+    case = case_for("season_schedule", season_end_year=1980)
+    assert case is not None
+    return case
+
+
+def _serialized_rows(rows: list[BaseModel]) -> list[dict[str, Any]]:
+    return [row.model_dump(mode="json") for row in rows]
+
+
 @pytest.mark.parametrize("case", MULTI_REQUEST_OFFLINE_CASES, ids=[case.id for case in MULTI_REQUEST_OFFLINE_CASES])
 def test_multi_request_endpoint_offline(case: Case, make_offline_client) -> None:
     client = make_offline_client(case)
@@ -47,6 +63,30 @@ def test_multi_request_endpoint_offline(case: Case, make_offline_client) -> None
     assert all(isinstance(row, row_model) for row in result), (
         f"{case.id}: not all rows validated as {row_model.__name__}"
     )
+
+
+def test_season_schedule_offline_output_matches_golden(make_offline_client) -> None:
+    case = _season_schedule_case()
+    client = make_offline_client(case)
+
+    result = client.season_schedule(**case.params)
+
+    golden_path = Path(__file__).parent / "golden" / f"{case.id}.json"
+    expected = json.loads(golden_path.read_text(encoding="utf-8"))
+    assert _serialized_rows(result) == expected
+
+
+def test_season_schedule_native_path_does_not_call_custom_handler(monkeypatch, make_offline_client) -> None:
+    def fail_if_called(self: CustomEndpointHandler, season_end_year: int) -> list[dict]:
+        raise AssertionError(f"CustomEndpointHandler.season_schedule was called for {season_end_year}")
+
+    monkeypatch.setattr(CustomEndpointHandler, "season_schedule", fail_if_called)
+    case = _season_schedule_case()
+    client = make_offline_client(case)
+
+    result = client.season_schedule(**case.params)
+
+    assert result
 
 
 def test_play_by_play_overtime_last_period(make_offline_client) -> None:

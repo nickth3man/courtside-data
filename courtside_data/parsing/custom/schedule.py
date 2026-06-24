@@ -73,6 +73,7 @@ def _record_schedule_diagnostics(
             "missing_box_score_link_count": stats.get("missing_box_score_link_count"),
             "month_page_count": month_page_count,
             "candidate_row_count": stats.get("candidate_row_count"),
+            "ignored_row_reason_counts": dict(ignored) if isinstance(ignored, dict) else {},
         },
     )
     trace.artifact(
