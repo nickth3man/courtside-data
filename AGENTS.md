@@ -473,7 +473,7 @@ Opt-in debug tracing lives in `courtside_data/debug/`. See that folder’s `code
 
 ### Probe all or selected endpoints
 
-`courtside_data/debug/probe.py` calls each endpoint once with `debug=True`, using **one sample param set per endpoint** from `tests/fixture_manifest.py` (`ALL_CASES`). Paramless endpoints fall back to `{}`.
+The `courtside_data/debug/probe/` package calls each endpoint once with `debug=True`, using **one sample param set per endpoint** from `tests/fixture_manifest.py` (`ALL_CASES`). Paramless endpoints fall back to `{}`.
 
 ```bash
 # All registry endpoints → summary report + one debug trace JSON per successful call

@@ -372,3 +372,52 @@ def test_schemas_league_imports_work():
         SeasonLeadersRow,
     ):
         assert isinstance(cls, type), f"{cls!r} should be a class"
+
+
+# ---------------------------------------------------------------------------
+# 11. Probe package back-compat shim + facade wiring
+# ---------------------------------------------------------------------------
+
+
+def test_probe_report_shim_reexports():
+    """The legacy ``courtside_data.debug.probe_report`` import path must keep
+    re-exporting the evaluation + CSV names after the split into
+    ``probe.report`` / ``probe.csv_report``.
+    """
+    from courtside_data.debug import probe_report
+    from courtside_data.debug.probe import csv_report, report
+
+    # Evaluation half is sourced from probe.report.
+    assert probe_report._with_evaluation is report._with_evaluation
+    assert probe_report._failure_category is report._failure_category
+    assert probe_report.FAILURE_NONE == report.FAILURE_NONE == "none"
+    # CSV half is sourced from probe.csv_report.
+    assert probe_report.CSV_COLUMNS is csv_report.CSV_COLUMNS
+    assert probe_report.write_probe_csv_report is csv_report.write_probe_csv_report
+    assert probe_report._csv_row is csv_report._csv_row
+
+
+def test_probe_facade_matches_submodules():
+    """Names exposed by the probe package facade must be the same objects as in
+    their owning submodules (the facade must not shadow or rebind them).
+    """
+    import courtside_data.debug.probe as probe
+    from courtside_data.debug.probe import (
+        cli,
+        csv_report,
+        enrichment,
+        event_summary,
+        report,
+        report_summary,
+        runner,
+        samples,
+    )
+
+    assert probe.probe_endpoints is runner.probe_endpoints
+    assert probe.main is cli.main
+    assert probe._summarize_debug_events is event_summary._summarize_debug_events
+    assert probe._summarize_report is report_summary._summarize_report
+    assert probe._sample_params_per_endpoint is samples._sample_params_per_endpoint
+    assert probe._default_enrichment is enrichment._default_enrichment
+    assert probe._with_evaluation is report._with_evaluation
+    assert probe.CSV_COLUMNS is csv_report.CSV_COLUMNS
