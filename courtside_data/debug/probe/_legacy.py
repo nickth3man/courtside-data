@@ -1462,12 +1462,14 @@ __all__ = [
     "SampleParamsInfo",
     "_StreamingCsvWriter",
     "_bool_cell",
+    "_build_parser",
     "_csv_row",
     "_evaluation_sentence",
     "_failure_category",
     "_failure_detail",
     "_has_token",
     "_json_cell",
+    "_resolve_endpoint_names",
     "_string_cell",
     "_with_evaluation",
     "_works",
@@ -1475,7 +1477,3 @@ __all__ = [
     "probe_endpoints",
     "write_probe_csv_report",
 ]
-
-
-if __name__ == "__main__":
-    raise SystemExit(main())
