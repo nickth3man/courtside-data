@@ -125,6 +125,18 @@ CSV_COLUMNS: tuple[str, ...] = (
     "drop_rate_warning",
     "expected_drop_count",
     "unexpected_drop_count",
+    "provenance_field_count",
+    "provenance_final_none_count",
+    "provenance_reason_counts_json",
+    "provenance_none_reason_counts_json",
+    "parser_missed_column_count",
+    "schema_defaulted_field_count",
+    "validator_coerced_field_count",
+    "validator_transformed_field_count",
+    "provenance_dropped_row_count",
+    "provenance_dropped_row_reason_counts_json",
+    "provenance_unresolved_drop_count",
+    "custom_provenance_unavailable_count",
     "trace_truncated_artifact_count",
     "source_sections_json",
     "parsed_event_count",
@@ -250,6 +262,18 @@ class ProbeResult(TypedDict, total=False):
     drop_rate_warning: bool | None
     expected_drop_count: int | None
     unexpected_drop_count: int | None
+    provenance_field_count: int | None
+    provenance_final_none_count: int | None
+    provenance_reason_counts_json: dict[str, int]
+    provenance_none_reason_counts_json: dict[str, int]
+    parser_missed_column_count: int | None
+    schema_defaulted_field_count: int | None
+    validator_coerced_field_count: int | None
+    validator_transformed_field_count: int | None
+    provenance_dropped_row_count: int | None
+    provenance_dropped_row_reason_counts_json: dict[str, int]
+    provenance_unresolved_drop_count: int | None
+    custom_provenance_unavailable_count: int | None
     trace_truncated_artifact_count: int | None
     source_sections_json: list[str]
     parsed_event_count: int | None
@@ -573,6 +597,9 @@ def _summarize_report(results: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
     rate_limit_waits: list[float] = []
     elapsed_by_endpoint: list[tuple[str, float]] = []
     trace_sizes: list[tuple[str, int]] = []
+    provenance_reason_counts: dict[str, int] = {}
+    provenance_none_reason_counts: dict[str, int] = {}
+    provenance_dropped_reason_counts: dict[str, int] = {}
 
     for result in results:
         wait_ms = result.get("rate_limit_wait_ms")
@@ -586,6 +613,17 @@ def _summarize_report(results: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
         trace_size = result.get("trace_log_size_bytes")
         if isinstance(trace_path, str) and isinstance(trace_size, int):
             trace_sizes.append((trace_path, trace_size))
+        for source_key, aggregate in (
+            ("provenance_reason_counts_json", provenance_reason_counts),
+            ("provenance_none_reason_counts_json", provenance_none_reason_counts),
+            ("provenance_dropped_row_reason_counts_json", provenance_dropped_reason_counts),
+        ):
+            counts = result.get(source_key)
+            if isinstance(counts, dict):
+                for key, value in counts.items():
+                    if isinstance(value, int | float):
+                        reason_key = str(key)
+                        aggregate[reason_key] = aggregate.get(reason_key, 0) + int(value)
 
     summary: dict[str, Any] = {
         "total_rate_limit_wait_ms": round(sum(rate_limit_waits), 3) if rate_limit_waits else None,
@@ -599,6 +637,29 @@ def _summarize_report(results: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
         "total_trace_log_size_bytes": sum(size for _, size in trace_sizes) if trace_sizes else None,
         "largest_trace_log_path": None,
         "largest_trace_log_size_bytes": None,
+        "total_provenance_field_count": sum(
+            int(result.get("provenance_field_count") or 0)
+            for result in results
+            if isinstance(result.get("provenance_field_count"), int)
+        ),
+        "total_provenance_final_none_count": sum(
+            int(result.get("provenance_final_none_count") or 0)
+            for result in results
+            if isinstance(result.get("provenance_final_none_count"), int)
+        ),
+        "total_parser_missed_column_count": sum(
+            int(result.get("parser_missed_column_count") or 0)
+            for result in results
+            if isinstance(result.get("parser_missed_column_count"), int)
+        ),
+        "total_provenance_unresolved_drop_count": sum(
+            int(result.get("provenance_unresolved_drop_count") or 0)
+            for result in results
+            if isinstance(result.get("provenance_unresolved_drop_count"), int)
+        ),
+        "provenance_reason_counts_json": provenance_reason_counts,
+        "provenance_none_reason_counts_json": provenance_none_reason_counts,
+        "provenance_dropped_row_reason_counts_json": provenance_dropped_reason_counts,
     }
 
     if elapsed_by_endpoint:
@@ -716,6 +777,18 @@ def _summarize_debug_events(
         "validated_fields_json": [],
         "output_fields_json": [],
         "dropped_row_reason_counts_json": {},
+        "provenance_field_count": None,
+        "provenance_final_none_count": None,
+        "provenance_reason_counts_json": {},
+        "provenance_none_reason_counts_json": {},
+        "parser_missed_column_count": None,
+        "schema_defaulted_field_count": None,
+        "validator_coerced_field_count": None,
+        "validator_transformed_field_count": None,
+        "provenance_dropped_row_count": None,
+        "provenance_dropped_row_reason_counts_json": {},
+        "provenance_unresolved_drop_count": None,
+        "custom_provenance_unavailable_count": None,
         "source_sections_json": [],
         "ignored_event_reason_counts_json": {},
         "custom_diagnostics_json": {},
@@ -895,6 +968,50 @@ def _summarize_debug_events(
                 custom_diagnostics["sentinel_row_types"] = {
                     str(key): int(value) for key, value in sentinel_types.items() if isinstance(value, int | float)
                 }
+
+        if stage == "provenance" and event_name == "source_table_provenance":
+            missed = attributes.get("parser_missed_column_count")
+            if isinstance(missed, int):
+                summary["parser_missed_column_count"] = missed
+
+        if (
+            stage == "provenance"
+            and event_name == "custom_endpoint_provenance"
+            and attributes.get("source_cell_mapping_available") is False
+        ):
+            summary["custom_provenance_unavailable_count"] = max(
+                int(summary.get("custom_provenance_unavailable_count") or 0),
+                1,
+            )
+
+        if stage == "provenance" and event_name == "field_provenance_summary":
+            for key in (
+                "provenance_field_count",
+                "provenance_final_none_count",
+                "parser_missed_column_count",
+                "schema_defaulted_field_count",
+                "validator_coerced_field_count",
+                "validator_transformed_field_count",
+                "provenance_dropped_row_count",
+                "provenance_unresolved_drop_count",
+                "custom_provenance_unavailable_count",
+            ):
+                value = attributes.get(key)
+                if isinstance(value, int):
+                    if key == "custom_provenance_unavailable_count":
+                        summary[key] = max(int(summary.get(key) or 0), value)
+                    else:
+                        summary[key] = value
+            for key in (
+                "provenance_reason_counts",
+                "provenance_none_reason_counts",
+                "provenance_dropped_row_reason_counts",
+            ):
+                value = attributes.get(key)
+                if isinstance(value, dict):
+                    summary[f"{key}_json"] = {
+                        str(reason): int(count) for reason, count in value.items() if isinstance(count, int | float)
+                    }
 
         if stage == "table_resolution":
             selector = attributes.get("selector")
@@ -1107,6 +1224,9 @@ def _default_enrichment(*, endpoint_name: str, sample: SampleParamsInfo | None =
         "output_fields_json": [],
         "columns_json": [],
         "dropped_row_reason_counts_json": {},
+        "provenance_reason_counts_json": {},
+        "provenance_none_reason_counts_json": {},
+        "provenance_dropped_row_reason_counts_json": {},
         "source_sections_json": [],
         "ignored_event_reason_counts_json": {},
         "custom_diagnostics_json": {},
@@ -1370,6 +1490,9 @@ def _csv_row(entry: Mapping[str, Any]) -> dict[str, str]:
         "validated_fields_json": "validated_fields_json",
         "output_fields_json": "output_fields_json",
         "dropped_row_reason_counts_json": "dropped_row_reason_counts_json",
+        "provenance_reason_counts_json": "provenance_reason_counts_json",
+        "provenance_none_reason_counts_json": "provenance_none_reason_counts_json",
+        "provenance_dropped_row_reason_counts_json": "provenance_dropped_row_reason_counts_json",
         "data_quality_warnings_json": "data_quality_warnings_json",
         "source_sections_json": "source_sections_json",
         "ignored_event_reason_counts_json": "ignored_event_reason_counts_json",
@@ -1381,6 +1504,9 @@ def _csv_row(entry: Mapping[str, Any]) -> dict[str, str]:
         "stage_counts": {},
         "metrics": {},
         "dropped_row_reason_counts_json": {},
+        "provenance_reason_counts_json": {},
+        "provenance_none_reason_counts_json": {},
+        "provenance_dropped_row_reason_counts_json": {},
         "data_quality_warnings_json": [],
         "ignored_event_reason_counts_json": {},
         "custom_diagnostics_json": {},
@@ -1486,6 +1612,7 @@ def probe_endpoints(
     resume_from: Path | None = None,
     debug_detail_level: str | None = None,
     use_cache: bool | None = None,
+    params_override: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Run one live call per endpoint and return the summary report dict."""
     if debug_detail_level is not None:
@@ -1498,10 +1625,18 @@ def probe_endpoints(
         os.environ.setdefault("COURTSIDE_DATA_HTTP_CACHE", "1")
 
     endpoint_names = _resolve_endpoint_names(endpoints)
+    if params_override is not None and len(endpoint_names) != 1:
+        raise ValueError("--params-json can only be used when exactly one --endpoint is selected.")
     prior_results, completed_endpoints = _load_resume_state(resume_from)
     if completed_endpoints:
         endpoint_names = [name for name in endpoint_names if name not in completed_endpoints]
     params_by_endpoint = _sample_params_per_endpoint()
+    if params_override is not None and endpoint_names:
+        params_by_endpoint[endpoint_names[0]] = SampleParamsInfo(
+            params=dict(params_override),
+            case_id=f"params_override:{endpoint_names[0]}",
+            source="params_override",
+        )
     missing = sorted(set(endpoint_names) - set(params_by_endpoint))
     started_at = datetime.now(tz=UTC)
     results: list[dict[str, Any]] = list(prior_results)
@@ -1642,11 +1777,27 @@ def _build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Enable hishel HTTP caching for repeated probe debugging runs.",
     )
+    parser.add_argument(
+        "--params-json",
+        default=None,
+        help="JSON object of endpoint params. Requires exactly one --endpoint and only affects this probe run.",
+    )
     return parser
 
 
 def main(argv: list[str] | None = None) -> int:
     args = _build_parser().parse_args(argv)
+    params_override = None
+    if args.params_json is not None:
+        try:
+            loaded = orjson.loads(args.params_json)
+        except orjson.JSONDecodeError as exc:
+            print(f"Invalid --params-json: {exc}", file=sys.stderr)
+            return 2
+        if not isinstance(loaded, dict):
+            print("--params-json must decode to a JSON object.", file=sys.stderr)
+            return 2
+        params_override = dict(loaded)
     try:
         report = probe_endpoints(
             endpoints=args.endpoints,
@@ -1655,6 +1806,7 @@ def main(argv: list[str] | None = None) -> int:
             resume_from=args.resume_from,
             debug_detail_level=args.debug_detail_level,
             use_cache=args.use_cache,
+            params_override=params_override,
         )
     except ValueError as exc:
         print(str(exc), file=sys.stderr)
