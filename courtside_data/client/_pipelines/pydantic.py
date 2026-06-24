@@ -21,7 +21,6 @@ from courtside_data.client._pipelines._drop_reasons import (
     DROP_REASON_SCHEMA_VALIDATION_ERROR,
     row_drop_reason,
     sentinel_row_diagnostics,
-    validation_error_drop_reason,
 )
 from courtside_data.data import OutputType
 from courtside_data.debug import DebugTrace
@@ -30,6 +29,14 @@ from courtside_data.debug._pipeline_events import (
     record_sentinel_rows,
     record_validation_failed,
     record_validation_passed,
+)
+from courtside_data.debug.provenance import (
+    PROVENANCE_CUSTOM_PARSER_METADATA_UNAVAILABLE,
+    build_dropped_row_provenance_records,
+    build_field_provenance_records,
+    classify_validation_drop,
+    emit_field_provenance,
+    get_trace_context,
 )
 from courtside_data.errors import SchemaDriftError
 from courtside_data.http._constants import BASE_URL
@@ -69,6 +76,19 @@ def _validate_row_model_rows(
     row_model: Any,
     raw_rows: list[dict[str, Any]],
 ) -> tuple[list[Any], dict[str, int]]:
+    values, dropped_reasons, _kept_indices, _dropped_details, drift_errors = _validate_row_model_rows_detailed(
+        row_model,
+        raw_rows,
+    )
+    if drift_errors and not values:
+        raise ValidationError.from_exception_data(row_model.__name__, cast("list[InitErrorDetails]", drift_errors))
+    return values, dropped_reasons
+
+
+def _validate_row_model_rows_detailed(
+    row_model: Any,
+    raw_rows: list[dict[str, Any]],
+) -> tuple[list[Any], dict[str, int], list[int], list[dict[str, Any]], list[dict[str, Any]]]:
     """Validate rows one at a time, dropping invalid BREF sentinel/header rows.
 
     Basketball-Reference can interleave non-data rows with otherwise valid
@@ -76,26 +96,43 @@ def _validate_row_model_rows(
     still surface schema drift when no row in a non-empty table validates.
     """
     values: list[Any] = []
+    kept_indices: list[int] = []
     drift_errors: list[dict[str, Any]] = []
+    dropped_details: list[dict[str, Any]] = []
     dropped_reasons: dict[str, int] = {}
     for index, row in enumerate(raw_rows):
         try:
             values.append(row_model.model_validate(row))
+            kept_indices.append(index)
         except ValidationError as exc:
             drop_reason = row_drop_reason(row)
             if drop_reason is not None:
                 dropped_reasons[drop_reason] = dropped_reasons.get(drop_reason, 0) + 1
+                dropped_details.append(
+                    {
+                        "row_index": index,
+                        "reason": drop_reason,
+                        "errors": exc.errors(),
+                        "unresolved": False,
+                    }
+                )
                 continue
-            reason = validation_error_drop_reason(exc.errors(), row=row)
+            reason, unresolved = classify_validation_drop(exc.errors(), row=row)
             dropped_reasons[reason] = dropped_reasons.get(reason, 0) + 1
+            dropped_details.append(
+                {
+                    "row_index": index,
+                    "reason": reason,
+                    "errors": exc.errors(),
+                    "unresolved": unresolved,
+                }
+            )
             if reason == DROP_REASON_SCHEMA_VALIDATION_ERROR:
                 for error in exc.errors():
                     enriched = dict(error)
                     enriched["row_index"] = index
                     drift_errors.append(enriched)
-    if drift_errors and not values:
-        raise ValidationError.from_exception_data(row_model.__name__, cast("list[InitErrorDetails]", drift_errors))
-    return values, dropped_reasons
+    return values, dropped_reasons, kept_indices, dropped_details, drift_errors
 
 
 def _endpoint_url_context(endpoint: Any, params: dict[str, Any] | None) -> str:
@@ -149,11 +186,54 @@ def validate_rows_pydantic(
     try:
         if trace is not None:
             with trace.span("pydantic_validation", stage="validation", row_model=row_model.__name__):
-                validated, dropped_reasons = _validate_row_model_rows(row_model, raw_rows)
+                (
+                    validated,
+                    dropped_reasons,
+                    kept_indices,
+                    dropped_details,
+                    drift_errors,
+                ) = _validate_row_model_rows_detailed(row_model, raw_rows)
         else:
-            validated, dropped_reasons = _validate_row_model_rows(row_model, raw_rows)
+            (
+                validated,
+                dropped_reasons,
+                kept_indices,
+                dropped_details,
+                drift_errors,
+            ) = _validate_row_model_rows_detailed(row_model, raw_rows)
         if trace is not None:
+            context = get_trace_context(trace)
+            is_custom_endpoint = bool(getattr(endpoint, "custom", False))
+            if is_custom_endpoint:
+                trace.record(
+                    "provenance",
+                    "custom_endpoint_provenance",
+                    source_cell_mapping_available=False,
+                    provenance_reason=PROVENANCE_CUSTOM_PARSER_METADATA_UNAVAILABLE,
+                )
+            field_records = build_field_provenance_records(
+                endpoint_name=endpoint_name,
+                endpoint_params=endpoint_params,
+                row_model=row_model,
+                raw_rows=raw_rows,
+                validated_rows=validated,
+                kept_row_indices=kept_indices,
+                context=context,
+                custom=is_custom_endpoint,
+            )
+            dropped_records = build_dropped_row_provenance_records(
+                endpoint_name=endpoint_name,
+                endpoint_params=endpoint_params,
+                raw_rows=raw_rows,
+                dropped=dropped_details,
+                context=context,
+                custom=is_custom_endpoint,
+            )
+            emit_field_provenance(trace, field_records=field_records, dropped_records=dropped_records)
             record_rows_filtered(trace, dropped_row_reason_counts=dropped_reasons)
+        if drift_errors and not validated:
+            raise ValidationError.from_exception_data(row_model.__name__, cast("list[InitErrorDetails]", drift_errors))
+        if trace is not None:
             sentinel_stats = sentinel_row_diagnostics([_row_as_mapping(row) for row in validated])
             record_sentinel_rows(
                 trace,

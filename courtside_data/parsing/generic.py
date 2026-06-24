@@ -10,6 +10,11 @@ from parsel import Selector
 
 from courtside_data.debug import current_debug_trace
 from courtside_data.debug._pipeline_events import record_parsed_rows_summary
+from courtside_data.debug.provenance import (
+    build_source_table_snapshot,
+    record_table_provenance,
+    record_unavailable_table_provenance,
+)
 from courtside_data.endpoints import TableEndpoint
 from courtside_data.parsing.tables import GenericTable, extract_commented_table, parse_transaction_list
 
@@ -96,7 +101,13 @@ class GenericEndpointHandler:
 
         return None, None
 
-    def fetch_table(self, endpoint: TableEndpoint, **params: Any) -> list[dict[str, Any]]:
+    def fetch_table(
+        self,
+        endpoint: TableEndpoint,
+        *,
+        endpoint_name: str | None = None,
+        **params: Any,
+    ) -> list[dict[str, Any]]:
         """Fetch and parse a generic table endpoint described by ``endpoint``.
 
         Resolution order: CSS ``table#<table_id>``, then a comment-wrapped
@@ -129,11 +140,13 @@ class GenericEndpointHandler:
             if endpoint.transaction_list_fallback:
                 rows = parse_transaction_list(selector)
                 if trace is not None:
+                    record_unavailable_table_provenance(trace, reason="transaction_list_fallback")
                     trace.record("table_resolution", "transaction_list_fallback", row_count=len(rows))
                     trace.artifact("raw_rows", rows)
                     record_parsed_rows_summary(trace, parser_name="transaction_list", rows=rows)
                 return rows
             if trace is not None:
+                record_unavailable_table_provenance(trace, reason="no_selected_table")
                 trace.record("table_resolution", "no_table_found", returned_row_count=0)
             return []
 
@@ -145,10 +158,36 @@ class GenericEndpointHandler:
                 exclude_summary_rows=endpoint.exclude_summary_rows,
                 value_column=endpoint.value_column,
             )
-            rows = [row.to_dict() for row in table.rows]
+            parser_rows_before_projection = [row.to_dict() for row in table.rows]
+            rows = parser_rows_before_projection
             if endpoint.projection is not None:
                 rows = [{key: row.get(key, "") for key in endpoint.projection} for row in rows]
         if trace is not None:
+            try:
+                snapshot = build_source_table_snapshot(
+                    table_selector,
+                    endpoint_name=endpoint_name or "<unknown>",
+                    params=params,
+                    table_source=table_source,
+                    use_header_fallback=endpoint.use_header_fallback,
+                    exclude_summary_rows=endpoint.exclude_summary_rows,
+                )
+                record_table_provenance(
+                    trace,
+                    snapshot=snapshot,
+                    row_model=endpoint.row_model,
+                    parser_rows_before_projection=parser_rows_before_projection,
+                    parser_rows_after_projection=rows,
+                )
+            except Exception as error:
+                trace.record(
+                    "provenance",
+                    "source_table_provenance_unavailable",
+                    status="warn",
+                    reason="source_table_snapshot_failed",
+                    error_type=type(error).__name__,
+                    error_message=str(error),
+                )
             include_html_meta = trace.config.detail_level != "summary"
             raw_table_html = table_selector.get() or "" if include_html_meta else ""
             row_class_counts: dict[str, int] = {}
