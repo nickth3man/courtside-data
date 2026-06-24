@@ -7,13 +7,26 @@ from typing import Any
 import pytest
 from courtside_data.client._runner import _run_endpoint
 from courtside_data.data import Team
+from courtside_data.endpoints import ENDPOINTS, EndpointKind
 from courtside_data.parsing.custom import CustomEndpointHandler
-from courtside_data.parsing.workflows import CallCustomHandlerStep, WorkflowExecutionContext
+from courtside_data.parsing.workflows import (
+    CallCustomHandlerStep,
+    WorkflowExecutionContext,
+    is_native_workflow_endpoint,
+)
+from courtside_data.parsing.workflows._executor import _NATIVE_STEP_HANDLERS, NATIVE_WORKFLOW_ENDPOINTS
 
 from tests.fixture_manifest import case_for
+from tests.fixture_transport import FixtureTransport, build_service
 
 
-def test_workflow_endpoint_dispatches_through_compatibility_step(monkeypatch) -> None:
+def test_workflow_endpoint_uses_compatibility_step_when_not_native(monkeypatch) -> None:
+    """A workflow endpoint not registered as native still runs via the compatibility step.
+
+    Every registered workflow endpoint is now native, so to keep the
+    compatibility fallback in ``WorkflowEndpointHandler.execute`` covered we
+    force ``play_by_play`` down the non-native branch.
+    """
     calls: list[tuple[str, dict[str, Any]]] = []
 
     def fake_execute(self: CallCustomHandlerStep, context: WorkflowExecutionContext) -> list[dict[str, Any]]:
@@ -22,6 +35,10 @@ def test_workflow_endpoint_dispatches_through_compatibility_step(monkeypatch) ->
         return []
 
     monkeypatch.setattr(CallCustomHandlerStep, "execute", fake_execute)
+    monkeypatch.setattr(
+        "courtside_data.parsing.workflows._executor.is_native_workflow_endpoint",
+        lambda name: False,
+    )
 
     result = _run_endpoint(
         "play_by_play",
@@ -74,3 +91,86 @@ def test_single_page_workflow_endpoints_do_not_call_custom_handler(
     result = getattr(client, endpoint_name)(**params)
 
     assert result
+
+
+def _workflow_endpoint_names() -> list[str]:
+    return [
+        name
+        for name, endpoint in ENDPOINTS.items()
+        if endpoint.metadata is not None and endpoint.metadata.kind is EndpointKind.WORKFLOW
+    ]
+
+
+def test_every_workflow_endpoint_executes_natively() -> None:
+    """Every ``EndpointKind.WORKFLOW`` endpoint must run through native steps."""
+    workflow_endpoints = _workflow_endpoint_names()
+    assert workflow_endpoints, "expected at least one workflow endpoint"
+
+    non_native = sorted(name for name in workflow_endpoints if not is_native_workflow_endpoint(name))
+
+    assert non_native == [], f"workflow endpoints still on the compatibility step: {non_native}"
+
+
+def test_native_workflow_set_matches_workflow_endpoint_kind() -> None:
+    """The native set must be exactly the registered workflow endpoints — no stale names."""
+    assert set(NATIVE_WORKFLOW_ENDPOINTS) == set(_workflow_endpoint_names())
+
+
+@pytest.mark.parametrize("name", sorted(NATIVE_WORKFLOW_ENDPOINTS))
+def test_native_workflow_endpoint_has_a_handler_for_every_step(name: str) -> None:
+    """Each native endpoint must supply a step handler for every declared workflow step."""
+    endpoint = ENDPOINTS[name]
+    assert endpoint.workflow is not None, f"{name} declares no workflow spec"
+    handlers = _NATIVE_STEP_HANDLERS[name]
+
+    missing = [step.id for step in endpoint.workflow.steps if step.id not in handlers]
+
+    assert missing == [], f"{name}: workflow steps without a native handler: {missing}"
+
+
+# (lookup params, client/legacy call params) for one representative case per
+# newly-migrated workflow endpoint. play_by_play needs the typed ``Team`` enum.
+_MIGRATED_ENDPOINT_CASES = [
+    ("player_box_scores", {"year": 2001, "month": 1, "day": 1}, {"year": 2001, "month": 1, "day": 1}),
+    (
+        "play_by_play",
+        {"home_team": "ATL", "day": 1, "month": 1, "year": 2017},
+        {"home_team": Team.ATLANTA_HAWKS, "day": 1, "month": 1, "year": 2017},
+    ),
+    ("standings", {"season_end_year": 2024}, {"season_end_year": 2024}),
+    ("standings_by_date", {"season_end_year": 2018}, {"season_end_year": 2018}),
+    ("search", {"term": "kobe"}, {"term": "kobe"}),
+]
+
+
+@pytest.mark.parametrize(
+    ("name", "lookup", "call"),
+    _MIGRATED_ENDPOINT_CASES,
+    ids=[entry[0] for entry in _MIGRATED_ENDPOINT_CASES],
+)
+def test_migrated_workflow_endpoint_matches_legacy_without_compatibility_step(
+    name: str,
+    lookup: dict[str, Any],
+    call: dict[str, Any],
+    monkeypatch,
+    make_offline_client,
+) -> None:
+    """Native execution must reproduce the legacy handler output without the compatibility step."""
+    case = case_for(name, **lookup)
+    assert case is not None, f"missing fixture case for {name} {lookup}"
+
+    # Capture the legacy bespoke-handler output before disabling the fallback.
+    legacy_handler = CustomEndpointHandler(build_service(FixtureTransport(case.url_to_file)))
+    legacy = getattr(legacy_handler, name)(**call)
+    expected = legacy["players"] if name == "search" else legacy
+
+    def fail(self: CallCustomHandlerStep, context: WorkflowExecutionContext) -> Any:
+        raise AssertionError(f"compatibility step used for native endpoint {context.endpoint_name!r}")
+
+    monkeypatch.setattr(CallCustomHandlerStep, "execute", fail)
+
+    client = make_offline_client(case)
+    native = getattr(client, name)(**call, raw=True)
+
+    assert native == expected
+    assert native, f"{name}: expected a non-empty result"
