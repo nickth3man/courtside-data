@@ -44,13 +44,14 @@ def _minimal_metadata() -> EndpointMetadata:
 class TestEndpointMetadataFrozen:
     def test_cannot_set_attribute(self) -> None:
         meta = _minimal_metadata()
+        attr = "domain"
         with pytest.raises(FrozenInstanceError):
-            meta.domain = EndpointDomain.LEAGUE  # type: ignore[invalid-assignment]
+            setattr(meta, attr, EndpointDomain.LEAGUE)
 
     def test_cannot_delete_attribute(self) -> None:
         meta = _minimal_metadata()
         with pytest.raises(FrozenInstanceError):
-            del meta.domain  # type: ignore[misc]
+            delattr(meta, "domain")
 
     def test_is_hashable(self) -> None:
         meta = _minimal_metadata()
@@ -89,8 +90,9 @@ class TestEndpointMetadataEquality:
 
     def test_features_frozenset_is_immutable(self) -> None:
         meta = _minimal_metadata()
+        method = "add"
         with pytest.raises((AttributeError, TypeError)):
-            meta.features.add(EndpointFeature.COMMENTED_TABLE)  # type: ignore[unresolved-attribute]
+            getattr(meta.features, method)(EndpointFeature.COMMENTED_TABLE)
 
 
 # ---------------------------------------------------------------------------
@@ -146,8 +148,9 @@ class TestTableEndpointAcceptsMetadata:
     def test_table_endpoint_with_metadata_is_frozen(self) -> None:
         meta = _minimal_metadata()
         ep = TableEndpoint(path="/foo/bar.html", metadata=meta)
+        attr = "metadata"
         with pytest.raises(FrozenInstanceError):
-            ep.metadata = None  # type: ignore[invalid-assignment]
+            setattr(ep, attr, None)
 
     def test_table_endpoint_equality_with_same_metadata(self) -> None:
         meta = _minimal_metadata()
@@ -259,10 +262,9 @@ class TestEndpointsRegistryUnaffected:
     def test_endpoints_dict_is_non_empty(self) -> None:
         assert len(ENDPOINTS) > 0
 
-    def test_all_endpoints_have_none_metadata_by_default(self) -> None:
-        """No endpoint has been backfilled yet; all metadata should be None."""
+    def test_all_endpoints_have_metadata_after_backfill(self) -> None:
         for name, ep in ENDPOINTS.items():
-            assert ep.metadata is None, f"Unexpected metadata on {name!r}"
+            assert ep.metadata is not None, f"Missing metadata on {name!r}"
 
     def test_endpoints_are_tableendpoint_instances(self) -> None:
         for ep in ENDPOINTS.values():

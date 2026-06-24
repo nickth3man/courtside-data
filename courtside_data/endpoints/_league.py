@@ -2,6 +2,15 @@
 
 from __future__ import annotations
 
+from courtside_data.endpoints._metadata import (
+    EndpointDomain,
+    EndpointFeature,
+    EndpointKind,
+    EndpointMetadata,
+    EndpointScope,
+    ParserShape,
+    RequestShape,
+)
 from courtside_data.endpoints._table import _season
 from courtside_data.output.columns import (
     ATTENDANCE_COLUMN_NAMES,
@@ -25,6 +34,14 @@ LEAGUE_ENDPOINTS = {
         exclude_summary_rows=True,
         row_model=league.LeaguePerGameStatsRow,
         csv_columns=LEAGUE_PER_GAME_COLUMN_NAMES,
+        metadata=EndpointMetadata(
+            domain=EndpointDomain.LEAGUE,
+            kind=EndpointKind.GENERIC_TABLE,
+            scope=EndpointScope.SEASON,
+            request_shape=RequestShape.SINGLE_REQUEST,
+            parser_shape=ParserShape.TABLE,
+            features=frozenset({EndpointFeature.EXCLUDE_SUMMARY_ROWS}),
+        ),
     ),
     "league_per_36_minutes": _season(
         "/leagues/NBA_{season_end_year}_per_minute.html",
@@ -32,6 +49,14 @@ LEAGUE_ENDPOINTS = {
         exclude_summary_rows=True,
         row_model=league.LeaguePer36MinutesRow,
         csv_columns=LEAGUE_PER_36_COLUMN_NAMES,
+        metadata=EndpointMetadata(
+            domain=EndpointDomain.LEAGUE,
+            kind=EndpointKind.GENERIC_TABLE,
+            scope=EndpointScope.SEASON,
+            request_shape=RequestShape.SINGLE_REQUEST,
+            parser_shape=ParserShape.TABLE,
+            features=frozenset({EndpointFeature.EXCLUDE_SUMMARY_ROWS}),
+        ),
     ),
     "league_totals": _season(
         "/leagues/NBA_{season_end_year}_totals.html",
@@ -39,6 +64,14 @@ LEAGUE_ENDPOINTS = {
         exclude_summary_rows=True,
         row_model=league.LeagueTotalsRow,
         csv_columns=LEAGUE_TOTALS_COLUMN_NAMES,
+        metadata=EndpointMetadata(
+            domain=EndpointDomain.LEAGUE,
+            kind=EndpointKind.GENERIC_TABLE,
+            scope=EndpointScope.SEASON,
+            request_shape=RequestShape.SINGLE_REQUEST,
+            parser_shape=ParserShape.TABLE,
+            features=frozenset({EndpointFeature.EXCLUDE_SUMMARY_ROWS}),
+        ),
     ),
     "league_per_100_possessions": _season(
         "/leagues/NBA_{season_end_year}_per_poss.html",
@@ -47,6 +80,14 @@ LEAGUE_ENDPOINTS = {
         min_year=1974,
         row_model=league.LeaguePer100PossessionsRow,
         csv_columns=LEAGUE_PER_100_POSSESSIONS_COLUMN_NAMES,
+        metadata=EndpointMetadata(
+            domain=EndpointDomain.LEAGUE,
+            kind=EndpointKind.GENERIC_TABLE,
+            scope=EndpointScope.SEASON,
+            request_shape=RequestShape.SINGLE_REQUEST,
+            parser_shape=ParserShape.TABLE,
+            features=frozenset({EndpointFeature.EXCLUDE_SUMMARY_ROWS}),
+        ),
     ),
     "league_shooting": _season(
         "/leagues/NBA_{season_end_year}_shooting.html",
@@ -54,6 +95,14 @@ LEAGUE_ENDPOINTS = {
         exclude_summary_rows=True,
         row_model=league.LeagueShootingRow,
         csv_columns=LEAGUE_SHOOTING_COLUMN_NAMES,
+        metadata=EndpointMetadata(
+            domain=EndpointDomain.LEAGUE,
+            kind=EndpointKind.GENERIC_TABLE,
+            scope=EndpointScope.SEASON,
+            request_shape=RequestShape.SINGLE_REQUEST,
+            parser_shape=ParserShape.TABLE,
+            features=frozenset({EndpointFeature.EXCLUDE_SUMMARY_ROWS}),
+        ),
     ),
     "league_play_by_play": _season(
         "/leagues/NBA_{season_end_year}_play-by-play.html",
@@ -61,6 +110,14 @@ LEAGUE_ENDPOINTS = {
         exclude_summary_rows=True,
         row_model=league.LeaguePlayByPlayRow,
         csv_columns=LEAGUE_PLAY_BY_PLAY_COLUMN_NAMES,
+        metadata=EndpointMetadata(
+            domain=EndpointDomain.LEAGUE,
+            kind=EndpointKind.GENERIC_TABLE,
+            scope=EndpointScope.SEASON,
+            request_shape=RequestShape.SINGLE_REQUEST,
+            parser_shape=ParserShape.TABLE,
+            features=frozenset({EndpointFeature.EXCLUDE_SUMMARY_ROWS}),
+        ),
     ),
     "league_transactions": _season(
         "/leagues/NBA_{season_end_year}_transactions.html",
@@ -68,12 +125,27 @@ LEAGUE_ENDPOINTS = {
         transaction_list_fallback=True,
         row_model=league.LeagueTransactionRow,
         csv_columns=LEAGUE_TRANSACTIONS_COLUMN_NAMES,
+        metadata=EndpointMetadata(
+            domain=EndpointDomain.LEAGUE,
+            kind=EndpointKind.GENERIC_TABLE,
+            scope=EndpointScope.SEASON,
+            request_shape=RequestShape.SINGLE_REQUEST,
+            parser_shape=ParserShape.TRANSACTION_LIST,
+            features=frozenset({EndpointFeature.TRANSACTION_LIST_FALLBACK}),
+        ),
     ),
     "rookie_stats": _season(
         "/leagues/NBA_{season_end_year}_rookies.html",
         table_id="rookies",
         row_model=league.RookieStatsRow,
         csv_columns=ROOKIE_STATS_COLUMN_NAMES,
+        metadata=EndpointMetadata(
+            domain=EndpointDomain.LEAGUE,
+            kind=EndpointKind.GENERIC_TABLE,
+            scope=EndpointScope.SEASON,
+            request_shape=RequestShape.SINGLE_REQUEST,
+            parser_shape=ParserShape.TABLE,
+        ),
     ),
     # Backed by the bespoke HTTPService.standings (parses both conference tables).
     "standings": _season(
@@ -81,6 +153,14 @@ LEAGUE_ENDPOINTS = {
         custom=True,
         row_model=standings.StandingsRow,
         csv_columns=STANDINGS_COLUMNS_NAMES,
+        metadata=EndpointMetadata(
+            domain=EndpointDomain.LEAGUE,
+            kind=EndpointKind.WORKFLOW,
+            scope=EndpointScope.SEASON,
+            request_shape=RequestShape.SINGLE_REQUEST,
+            parser_shape=ParserShape.STANDINGS_BLOCKS,
+            features=frozenset({EndpointFeature.CUSTOM_DIAGNOSTICS}),
+        ),
     ),
     "standings_by_date": _season(
         "/leagues/NBA_{season_end_year}_standings_by_date_{conference}.html",
@@ -93,6 +173,20 @@ LEAGUE_ENDPOINTS = {
         custom=True,
         row_model=standings.StandingsByDateRow,
         csv_columns=STANDINGS_BY_DATE_COLUMN_NAMES,
+        metadata=EndpointMetadata(
+            domain=EndpointDomain.LEAGUE,
+            kind=EndpointKind.WORKFLOW,
+            scope=EndpointScope.SEASON,
+            request_shape=RequestShape.MULTI_REQUEST,
+            parser_shape=ParserShape.MULTI_TABLE,
+            features=frozenset(
+                {
+                    EndpointFeature.FANOUT_LINKS,
+                    EndpointFeature.INTERNAL_TEMPLATE_PARAMS,
+                    EndpointFeature.CUSTOM_DIAGNOSTICS,
+                }
+            ),
+        ),
     ),
     "attendance": _season(
         "/leagues/NBA_{season_end_year}.html",
@@ -100,5 +194,13 @@ LEAGUE_ENDPOINTS = {
         projection=("team", "arena_name", "attendance", "attendance_per_g"),
         row_model=league.AttendanceRow,
         csv_columns=ATTENDANCE_COLUMN_NAMES,
+        metadata=EndpointMetadata(
+            domain=EndpointDomain.LEAGUE,
+            kind=EndpointKind.GENERIC_TABLE,
+            scope=EndpointScope.SEASON,
+            request_shape=RequestShape.SINGLE_REQUEST,
+            parser_shape=ParserShape.TABLE,
+            features=frozenset({EndpointFeature.PROJECTION}),
+        ),
     ),
 }
