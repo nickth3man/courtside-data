@@ -179,6 +179,7 @@ ROOKIE_STATS_COLUMN_NAMES = [
 
 SEASON_AWARDS_COLUMN_NAMES = [
     "rank",
+    "rank_tied",
     "player",
     "age",
     "team_id",
@@ -202,6 +203,7 @@ SEASON_AWARDS_COLUMN_NAMES = [
 
 SEASON_AWARDS_VOTING_COLUMN_NAMES = [
     "rank",
+    "rank_tied",
     "player",
     "age",
     "team_id",

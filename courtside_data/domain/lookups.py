@@ -58,6 +58,16 @@ TEAM_ABBREVIATIONS_TO_TEAM = {
     "WAS": Team.WASHINGTON_WIZARDS,
     # DEPRECATED TEAMS
     "BUF": Team.BUFFALO_BRAVES,
+    # TODO: the 1963-73 Baltimore Bullets (Wizards lineage, abbreviated ``BAL``
+    # by Basketball Reference) is a different franchise from the defunct BAA
+    # Baltimore Bullets (``BLB``). They currently share the same name-based
+    # enum ``Team.BALTIMORE_BULLETS``. A future franchise-era modelling pass
+    # (consistent with the Kansas City → Sacramento Kings split) should add a
+    # distinct enum for the Wizards-lineage Baltimore era so the two are not
+    # conflated. The reverse map already pins the canonical abbreviation to
+    # ``BLB`` to preserve existing serialisation behaviour.
+    "BAL": Team.BALTIMORE_BULLETS,
+    "CIN": Team.CINCINNATI_ROYALS,
     "KCK": Team.KANSAS_CITY_KINGS,
     "KCO": Team.KANSAS_CITY_OMAHA_KINGS,
     "NJN": Team.NEW_JERSEY_NETS,
@@ -90,6 +100,11 @@ TEAM_ABBREVIATIONS_TO_TEAM = {
 
 TEAM_TO_TEAM_ABBREVIATION = {v: k for k, v in TEAM_ABBREVIATIONS_TO_TEAM.items()}
 TEAM_TO_TEAM_ABBREVIATION[Team.CHARLOTTE_HORNETS] = "CHO"
+# ``Team.BALTIMORE_BULLETS`` is the target of two BR abbreviations: ``BAL``
+# (1963-1973 Wizards-lineage franchise) and ``BLB`` (defunct BAA franchise).
+# Pin the canonical reverse abbreviation to ``BLB`` to preserve the existing
+# (pre-``BAL``-mapping) serialisation behaviour.
+TEAM_TO_TEAM_ABBREVIATION[Team.BALTIMORE_BULLETS] = "BLB"
 
 TEAM_NAME_TO_TEAM = {
     "ATLANTA HAWKS": Team.ATLANTA_HAWKS,
@@ -126,6 +141,7 @@ TEAM_NAME_TO_TEAM = {
     "BUFFALO BRAVES": Team.BUFFALO_BRAVES,
     "CAPITAL BULLETS": Team.CAPITAL_BULLETS,
     "CHARLOTTE BOBCATS": Team.CHARLOTTE_BOBCATS,
+    "CINCINNATI ROYALS": Team.CINCINNATI_ROYALS,
     "KANSAS CITY KINGS": Team.KANSAS_CITY_KINGS,
     "KANSAS CITY-OMAHA KINGS": Team.KANSAS_CITY_OMAHA_KINGS,
     "NEW JERSEY NETS": Team.NEW_JERSEY_NETS,

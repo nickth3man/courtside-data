@@ -68,6 +68,43 @@ def _br_int_or_none(value: object) -> int | None:
         raise ValueError(f"Invalid integer value: {value!r}") from exc
 
 
+_RANK_TIE_SUFFIX = "T"
+
+
+def _br_award_rank(value: object) -> int | None:
+    """Parse an award-voting rank cell, tolerating BR's tied-rank suffix.
+
+    Basketball Reference renders tied award-voting ranks as ``"7T"`` /
+    ``"10T"``. This validator strips the trailing ``T`` and returns the
+    integer rank (``7``, ``10``). Blank cells become ``None``. The tie
+    information itself is surfaced separately via the companion
+    :func:`_rank_tied` validator / :data:`RankTied` field rather than being
+    silently dropped.
+
+    This is intentionally narrow: it is only applied to award ``rank``
+    fields, never to the general-purpose :data:`BRInt` / :data:`BRIntOrNone`.
+    """
+    if _is_empty(value):
+        return None
+    if isinstance(value, int) and not isinstance(value, bool):
+        return value
+    s = str(value).strip()
+    if s.upper().endswith(_RANK_TIE_SUFFIX):
+        s = s[:-1].strip()
+    s = s.replace(",", "")
+    try:
+        return int(s)
+    except ValueError as exc:
+        raise ValueError(f"Invalid rank value: {value!r}") from exc
+
+
+def _rank_tied(value: object) -> bool:
+    """Return ``True`` when a rank cell carries BR's tied-rank suffix (``7T``)."""
+    if _is_empty(value):
+        return False
+    return str(value).strip().upper().endswith(_RANK_TIE_SUFFIX)
+
+
 def _br_float(value: object) -> float:
     if isinstance(value, float):
         return value
@@ -358,6 +395,10 @@ def _br_decimal(value: object) -> Decimal:
 StrOrNone = Annotated[str | None, BeforeValidator(_str_or_none)]
 BRInt = Annotated[int, BeforeValidator(_br_int)]
 BRIntOrNone = Annotated[int | None, BeforeValidator(_br_int_or_none)]
+# Award-voting rank: tolerates BR's tied-rank suffix (``"7T"`` -> ``7``); the
+# tie flag is exposed via the companion :data:`RankTied` field.
+BRAwardRank = Annotated[int | None, BeforeValidator(_br_award_rank)]
+RankTied = Annotated[bool, BeforeValidator(_rank_tied)]
 BRFloat = Annotated[float, BeforeValidator(_br_float)]
 BRFloatOrNone = Annotated[float | None, BeforeValidator(_br_float_or_none)]
 SecondsPlayed = Annotated[int, BeforeValidator(_seconds_played)]

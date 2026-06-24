@@ -394,7 +394,44 @@ def test_rookie_stats_1980_selected_source_table_has_no_team_column() -> None:
 
 
 @pytest.mark.skipif(not DRAFT_PICKS_1965_FIXTURE.exists(), reason="1965 draft_picks fixture missing")
-def test_draft_picks_1965_invalid_team_drop_provenance_uses_source_team_values() -> None:
+def test_draft_picks_1965_historical_team_abbreviations_validate() -> None:
+    """BAL (1963-73 Baltimore Bullets) and CIN (Cincinnati Royals) are real
+    historical drafting teams that were previously dropped as
+    ``invalid_team_value``. They must now validate against the team lookup so
+    no source row is lost to an unknown team abbreviation."""
+    html = DRAFT_PICKS_1965_FIXTURE.read_text(encoding="utf-8")
+    table_id = ENDPOINTS["draft_picks"].table_id
+    assert table_id is not None
+    table = find_table(Selector(text=html), table_id)
+    assert table is not None
+
+    parser_rows = [row.to_dict() for row in GenericTable(table).rows]
+    # The 1965 draft table carries 112 pick rows; none should be a team drop.
+    historical_team_abbrs = {row["team_id"] for row in parser_rows if row.get("team_id") in {"BAL", "CIN"}}
+    assert {"BAL", "CIN"} <= historical_team_abbrs
+
+    validated, dropped, _kept_indices, _dropped_details, _drift_errors = _validate_row_model_rows_detailed(
+        DraftPicksRow,
+        parser_rows,
+    )
+
+    assert dropped.get(DROP_REASON_INVALID_TEAM_VALUE, 0) == 0
+    # Every source row is retained (no team-driven loss).
+    assert len(validated) == len(parser_rows)
+    # BAL/CIN rows resolve to the expected historical Team enum values.
+    from courtside_data.data import Team
+
+    validated_teams = {row.team for row in validated if row.team is not None}
+    assert Team.BALTIMORE_BULLETS in validated_teams
+    assert Team.CINCINNATI_ROYALS in validated_teams
+
+
+@pytest.mark.skipif(not DRAFT_PICKS_1965_FIXTURE.exists(), reason="1965 draft_picks fixture missing")
+def test_draft_picks_1965_invalid_team_provenance_captures_source_team_values() -> None:
+    """The provenance machinery must still capture raw source team cells when a
+    genuinely invalid team abbreviation appears. BAL/CIN now validate, so this
+    is exercised with a synthetic unknown abbreviation spliced into the 1965
+    rows (the real 1965 fixture no longer produces team drops)."""
     html = DRAFT_PICKS_1965_FIXTURE.read_text(encoding="utf-8")
     table_id = ENDPOINTS["draft_picks"].table_id
     assert table_id is not None
@@ -410,13 +447,16 @@ def test_draft_picks_1965_invalid_team_drop_provenance_uses_source_team_values()
         exclude_summary_rows=False,
     )
     parser_rows = [row.to_dict() for row in GenericTable(table).rows]
+    # Inject a genuinely unknown team abbreviation to exercise the drop path.
+    parser_rows[0] = {**parser_rows[0], "team_id": "NOT_A_REAL_TEAM"}
+
     validated, dropped, _kept_indices, dropped_details, _drift_errors = _validate_row_model_rows_detailed(
         DraftPicksRow,
         parser_rows,
     )
 
-    assert validated
     assert dropped.get(DROP_REASON_INVALID_TEAM_VALUE, 0) > 0
+    assert len(validated) == len(parser_rows) - 1
 
     records = build_dropped_row_provenance_records(
         endpoint_name="draft_picks",

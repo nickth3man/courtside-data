@@ -23,11 +23,13 @@ from courtside_data.schemas._blocks import (
     TotalStatsBlock,
 )
 from courtside_data.schemas._fields import (
+    BRAwardRank,
     BRFloatOrNone,
     BRInt,
     BRIntOrNone,
     BRPercentage,
     PositionsField,
+    RankTied,
     StrOrNone,
     _team_field,
     _team_name_field,
@@ -407,10 +409,14 @@ class SeasonAwardsRow(BRRow):
     """Row from a season awards table (``/awards/awards_{year}.html``).
 
     The MVP table exposes voting results: rank, player, age, team, vote
-    shares, per-game stats, and advanced metrics.
+    shares, per-game stats, and advanced metrics. Tied ranks are rendered by
+    Basketball Reference as ``"7T"`` / ``"10T"``; ``rank`` carries the
+    integer portion while the companion ``rank_tied`` flag preserves the tie
+    information that would otherwise be lost.
     """
 
-    rank: BRIntOrNone = Field(default=None, validation_alias="rank")
+    rank: BRAwardRank = Field(default=None, validation_alias="rank")
+    rank_tied: RankTied = Field(default=False, validation_alias="rank")
     player: str = Field(validation_alias="player")
     age: BRIntOrNone = Field(default=None, validation_alias="age")
     team_id: StrOrNone = Field(default=None, validation_alias="team_id")
@@ -486,10 +492,20 @@ class CareerLeadersRow(BRRow):
     A three-column shape (``rank``, ``player``, ``value``). The same
     free-form ``value`` cell appears here as on
     :class:`SeasonLeadersRow`; downstream consumers coerce it based on the
-    active leader category.
+    active leader category. ``rank`` is optional: Basketball Reference
+    leaves the rank cell blank for players tied with the previous entry, and
+    those rows are real records that must be retained (a blank rank becomes
+    ``None`` rather than dropping the row).
+
+    .. todo:: Derive explicit tie information for career leaders. Unlike award
+       tables, BR does *not* suffix tied ranks with ``T`` — the tie is
+       implicit in the cell being blank while the preceding row carries a
+       numbered rank. A future enhancement could surface this via a companion
+       field (e.g. ``rank_tied``) derived from row ordering rather than the
+       source cell, making the tie explicit without changing the source contract.
     """
 
-    rank: BRInt = Field(validation_alias="rank")
+    rank: BRIntOrNone = Field(default=None, validation_alias="rank")
     player: str = Field(validation_alias="player")
     value: str = Field(validation_alias="value")
 
