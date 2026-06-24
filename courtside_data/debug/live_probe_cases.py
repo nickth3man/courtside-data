@@ -41,8 +41,7 @@ LIVE_AUDIT_OVERRIDES: dict[str, dict[str, Any]] = {
 _unknown = sorted(set(LIVE_AUDIT_OVERRIDES) - set(ENDPOINTS))
 if _unknown:
     raise RuntimeError(
-        f"Unknown endpoint(s) in LIVE_AUDIT_OVERRIDES: {_unknown}. "
-        "Either remove the key or register the endpoint."
+        f"Unknown endpoint(s) in LIVE_AUDIT_OVERRIDES: {_unknown}. Either remove the key or register the endpoint."
     )
 
 

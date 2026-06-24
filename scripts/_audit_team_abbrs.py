@@ -29,12 +29,12 @@ def extract_abbrs(html: str) -> dict[str, set[str]]:
         # Prefer anchor text inside team cells (e.g. draft ``team_id`` links).
         link_pattern = re.compile(
             rf'data-stat="{re.escape(stat)}"[^>]*>[^<]*<a[^>]*>([A-Z0-9]{{2,4}})</a>',
-            re.I,
+            re.IGNORECASE,
         )
         for match in link_pattern.finditer(html):
             found[stat].add(match.group(1).strip())
 
-        pattern = re.compile(rf'data-stat="{re.escape(stat)}"[^>]*>([^<]*)</', re.I)
+        pattern = re.compile(rf'data-stat="{re.escape(stat)}"[^>]*>([^<]*)</', re.IGNORECASE)
         for match in pattern.finditer(html):
             val = match.group(1).strip()
             if val and val not in AGGREGATE and len(val) <= 5 and val.isascii() and " " not in val:
