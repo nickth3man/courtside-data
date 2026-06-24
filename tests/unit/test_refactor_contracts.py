@@ -374,6 +374,19 @@ def test_schemas_league_imports_work():
         assert isinstance(cls, type), f"{cls!r} should be a class"
 
 
+def test_row_adapters_registry_populated():
+    """ROW_ADAPTERS must contain every registered row model after package import."""
+    from courtside_data.schemas import ROW_ADAPTERS
+
+    assert len(ROW_ADAPTERS) >= 50, f"Expected >=50 registered models, got {len(ROW_ADAPTERS)}"
+    # All register() calls happen at import time — every domain module must
+    # have contributed its models. The count must be stable across refactors.
+    assert len(ROW_ADAPTERS) == 55, (
+        f"ROW_ADAPTERS count changed from 55 to {len(ROW_ADAPTERS)} — "
+        "a model was accidentally dropped or added during refactor"
+    )
+
+
 # ---------------------------------------------------------------------------
 # 11. Probe package back-compat shim + facade wiring
 # ---------------------------------------------------------------------------

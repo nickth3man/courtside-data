@@ -18,6 +18,7 @@ from courtside_data.schemas._registry import ROW_ADAPTERS, register  # noqa: I00
 # Domain modules — each calls ``register(name, Model)`` at import time,
 # populating ROW_ADAPTERS with one TypeAdapter[list[Model]] per endpoint.
 from courtside_data.schemas import (
+    awards,
     boxscores,
     draft,
     league,
@@ -35,6 +36,7 @@ from courtside_data.schemas._base import BRRow
 __all__ = [
     "ROW_ADAPTERS",
     "BRRow",
+    "awards",
     "boxscores",
     "draft",
     "league",
