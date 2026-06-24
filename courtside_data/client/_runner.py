@@ -98,7 +98,7 @@ def _run_endpoint(
             return dispatch_custom_endpoint(service, name, **coerced_params)
         if trace is not None:
             trace.record("endpoint", "generic_service_dispatch", method="fetch_table")
-        return GenericEndpointHandler(service).fetch_table(endpoint, **coerced_params)
+        return GenericEndpointHandler(service).fetch_table(endpoint, endpoint_name=name, **coerced_params)
 
     with debug_trace_context(trace):
         try:
