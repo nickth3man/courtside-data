@@ -1,15 +1,8 @@
-"""Backward-compatibility shim for drop-reason classification.
-
-.. deprecated::
-    This module exist solely for backward compatibility.
-    New code should import directly from
-    ``courtside_data.client._pipelines.drop_reasons``.
-    This shim will be removed in a future major version.
-"""
+"""Row drop and validation-failure reason classification."""
 
 from __future__ import annotations
 
-from courtside_data.client._pipelines.drop_reasons import (
+from courtside_data.client._pipelines.drop_reasons.constants import (
     DROP_REASON_AGGREGATE_ROW,
     DROP_REASON_BLANK_ROW,
     DROP_REASON_COMBINED_TEAM,
@@ -32,11 +25,20 @@ from courtside_data.client._pipelines.drop_reasons import (
     DROP_REASON_UNSUPPORTED_SENTINEL_VALUE,
     EXPECTED_DROP_REASONS,
     UNRESOLVED_DROP_REASONS,
-    normalized_cell_value,
+)
+from courtside_data.client._pipelines.drop_reasons.helpers import normalized_cell_value
+from courtside_data.client._pipelines.drop_reasons.row import (
     row_drop_reason,
+    summarize_drop_counts,
+)
+from courtside_data.client._pipelines.drop_reasons.schedule import (
+    _schedule_drop_reason,  # noqa: F401  (re-exported for backward compat)
+)
+from courtside_data.client._pipelines.drop_reasons.sentinel import (
     sentinel_marker,
     sentinel_row_diagnostics,
-    summarize_drop_counts,
+)
+from courtside_data.client._pipelines.drop_reasons.validation import (
     validation_error_drop_reason,
 )
 
