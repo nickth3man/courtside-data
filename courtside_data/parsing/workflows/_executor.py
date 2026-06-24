@@ -9,11 +9,18 @@ from courtside_data.parsing.workflows._context import WorkflowExecutionContext
 from courtside_data.parsing.workflows._steps import (
     CallCustomHandlerStep,
     EmitScheduleDiagnosticsStep,
+    EmitTeamBoxScoresDiagnosticsStep,
+    FetchDailyBoxScoresIndexStep,
     FetchScheduleMonthsStep,
     FetchSeasonScheduleIndexStep,
     MergeScheduleRowsStep,
+    MergeTeamBoxScoreRowsStep,
+    MergeTeamBoxScoreStatsStep,
+    ParseEachTeamBoxScoreStep,
     ParseInlineScheduleMonthStep,
     ParseScheduleMonthsStep,
+    RequireGameLinksStep,
+    SelectGameLinksStep,
     SelectScheduleMonthLinksStep,
 )
 
@@ -22,9 +29,18 @@ if TYPE_CHECKING:
     from courtside_data.http_service import HTTPService
 
 
-NATIVE_WORKFLOW_ENDPOINTS: frozenset[str] = frozenset({"season_schedule"})
+NATIVE_WORKFLOW_ENDPOINTS: frozenset[str] = frozenset({"season_schedule", "team_box_scores"})
 
 _NATIVE_STEP_HANDLERS = {
+    "team_box_scores": {
+        "fetch_daily_index": FetchDailyBoxScoresIndexStep,
+        "select_game_links": SelectGameLinksStep,
+        "require_game_links": RequireGameLinksStep,
+        "fetch_and_parse_each_game": ParseEachTeamBoxScoreStep,
+        "merge_rows": MergeTeamBoxScoreRowsStep,
+        "merge_parser_stats": MergeTeamBoxScoreStatsStep,
+        "emit_diagnostics": EmitTeamBoxScoresDiagnosticsStep(),
+    },
     "season_schedule": {
         "fetch_season_index": FetchSeasonScheduleIndexStep(),
         "parse_inline_month": ParseInlineScheduleMonthStep(),
@@ -33,7 +49,7 @@ _NATIVE_STEP_HANDLERS = {
         "parse_months": ParseScheduleMonthsStep(),
         "merge_rows": MergeScheduleRowsStep(),
         "emit_diagnostics": EmitScheduleDiagnosticsStep(),
-    }
+    },
 }
 
 

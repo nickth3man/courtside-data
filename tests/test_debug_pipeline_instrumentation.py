@@ -415,6 +415,28 @@ def test_team_box_score_parser_emits_custom_diagnostics() -> None:
     assert summary["custom_diagnostics_json"]["game_count"] == 1
 
 
+def test_team_box_scores_debug_diagnostics_include_aggregate_fields(make_offline_client) -> None:
+    case = case_for("team_box_scores", day=1, month=1, year=2001)
+    assert case is not None
+    client = make_offline_client(case)
+
+    envelope = client.team_box_scores(**case.params, debug=True)
+    summary = _summarize_debug_events(envelope["debug"], data=envelope["data"], endpoint_name="team_box_scores")
+
+    diagnostics = summary["custom_diagnostics_json"]
+    assert diagnostics["game_count"] == 2
+    assert diagnostics["team_count"] == 4
+    assert diagnostics["stat_table_count"] >= 4
+    assert diagnostics["basic_table_count"] >= 2
+    assert diagnostics["advanced_table_count"] >= 2
+    parser_events = [
+        event
+        for event in envelope["debug"]["events"]
+        if event.get("stage") == "parse" and event.get("event") == "team_box_scores_parsed"
+    ]
+    assert parser_events
+
+
 @pytest.mark.skipif(not PLAYERS_SEASON_TOTALS_FIXTURE.exists(), reason="players_season_totals fixture missing")
 def test_players_season_totals_with_stats_matches_legacy_output() -> None:
     from courtside_data.parsing.custom._common import _player_totals_rows, _player_totals_rows_with_stats

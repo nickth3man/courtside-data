@@ -12,12 +12,15 @@ from pathlib import Path
 from typing import Any
 
 import pytest
+from courtside_data.client.courtside_client import CourtsideClient
 from courtside_data.data import TEAM_ABBREVIATIONS_TO_TEAM, PeriodType
 from courtside_data.endpoints import ENDPOINTS
+from courtside_data.errors import InvalidDate
 from courtside_data.parsing.custom import CustomEndpointHandler
 from pydantic import BaseModel
 
 from tests.fixture_manifest import MULTI_REQUEST_CASES, Case, case_for
+from tests.fixture_transport import FixtureTransport, build_service
 
 # Manifest cases with known fixture gaps — tracked separately until fixtures land.
 MULTI_REQUEST_EXCLUDED_CASE_IDS: frozenset[str] = frozenset({"search-jaebaebae"})
@@ -39,6 +42,12 @@ def _resolved_params(case: Case) -> dict:
 
 def _season_schedule_case() -> Case:
     case = case_for("season_schedule", season_end_year=1980)
+    assert case is not None
+    return case
+
+
+def _team_box_scores_case() -> Case:
+    case = case_for("team_box_scores", day=1, month=1, year=2001)
     assert case is not None
     return case
 
@@ -87,6 +96,47 @@ def test_season_schedule_native_path_does_not_call_custom_handler(monkeypatch, m
     result = client.season_schedule(**case.params)
 
     assert result
+
+
+def test_team_box_scores_offline_output_matches_legacy_custom_handler(make_offline_client) -> None:
+    case = _team_box_scores_case()
+    client = make_offline_client(case)
+    legacy_service = build_service(FixtureTransport(case.url_to_file))
+    legacy_rows = CustomEndpointHandler(legacy_service).team_box_scores(**case.params)
+
+    result = client.team_box_scores(**case.params, raw=True)
+
+    assert result == legacy_rows
+
+
+def test_team_box_scores_native_path_does_not_call_custom_handler(monkeypatch, make_offline_client) -> None:
+    def fail_if_called(self: CustomEndpointHandler, day: int, month: int, year: int) -> list[dict]:
+        raise AssertionError(f"CustomEndpointHandler.team_box_scores was called for {year}-{month}-{day}")
+
+    monkeypatch.setattr(CustomEndpointHandler, "team_box_scores", fail_if_called)
+    case = _team_box_scores_case()
+    client = make_offline_client(case)
+
+    result = client.team_box_scores(**case.params)
+
+    assert result
+
+
+def test_team_box_scores_empty_daily_index_raises_invalid_date() -> None:
+    params = {"day": 4, "month": 7, "year": 2024}
+    fixture = Path(__file__).parent.parent / "raw" / "team_box_scores" / "2024_07_04" / "index.html"
+    assert fixture.is_file()
+    service = build_service(
+        FixtureTransport(
+            {
+                "https://www.basketball-reference.com/boxscores/?day=4&month=7&year=2024": fixture,
+            }
+        )
+    )
+    client = CourtsideClient(service=service)
+
+    with pytest.raises(InvalidDate):
+        client.team_box_scores(**params)
 
 
 def test_play_by_play_overtime_last_period(make_offline_client) -> None:
