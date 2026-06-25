@@ -15,9 +15,9 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
-from courtside_data.client._pipelines._drop_reasons import DROP_REASON_INVALID_VALUE
+from courtside_data.client._pipelines.drop_reasons import DROP_REASON_INVALID_VALUE
 from courtside_data.client._pipelines.pydantic import _validate_row_model_rows_detailed
-from courtside_data.data import (
+from courtside_data.domain import (
     TEAM_ABBREVIATIONS_TO_TEAM,
     TEAM_NAME_TO_TEAM,
     TEAM_TO_TEAM_ABBREVIATION,
@@ -25,7 +25,7 @@ from courtside_data.data import (
 )
 from courtside_data.parsing.generic import find_table
 from courtside_data.schemas._fields import BRInt, TeamField
-from courtside_data.schemas.league import CareerLeadersRow, SeasonAwardsRow, SeasonAwardsVotingRow
+from courtside_data.schemas.awards import CareerLeadersRow, SeasonAwardsRow, SeasonAwardsVotingRow
 from parsel import Selector
 from pydantic import BaseModel, TypeAdapter, ValidationError
 

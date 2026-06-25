@@ -1,7 +1,7 @@
 """Public fetch surface for workflow parser helpers.
 
 The :class:`FetchFacade` is the ONLY surface workflow parser helpers are
-allowed to use to talk to :class:`~courtside_data.http_service.HTTPService`.
+allowed to use to talk to :class:`~courtside_data.http.HTTPService`.
 Reaching into ``http._url`` / ``http._get_selector`` / ``http._get``
 directly (or reading ``HTTPService.BASE_URL`` from the transport class) is a
 layering violation: those names are private to the transport and bespoke
@@ -16,7 +16,7 @@ search-redirect branch, which historically read
 ``HTTPService.BASE_URL`` off the class.
 
 This module also keeps the bespoke path free of an unconditional import of
-:mod:`courtside_data.http_service`: every domain module below imports
+:mod:`courtside_data.http`: every domain module below imports
 :class:`FetchFacade` from here, so the transport boundary lives in one
 place.
 """
@@ -28,7 +28,7 @@ from typing import Any
 import httpx
 from parsel import Selector
 
-from courtside_data.http_service import HTTPService
+from courtside_data.http import HTTPService
 
 __all__ = ["FetchFacade"]
 

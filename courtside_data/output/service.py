@@ -1,4 +1,4 @@
-from courtside_data.data import OutputType
+from courtside_data.domain import OutputType
 from courtside_data.output.writers import DataFrameWriter
 
 

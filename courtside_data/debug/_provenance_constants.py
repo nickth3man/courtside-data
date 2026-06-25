@@ -20,8 +20,8 @@ PROVENANCE_VALIDATOR_COERCED_TO_NONE = "validator_coerced_to_none"
 PROVENANCE_VALIDATOR_TRANSFORMED_VALUE = "validator_transformed_value"
 PROVENANCE_ROW_DROPPED_EXPECTED_REASON = "row_dropped_expected_reason"
 PROVENANCE_ROW_DROPPED_UNRESOLVED_VALIDATION_ERROR = "row_dropped_unresolved_validation_error"
-PROVENANCE_CUSTOM_PARSER_VALUE = "custom_parser_value"
-PROVENANCE_CUSTOM_PARSER_METADATA_UNAVAILABLE = "custom_parser_metadata_unavailable"
+PROVENANCE_WORKFLOW_PARSER_VALUE = "workflow_parser_value"
+PROVENANCE_WORKFLOW_PARSER_METADATA_UNAVAILABLE = "workflow_parser_metadata_unavailable"
 PROVENANCE_DEBUG_UNAVAILABLE = "debug_provenance_unavailable"
 PROVENANCE_UNKNOWN = "unknown"
 
@@ -37,8 +37,8 @@ ProvenanceReason = Literal[
     "validator_transformed_value",
     "row_dropped_expected_reason",
     "row_dropped_unresolved_validation_error",
-    "custom_parser_value",
-    "custom_parser_metadata_unavailable",
+    "workflow_parser_value",
+    "workflow_parser_metadata_unavailable",
     "debug_provenance_unavailable",
     "unknown",
 ]

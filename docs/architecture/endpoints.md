@@ -10,13 +10,9 @@
 - `kind` is the dispatch switch. `generic_table` routes through `GenericEndpointHandler.fetch_table`; `workflow` routes through `parsing.workflows.execute_workflow`.
 - `scope`, `request_shape`, `parser_shape`, and `features` describe parameters, fanout, parser shape, diagnostics, and fallback behavior for tests and tooling.
 
-The deprecated `EndpointSpec.custom` property is a compatibility alias for `endpoint.kind is EndpointKind.WORKFLOW`. New code should read `endpoint.kind`.
-
 ## WorkflowSpec
 
-Workflow endpoints declare an ordered `WorkflowSpec`. Runtime dispatch enters `WorkflowEndpointHandler`, looks up native step handlers for the endpoint, and executes the `WorkflowStep.id` values in order. Tests assert every `EndpointKind.WORKFLOW` endpoint has a workflow spec and native handler coverage for every declared step.
-
-`CustomEndpointHandler` and `dispatch_custom_endpoint` are retained for compatibility and legacy output comparisons. They are not used for normal execution of registered workflow endpoints.
+Workflow endpoints declare an ordered `WorkflowSpec` with typed `WorkflowStepKind` values. Runtime dispatch enters `WorkflowEndpointHandler`, validates the endpoint's explicit native `WorkflowExecutionBinding`, and executes the `WorkflowStep.id` values in order. Tests assert every `EndpointKind.WORKFLOW` endpoint has a workflow spec, native binding, exact step coverage, and matching result key.
 
 ## Generic Table Path
 
@@ -26,11 +22,9 @@ Generic table endpoints set `EndpointMetadata.kind = EndpointKind.GENERIC_TABLE`
 
 Workflow endpoints set `EndpointMetadata.kind = EndpointKind.WORKFLOW` and declare `WorkflowSpec`. The runner performs metadata-driven enum coercion for endpoints marked with `EndpointFeature.ENUM_PARAM_COERCION`, then calls the workflow executor. Workflow steps can fetch one or more pages, branch on redirects/status, parse page-specific structures, merge rows, and emit parser diagnostics. Their output still returns to the same validation, debug-envelope, and output formatting pipeline as generic table endpoints.
 
-## Compatibility Aliases
+## Removed Legacy Surface
 
-These names are intentionally retained:
-
-- `TableEndpoint` is an alias of `EndpointSpec`.
-- `EndpointSpec.custom` mirrors `EndpointKind.WORKFLOW`.
-- `CUSTOM_ENDPOINTS` aliases the workflow endpoint registry.
-- `CustomEndpointHandler`, `dispatch_custom_endpoint`, and `custom_service_dispatch` remain available for compatibility imports, trace consumers, and tests that compare legacy parser output.
+The standardized endpoint surface no longer exports the previous alias layer.
+Use `EndpointSpec`, `EndpointKind`, `WORKFLOW_ENDPOINTS`,
+`workflow_execution_bindings()`, `workflow_service_dispatch`,
+`endpoint_domain`, and `endpoint_kind` directly.

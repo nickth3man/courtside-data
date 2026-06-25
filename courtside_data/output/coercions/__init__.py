@@ -7,5 +7,5 @@ from courtside_data.output.coercions.registry import _COLUMN_TYPE_MAP, _COUNT_ST
 
 __all__ = ["_COLUMN_TYPE_MAP", "_infer_coercion"]
 
-# Re-export the private pattern tuple for backward compat (used by _infer_coercion internally).
+# Re-export the private pattern tuple used by _infer_coercion internally.
 _COUNT_STAT_PATTERNS  # noqa: B018

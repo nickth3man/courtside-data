@@ -1,10 +1,10 @@
 """CSV column contracts for standings Basketball-Reference endpoints.
 
 Covers the conference-division standings and the day-by-day standings tables.
-The ``standings`` endpoint is a custom route that produces typed values from
-the conference-division standings parser, while ``standings_by_date`` flows
-through the generic table pipeline and produces raw ``data-stat``-keyed string
-dicts.
+The ``standings`` endpoint is a workflow route that produces typed values
+from the conference-division standings parser, while ``standings_by_date``
+uses the generic table pipeline and produces raw ``data-stat``-keyed
+string dicts.
 """
 
 STANDINGS_COLUMNS_NAMES = [

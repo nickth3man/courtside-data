@@ -6,13 +6,13 @@ from dataclasses import dataclass, field
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Any
 
-from courtside_data.parsing.custom._fetch import FetchFacade
+from courtside_data.parsing.workflow_parsers._fetch import FetchFacade
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
 
     from courtside_data.endpoints import EndpointSpec
-    from courtside_data.http_service import HTTPService
+    from courtside_data.http import HTTPService
 
 
 @dataclass(frozen=True, slots=True)

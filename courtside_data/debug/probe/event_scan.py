@@ -38,7 +38,7 @@ _PROVENANCE_INT_FIELDS = (
     "validator_transformed_field_count",
     "provenance_dropped_row_count",
     "provenance_unresolved_drop_count",
-    "custom_provenance_unavailable_count",
+    "workflow_provenance_unavailable_count",
 )
 # Provenance reason-count maps; stored without the ``_json`` suffix here and
 # re-exposed as ``<name>_json`` keys by the summary assembler.
@@ -88,7 +88,7 @@ class _EventScan:
     period_count: int | None = None
     score_event_count: int | None = None
     substitution_event_count: int | None = None
-    custom_diagnostics: dict[str, Any] = field(default_factory=dict)
+    workflow_diagnostics: dict[str, Any] = field(default_factory=dict)
     ignored_event_reason_counts: dict[str, int] = field(default_factory=dict)
 
     # --- validation ---
@@ -102,7 +102,7 @@ class _EventScan:
 
     # --- provenance (written straight into the summary by the assembler) ---
     parser_missed_column_count: int | None = None
-    custom_provenance_unavailable_count: int | None = None
+    workflow_provenance_unavailable_count: int | None = None
     provenance_field_count: int | None = None
     provenance_final_none_count: int | None = None
     schema_defaulted_field_count: int | None = None
@@ -185,12 +185,13 @@ class _EventScan:
             row_model = attributes.get("row_model")
             if isinstance(row_model, str):
                 self.model_name = row_model
-            if attributes.get("custom") is True:
-                self.parser_name = "custom"
+            endpoint_kind = attributes.get("endpoint_kind")
+            if endpoint_kind == "workflow":
+                self.parser_name = "workflow"
             elif self.parser_name is None:
                 self.parser_name = "generic"
-        elif event_name == "custom_service_dispatch":
-            self.parser_name = "custom"
+        elif event_name == "workflow_service_dispatch":
+            self.parser_name = "workflow"
         elif event_name == "generic_service_dispatch":
             self.parser_name = "generic"
 
@@ -225,12 +226,12 @@ class _EventScan:
                 self.selected_table_id = table_id
 
         if event_name.endswith("_parsed"):
-            self._consume_custom_parsed(attributes)
+            self._consume_workflow_parsed(attributes)
 
-    def _consume_custom_parsed(self, attributes: Mapping[str, Any]) -> None:
-        custom_parser = attributes.get("parser_name")
-        if isinstance(custom_parser, str):
-            self.parser_name = custom_parser
+    def _consume_workflow_parsed(self, attributes: Mapping[str, Any]) -> None:
+        workflow_parser = attributes.get("parser_name")
+        if isinstance(workflow_parser, str):
+            self.parser_name = workflow_parser
         parsed_events = attributes.get("parsed_event_count")
         if isinstance(parsed_events, int):
             self.parsed_event_count = parsed_events
@@ -254,13 +255,15 @@ class _EventScan:
         substitution_events = attributes.get("substitution_event_count")
         if isinstance(substitution_events, int):
             self.substitution_event_count = substitution_events
-        custom_diag = attributes.get("custom_diagnostics")
-        if isinstance(custom_diag, dict):
-            self.custom_diagnostics.update({str(key): value for key, value in custom_diag.items() if value is not None})
+        workflow_diag = attributes.get("workflow_diagnostics")
+        if isinstance(workflow_diag, dict):
+            self.workflow_diagnostics.update(
+                {str(key): value for key, value in workflow_diag.items() if value is not None}
+            )
         ignored_rows = attributes.get("ignored_row_reason_counts")
         if isinstance(ignored_rows, dict) and ignored_rows:
-            self.custom_diagnostics.setdefault("ignored_row_reason_counts", {})
-            existing_ignored_rows = self.custom_diagnostics["ignored_row_reason_counts"]
+            self.workflow_diagnostics.setdefault("ignored_row_reason_counts", {})
+            existing_ignored_rows = self.workflow_diagnostics["ignored_row_reason_counts"]
             if isinstance(existing_ignored_rows, dict):
                 for key, value in ignored_rows.items():
                     if isinstance(value, int | float):
@@ -272,10 +275,10 @@ class _EventScan:
             return
         sentinel_count = attributes.get("sentinel_row_count")
         if isinstance(sentinel_count, int):
-            self.custom_diagnostics["sentinel_row_count"] = sentinel_count
+            self.workflow_diagnostics["sentinel_row_count"] = sentinel_count
         sentinel_types = attributes.get("sentinel_row_types")
         if isinstance(sentinel_types, dict):
-            self.custom_diagnostics["sentinel_row_types"] = {
+            self.workflow_diagnostics["sentinel_row_types"] = {
                 str(key): int(value) for key, value in sentinel_types.items() if isinstance(value, int | float)
             }
 
@@ -288,16 +291,16 @@ class _EventScan:
             if isinstance(missed, int):
                 self.parser_missed_column_count = missed
 
-        if event_name == "custom_endpoint_provenance" and attributes.get("source_cell_mapping_available") is False:
-            self.custom_provenance_unavailable_count = max(int(self.custom_provenance_unavailable_count or 0), 1)
+        if event_name == "workflow_endpoint_provenance" and attributes.get("source_cell_mapping_available") is False:
+            self.workflow_provenance_unavailable_count = max(int(self.workflow_provenance_unavailable_count or 0), 1)
 
         if event_name == "field_provenance_summary":
             for key in _PROVENANCE_INT_FIELDS:
                 value = attributes.get(key)
                 if isinstance(value, int):
-                    if key == "custom_provenance_unavailable_count":
-                        self.custom_provenance_unavailable_count = max(
-                            int(self.custom_provenance_unavailable_count or 0), value
+                    if key == "workflow_provenance_unavailable_count":
+                        self.workflow_provenance_unavailable_count = max(
+                            int(self.workflow_provenance_unavailable_count or 0), value
                         )
                     else:
                         setattr(self, key, value)

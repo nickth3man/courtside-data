@@ -13,7 +13,7 @@ from courtside_data.parsing.cells import (
     slug_from_metadata,
     team_name_from_abbreviation,
 )
-from courtside_data.parsing.custom._diagnostics import (
+from courtside_data.parsing.workflow_parsers._diagnostics import (
     IGNORE_EMPTY_TABLE,
     IGNORE_MISSING_FOOTER,
     increment_ignored,

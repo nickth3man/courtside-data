@@ -26,7 +26,7 @@ Runtime configuration is env-var driven. The values agents are most likely to ne
 |----------|---------|---------|
 | `BASKETBALL_REF_JAIL_STATE_PATH` | `platformdirs.user_cache_dir("courtside-data", "courtside") / "jail.json"` | Path to the persisted 429 rate-limit-jail state file (so the cap survives process restarts). |
 | `BASKETBALL_REF_IMPERSONATE` | `chrome131` | curl-cffi TLS-impersonation target. Pin an older Chrome version when debugging a sudden 403 wave. |
-| `COURTSIDE_DATA_FAST_PARSE` | unset | Set to `1` to route the HTML-parsing hot path through the selectolax (Lexbor) backend (~6× faster on table-heavy pages). Default is the lxml+parsel pipeline; both backends are cross-validated by `tests/test_selectolax_backend.py`. |
+| `COURTSIDE_DATA_PARSE_BACKEND` | `selectolax` | HTML parsing backend. Use `parsel` only when debugging backend-specific parsing behavior; both backends are cross-validated by `tests/test_selectolax_backend.py`. |
 | `COURTSIDE_DEBUG_LOG_DIR` | `./logs` | Directory for per-call debug-trace JSON envelopes (see "Live endpoint probe"). |
 
 ---
@@ -460,7 +460,7 @@ uv run mkdocs get-deps          # list PyPI packages the config requires
 
 ### Auto-generated API reference
 
-The `API` section of the site (`docs/api/schemas.md`, `docs/api/endpoints.md`) is rendered by the **mkdocstrings** Python handler with the **griffe-pydantic** extension (configured in `mkdocs.yml` under `plugins:`). Pydantic `BRRow` subclasses in `courtside_data/schemas/` and the `EndpointSpec` registry in the `courtside_data/endpoints/` package are documented directly from source — do not hand-edit the rendered schema/field tables; update the docstrings and re-run `mkdocs build`. `docs/index.md` is the hand-written landing page. `TableEndpoint` is retained as a backwards-compatible alias for `EndpointSpec`; both are importable from `courtside_data.endpoints`.
+The `API` section of the site (`docs/api/schemas.md`, `docs/api/endpoints.md`) is rendered by the **mkdocstrings** Python handler with the **griffe-pydantic** extension (configured in `mkdocs.yml` under `plugins:`). Pydantic `BRRow` subclasses in `courtside_data/schemas/` and the `EndpointSpec` registry in the `courtside_data/endpoints/` package are documented directly from source — do not hand-edit the rendered schema/field tables; update the docstrings and re-run `mkdocs build`. `docs/index.md` is the hand-written landing page. Endpoint registry entries are exposed as `EndpointSpec` objects from `courtside_data.endpoints`.
 
 **pymdown-extensions** are provided by the `pymdown-extensions` package (a dep of mkdocs-material ≥ 9) and enabled by name under `markdown_extensions:` in `mkdocs.yml`.
 

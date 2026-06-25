@@ -6,10 +6,7 @@ attendance. Every field's ``validation_alias`` is the raw ``data-stat`` key the
 table emits, so the schema drift detection in the runner fires whenever BR
 renames a column.
 
-Awards and leaders models (``SeasonAwardsRow``, ``SeasonAwardsVotingRow``,
-``SeasonLeadersRow``, ``CareerLeadersRow``) are defined in
-:mod:`courtside_data.schemas.awards` and re-exported from this module for
-backward compatibility.
+Awards and leaders models are defined in :mod:`courtside_data.schemas.awards`.
 """
 
 from __future__ import annotations
@@ -18,7 +15,7 @@ from typing import Annotated
 
 from pydantic import AliasChoices, BeforeValidator, Field
 
-from courtside_data.data import Team
+from courtside_data.domain import Team
 from courtside_data.schemas import register
 from courtside_data.schemas._base import BRRow
 from courtside_data.schemas._blocks import (
@@ -365,8 +362,8 @@ register("league_play_by_play", LeaguePlayByPlayRow)
 class LeagueTransactionRow(BRRow):
     """Row from a league transactions page.
 
-    The endpoint declares ``transaction_list_fallback=True``, so the custom
-    fetcher produces rows from :func:`courtside_data.parsing.tables.parse_transaction_list`
+    The endpoint declares ``transaction_list_fallback=True``, so the generic
+    table handler produces rows from :func:`courtside_data.parsing.tables.parse_transaction_list`
     with the stable keys ``date`` and ``transaction``. The optional
     ``from_team_abbreviations`` / ``to_team_abbreviations`` / ``linked_resources``
     keys are accepted for forward compatibility but are not part of the
@@ -400,13 +397,3 @@ class AttendanceRow(BRRow):
 
 
 register("attendance", AttendanceRow)
-
-
-# ── Backward-compat re-exports from awards.py ──────────────────────────
-
-from courtside_data.schemas.awards import (  # noqa: E402,F401  # re-exported for backward compat
-    CareerLeadersRow,
-    SeasonAwardsRow,
-    SeasonAwardsVotingRow,
-    SeasonLeadersRow,
-)

@@ -17,7 +17,7 @@ from typing import TYPE_CHECKING
 import httpx
 
 if TYPE_CHECKING:
-    from courtside_data.http_service import HTTPService
+    from courtside_data.http import HTTPService
 
 # A value in the ``url_to_path`` mapping is one of:
 #   - ``pathlib.Path``: serve the file's bytes at status 200
@@ -140,6 +140,6 @@ def build_service(transport: FixtureTransport) -> HTTPService:
     pacing needs to be configured here. ``HTTPService`` is imported
     lazily so that importing this module never constructs one.
     """
-    from courtside_data.http_service import HTTPService
+    from courtside_data.http import HTTPService
 
     return HTTPService(session=build_client(transport), cache=False)

@@ -6,7 +6,7 @@ from __future__ import annotations
 from typing import Any
 
 from courtside_data.client._runner import _run_endpoint
-from courtside_data.data import OutputType, OutputWriteOption
+from courtside_data.domain import OutputType, OutputWriteOption
 
 
 def league_per_game_stats(

@@ -12,7 +12,7 @@ from courtside_data.endpoints._metadata import (
     RequestShape,
 )
 from courtside_data.endpoints._table import EndpointSpec, _season
-from courtside_data.endpoints._workflow import WorkflowSpec, WorkflowStep
+from courtside_data.endpoints._workflow import WorkflowSpec, WorkflowStep, WorkflowStepKind
 from courtside_data.output.columns import (
     FRIV_7_GAME_PLAYOFF_SERIES_OUTCOMES_COLUMN_NAMES,
     PLAYOFF_BRACKET_COLUMN_NAMES,
@@ -25,21 +25,21 @@ _PLAYOFF_BRACKET_WORKFLOW = WorkflowSpec(
     steps=(
         WorkflowStep(
             id="fetch_playoff_page",
-            kind="fetch",
+            kind=WorkflowStepKind.FETCH,
             description="Fetch the season playoff page.",
             inputs=("season_end_year",),
             outputs=("playoff_page",),
         ),
         WorkflowStep(
             id="select_bracket_table",
-            kind="select",
+            kind=WorkflowStepKind.SELECT,
             description="Select table#all_playoffs, returning no rows when it is absent.",
             inputs=("playoff_page",),
             outputs=("bracket_table",),
         ),
         WorkflowStep(
             id="parse_playoff_bracket",
-            kind="parse",
+            kind=WorkflowStepKind.PARSE,
             description="Parse the playoff bracket table hierarchy into series rows.",
             inputs=("bracket_table",),
             outputs=("rows",),
@@ -47,7 +47,7 @@ _PLAYOFF_BRACKET_WORKFLOW = WorkflowSpec(
         ),
         WorkflowStep(
             id="emit_diagnostics",
-            kind="diagnostics",
+            kind=WorkflowStepKind.DIAGNOSTICS,
             description="Record parser diagnostics including the parsed series count.",
             inputs=("rows",),
         ),
@@ -58,20 +58,20 @@ _FRIV_7_GAME_PLAYOFF_OUTCOMES_WORKFLOW = WorkflowSpec(
     steps=(
         WorkflowStep(
             id="fetch_friv_page",
-            kind="fetch",
+            kind=WorkflowStepKind.FETCH,
             description="Fetch the static seven-game playoff series outcomes page.",
             outputs=("friv_page",),
         ),
         WorkflowStep(
             id="select_outcome_table",
-            kind="select",
+            kind=WorkflowStepKind.SELECT,
             description="Select the configured outcome table, returning no rows when it is absent.",
             inputs=("friv_page", "table_id"),
             outputs=("outcome_table",),
         ),
         WorkflowStep(
             id="parse_outcome_rows",
-            kind="parse",
+            kind=WorkflowStepKind.PARSE,
             description="Parse tbody rows from the selected outcome matrix.",
             inputs=("outcome_table",),
             outputs=("rows",),
@@ -79,7 +79,7 @@ _FRIV_7_GAME_PLAYOFF_OUTCOMES_WORKFLOW = WorkflowSpec(
         ),
         WorkflowStep(
             id="emit_diagnostics",
-            kind="diagnostics",
+            kind=WorkflowStepKind.DIAGNOSTICS,
             description="Record parser diagnostics and raw row artifacts for the selected table.",
             inputs=("rows", "table_id"),
         ),
@@ -129,7 +129,7 @@ PLAYOFF_ENDPOINTS = {
             scope=EndpointScope.SEASON,
             request_shape=RequestShape.SINGLE_REQUEST,
             parser_shape=ParserShape.BRACKET,
-            features=frozenset({EndpointFeature.CUSTOM_DIAGNOSTICS}),
+            features=frozenset({EndpointFeature.WORKFLOW_DIAGNOSTICS}),
         ),
         workflow=_PLAYOFF_BRACKET_WORKFLOW,
     ),
@@ -144,7 +144,7 @@ PLAYOFF_ENDPOINTS = {
             scope=EndpointScope.STATIC,
             request_shape=RequestShape.SINGLE_REQUEST,
             parser_shape=ParserShape.TABLE,
-            features=frozenset({EndpointFeature.CUSTOM_DIAGNOSTICS}),
+            features=frozenset({EndpointFeature.WORKFLOW_DIAGNOSTICS}),
         ),
         workflow=_FRIV_7_GAME_PLAYOFF_OUTCOMES_WORKFLOW,
     ),
@@ -159,7 +159,7 @@ PLAYOFF_ENDPOINTS = {
             scope=EndpointScope.STATIC,
             request_shape=RequestShape.SINGLE_REQUEST,
             parser_shape=ParserShape.TABLE,
-            features=frozenset({EndpointFeature.CUSTOM_DIAGNOSTICS}),
+            features=frozenset({EndpointFeature.WORKFLOW_DIAGNOSTICS}),
         ),
         workflow=_FRIV_7_GAME_PLAYOFF_OUTCOMES_WORKFLOW,
     ),
@@ -174,7 +174,7 @@ PLAYOFF_ENDPOINTS = {
             scope=EndpointScope.STATIC,
             request_shape=RequestShape.SINGLE_REQUEST,
             parser_shape=ParserShape.TABLE,
-            features=frozenset({EndpointFeature.CUSTOM_DIAGNOSTICS}),
+            features=frozenset({EndpointFeature.WORKFLOW_DIAGNOSTICS}),
         ),
         workflow=_FRIV_7_GAME_PLAYOFF_OUTCOMES_WORKFLOW,
     ),

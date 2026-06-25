@@ -29,7 +29,7 @@ from courtside_data.debug.probe.previews import (
     _preview_result,
     _row_count,
 )
-from courtside_data.debug.probe.samples import _ENDPOINT_GROUPS, _endpoint_domain, _endpoint_kind, _legacy_endpoint_kind
+from courtside_data.debug.probe.samples import _endpoint_domain, _endpoint_kind
 from courtside_data.endpoints import ENDPOINTS
 
 
@@ -163,7 +163,6 @@ def _initial_summary(
 
     return {
         "duration_ms": debug.get("duration_ms"),
-        "status_code": debug_status,
         "debug_status": debug_status,
         "error_type": status.get("error_type"),
         "error_message": status.get("error_message"),
@@ -192,10 +191,10 @@ def _initial_summary(
         "provenance_dropped_row_count": None,
         "provenance_dropped_row_reason_counts_json": {},
         "provenance_unresolved_drop_count": None,
-        "custom_provenance_unavailable_count": None,
+        "workflow_provenance_unavailable_count": None,
         "source_sections_json": [],
         "ignored_event_reason_counts_json": {},
-        "custom_diagnostics_json": {},
+        "workflow_diagnostics_json": {},
         "first_row_preview_json": None,
         "first_row_preview_truncated": None,
         "first_row_preview_field_count": None,
@@ -215,7 +214,7 @@ def _merge_scan_counts(summary: dict[str, Any], scan: _EventScan) -> None:
     summary["ignored_event_reason_counts_json"] = scan.ignored_event_reason_counts
     summary["validation_error_paths_json"] = scan.validation_error_paths
     summary["parser_missed_column_count"] = scan.parser_missed_column_count
-    summary["custom_provenance_unavailable_count"] = scan.custom_provenance_unavailable_count
+    summary["workflow_provenance_unavailable_count"] = scan.workflow_provenance_unavailable_count
     summary["provenance_field_count"] = scan.provenance_field_count
     summary["provenance_final_none_count"] = scan.provenance_final_none_count
     summary["schema_defaulted_field_count"] = scan.schema_defaulted_field_count
@@ -232,12 +231,8 @@ def _apply_endpoint_metadata(summary: dict[str, Any], scan: _EventScan, endpoint
     """Fold endpoint-registry metadata into the summary + scan identity fields."""
     endpoint = ENDPOINTS.get(endpoint_name) if endpoint_name is not None else None
     if endpoint is not None:
-        # endpoint_group is a deprecated alias of endpoint_domain, retained for
-        # the probe CSV/report; endpoint_domain is the canonical field.
-        summary["endpoint_group"] = _ENDPOINT_GROUPS.get(endpoint_name)
         summary["endpoint_domain"] = _endpoint_domain(endpoint)
         summary["endpoint_kind"] = _endpoint_kind(endpoint)
-        summary["endpoint_legacy_kind"] = _legacy_endpoint_kind(endpoint)
         summary["required_params_json"] = list(endpoint.params)
         summary["url_template"] = endpoint.path
         if scan.model_name is None and endpoint.row_model is not None:
@@ -333,17 +328,18 @@ def _summarize_debug_events(
     _apply_endpoint_metadata(summary, scan, endpoint_name)
     shape = _resolve_output_shape(summary, scan, data)
 
-    # Table-id fallbacks: custom parsers stash these in ``custom_diagnostics``.
+    # Workflow parsers can surface table-id hints through diagnostics when a
+    # generic table-resolution event was not emitted.
     selected_table_id = scan.selected_table_id
     candidate_table_ids = scan.candidate_table_ids
     if selected_table_id is None:
-        table_from_custom = scan.custom_diagnostics.get("selected_table_id")
-        if isinstance(table_from_custom, str):
-            selected_table_id = table_from_custom
+        table_from_workflow = scan.workflow_diagnostics.get("selected_table_id")
+        if isinstance(table_from_workflow, str):
+            selected_table_id = table_from_workflow
     if not candidate_table_ids:
-        custom_candidates = scan.custom_diagnostics.get("candidate_table_ids")
-        if isinstance(custom_candidates, list):
-            candidate_table_ids = [str(item) for item in custom_candidates]
+        workflow_candidates = scan.workflow_diagnostics.get("candidate_table_ids")
+        if isinstance(workflow_candidates, list):
+            candidate_table_ids = [str(item) for item in workflow_candidates]
 
     rounded_rate_limit_wait_ms = round(scan.rate_limit_wait_ms, 3) if scan.rate_limit_wait_ms else None
     metrics = _summarize_metrics(
@@ -399,9 +395,7 @@ def _summarize_debug_events(
             "period_count": scan.period_count,
             "score_event_count": scan.score_event_count,
             "substitution_event_count": scan.substitution_event_count,
-            "custom_diagnostics_json": scan.custom_diagnostics,
-            "column_count": shape.output_field_count,
-            "columns_json": scan.raw_columns or shape.output_fields,
+            "workflow_diagnostics_json": scan.workflow_diagnostics,
             "first_row_preview_json": shape.first_row_preview,
             "first_row_preview_truncated": shape.first_row_preview_truncated,
             "first_row_preview_field_count": shape.first_row_preview_field_count,

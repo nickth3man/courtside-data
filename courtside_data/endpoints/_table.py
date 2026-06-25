@@ -4,8 +4,6 @@ The registry (:mod:`courtside_data.endpoints._registry`) stays focused on
 its per-domain wiring and the per-endpoint ``output.columns``/``schemas``
 imports; the shared spec type and factories live here.
 
-``TableEndpoint`` is retained as a backwards-compatible alias for
-``EndpointSpec`` (see the bottom of this module).
 """
 
 from __future__ import annotations
@@ -51,8 +49,8 @@ class EndpointSpec:
     transaction_list_fallback: bool = False
     exclude_summary_rows: bool = False
     # If set, the runner validates each extracted row with this BRRow subclass
-    # via the Pydantic pipeline. A missing row model deliberately selects the
-    # compatibility dict-based coerce_data/validate_rows path instead.
+    # via the Pydantic pipeline. All registered endpoints are expected to
+    # declare a row model.
     row_model: type[BRRow] | None = None
     # When set, fetch_table() projects each row down to exactly these keys
     # (missing keys become empty strings).
@@ -105,24 +103,12 @@ class EndpointSpec:
 
         Returns :attr:`EndpointKind.GENERIC_TABLE` when ``metadata`` is absent
         so directly-constructed specs default to the generic table pipeline.
-        Runtime dispatch (runner, coercion, generic guard) reads this instead
-        of the legacy :attr:`custom` flag.
+        Runtime dispatch, parameter coercion, and generic-table guards read
+        this field directly.
         """
         if self.metadata is None:
             return EndpointKind.GENERIC_TABLE
         return self.metadata.kind
-
-    @property
-    def custom(self) -> bool:
-        """Deprecated compatibility alias retained for the public surface.
-
-        ``True`` for :attr:`EndpointKind.WORKFLOW` endpoints, ``False``
-        otherwise. Dispatch no longer reads this flag — prefer
-        :attr:`kind` (``endpoint.kind is EndpointKind.WORKFLOW``). Kept so
-        existing callers and traces that reference ``endpoint.custom`` keep
-        working; it is always consistent with :attr:`kind`.
-        """
-        return self.kind is EndpointKind.WORKFLOW
 
 
 def _endpoint(
@@ -209,12 +195,3 @@ def _player(path: str, params: tuple[str, ...] = ("player_identifier",), **overr
         error_params=("player_identifier",),
         **overrides,
     )
-
-
-# Backwards-compatible alias. ``TableEndpoint`` was the original public name
-# for the endpoint spec dataclass; it is retained so existing imports,
-# isinstance checks, and trace/probe surfaces keep working. It is the exact
-# same object as ``EndpointSpec`` (a plain alias, not a subclass) so every
-# registered endpoint is an instance of both names. New code should use
-# :class:`EndpointSpec`.
-TableEndpoint = EndpointSpec

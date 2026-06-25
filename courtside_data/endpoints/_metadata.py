@@ -1,8 +1,8 @@
 """Typed taxonomy for :class:`~courtside_data.endpoints.EndpointSpec` specs.
 
-These enums describe *what* an endpoint is (domain, shape, features) without
-changing any runtime behaviour.  All values are ``StrEnum`` so they serialise
-to plain strings and compare equal to their string representations.
+These enums describe *what* an endpoint is (domain, shape, features) and provide
+the canonical runtime dispatch kind. All values are ``StrEnum`` so they
+serialise to plain strings and compare equal to their string representations.
 
 Usage::
 
@@ -180,7 +180,7 @@ class EndpointFeature(StrEnum):
     REQUIRES_NON_EMPTY = "requires_non_empty"
     """Raises an error when the extracted row set is empty."""
 
-    CUSTOM_DIAGNOSTICS = "custom_diagnostics"
+    WORKFLOW_DIAGNOSTICS = "workflow_diagnostics"
     """Emits non-standard debug telemetry beyond the default trace envelope."""
 
     INTERNAL_TEMPLATE_PARAMS = "internal_template_params"

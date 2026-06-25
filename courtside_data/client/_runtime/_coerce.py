@@ -2,7 +2,7 @@
 
 Workflow endpoints (``endpoint.kind is EndpointKind.WORKFLOW``) route through
 the executable workflow engine. The live probe passes raw abbreviations
-(``"ATL"``), while the typed client path may pass :class:`~courtside_data.data.Team`
+(``"ATL"``), while the typed client path may pass :class:`~courtside_data.domain.Team`
 enums. :func:`_coerce_params` unifies those call paths from registry metadata:
 only endpoints marked with :attr:`EndpointFeature.ENUM_PARAM_COERCION` are
 checked, and only explicitly-listed params are coerced.
@@ -20,7 +20,7 @@ from typing import Annotated, Any
 
 from pydantic import BeforeValidator
 
-from courtside_data.data import Team
+from courtside_data.domain import Team
 from courtside_data.endpoints import ENDPOINTS, EndpointFeature, EndpointKind
 from courtside_data.schemas._fields import _team_field
 
@@ -46,7 +46,7 @@ def _coerce_params(endpoint_name: str, params: dict[str, Any]) -> dict[str, Any]
 
     The probe path passes raw abbreviations (``"ATL"``) to the runner; the
     typed client path passes :class:`Team` enums. This helper unifies both
-    paths from endpoint metadata instead of legacy handler signatures. Other
+    paths from endpoint metadata. Other
     params are passed through untouched. A fresh dict is returned only when
     coercion is enabled so the caller's dict is never mutated.
     """

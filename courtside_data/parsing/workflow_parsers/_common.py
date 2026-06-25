@@ -1,10 +1,8 @@
 """Shared, transport-free helpers used by more than one domain module.
 
-These are the free-function equivalents of the four private ``_xxx_rows``
-methods that previously lived on :class:`CustomEndpointHandler`. They
-operate on a parsel ``Selector`` (or a pre-located table selector) and
-have no need for a :class:`~courtside_data.parsing.custom._fetch.FetchFacade`:
-the fetch step is performed by the calling domain function.
+These are transport-free row helpers used by native workflow steps. They
+operate on a parsel ``Selector`` or a pre-located table selector; the fetch
+step is performed by the workflow executor.
 
 Why a separate module? Three of the four helpers are shared across
 domains: ``_generic_table_rows`` is used by ``_schedule_rows`` and the
@@ -20,9 +18,10 @@ from typing import Any
 
 from parsel import Selector
 
-from courtside_data.client._pipelines._drop_reasons import row_drop_reason
+from courtside_data.client._pipelines.drop_reasons import row_drop_reason
 from courtside_data.parsing import cells, rows
-from courtside_data.parsing.custom._diagnostics import (
+from courtside_data.parsing.generic import find_table
+from courtside_data.parsing.workflow_parsers._diagnostics import (
     IGNORE_COMBINED_TEAM,
     IGNORE_INACTIVE_GAME,
     IGNORE_MISSING_DATE,
@@ -30,7 +29,6 @@ from courtside_data.parsing.custom._diagnostics import (
     IGNORE_MISSING_TABLE,
     increment_ignored,
 )
-from courtside_data.parsing.generic import find_table
 
 __all__ = [
     "_generic_table_rows",
@@ -46,8 +44,7 @@ __all__ = [
 def _generic_table_rows(selector: Selector, table_id: str) -> list[dict[str, Any]]:
     """Return raw ``data-stat`` rows for ``table#<table_id>`` on ``selector``.
 
-    Returns an empty list when the table is missing (mirrors the historic
-    ``CustomEndpointHandler._generic_table_rows`` contract).
+    Returns an empty list when the table is missing.
     """
     table_selector = find_table(selector, table_id)
     if table_selector is None:

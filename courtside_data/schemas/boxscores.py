@@ -4,9 +4,9 @@ Box-score tables use ``data-stat="mp"`` to carry an "MM:SS" playing-time
 string.  :class:`SecondsPlayed` ports that into a total-seconds ``int`` so
 consumers can compare or aggregate without re-parsing the original string.
 
-The custom fetchers own the orchestration that injects the
-player ``slug`` (extracted from the ``data-append-csv`` cell attribute,
-not a ``data-stat``) for the per-day leaders endpoint.
+Workflow parser steps inject the player ``slug`` (extracted from the
+``data-append-csv`` cell attribute, not a ``data-stat``) for the per-day
+leaders endpoint.
 """
 
 from __future__ import annotations
@@ -108,7 +108,7 @@ class PlayerBoxScoreRow(BRRow, _BoxScoreCountingStats, _BoxScorePctStats):
     """Row from a daily-leaders page.
 
     Includes the player ``slug`` (from the cell's ``data-append-csv``
-    attribute, injected by the custom fetcher) and a full name, plus
+    attribute, injected by the workflow parser) and a full name, plus
     team/location/opponent/outcome context and the basic box-score stat
     block. ``plus_minus`` is the per-game plus/minus — distinct from the
     "raw score margin" that appears on the schedule.
@@ -133,7 +133,7 @@ class _PlayerSeasonBoxScoreRow(BRRow, _BoxScoreCountingStats, _BoxScorePctStats)
     """Shared base for the per-game regular-season and playoff game logs.
 
     ``active`` is derived upstream from the ``is_starter`` cell's ``colspan``
-    attribute; the custom fetcher injects a boolean and this model treats
+    attribute; the workflow parser injects a boolean and this model treats
     it as the source of truth. ``date_game`` is the historical BR
     ``data-stat``; some fixtures expose it as ``date``.
     """
@@ -169,8 +169,9 @@ register("playoff_player_box_scores", PlayoffPlayerBoxScoreRow)
 
 
 class TeamBoxScoreRow(BRRow, _BoxScoreTeamCountingStats, _BoxScorePctStats):
-    """Row from a daily team box-score listing (assembled by the custom
-    fetcher from individual game footer rows).
+    """Row from a daily team box-score listing.
+
+    A workflow parser assembles these rows from individual game footer rows.
 
     The team-level ``mp`` cell holds a bare integer (the total team
     minutes summed across players), exposed as :attr:`minutes_played` to

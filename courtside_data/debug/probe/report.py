@@ -73,7 +73,7 @@ def _failure_detail(entry: Mapping[str, Any]) -> str:
         return error_type
     if error_message:
         return error_message
-    debug_status = _string_cell(entry.get("debug_status") or entry.get("status_code"))
+    debug_status = _string_cell(entry.get("debug_status"))
     if debug_status:
         return f"status {debug_status}"
     http_status = entry.get("http_status_code")
@@ -88,7 +88,7 @@ def _has_token(*, error_type: str, error_message: str, tokens: Sequence[str]) ->
 
 
 def _works(entry: Mapping[str, Any]) -> bool:
-    debug_status = entry.get("debug_status", entry.get("status_code"))
+    debug_status = entry.get("debug_status")
     return entry.get("ok") is True and debug_status == "ok" and not entry.get("error_type")
 
 
@@ -98,7 +98,7 @@ def _failure_category(entry: Mapping[str, Any], *, works: bool) -> str:
 
     error_type = _string_cell(entry.get("error_type"))
     error_message = _string_cell(entry.get("error_message"))
-    debug_status = _string_cell(entry.get("debug_status") or entry.get("status_code"))
+    debug_status = _string_cell(entry.get("debug_status"))
     failed_stage = _string_cell(entry.get("failed_stage"))
     http_status_code = entry.get("http_status_code")
 
@@ -197,20 +197,16 @@ def _evaluation_sentence(entry: Mapping[str, Any], *, works: bool, failure_categ
 
 def _with_evaluation(entry: Mapping[str, Any]) -> dict[str, Any]:
     evaluated = dict(entry)
-    if evaluated.get("debug_status") is None and evaluated.get("status_code") is not None:
-        evaluated["debug_status"] = evaluated["status_code"]
-    if evaluated.get("status_code") is None and evaluated.get("debug_status") is not None:
-        evaluated["status_code"] = evaluated["debug_status"]
     works = _works(evaluated)
     failure_category = _failure_category(evaluated, works=works)
     evaluated["works"] = works
     evaluated["failure_category"] = failure_category
     evaluated["evaluation"] = _evaluation_sentence(evaluated, works=works, failure_category=failure_category)
 
-    custom_diag = evaluated.get("custom_diagnostics_json")
+    workflow_diag = evaluated.get("workflow_diagnostics_json")
     parser_ignored = None
-    if isinstance(custom_diag, dict):
-        parser_ignored = custom_diag.get("ignored_row_reason_counts")
+    if isinstance(workflow_diag, dict):
+        parser_ignored = workflow_diag.get("ignored_row_reason_counts")
 
     metrics = evaluated.get("metrics")
     truncated_artifacts = None

@@ -66,7 +66,7 @@ class RateLimitJailed(_DomainError):
 
 
 class MissingPlayerSlug(_DomainError):
-    """Raised when a custom player parser fails to inject the required player slug."""
+    """Raised when a workflow parser fails to inject the required player slug."""
 
     def __init__(self, endpoint_name: str, row_index: int, player: str) -> None:
         self.endpoint_name = endpoint_name

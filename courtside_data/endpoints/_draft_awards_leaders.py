@@ -12,7 +12,7 @@ from courtside_data.endpoints._metadata import (
     RequestShape,
 )
 from courtside_data.endpoints._table import EndpointSpec, _season
-from courtside_data.endpoints._workflow import WorkflowSpec, WorkflowStep
+from courtside_data.endpoints._workflow import WorkflowSpec, WorkflowStep, WorkflowStepKind
 from courtside_data.output.columns import (
     CAREER_LEADERS_COLUMN_NAMES,
     DRAFT_PICKS_COLUMN_NAMES,
@@ -20,34 +20,34 @@ from courtside_data.output.columns import (
     SEASON_AWARDS_VOTING_COLUMN_NAMES,
     SEASON_LEADERS_COLUMN_NAMES,
 )
-from courtside_data.schemas import draft, league
+from courtside_data.schemas import awards, draft
 
 _SEASON_AWARDS_VOTING_WORKFLOW = WorkflowSpec(
     steps=(
         WorkflowStep(
             id="normalize_award_id",
-            kind="derive",
+            kind=WorkflowStepKind.DERIVE,
             description="Normalize the award parameter into the Basketball Reference table id.",
             inputs=("award",),
             outputs=("table_id",),
         ),
         WorkflowStep(
             id="fetch_awards_page",
-            kind="fetch",
+            kind=WorkflowStepKind.FETCH,
             description="Fetch the season awards page.",
             inputs=("season_end_year",),
             outputs=("awards_page",),
         ),
         WorkflowStep(
             id="select_award_table",
-            kind="select",
+            kind=WorkflowStepKind.SELECT,
             description="Select the normalized award table, returning no rows when it is absent.",
             inputs=("awards_page", "table_id"),
             outputs=("award_table",),
         ),
         WorkflowStep(
             id="parse_award_rows",
-            kind="parse",
+            kind=WorkflowStepKind.PARSE,
             description="Parse raw data-stat rows from the selected award voting table.",
             inputs=("award_table",),
             outputs=("rows",),
@@ -55,7 +55,7 @@ _SEASON_AWARDS_VOTING_WORKFLOW = WorkflowSpec(
         ),
         WorkflowStep(
             id="emit_diagnostics",
-            kind="diagnostics",
+            kind=WorkflowStepKind.DIAGNOSTICS,
             description="Record parser diagnostics with the selected award table id.",
             inputs=("rows", "table_id"),
         ),
@@ -80,7 +80,7 @@ DRAFT_AWARDS_LEADERS_ENDPOINTS = {
         "/awards/awards_{season_end_year}.html",
         table_id="mvp",
         fallback_table_ids=("nba_mvp",),
-        row_model=league.SeasonAwardsRow,
+        row_model=awards.SeasonAwardsRow,
         csv_columns=SEASON_AWARDS_COLUMN_NAMES,
         metadata=EndpointMetadata(
             domain=EndpointDomain.DRAFT_AWARDS_LEADERS,
@@ -107,7 +107,7 @@ DRAFT_AWARDS_LEADERS_ENDPOINTS = {
             "leading_all_defense",
             "leading_all_rookie",
         ),
-        row_model=league.SeasonAwardsVotingRow,
+        row_model=awards.SeasonAwardsVotingRow,
         csv_columns=SEASON_AWARDS_VOTING_COLUMN_NAMES,
         metadata=EndpointMetadata(
             domain=EndpointDomain.DRAFT_AWARDS_LEADERS,
@@ -115,7 +115,7 @@ DRAFT_AWARDS_LEADERS_ENDPOINTS = {
             scope=EndpointScope.SEASON,
             request_shape=RequestShape.SINGLE_REQUEST,
             parser_shape=ParserShape.TABLE,
-            features=frozenset({EndpointFeature.FALLBACK_TABLE_IDS, EndpointFeature.CUSTOM_DIAGNOSTICS}),
+            features=frozenset({EndpointFeature.FALLBACK_TABLE_IDS, EndpointFeature.WORKFLOW_DIAGNOSTICS}),
         ),
         workflow=_SEASON_AWARDS_VOTING_WORKFLOW,
     ),
@@ -127,7 +127,7 @@ DRAFT_AWARDS_LEADERS_ENDPOINTS = {
         # (``per``, ``pts``, ``ast`` ...). ``value_column`` renames the rightmost
         # non-text column to a stable ``value`` key so the row model validates.
         value_column=True,
-        row_model=league.SeasonLeadersRow,
+        row_model=awards.SeasonLeadersRow,
         csv_columns=SEASON_LEADERS_COLUMN_NAMES,
         metadata=EndpointMetadata(
             domain=EndpointDomain.DRAFT_AWARDS_LEADERS,
@@ -150,7 +150,7 @@ DRAFT_AWARDS_LEADERS_ENDPOINTS = {
         table_id="tot",
         use_header_fallback=True,
         value_column=True,
-        row_model=league.CareerLeadersRow,
+        row_model=awards.CareerLeadersRow,
         csv_columns=CAREER_LEADERS_COLUMN_NAMES,
         metadata=EndpointMetadata(
             domain=EndpointDomain.DRAFT_AWARDS_LEADERS,

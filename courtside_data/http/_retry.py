@@ -1,7 +1,7 @@
 """Pure-function retry helpers used by :class:`HTTPService`.
 
 Owns the retry predicates extracted from
-:mod:`courtside_data.http_service`:
+:mod:`courtside_data.http`:
 
 * :func:`_parse_retry_after` — parse a ``Retry-After`` header value per
   RFC 9110 (integer seconds and HTTP-date forms).

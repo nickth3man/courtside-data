@@ -1,9 +1,9 @@
 """Module-level constants for the ``courtside_data.http`` package.
 
 Shared by the ``_transport`` and ``_retry`` helpers without pulling in
-the entire :class:`~courtside_data.http_service.HTTPService` class.
-Values are re-exported through :mod:`courtside_data.http_service` for
-callers that import them by that path.
+the entire :class:`~courtside_data.http.HTTPService` class.
+Values that are part of the public HTTP surface are re-exported through
+:mod:`courtside_data.http`.
 """
 
 from __future__ import annotations
@@ -31,8 +31,8 @@ _SELECTOR_CACHE_TTL = 600.0
 # does not apply to it), so cap it to keep a single request from sleeping
 # for the full jail duration.
 #
-# This import-time read is preserved for backward compatibility (tests
-# import ``_MAX_RETRY_AFTER_WAIT``); the live, call-time value used by
+# This import-time read supports tests that inspect ``_MAX_RETRY_AFTER_WAIT``;
+# the live, call-time value used by
 # :func:`courtside_data.http._retry._should_retry` is read via
 # :func:`courtside_data.config.max_retry_after_wait`.
 _MAX_RETRY_AFTER_WAIT = config.max_retry_after_wait()
@@ -44,7 +44,7 @@ _JAIL_THRESHOLD_SECONDS = 300.0  # 5 minutes
 # Env var that controls where the on-disk jail-state blob lives. Set to
 # an empty string to disable persistence (the test suite does this to
 # stay hermetic). Re-exported from :mod:`courtside_data.config` for tests
-# and for backward compatibility with the module-level constant name.
+# and for tests that assert the env-var name.
 _JAIL_STATE_PATH_ENV = config.BASKETBALL_REF_JAIL_STATE_PATH_ENV
 
 # Browser-like headers proven to avoid bot-flagging.

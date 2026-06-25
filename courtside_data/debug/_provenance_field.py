@@ -16,8 +16,6 @@ from pydantic_core import PydanticUndefined
 
 from courtside_data.debug._provenance_constants import (
     _DASH_OR_SENTINEL_VALUES,
-    PROVENANCE_CUSTOM_PARSER_METADATA_UNAVAILABLE,
-    PROVENANCE_CUSTOM_PARSER_VALUE,
     PROVENANCE_DEBUG_UNAVAILABLE,
     PROVENANCE_PARSER_EMITTED_VALUE,
     PROVENANCE_PARSER_OMITTED_PRESENT_COLUMN,
@@ -29,6 +27,8 @@ from courtside_data.debug._provenance_constants import (
     PROVENANCE_UNKNOWN,
     PROVENANCE_VALIDATOR_COERCED_TO_NONE,
     PROVENANCE_VALIDATOR_TRANSFORMED_VALUE,
+    PROVENANCE_WORKFLOW_PARSER_METADATA_UNAVAILABLE,
+    PROVENANCE_WORKFLOW_PARSER_VALUE,
     ProvenanceReason,
 )
 from courtside_data.debug._provenance_types import (
@@ -81,7 +81,7 @@ def build_field_provenance_records(
     validated_rows: Sequence[Any],
     kept_row_indices: Sequence[int],
     context: ProvenanceContext | None,
-    custom: bool,
+    workflow: bool,
 ) -> list[dict[str, Any]]:
     records: list[dict[str, Any]] = []
     snapshot = context.source_snapshot if context is not None else None
@@ -100,7 +100,7 @@ def build_field_provenance_records(
                     raw_row_index=raw_index,
                     validated=validated,
                     snapshot=snapshot,
-                    custom=custom,
+                    workflow=workflow,
                 )
             )
     return records
@@ -117,7 +117,7 @@ def _field_record(
     raw_row_index: int,
     validated: Any,
     snapshot: SourceTableSnapshot | None,
-    custom: bool,
+    workflow: bool,
 ) -> dict[str, Any]:
     aliases = accepted_input_keys(field_name, field_info)
     source_aliases = accepted_input_keys(field_name, field_info, include_field_name=False) or [field_name]
@@ -142,7 +142,7 @@ def _field_record(
         pydantic_input_present and final_value is not None and _value_changed(pydantic_input_value, final_value)
     )
     provenance_reason = _classify_field_reason(
-        custom=custom,
+        workflow=workflow,
         source_column_present=source_column_present,
         source_cell=source_cell,
         pydantic_input_present=pydantic_input_present,
@@ -182,7 +182,7 @@ def _field_record(
 
 def _classify_field_reason(
     *,
-    custom: bool,
+    workflow: bool,
     source_column_present: bool | None,
     source_cell: SourceCell | None,
     pydantic_input_present: bool,
@@ -192,12 +192,12 @@ def _classify_field_reason(
     validator_coerced_to_none: bool,
     validator_transformed: bool,
 ) -> ProvenanceReason:
-    if custom:
+    if workflow:
         if pydantic_input_present:
-            return PROVENANCE_CUSTOM_PARSER_VALUE
+            return PROVENANCE_WORKFLOW_PARSER_VALUE
         if schema_default_used:
             return PROVENANCE_SCHEMA_DEFAULT_USED
-        return PROVENANCE_CUSTOM_PARSER_METADATA_UNAVAILABLE
+        return PROVENANCE_WORKFLOW_PARSER_METADATA_UNAVAILABLE
 
     if source_column_present is False:
         return PROVENANCE_SOURCE_COLUMN_ABSENT

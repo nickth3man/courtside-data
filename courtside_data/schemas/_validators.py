@@ -4,8 +4,8 @@ These validators transform the raw string cells BR emits into typed Python
 values (``int``, ``float``, ``date``, enums, etc.). They are consumed by the
 ``Annotated[...]`` type aliases in ``_fields.py``.
 
-All names remain importable from ``courtside_data.schemas._fields`` for
-backward compatibility.
+The ``Annotated[...]`` type aliases in ``_fields.py`` are the public schema
+building blocks; these functions stay focused on cell coercion.
 """
 
 from __future__ import annotations
@@ -15,7 +15,7 @@ from datetime import UTC, date, datetime
 from decimal import Decimal
 from zoneinfo import ZoneInfo
 
-from courtside_data.data import (
+from courtside_data.domain import (
     LEAGUE_ABBREVIATIONS_TO_LEAGUE,
     LOCATION_ABBREVIATIONS_TO_LOCATION,
     OUTCOME_ABBREVIATIONS_TO_OUTCOME,

@@ -8,7 +8,7 @@ from typing import Any
 from parsel import Selector
 
 from courtside_data.parsing import rows
-from courtside_data.parsing.custom._common import (
+from courtside_data.parsing.workflow_parsers._common import (
     _player_season_box_score_rows_with_stats,
     _player_totals_rows_with_stats,
 )

@@ -3,8 +3,7 @@
 The concrete parsing modules import each other during startup, and the debug
 provenance layer imports ``courtside_data.parsing._table_shared`` very early.
 Keep this package facade lazy so those direct imports do not pull in the
-generic-table or workflow-compatibility dispatchers while provenance is still
-initialising.
+generic-table or workflow parser modules while provenance is still initialising.
 """
 
 from __future__ import annotations
@@ -12,12 +11,10 @@ from __future__ import annotations
 from importlib import import_module
 
 _LAZY_EXPORTS = {
-    "CustomEndpointHandler": ("courtside_data.parsing.custom", "CustomEndpointHandler"),
     "GenericEndpointHandler": ("courtside_data.parsing.generic", "GenericEndpointHandler"),
     "GenericTable": ("courtside_data.parsing.tables", "GenericTable"),
     "GenericTableRow": ("courtside_data.parsing.tables", "GenericTableRow"),
     "cell_text": ("courtside_data.parsing.cells", "cell_text"),
-    "dispatch_custom_endpoint": ("courtside_data.parsing.custom", "dispatch_custom_endpoint"),
     "division_value": ("courtside_data.parsing.cells", "division_value"),
     "extract_commented_table": ("courtside_data.parsing.tables", "extract_commented_table"),
     "extract_pattern_from_href": ("courtside_data.parsing.cells", "extract_pattern_from_href"),

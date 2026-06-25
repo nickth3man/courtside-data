@@ -21,7 +21,6 @@ class ProbeResult(TypedDict, total=False):
     failure_category: str
     error_type: str | None
     error_message: str | None
-    status_code: str | None  # deprecated alias for debug_status
     debug_status: str | None
     http_status_code: int | None
     http_reason: str | None
@@ -30,10 +29,8 @@ class ProbeResult(TypedDict, total=False):
     response_bytes: int | None
     redirect_count: int | None
     rate_limit_wait_ms: float | None
-    endpoint_group: str | None
     endpoint_domain: str | None
     endpoint_kind: str | None
-    endpoint_legacy_kind: str | None
     sample_case_id: str | None
     sample_params_source: str | None
     required_params_json: list[str] | None
@@ -85,7 +82,7 @@ class ProbeResult(TypedDict, total=False):
     provenance_dropped_row_count: int | None
     provenance_dropped_row_reason_counts_json: dict[str, int]
     provenance_unresolved_drop_count: int | None
-    custom_provenance_unavailable_count: int | None
+    workflow_provenance_unavailable_count: int | None
     trace_truncated_artifact_count: int | None
     source_sections_json: list[str]
     parsed_event_count: int | None
@@ -94,9 +91,7 @@ class ProbeResult(TypedDict, total=False):
     period_count: int | None
     score_event_count: int | None
     substitution_event_count: int | None
-    custom_diagnostics_json: dict[str, Any]
-    column_count: int | None  # deprecated; prefer output_field_count
-    columns_json: list[str]  # deprecated; prefer raw_columns_json / output_fields_json
+    workflow_diagnostics_json: dict[str, Any]
     first_row_preview_json: Any
     first_row_preview_truncated: bool | None
     first_row_preview_field_count: int | None

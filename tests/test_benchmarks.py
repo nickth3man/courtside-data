@@ -58,8 +58,8 @@ from pathlib import Path
 
 import pytest
 from courtside_data.client.courtside_client import CourtsideClient
-from courtside_data.data import OutputType, OutputWriteOption
 from courtside_data.debug import DebugTrace
+from courtside_data.domain import OutputType, OutputWriteOption
 from courtside_data.endpoints import ENDPOINTS
 from courtside_data.output.writers import FileOptions, JSONWriter, OutputOptions
 from courtside_data.parsing.generic import GenericEndpointHandler

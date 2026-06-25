@@ -17,7 +17,7 @@ from courtside_data.parsing import rows
 from courtside_data.parsing.generic import find_table
 
 if TYPE_CHECKING:
-    from courtside_data.parsing.custom._fetch import FetchFacade
+    from courtside_data.parsing.workflow_parsers._fetch import FetchFacade
 
 _FRIV_7_GAME_PLAYOFF_SERIES_OUTCOMES_PATH = "/friv/7-game-playoff-series-outcomes-22111.html"
 
@@ -55,7 +55,7 @@ def _friv_7_game_playoff_series_outcomes(facade: FetchFacade, table_id: str) -> 
             parser_name="friv_playoff_outcomes",
             rows=parsed_rows,
             source_sections=[f"table#{table_id}"],
-            custom_diagnostics={"table_id": table_id},
+            workflow_diagnostics={"table_id": table_id},
         )
     return parsed_rows
 

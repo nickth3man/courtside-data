@@ -32,8 +32,8 @@ from collections.abc import Sequence
 from typing import Any
 
 from courtside_data.client._runtime._flush import _flush_trace
-from courtside_data.data import OutputType, OutputWriteOption
 from courtside_data.debug import DebugTrace
+from courtside_data.domain import OutputType, OutputWriteOption
 from courtside_data.output.fields import format_value
 from courtside_data.output.service import OutputService
 from courtside_data.output.writers import CSVWriter, FileOptions, JSONWriter, OutputOptions

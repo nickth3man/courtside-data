@@ -17,7 +17,7 @@ from courtside_data.parsing import rows
 from courtside_data.parsing.generic import find_table
 
 if TYPE_CHECKING:
-    from courtside_data.parsing.custom._fetch import FetchFacade
+    from courtside_data.parsing.workflow_parsers._fetch import FetchFacade
 
 __all__ = ["season_awards_voting"]
 
@@ -37,6 +37,6 @@ def season_awards_voting(facade: FetchFacade, season_end_year: int, award: str) 
             parser_name="season_awards_voting",
             rows=parsed_rows,
             source_sections=[f"table#{table_id}"],
-            custom_diagnostics={"award_table_id": table_id},
+            workflow_diagnostics={"award_table_id": table_id},
         )
     return parsed_rows

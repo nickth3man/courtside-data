@@ -20,10 +20,10 @@ from typing import TYPE_CHECKING, Any
 
 from courtside_data.debug import current_debug_trace
 from courtside_data.debug._pipeline_events import emit_parser_diagnostics
-from courtside_data.parsing.custom._common import _schedule_rows_with_stats
+from courtside_data.parsing.workflow_parsers._common import _schedule_rows_with_stats
 
 if TYPE_CHECKING:
-    from courtside_data.parsing.custom._fetch import FetchFacade
+    from courtside_data.parsing.workflow_parsers._fetch import FetchFacade
 
 __all__ = ["schedule_for_month", "season_schedule"]
 
@@ -66,7 +66,7 @@ def _record_schedule_diagnostics(
         ignored_event_count=sum(ignored.values()) if isinstance(ignored, dict) else None,
         ignored_event_reason_counts=ignored if isinstance(ignored, dict) else None,
         ignored_row_reason_counts=ignored if isinstance(ignored, dict) else None,
-        custom_diagnostics={
+        workflow_diagnostics={
             "game_count": stats.get("game_count"),
             "postponed_game_count": stats.get("postponed_game_count"),
             "box_score_link_count": stats.get("box_score_link_count"),

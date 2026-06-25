@@ -6,7 +6,7 @@ from typing import Any
 
 from parsel import Selector
 
-from courtside_data.data import DIVISIONS_TO_CONFERENCES, Division
+from courtside_data.domain import DIVISIONS_TO_CONFERENCES, Division
 from courtside_data.parsing.cells import (
     cell_text,
     division_value,

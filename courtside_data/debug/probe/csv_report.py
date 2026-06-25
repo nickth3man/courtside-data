@@ -16,6 +16,8 @@ import orjson
 
 from courtside_data.debug.probe.report import _string_cell, _with_evaluation
 
+# Canonical endpoint/probe terminology uses endpoint_domain, endpoint_kind, and
+# workflow_* diagnostics.
 CSV_COLUMNS: tuple[str, ...] = (
     "endpoint",
     "params_json",
@@ -25,7 +27,6 @@ CSV_COLUMNS: tuple[str, ...] = (
     "failure_category",
     "error_type",
     "error_message",
-    "status_code",
     "debug_status",
     "http_status_code",
     "http_reason",
@@ -34,10 +35,8 @@ CSV_COLUMNS: tuple[str, ...] = (
     "response_bytes",
     "redirect_count",
     "rate_limit_wait_ms",
-    "endpoint_group",
     "endpoint_domain",
     "endpoint_kind",
-    "endpoint_legacy_kind",
     "sample_case_id",
     "sample_params_source",
     "required_params_json",
@@ -89,7 +88,7 @@ CSV_COLUMNS: tuple[str, ...] = (
     "provenance_dropped_row_count",
     "provenance_dropped_row_reason_counts_json",
     "provenance_unresolved_drop_count",
-    "custom_provenance_unavailable_count",
+    "workflow_provenance_unavailable_count",
     "trace_truncated_artifact_count",
     "source_sections_json",
     "parsed_event_count",
@@ -98,9 +97,7 @@ CSV_COLUMNS: tuple[str, ...] = (
     "period_count",
     "score_event_count",
     "substitution_event_count",
-    "custom_diagnostics_json",
-    "column_count",
-    "columns_json",
+    "workflow_diagnostics_json",
     "first_row_preview_json",
     "first_row_preview_truncated",
     "first_row_preview_field_count",
@@ -151,8 +148,7 @@ def _csv_row(entry: Mapping[str, Any]) -> dict[str, str]:
         "data_quality_warnings_json": "data_quality_warnings_json",
         "source_sections_json": "source_sections_json",
         "ignored_event_reason_counts_json": "ignored_event_reason_counts_json",
-        "custom_diagnostics_json": "custom_diagnostics_json",
-        "columns_json": "columns_json",
+        "workflow_diagnostics_json": "workflow_diagnostics_json",
         "first_row_preview_json": "first_row_preview_json",
     }
     json_defaults: dict[str, Any] = {
@@ -164,7 +160,7 @@ def _csv_row(entry: Mapping[str, Any]) -> dict[str, str]:
         "provenance_dropped_row_reason_counts_json": {},
         "data_quality_warnings_json": [],
         "ignored_event_reason_counts_json": {},
-        "custom_diagnostics_json": {},
+        "workflow_diagnostics_json": {},
     }
     bool_fields = {"ok", "works", "trace_log_exists", "first_row_preview_truncated", "drop_rate_warning"}
     row: dict[str, str] = {}

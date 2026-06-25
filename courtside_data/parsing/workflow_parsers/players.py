@@ -6,13 +6,13 @@ The four endpoints split into two families:
 
 * The per-game-log endpoints read ``/players/{id[0]}/{id}/gamelog/{year}``
   and pull either the ``player_game_log_reg`` or ``player_game_log_post``
-  table through :func:`courtside_data.parsing.custom._common._player_season_box_score_rows`.
+  table through :func:`courtside_data.parsing.workflow_parsers._common._player_season_box_score_rows`.
   Both raise :class:`InvalidPlayerAndSeason` when the page is missing
   (404) or the expected table isn't there.
 * The two league-wide season-totals endpoints read
   ``/leagues/NBA_{year}_totals.html`` and
   ``/leagues/NBA_{year}_advanced.html`` and run them through
-  :func:`courtside_data.parsing.custom._common._player_totals_rows`.
+  :func:`courtside_data.parsing.workflow_parsers._common._player_totals_rows`.
   The advanced variant tags every multi-team row with
   ``is_combined_totals`` for downstream filtering.
 """
@@ -24,15 +24,15 @@ from typing import TYPE_CHECKING, Any
 from parsel import Selector
 
 from courtside_data.errors import InvalidPlayerAndSeason
-from courtside_data.parsing.custom._common import (
+from courtside_data.parsing.generic import find_table
+from courtside_data.parsing.workflow_parsers._common import (
     _player_season_box_score_rows_with_stats,
     _player_totals_rows_with_stats,
 )
-from courtside_data.parsing.custom._diagnostics import emit_custom_endpoint_diagnostics
-from courtside_data.parsing.generic import find_table
+from courtside_data.parsing.workflow_parsers._diagnostics import emit_workflow_endpoint_diagnostics
 
 if TYPE_CHECKING:
-    from courtside_data.parsing.custom._fetch import FetchFacade
+    from courtside_data.parsing.workflow_parsers._fetch import FetchFacade
 
 __all__ = [
     "players_advanced_season_totals",
@@ -61,7 +61,7 @@ def _emit_player_game_log_diagnostics(
         "season_count": 1,
         "selected_table_id": table_id,
     }
-    emit_custom_endpoint_diagnostics(
+    emit_workflow_endpoint_diagnostics(
         parser_name=parser_name,
         endpoint_name=endpoint_name,
         rows=parsed_rows,
@@ -131,7 +131,7 @@ def players_advanced_season_totals(
     selector = facade.get_selector(url=url)
     table_id = "advanced"
     parsed_rows, stats = _player_totals_rows_with_stats(selector, table_id, include_combined=include_combined_values)
-    emit_custom_endpoint_diagnostics(
+    emit_workflow_endpoint_diagnostics(
         parser_name="players_advanced_season_totals",
         endpoint_name="players_advanced_season_totals",
         rows=parsed_rows,
@@ -150,7 +150,7 @@ def players_season_totals(facade: FetchFacade, season_end_year: int) -> list[dic
     selector = facade.get_selector(url=url)
     table_id = "totals_stats"
     parsed_rows, stats = _player_totals_rows_with_stats(selector, table_id, include_combined=False)
-    emit_custom_endpoint_diagnostics(
+    emit_workflow_endpoint_diagnostics(
         parser_name="players_season_totals",
         endpoint_name="players_season_totals",
         rows=parsed_rows,

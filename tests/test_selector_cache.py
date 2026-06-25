@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import httpx
-from courtside_data.http_service import HTTPService
+from courtside_data.http import HTTPService
 
 
 class SequencedTransport(httpx.BaseTransport):

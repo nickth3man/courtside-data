@@ -4,7 +4,7 @@ This test locks the **full output dict** of
 :func:`courtside_data.debug.probe.event_summary._summarize_debug_events` across a
 battery of debug envelopes that, between them, exercise every branch of the
 event-walk state machine: HTTP-response extraction, rate-limit accounting,
-endpoint dispatch, generic / custom / friv parse events, sentinel rows,
+endpoint dispatch, generic / workflow / friv parse events, sentinel rows,
 provenance summaries, the table-resolution ladder, validation success and
 failure, diagnostics, exceptions, post-loop endpoint-registry enrichment, and
 first-row preview.
@@ -60,7 +60,7 @@ def _generic_success() -> tuple[dict[str, Any], dict[str, Any]]:
                 "stage": "endpoint",
                 "event": "run_endpoint_start",
                 "status": "ok",
-                "attributes": {"row_model": "TeamRosterRow", "custom": False},
+                "attributes": {"row_model": "TeamRosterRow", "endpoint_kind": "generic_table"},
             },
             {"stage": "rate_limit", "event": "sleep", "status": "ok", "attributes": {"wait_seconds": 0.25}},
             {
@@ -136,7 +136,7 @@ def _generic_success_no_data() -> tuple[dict[str, Any], dict[str, Any]]:
     return debug, {"endpoint_name": "team_roster"}
 
 
-def _custom_play_by_play() -> tuple[dict[str, Any], dict[str, Any]]:
+def _workflow_play_by_play() -> tuple[dict[str, Any], dict[str, Any]]:
     debug = {
         "trace_id": "trace-pbp",
         "duration_ms": 30.0,
@@ -149,9 +149,9 @@ def _custom_play_by_play() -> tuple[dict[str, Any], dict[str, Any]]:
                 "stage": "endpoint",
                 "event": "run_endpoint_start",
                 "status": "ok",
-                "attributes": {"row_model": None, "custom": True},
+                "attributes": {"row_model": "PlayByPlayRow", "endpoint_kind": "workflow"},
             },
-            {"stage": "endpoint", "event": "custom_service_dispatch", "status": "ok", "attributes": {}},
+            {"stage": "endpoint", "event": "workflow_service_dispatch", "status": "ok", "attributes": {}},
             {
                 "stage": "http",
                 "event": "attempt_response",
@@ -178,7 +178,7 @@ def _custom_play_by_play() -> tuple[dict[str, Any], dict[str, Any]]:
                     "period_count": 4,
                     "score_event_count": 210,
                     "substitution_event_count": 40,
-                    "custom_diagnostics": {"selected_table_id": "pbp", "candidate_table_ids": ["pbp"]},
+                    "workflow_diagnostics": {"selected_table_id": "pbp", "candidate_table_ids": ["pbp"]},
                     "ignored_row_reason_counts": {"blank": 3},
                 },
             },
@@ -276,7 +276,7 @@ def _provenance() -> tuple[dict[str, Any], dict[str, Any]]:
             },
             {
                 "stage": "provenance",
-                "event": "custom_endpoint_provenance",
+                "event": "workflow_endpoint_provenance",
                 "status": "ok",
                 "attributes": {"source_cell_mapping_available": False},
             },
@@ -293,7 +293,7 @@ def _provenance() -> tuple[dict[str, Any], dict[str, Any]]:
                     "validator_transformed_field_count": 0,
                     "provenance_dropped_row_count": 1,
                     "provenance_unresolved_drop_count": 0,
-                    "custom_provenance_unavailable_count": 0,
+                    "workflow_provenance_unavailable_count": 0,
                     "provenance_reason_counts": {"source_value_present": 2},
                     "provenance_none_reason_counts": {"source_column_absent": 2},
                     "provenance_dropped_row_reason_counts": {"row_dropped_expected_reason": 1},
@@ -394,7 +394,7 @@ def _row_filtering() -> tuple[dict[str, Any], dict[str, Any]]:
 CASES: dict[str, Callable[[], tuple[dict[str, Any], dict[str, Any]]]] = {
     "generic_success": _generic_success,
     "generic_success_no_data": _generic_success_no_data,
-    "custom_play_by_play": _custom_play_by_play,
+    "workflow_play_by_play": _workflow_play_by_play,
     "validation_failed": _validation_failed,
     "http_error": _http_error,
     "provenance": _provenance,

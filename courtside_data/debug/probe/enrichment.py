@@ -14,17 +14,15 @@ from courtside_data.debug import DebugTrace
 from courtside_data.debug.probe.event_fields import _event_attributes
 from courtside_data.debug.probe.event_summary import _summarize_debug_events
 from courtside_data.debug.probe.models import SampleParamsInfo
-from courtside_data.debug.probe.samples import _ENDPOINT_GROUPS, _endpoint_domain, _endpoint_kind, _legacy_endpoint_kind
+from courtside_data.debug.probe.samples import _endpoint_domain, _endpoint_kind
 from courtside_data.endpoints import ENDPOINTS
 
 
 def _default_enrichment(*, endpoint_name: str, sample: SampleParamsInfo | None = None) -> dict[str, Any]:
     endpoint = ENDPOINTS.get(endpoint_name)
     enrichment: dict[str, Any] = {
-        "endpoint_group": _ENDPOINT_GROUPS.get(endpoint_name),
         "endpoint_domain": _endpoint_domain(endpoint),
         "endpoint_kind": _endpoint_kind(endpoint),
-        "endpoint_legacy_kind": _legacy_endpoint_kind(endpoint),
         "required_params_json": list(endpoint.params) if endpoint else [],
         "url_template": endpoint.path if endpoint else None,
         "sample_case_id": sample.case_id if sample else None,
@@ -43,9 +41,10 @@ def _default_enrichment(*, endpoint_name: str, sample: SampleParamsInfo | None =
         "provenance_reason_counts_json": {},
         "provenance_none_reason_counts_json": {},
         "provenance_dropped_row_reason_counts_json": {},
+        "workflow_provenance_unavailable_count": None,
         "source_sections_json": [],
         "ignored_event_reason_counts_json": {},
-        "custom_diagnostics_json": {},
+        "workflow_diagnostics_json": {},
         "trace_log_exists": False,
         "validation_status": "not_run" if endpoint and endpoint.row_model is None else None,
     }

@@ -28,7 +28,7 @@ roster = client.team_roster(season_end_year=2024, team_abbreviation="BOS")
 career = client.player_career_stats(player_identifier="jamesle01")
 
 # Save to CSV
-from courtside_data.data import OutputType
+from courtside_data import OutputType
 
 client.league_per_game_stats(
     season_end_year=2024,

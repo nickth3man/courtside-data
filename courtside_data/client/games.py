@@ -6,7 +6,7 @@ from __future__ import annotations
 from typing import Any
 
 from courtside_data.client._runner import _run_endpoint
-from courtside_data.data import OutputType, OutputWriteOption, Team
+from courtside_data.domain import OutputType, OutputWriteOption, Team
 
 
 def player_box_scores(

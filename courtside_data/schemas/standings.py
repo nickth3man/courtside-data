@@ -11,7 +11,7 @@ from __future__ import annotations
 
 from pydantic import Field
 
-from courtside_data.data import Conference, Division, Team
+from courtside_data.domain import Conference, Division, Team
 from courtside_data.schemas import register
 from courtside_data.schemas._base import BRRow
 from courtside_data.schemas._fields import BRInt, ConferenceField, StrOrNone

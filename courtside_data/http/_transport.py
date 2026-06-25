@@ -7,8 +7,8 @@ Owns the transport pieces for the ``courtside_data.http`` package:
 
 :class:`HTTPService` (in :mod:`courtside_data.http._service`) consumes
 :func:`build_client` via a late-bound indirection through
-:mod:`courtside_data.http_service` so the offline test suite's patch of
-``http_service.build_client`` flows through.
+:mod:`courtside_data.http` so the offline test suite's patch of
+``courtside_data.http.build_client`` flows through.
 """
 
 from __future__ import annotations

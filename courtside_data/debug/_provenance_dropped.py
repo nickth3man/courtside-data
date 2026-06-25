@@ -10,7 +10,7 @@ from __future__ import annotations
 from collections.abc import Iterable, Mapping, Sequence
 from typing import Any
 
-from courtside_data.client._pipelines._drop_reasons import (
+from courtside_data.client._pipelines.drop_reasons import (
     EXPECTED_DROP_REASONS,
     UNRESOLVED_DROP_REASONS,
     row_drop_reason,
@@ -30,7 +30,7 @@ def build_dropped_row_provenance_records(
     raw_rows: Sequence[Mapping[str, Any]],
     dropped: Sequence[Mapping[str, Any]],
     context: ProvenanceContext | None,
-    custom: bool,
+    workflow: bool,
 ) -> list[dict[str, Any]]:
     snapshot = context.source_snapshot if context is not None else None
     records: list[dict[str, Any]] = []
@@ -66,7 +66,7 @@ def build_dropped_row_provenance_records(
                 "fields_involved": fields,
                 "raw_values": raw_values,
                 "source_cells": source_cells,
-                "custom": custom,
+                "workflow": workflow,
                 "provenance_reason": (
                     PROVENANCE_ROW_DROPPED_UNRESOLVED_VALIDATION_ERROR
                     if unresolved

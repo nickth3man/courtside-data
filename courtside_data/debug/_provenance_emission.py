@@ -13,9 +13,9 @@ from collections.abc import Mapping, Sequence
 from typing import Any
 
 from courtside_data.debug._provenance_constants import (
-    PROVENANCE_CUSTOM_PARSER_METADATA_UNAVAILABLE,
     PROVENANCE_PARSER_OMITTED_PRESENT_COLUMN,
     PROVENANCE_UNKNOWN,
+    PROVENANCE_WORKFLOW_PARSER_METADATA_UNAVAILABLE,
 )
 from courtside_data.debug._provenance_context import _SAMPLE_LIMIT
 from courtside_data.debug.trace import DebugTrace
@@ -78,10 +78,10 @@ def summarize_provenance(
         "provenance_unresolved_drop_count": sum(
             1 for record in dropped_records if record.get("unresolved_drop") is True
         ),
-        "custom_provenance_unavailable_count": sum(
+        "workflow_provenance_unavailable_count": sum(
             1
             for record in field_records
-            if record.get("provenance_reason") == PROVENANCE_CUSTOM_PARSER_METADATA_UNAVAILABLE
+            if record.get("provenance_reason") == PROVENANCE_WORKFLOW_PARSER_METADATA_UNAVAILABLE
         ),
     }
 

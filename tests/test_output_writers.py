@@ -12,7 +12,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 import pytest
-from courtside_data.data import TEAM_ABBREVIATIONS_TO_TEAM, OutputType, OutputWriteOption
+from courtside_data.domain import TEAM_ABBREVIATIONS_TO_TEAM, OutputType, OutputWriteOption
 from courtside_data.errors import InvalidTeam
 from courtside_data.output.fields import format_value
 from courtside_data.output.service import OutputService

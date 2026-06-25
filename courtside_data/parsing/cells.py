@@ -14,7 +14,7 @@ from urllib.parse import parse_qs, urlparse
 
 from parsel import Selector
 
-from courtside_data.data import (
+from courtside_data.domain import (
     TEAM_ABBREVIATIONS_TO_TEAM,
     TEAM_NAME_TO_TEAM,
     TEAM_TO_TEAM_ABBREVIATION,

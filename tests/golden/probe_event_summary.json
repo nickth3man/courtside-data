@@ -1,166 +1,13 @@
 {
-  "custom_play_by_play": {
-    "candidate_table_ids_json": [
-      "pbp"
-    ],
-    "column_count": 2,
-    "columns_json": [
-      "description",
-      "period"
-    ],
-    "content_type": "text/html",
-    "custom_diagnostics_json": {
-      "candidate_table_ids": [
-        "pbp"
-      ],
-      "ignored_row_reason_counts": {
-        "blank": 3
-      },
-      "selected_table_id": "pbp",
-      "sentinel_row_count": 2,
-      "sentinel_row_types": {
-        "quarter_header": 2
-      }
-    },
-    "custom_provenance_unavailable_count": null,
-    "debug_status": "ok",
-    "dropped_row_count": null,
-    "dropped_row_reason_counts_json": {},
-    "duration_ms": 30.0,
-    "endpoint_domain": "games",
-    "endpoint_group": "games",
-    "endpoint_kind": "workflow",
-    "endpoint_legacy_kind": "custom",
-    "error_event_count": 0,
-    "error_message": null,
-    "error_type": null,
-    "event_count": 5,
-    "failed_stage": null,
-    "first_row_preview_field_count": 2,
-    "first_row_preview_json": {
-      "description": "made shot",
-      "period": 1
-    },
-    "first_row_preview_truncated": false,
-    "first_row_total_field_count": 2,
-    "http_reason": "OK",
-    "http_status_code": 200,
-    "ignored_event_count": 12,
-    "ignored_event_reason_counts_json": {
-      "unparseable": 12
-    },
-    "last_event": "validation/sentinel_rows_observed",
-    "last_successful_stage": "validation",
-    "metrics": {
-      "debug.enabled": true,
-      "duration_ms.row_parse": 120.0,
-      "duration_ms.total": 30.0,
-      "response_bytes": 90000
-    },
-    "model_name": "PlayByPlayRow",
-    "output_field_count": 2,
-    "output_fields_json": [
-      "description",
-      "period"
-    ],
-    "output_row_count": 1,
-    "output_type": "list[PlayByPlayRow]",
-    "parsed_event_count": 450,
-    "parsed_field_count": null,
-    "parsed_fields_json": [],
-    "parsed_row_count": null,
-    "parser_missed_column_count": null,
-    "parser_name": "play_by_play",
-    "period_count": 4,
-    "provenance_dropped_row_count": null,
-    "provenance_dropped_row_reason_counts_json": {},
-    "provenance_field_count": null,
-    "provenance_final_none_count": null,
-    "provenance_none_reason_counts_json": {},
-    "provenance_reason_counts_json": {},
-    "provenance_unresolved_drop_count": null,
-    "rate_limit_wait_ms": null,
-    "raw_column_count": null,
-    "raw_columns_json": [],
-    "raw_row_count": null,
-    "raw_table_column_count": null,
-    "raw_table_row_count": null,
-    "redirect_count": 0,
-    "required_params_json": [
-      "home_team",
-      "day",
-      "month",
-      "year"
-    ],
-    "resolved_url": "https://www.basketball-reference.com/boxscores/pbp/x.html",
-    "response_bytes": 90000,
-    "row_count": 1,
-    "schema_defaulted_field_count": null,
-    "score_event_count": 210,
-    "selected_table_id": "pbp",
-    "source_sections_json": [
-      "q1",
-      "q2",
-      "q3",
-      "q4"
-    ],
-    "stage_counts": {
-      "parse": 1
-    },
-    "status_code": "ok",
-    "substitution_event_count": 40,
-    "trace_id": "trace-pbp",
-    "trace_log_exists": false,
-    "trace_log_path": null,
-    "trace_log_size_bytes": null,
-    "traceback_hash": null,
-    "traceback_tail": null,
-    "url_template": "/boxscores/pbp/",
-    "validated_field_count": 9,
-    "validated_fields_json": [
-      "away_score",
-      "away_team",
-      "description",
-      "home_score",
-      "home_team",
-      "period",
-      "period_type",
-      "relevant_team",
-      "remaining_seconds_in_period"
-    ],
-    "validated_row_count": null,
-    "validation_error_count": null,
-    "validation_error_paths_json": [],
-    "validation_status": "unknown",
-    "validator_coerced_field_count": null,
-    "validator_transformed_field_count": null,
-    "warning_count": 0
-  },
   "empty_events": {
     "candidate_table_ids_json": [],
-    "column_count": 9,
-    "columns_json": [
-      "birth_date",
-      "college",
-      "flag",
-      "height",
-      "number",
-      "player",
-      "positions",
-      "weight",
-      "years_experience"
-    ],
     "content_type": null,
-    "custom_diagnostics_json": {},
-    "custom_provenance_unavailable_count": null,
     "debug_status": "ok",
     "dropped_row_count": null,
     "dropped_row_reason_counts_json": {},
     "duration_ms": 1.0,
     "endpoint_domain": "teams",
-    "endpoint_group": "teams",
     "endpoint_kind": "generic_table",
-    "endpoint_legacy_kind": "generic",
     "error_event_count": 0,
     "error_message": null,
     "error_type": null,
@@ -227,7 +74,6 @@
     "selected_table_id": null,
     "source_sections_json": [],
     "stage_counts": {},
-    "status_code": "ok",
     "substitution_event_count": null,
     "trace_id": "trace-empty",
     "trace_log_exists": false,
@@ -254,7 +100,9 @@
     "validation_status": "unknown",
     "validator_coerced_field_count": null,
     "validator_transformed_field_count": null,
-    "warning_count": 0
+    "warning_count": 0,
+    "workflow_diagnostics_json": {},
+    "workflow_provenance_unavailable_count": null
   },
   "friv_with_fallback_table": {
     "candidate_table_ids_json": [
@@ -262,30 +110,13 @@
       "secondary",
       "commented_one"
     ],
-    "column_count": 10,
-    "columns_json": [
-      "aggregate",
-      "games_played",
-      "games_remaining",
-      "gameslist",
-      "gameslist_display",
-      "pattern",
-      "pattern_from_spans",
-      "patterns_agree",
-      "record",
-      "wl"
-    ],
     "content_type": null,
-    "custom_diagnostics_json": {},
-    "custom_provenance_unavailable_count": null,
     "debug_status": "ok",
     "dropped_row_count": null,
     "dropped_row_reason_counts_json": {},
     "duration_ms": 9.0,
     "endpoint_domain": "playoffs",
-    "endpoint_group": "playoffs",
     "endpoint_kind": "workflow",
-    "endpoint_legacy_kind": "custom",
     "error_event_count": 0,
     "error_message": null,
     "error_type": null,
@@ -352,7 +183,6 @@
     "stage_counts": {
       "parse": 1
     },
-    "status_code": "ok",
     "substitution_event_count": null,
     "trace_id": "trace-friv",
     "trace_log_exists": false,
@@ -380,29 +210,21 @@
     "validation_status": "unknown",
     "validator_coerced_field_count": null,
     "validator_transformed_field_count": null,
-    "warning_count": 1
+    "warning_count": 1,
+    "workflow_diagnostics_json": {},
+    "workflow_provenance_unavailable_count": null
   },
   "generic_success": {
     "candidate_table_ids_json": [
       "roster"
     ],
-    "column_count": 3,
-    "columns_json": [
-      "player",
-      "age",
-      "pts"
-    ],
     "content_type": "text/html; charset=utf-8",
-    "custom_diagnostics_json": {},
-    "custom_provenance_unavailable_count": null,
     "debug_status": "ok",
     "dropped_row_count": null,
     "dropped_row_reason_counts_json": {},
     "duration_ms": 12.5,
     "endpoint_domain": "teams",
-    "endpoint_group": "teams",
     "endpoint_kind": "generic_table",
-    "endpoint_legacy_kind": "generic",
     "error_event_count": 0,
     "error_message": null,
     "error_type": null,
@@ -485,7 +307,6 @@
       "runner": 1,
       "validation": 1
     },
-    "status_code": "ok",
     "substitution_event_count": null,
     "trace_id": "trace-success",
     "trace_log_exists": false,
@@ -512,29 +333,21 @@
     "validation_status": "passed",
     "validator_coerced_field_count": null,
     "validator_transformed_field_count": null,
-    "warning_count": 0
+    "warning_count": 0,
+    "workflow_diagnostics_json": {},
+    "workflow_provenance_unavailable_count": null
   },
   "generic_success_no_data": {
     "candidate_table_ids_json": [
       "roster"
     ],
-    "column_count": 3,
-    "columns_json": [
-      "player",
-      "age",
-      "pts"
-    ],
     "content_type": "text/html; charset=utf-8",
-    "custom_diagnostics_json": {},
-    "custom_provenance_unavailable_count": null,
     "debug_status": "ok",
     "dropped_row_count": null,
     "dropped_row_reason_counts_json": {},
     "duration_ms": 12.5,
     "endpoint_domain": "teams",
-    "endpoint_group": "teams",
     "endpoint_kind": "generic_table",
-    "endpoint_legacy_kind": "generic",
     "error_event_count": 0,
     "error_message": null,
     "error_type": null,
@@ -619,7 +432,6 @@
       "runner": 1,
       "validation": 1
     },
-    "status_code": "ok",
     "substitution_event_count": null,
     "trace_id": "trace-success",
     "trace_log_exists": false,
@@ -646,33 +458,19 @@
     "validation_status": "passed",
     "validator_coerced_field_count": null,
     "validator_transformed_field_count": null,
-    "warning_count": 0
+    "warning_count": 0,
+    "workflow_diagnostics_json": {},
+    "workflow_provenance_unavailable_count": null
   },
   "http_error": {
     "candidate_table_ids_json": [],
-    "column_count": 9,
-    "columns_json": [
-      "birth_date",
-      "college",
-      "flag",
-      "height",
-      "number",
-      "player",
-      "positions",
-      "weight",
-      "years_experience"
-    ],
     "content_type": null,
-    "custom_diagnostics_json": {},
-    "custom_provenance_unavailable_count": null,
     "debug_status": "error",
     "dropped_row_count": null,
     "dropped_row_reason_counts_json": {},
     "duration_ms": 4.0,
     "endpoint_domain": "teams",
-    "endpoint_group": "teams",
     "endpoint_kind": "generic_table",
-    "endpoint_legacy_kind": "generic",
     "error_event_count": 2,
     "error_message": "Invalid team ATL",
     "error_type": "InvalidTeam",
@@ -742,7 +540,6 @@
     "stage_counts": {
       "http": 3
     },
-    "status_code": "error",
     "substitution_event_count": null,
     "trace_id": "trace-http",
     "trace_log_exists": false,
@@ -769,33 +566,19 @@
     "validation_status": "unknown",
     "validator_coerced_field_count": null,
     "validator_transformed_field_count": null,
-    "warning_count": 0
+    "warning_count": 0,
+    "workflow_diagnostics_json": {},
+    "workflow_provenance_unavailable_count": null
   },
   "provenance": {
     "candidate_table_ids_json": [],
-    "column_count": 9,
-    "columns_json": [
-      "birth_date",
-      "college",
-      "flag",
-      "height",
-      "number",
-      "player",
-      "positions",
-      "weight",
-      "years_experience"
-    ],
     "content_type": null,
-    "custom_diagnostics_json": {},
-    "custom_provenance_unavailable_count": 1,
     "debug_status": "ok",
     "dropped_row_count": null,
     "dropped_row_reason_counts_json": {},
     "duration_ms": 15.0,
     "endpoint_domain": "teams",
-    "endpoint_group": "teams",
     "endpoint_kind": "generic_table",
-    "endpoint_legacy_kind": "generic",
     "error_event_count": 0,
     "error_message": null,
     "error_type": null,
@@ -870,7 +653,6 @@
     "stage_counts": {
       "provenance": 1
     },
-    "status_code": "ok",
     "substitution_event_count": null,
     "trace_id": "trace-prov",
     "trace_log_exists": false,
@@ -897,18 +679,13 @@
     "validation_status": "unknown",
     "validator_coerced_field_count": 1,
     "validator_transformed_field_count": 0,
-    "warning_count": 0
+    "warning_count": 0,
+    "workflow_diagnostics_json": {},
+    "workflow_provenance_unavailable_count": 1
   },
   "row_filtering": {
     "candidate_table_ids_json": [],
-    "column_count": 0,
-    "columns_json": [
-      "a",
-      "b"
-    ],
     "content_type": null,
-    "custom_diagnostics_json": {},
-    "custom_provenance_unavailable_count": null,
     "debug_status": "ok",
     "dropped_row_count": 3,
     "dropped_row_reason_counts_json": {
@@ -916,9 +693,7 @@
     },
     "duration_ms": 5.0,
     "endpoint_domain": "teams",
-    "endpoint_group": "teams",
     "endpoint_kind": "generic_table",
-    "endpoint_legacy_kind": "generic",
     "error_event_count": 0,
     "error_message": null,
     "error_type": null,
@@ -991,7 +766,6 @@
     "selected_table_id": null,
     "source_sections_json": [],
     "stage_counts": {},
-    "status_code": "ok",
     "substitution_event_count": null,
     "trace_id": "trace-filter",
     "trace_log_exists": false,
@@ -1018,21 +792,15 @@
     "validation_status": "passed",
     "validator_coerced_field_count": null,
     "validator_transformed_field_count": null,
-    "warning_count": 0
+    "warning_count": 0,
+    "workflow_diagnostics_json": {},
+    "workflow_provenance_unavailable_count": null
   },
   "unknown_endpoint": {
     "candidate_table_ids_json": [
       "roster"
     ],
-    "column_count": 3,
-    "columns_json": [
-      "player",
-      "age",
-      "pts"
-    ],
     "content_type": "text/html; charset=utf-8",
-    "custom_diagnostics_json": {},
-    "custom_provenance_unavailable_count": null,
     "debug_status": "ok",
     "dropped_row_count": null,
     "dropped_row_reason_counts_json": {},
@@ -1111,7 +879,6 @@
       "runner": 1,
       "validation": 1
     },
-    "status_code": "ok",
     "substitution_event_count": null,
     "trace_id": "trace-success",
     "trace_log_exists": false,
@@ -1127,55 +894,19 @@
     "validation_status": "passed",
     "validator_coerced_field_count": null,
     "validator_transformed_field_count": null,
-    "warning_count": 0
+    "warning_count": 0,
+    "workflow_diagnostics_json": {},
+    "workflow_provenance_unavailable_count": null
   },
   "validation_failed": {
     "candidate_table_ids_json": [],
-    "column_count": 31,
-    "columns_json": [
-      "age",
-      "assists_per_game",
-      "attempted_field_goals_per_game",
-      "attempted_free_throws_per_game",
-      "attempted_three_point_field_goals_per_game",
-      "attempted_two_point_field_goals_per_game",
-      "awards",
-      "blocks_per_game",
-      "comp_name_abbr",
-      "defensive_rebounds_per_game",
-      "effective_field_goal_percentage",
-      "field_goal_percentage",
-      "free_throw_percentage",
-      "games_played",
-      "games_started",
-      "made_field_goals_per_game",
-      "made_free_throws_per_game",
-      "made_three_point_field_goals_per_game",
-      "made_two_point_field_goals_per_game",
-      "minutes_played_per_game",
-      "offensive_rebounds_per_game",
-      "personal_fouls_per_game",
-      "points_per_game",
-      "positions",
-      "season",
-      "steals_per_game",
-      "team_name_abbr",
-      "three_point_field_goal_percentage",
-      "total_rebounds_per_game",
-      "turnovers_per_game",
-      "two_point_field_goal_percentage"
-    ],
     "content_type": null,
-    "custom_diagnostics_json": {},
-    "custom_provenance_unavailable_count": null,
     "debug_status": "error",
     "dropped_row_count": null,
     "dropped_row_reason_counts_json": {},
     "duration_ms": 8.25,
     "endpoint_domain": "players",
-    "endpoint_group": "players",
     "endpoint_kind": "generic_table",
-    "endpoint_legacy_kind": "generic",
     "error_event_count": 2,
     "error_message": "missing field fg3_pct",
     "error_type": "SchemaDriftError",
@@ -1266,7 +997,6 @@
     "stage_counts": {
       "validation": 2
     },
-    "status_code": "error",
     "substitution_event_count": null,
     "trace_id": "trace-validation",
     "trace_log_exists": false,
@@ -1317,6 +1047,137 @@
     "validation_status": "failed",
     "validator_coerced_field_count": null,
     "validator_transformed_field_count": null,
-    "warning_count": 0
+    "warning_count": 0,
+    "workflow_diagnostics_json": {},
+    "workflow_provenance_unavailable_count": null
+  },
+  "workflow_play_by_play": {
+    "candidate_table_ids_json": [
+      "pbp"
+    ],
+    "content_type": "text/html",
+    "debug_status": "ok",
+    "dropped_row_count": null,
+    "dropped_row_reason_counts_json": {},
+    "duration_ms": 30.0,
+    "endpoint_domain": "games",
+    "endpoint_kind": "workflow",
+    "error_event_count": 0,
+    "error_message": null,
+    "error_type": null,
+    "event_count": 5,
+    "failed_stage": null,
+    "first_row_preview_field_count": 2,
+    "first_row_preview_json": {
+      "description": "made shot",
+      "period": 1
+    },
+    "first_row_preview_truncated": false,
+    "first_row_total_field_count": 2,
+    "http_reason": "OK",
+    "http_status_code": 200,
+    "ignored_event_count": 12,
+    "ignored_event_reason_counts_json": {
+      "unparseable": 12
+    },
+    "last_event": "validation/sentinel_rows_observed",
+    "last_successful_stage": "validation",
+    "metrics": {
+      "debug.enabled": true,
+      "duration_ms.row_parse": 120.0,
+      "duration_ms.total": 30.0,
+      "response_bytes": 90000
+    },
+    "model_name": "PlayByPlayRow",
+    "output_field_count": 2,
+    "output_fields_json": [
+      "description",
+      "period"
+    ],
+    "output_row_count": 1,
+    "output_type": "list[PlayByPlayRow]",
+    "parsed_event_count": 450,
+    "parsed_field_count": null,
+    "parsed_fields_json": [],
+    "parsed_row_count": null,
+    "parser_missed_column_count": null,
+    "parser_name": "play_by_play",
+    "period_count": 4,
+    "provenance_dropped_row_count": null,
+    "provenance_dropped_row_reason_counts_json": {},
+    "provenance_field_count": null,
+    "provenance_final_none_count": null,
+    "provenance_none_reason_counts_json": {},
+    "provenance_reason_counts_json": {},
+    "provenance_unresolved_drop_count": null,
+    "rate_limit_wait_ms": null,
+    "raw_column_count": null,
+    "raw_columns_json": [],
+    "raw_row_count": null,
+    "raw_table_column_count": null,
+    "raw_table_row_count": null,
+    "redirect_count": 0,
+    "required_params_json": [
+      "home_team",
+      "day",
+      "month",
+      "year"
+    ],
+    "resolved_url": "https://www.basketball-reference.com/boxscores/pbp/x.html",
+    "response_bytes": 90000,
+    "row_count": 1,
+    "schema_defaulted_field_count": null,
+    "score_event_count": 210,
+    "selected_table_id": "pbp",
+    "source_sections_json": [
+      "q1",
+      "q2",
+      "q3",
+      "q4"
+    ],
+    "stage_counts": {
+      "parse": 1
+    },
+    "substitution_event_count": 40,
+    "trace_id": "trace-pbp",
+    "trace_log_exists": false,
+    "trace_log_path": null,
+    "trace_log_size_bytes": null,
+    "traceback_hash": null,
+    "traceback_tail": null,
+    "url_template": "/boxscores/pbp/",
+    "validated_field_count": 9,
+    "validated_fields_json": [
+      "away_score",
+      "away_team",
+      "description",
+      "home_score",
+      "home_team",
+      "period",
+      "period_type",
+      "relevant_team",
+      "remaining_seconds_in_period"
+    ],
+    "validated_row_count": null,
+    "validation_error_count": null,
+    "validation_error_paths_json": [],
+    "validation_status": "unknown",
+    "validator_coerced_field_count": null,
+    "validator_transformed_field_count": null,
+    "warning_count": 0,
+    "workflow_diagnostics_json": {
+      "candidate_table_ids": [
+        "pbp"
+      ],
+      "ignored_row_reason_counts": {
+        "blank": 3
+      },
+      "selected_table_id": "pbp",
+      "sentinel_row_count": 2,
+      "sentinel_row_types": {
+        "quarter_header": 2
+      }
+    },
+    "workflow_provenance_unavailable_count": null
   }
 }
