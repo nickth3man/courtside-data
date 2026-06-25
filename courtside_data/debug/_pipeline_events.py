@@ -66,7 +66,7 @@ def record_custom_parser_parsed(
     score_event_count: int | None = None,
     substitution_event_count: int | None = None,
 ) -> None:
-    """Record parser-specific diagnostics for non-table custom endpoints."""
+    """Record parser-specific diagnostics for workflow parsers."""
     attributes: dict[str, Any] = {
         "parser_name": parser_name,
         "source_sections": [str(section) for section in source_sections],

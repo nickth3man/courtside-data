@@ -35,11 +35,10 @@ class EndpointKind(StrEnum):
     """Top-level classification of how an endpoint is implemented."""
 
     GENERIC_TABLE = "generic_table"
-    """Standard ``fetch_table`` pipeline (``custom=False``)."""
+    """Standard ``GenericEndpointHandler.fetch_table`` pipeline."""
 
     WORKFLOW = "workflow"
-    """Bespoke multi-step request handled by a dedicated ``HTTPService`` method
-    (``custom=True``)."""
+    """Bespoke multi-step request handled by the workflow executor."""
 
 
 class EndpointDomain(StrEnum):

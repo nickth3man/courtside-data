@@ -1,6 +1,6 @@
-"""Public fetch surface for bespoke (``custom=True``) endpoint handlers.
+"""Public fetch surface for workflow parser helpers.
 
-The :class:`FetchFacade` is the ONLY surface bespoke endpoint handlers are
+The :class:`FetchFacade` is the ONLY surface workflow parser helpers are
 allowed to use to talk to :class:`~courtside_data.http_service.HTTPService`.
 Reaching into ``http._url`` / ``http._get_selector`` / ``http._get``
 directly (or reading ``HTTPService.BASE_URL`` from the transport class) is a

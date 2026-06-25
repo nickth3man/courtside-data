@@ -1,8 +1,9 @@
-"""Lightweight workflow descriptors for bespoke endpoint metadata.
+"""Workflow descriptors consumed by the executable workflow engine.
 
-These value objects document the current shape of ``EndpointKind.WORKFLOW``
-handlers. They are intentionally non-executable: runtime dispatch still lives
-in the custom parsing layer.
+``EndpointKind.WORKFLOW`` registrations declare a ``WorkflowSpec`` whose step
+ids are executed, in order, by ``courtside_data.parsing.workflows``. The
+descriptor stays lightweight; concrete step implementations live in the
+workflow executor's native handler map.
 """
 
 from __future__ import annotations
@@ -12,7 +13,7 @@ from dataclasses import dataclass
 
 @dataclass(frozen=True, slots=True)
 class WorkflowStep:
-    """One documented step in a bespoke endpoint workflow."""
+    """One named step in a workflow endpoint."""
 
     id: str
     kind: str
@@ -24,7 +25,7 @@ class WorkflowStep:
 
 @dataclass(frozen=True, slots=True)
 class WorkflowSpec:
-    """Documentation-only workflow shape for a bespoke endpoint."""
+    """Ordered executable shape for a workflow endpoint."""
 
     steps: tuple[WorkflowStep, ...]
     result: str = "rows"

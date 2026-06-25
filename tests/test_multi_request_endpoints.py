@@ -1,4 +1,4 @@
-"""Offline tests for multi-fetch custom endpoints (former e2e coverage).
+"""Offline tests for multi-fetch workflow endpoints (former e2e coverage).
 
 Exercises ``season_schedule``, ``play_by_play``, ``team_box_scores``,
 ``standings_by_date``, and ``search`` through the fixture replay transport

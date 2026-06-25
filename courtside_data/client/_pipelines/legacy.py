@@ -1,7 +1,7 @@
 """Dict-based coerce/validate pipeline.
 
-Used by :func:`courtside_data.client._runner._execute` for endpoints
-without a Pydantic row model (``row_model is None``). Coerces raw
+Used by :func:`courtside_data.client._runner._execute` when an endpoint
+intentionally omits a Pydantic row model. Coerces raw
 ``list[dict]`` values through
 :func:`courtside_data.output.field_types.coerce_data` and (when enabled)
 runs the row validator over the result.

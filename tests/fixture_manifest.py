@@ -47,15 +47,15 @@ ERROR_CASES: list[Case] = _ERROR_CASES
 
 
 MULTI_REQUEST_ENDPOINTS: frozenset[str] = _MULTI_REQUEST_NAMES
-"""Custom endpoints needing a multi-URL map."""
+"""Workflow endpoints needing a multi-URL fixture map."""
 
 
 GENERIC_CASES: list[Case] = [case for case in ALL_CASES if case.endpoint_name not in MULTI_REQUEST_ENDPOINTS]
-"""``ALL_CASES`` minus the multi-request custom endpoints."""
+"""``ALL_CASES`` minus the multi-request workflow endpoints."""
 
 
 MULTI_REQUEST_CASES: list[Case] = [case for case in ALL_CASES if case.endpoint_name in MULTI_REQUEST_ENDPOINTS]
-"""Every resolved multi-fetch custom endpoint case."""
+"""Every resolved multi-fetch workflow endpoint case."""
 
 
 TIER1_EXCLUDED_CASE_IDS: frozenset[str] = frozenset()

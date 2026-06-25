@@ -3,7 +3,7 @@
 Pure functions with no dependency on :class:`HTTPService` state. They take
 parsel ``Selector`` objects or plain values and return parsed data. Used by
 :mod:`courtside_data.parsing.rows` for higher-level row parsers and by the
-custom endpoints module directly.
+workflow parser modules directly.
 """
 
 from __future__ import annotations

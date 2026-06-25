@@ -30,7 +30,7 @@ if TYPE_CHECKING:
 
 @dataclass(frozen=True, slots=True)
 class EndpointSpec:
-    """Spec for one generic table endpoint.
+    """Registry spec for one endpoint.
 
     Table lookup order in ``HTTPService.fetch_table``:
     1. ``table_id`` via a CSS ``table#<id>`` query (if set),
@@ -51,8 +51,8 @@ class EndpointSpec:
     transaction_list_fallback: bool = False
     exclude_summary_rows: bool = False
     # If set, the runner validates each extracted row with this BRRow subclass
-    # via the Pydantic pipeline. Endpoints with row_model=None use the
-    # dict-based coerce_data/validate_rows path instead.
+    # via the Pydantic pipeline. A missing row model deliberately selects the
+    # compatibility dict-based coerce_data/validate_rows path instead.
     row_model: type[BRRow] | None = None
     # When set, fetch_table() projects each row down to exactly these keys
     # (missing keys become empty strings).
@@ -82,9 +82,9 @@ class EndpointSpec:
     # annotated incrementally; ``None`` means "not yet described" and is
     # treated as :attr:`EndpointKind.GENERIC_TABLE` by :attr:`kind`.
     metadata: EndpointMetadata | None = None
-    # Optional documentation-only workflow descriptor for workflow endpoint
-    # handlers. Dispatch consumes ``metadata.kind`` (not this field) to select
-    # the workflow executor; the spec describes the steps the executor runs.
+    # Optional executable workflow descriptor. Dispatch consumes
+    # ``metadata.kind`` to select the workflow executor, then the executor
+    # walks this ordered step spec.
     workflow: WorkflowSpec | None = None
 
     def error_mappings(self, params: dict[str, object]) -> dict[int, Callable[[], Exception]] | None:

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 from courtside_data.endpoints import ENDPOINTS, EndpointDomain, EndpointFeature, EndpointKind
-from courtside_data.endpoints._custom import CUSTOM_ENDPOINTS
+from courtside_data.endpoints._custom import WORKFLOW_ENDPOINTS
 from courtside_data.endpoints._draft_awards_leaders import DRAFT_AWARDS_LEADERS_ENDPOINTS
 from courtside_data.endpoints._league import LEAGUE_ENDPOINTS
 from courtside_data.endpoints._players import PLAYER_ENDPOINTS
@@ -27,7 +27,7 @@ _EXPECTED_DOMAINS = {
     **dict.fromkeys(DRAFT_AWARDS_LEADERS_ENDPOINTS, EndpointDomain.DRAFT_AWARDS_LEADERS),
     **dict.fromkeys(PLAYER_ENDPOINTS, EndpointDomain.PLAYERS),
     **dict.fromkeys(TEAM_ENDPOINTS, EndpointDomain.TEAMS),
-    **dict.fromkeys(CUSTOM_ENDPOINTS, EndpointDomain.GAMES),
+    **dict.fromkeys(WORKFLOW_ENDPOINTS, EndpointDomain.GAMES),
 }
 
 

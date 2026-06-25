@@ -5,6 +5,8 @@ repo_name: nickth3man/courtside-data
 repo_url: https://github.com/nickth3man/courtside-data
 nav:
   - Home: index.md
+  - Architecture:
+      - Endpoint Runtime: architecture/endpoints.md
   - API:
       - Schemas: api/schemas.md
       - Endpoints: api/endpoints.md

@@ -20,7 +20,7 @@ The plumbing steps are split across :mod:`courtside_data.client._runtime`:
 - :mod:`~courtside_data.client._runtime._locator` — service singleton
   + per-call override
 - :mod:`~courtside_data.client._runtime._coerce` — typed-param
-  coercion for custom endpoints
+  coercion for workflow endpoints
 - :mod:`~courtside_data.client._runtime._output` — output
   formatting and debug-envelope wrapping
 - :mod:`~courtside_data.client._runtime._flush` — best-effort,

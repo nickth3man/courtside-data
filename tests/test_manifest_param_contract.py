@@ -4,10 +4,11 @@ This test is a regression canary for two classes of offline-replay bugs:
 
 1. **Signature drift** (catches the ``standings_by_date`` /
    ``conference`` class): a manifest case supplies a parameter that the
-   bespoke ``CustomEndpointHandler`` method does not accept, or the endpoint declares a
-   parameter that no method parameter exists for. The test verifies both
-   directions against :data:`courtside_data.endpoints.ENDPOINTS` and the
-   live :class:`courtside_data.parsing.custom.CustomEndpointHandler` method signatures.
+   workflow endpoint compatibility method does not accept, or the endpoint
+   declares a parameter that no compatibility method parameter exists for.
+   The test verifies both directions against :data:`courtside_data.endpoints.ENDPOINTS`
+   and the retained :class:`courtside_data.parsing.custom.CustomEndpointHandler`
+   method signatures.
 
 2. **Year-range drift** (catches the ``league_per_100_possessions`` /
    ``1973`` class): a manifest case supplies a ``season_end_year`` that
@@ -60,7 +61,7 @@ _CASES_WITH_TEAM_ABBREVIATION: list[Case] = [c for c in _CASES_WITH_ENDPOINT if 
 
 
 def _sig_params(name: str) -> set[str]:
-    """Return the parameter names of ``CustomEndpointHandler.<name>`` (excluding ``self``).
+    """Return retained compatibility method params for one workflow endpoint.
 
     Uses ``follow_wrapped=False`` so a ``@functools.wraps`` decorator on the
     real method does not mask a parameter that the contract test should see.
@@ -76,8 +77,7 @@ def _sig_params(name: str) -> set[str]:
 
 @pytest.mark.parametrize("case", _WORKFLOW_ENDPOINT_CASES, ids=[case.id for case in _WORKFLOW_ENDPOINT_CASES])
 def test_workflow_endpoint_signature_compatible(case: Case) -> None:
-    """Workflow endpoints: every declared param must be accepted by the method, and
-    every case param must bind cleanly against the method signature.
+    """Workflow endpoints: declared params must fit the compatibility method.
 
     Runs only on ``EndpointKind.WORKFLOW`` endpoints (filtered at collection
     time). The workflow↔generic_table partition is enforced by
@@ -86,7 +86,7 @@ def test_workflow_endpoint_signature_compatible(case: Case) -> None:
     endpoint = ENDPOINTS[case.endpoint_name]
 
     sig_params = _sig_params(case.endpoint_name)
-    # Some bespoke methods (e.g. friv_7_game_playoff_series_outcomes_*) take
+    # Some compatibility methods (e.g. friv_7_game_playoff_series_outcomes_*) take
     # no arguments beyond self because the URL has no placeholders. That's a
     # valid contract: endpoint.params == () ↔ method signature == (self).
     if not sig_params:
@@ -185,13 +185,13 @@ def test_team_abbreviation_is_known(case: Case) -> None:
 
 def test_endpoint_kinds_are_partitioned() -> None:
     """Every ``EndpointKind.WORKFLOW`` endpoint must have a
-    ``CustomEndpointHandler.<name>`` method, and every
+    retained ``CustomEndpointHandler.<name>`` compatibility method, and every
     ``EndpointKind.GENERIC_TABLE`` endpoint must not.
 
     This is the invariant the two parametrized contract tests above rely on
     to keep their scopes disjoint (workflow vs. generic_table). A single
     registration drift — e.g. declaring ``EndpointKind.WORKFLOW`` without
-    adding the handler method, or vice versa — would otherwise be caught
+    retaining the compatibility method, or vice versa — would otherwise be caught
     only indirectly via confusing parametrized failures; this test surfaces
     it in one assertion.
 

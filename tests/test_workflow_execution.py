@@ -4,11 +4,14 @@ from __future__ import annotations
 
 from typing import Any
 
+import courtside_data.client._runner as runner
 import pytest
 from courtside_data.client._runner import _run_endpoint
+from courtside_data.client._runtime._coerce import _coerce_params
 from courtside_data.data import Team
 from courtside_data.endpoints import ENDPOINTS, EndpointKind
 from courtside_data.parsing.custom import CustomEndpointHandler
+from courtside_data.parsing.generic import GenericEndpointHandler
 from courtside_data.parsing.workflows import (
     CallCustomHandlerStep,
     WorkflowExecutionContext,
@@ -52,6 +55,44 @@ def test_workflow_endpoint_uses_compatibility_step_when_not_native(monkeypatch) 
             {"home_team": Team.ATLANTA_HAWKS, "day": 1, "month": 1, "year": 2024},
         )
     ]
+
+
+def test_workflow_param_coercion_is_metadata_driven(monkeypatch) -> None:
+    """Workflow enum coercion must not depend on the retained compatibility handler."""
+    monkeypatch.delattr(CustomEndpointHandler, "play_by_play")
+
+    params = _coerce_params("play_by_play", {"home_team": "ATL", "day": 1, "month": 1, "year": 2024})
+
+    assert params["home_team"] is Team.ATLANTA_HAWKS
+
+
+def test_generic_table_endpoint_dispatches_to_generic_handler(monkeypatch) -> None:
+    calls: list[tuple[str | None, dict[str, Any]]] = []
+
+    def fake_fetch_table(
+        self: GenericEndpointHandler,
+        endpoint,
+        *,
+        endpoint_name: str | None = None,
+        **params: Any,
+    ) -> list[dict[str, Any]]:
+        calls.append((endpoint_name, params))
+        return [{"name": "stub"}]
+
+    def fail_workflow(*args: Any, **kwargs: Any) -> None:
+        raise AssertionError("generic-table endpoint dispatched to workflow executor")
+
+    def execute_service_only(*, service_call, **kwargs: Any) -> Any:
+        return service_call()
+
+    monkeypatch.setattr(GenericEndpointHandler, "fetch_table", fake_fetch_table)
+    monkeypatch.setattr(runner, "execute_workflow", fail_workflow)
+    monkeypatch.setattr(runner, "_execute", execute_service_only)
+
+    result = _run_endpoint("team_roster", {"team_abbreviation": "BOS", "season_end_year": 2024})
+
+    assert result == [{"name": "stub"}]
+    assert calls == [("team_roster", {"team_abbreviation": "BOS", "season_end_year": 2024})]
 
 
 @pytest.mark.parametrize(

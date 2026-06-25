@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from courtside_data.endpoints._custom import CUSTOM_ENDPOINTS
+from courtside_data.endpoints._custom import WORKFLOW_ENDPOINTS
 from courtside_data.endpoints._draft_awards_leaders import DRAFT_AWARDS_LEADERS_ENDPOINTS
 from courtside_data.endpoints._league import LEAGUE_ENDPOINTS
 from courtside_data.endpoints._players import PLAYER_ENDPOINTS
@@ -16,5 +16,5 @@ ENDPOINTS: dict[str, EndpointSpec] = {
     **DRAFT_AWARDS_LEADERS_ENDPOINTS,
     **PLAYER_ENDPOINTS,
     **TEAM_ENDPOINTS,
-    **CUSTOM_ENDPOINTS,
+    **WORKFLOW_ENDPOINTS,
 }

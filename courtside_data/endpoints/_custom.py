@@ -1,4 +1,4 @@
-"""Bespoke multi-step endpoint registrations."""
+"""Bespoke workflow endpoint registrations."""
 
 from __future__ import annotations
 
@@ -381,7 +381,7 @@ _SEARCH_WORKFLOW = WorkflowSpec(
     result="players",
 )
 
-CUSTOM_ENDPOINTS = {
+WORKFLOW_ENDPOINTS = {
     "player_box_scores": _endpoint(
         "/friv/dailyleaders.cgi?month={month}&day={day}&year={year}",
         params=("day", "month", "year"),
@@ -556,3 +556,6 @@ CUSTOM_ENDPOINTS = {
         workflow=_SEARCH_WORKFLOW,
     ),
 }
+
+# Backwards-compatible alias for older internal imports/tests.
+CUSTOM_ENDPOINTS = WORKFLOW_ENDPOINTS
