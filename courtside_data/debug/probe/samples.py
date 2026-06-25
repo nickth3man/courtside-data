@@ -13,10 +13,14 @@ from courtside_data.debug.live_probe_cases import (
     get_live_audit_sample,
 )
 from courtside_data.debug.probe.models import SampleParamsInfo
-from courtside_data.endpoints import ENDPOINTS, TableEndpoint
+from courtside_data.endpoints import ENDPOINTS, EndpointSpec
 
 
 def _endpoint_group_map() -> dict[str, str]:
+    # ``endpoint_group`` is a deprecated alias of ``endpoint_domain``
+    # (``metadata.domain.value``). It is retained only because the probe CSV
+    # and report consumers still read it; new code should use
+    # ``endpoint_domain`` / :func:`_endpoint_domain` instead.
     return {
         endpoint_name: endpoint.metadata.domain.value
         for endpoint_name, endpoint in ENDPOINTS.items()
@@ -27,20 +31,28 @@ def _endpoint_group_map() -> dict[str, str]:
 _ENDPOINT_GROUPS = _endpoint_group_map()
 
 
-def _endpoint_domain(endpoint: TableEndpoint | None) -> str | None:
+def _endpoint_domain(endpoint: EndpointSpec | None) -> str | None:
+    """Canonical endpoint-domain field (preferred over ``endpoint_group``)."""
     if endpoint is None or endpoint.metadata is None:
         return None
     return endpoint.metadata.domain.value
 
 
-def _endpoint_kind(endpoint: TableEndpoint | None) -> str | None:
+def _endpoint_kind(endpoint: EndpointSpec | None) -> str | None:
+    """Canonical endpoint-kind field (``generic_table`` / ``workflow``)."""
     if endpoint is None or endpoint.metadata is None:
         return None
     return endpoint.metadata.kind.value
 
 
-def _legacy_endpoint_kind(endpoint: TableEndpoint | None) -> str | None:
-    """Return the old implementation label kept for CSV/report compatibility."""
+def _legacy_endpoint_kind(endpoint: EndpointSpec | None) -> str | None:
+    """Return the old implementation label kept for CSV/report compatibility.
+
+    Reads the deprecated :attr:`~courtside_data.endpoints.EndpointSpec.custom`
+    compatibility property (``"custom"`` for workflow endpoints, ``"generic"``
+    otherwise). Prefer :func:`_endpoint_kind` (``generic_table`` / ``workflow``)
+    in new code; this remains so historical probe CSVs keep their column.
+    """
     if endpoint is None:
         return None
     return "custom" if endpoint.custom else "generic"

@@ -57,30 +57,16 @@ from courtside_data.parsing.workflows._steps import (
 )
 
 if TYPE_CHECKING:
-    from courtside_data.endpoints import TableEndpoint
+    from courtside_data.endpoints import EndpointSpec
     from courtside_data.http_service import HTTPService
 
 
-NATIVE_WORKFLOW_ENDPOINTS: frozenset[str] = frozenset(
-    {
-        "friv_7_game_playoff_series_outcomes_team_is_down",
-        "friv_7_game_playoff_series_outcomes_team_is_tied",
-        "friv_7_game_playoff_series_outcomes_team_is_up",
-        "play_by_play",
-        "player_box_scores",
-        "playoff_bracket",
-        "playoff_player_box_scores",
-        "players_advanced_season_totals",
-        "players_season_totals",
-        "regular_season_player_box_scores",
-        "search",
-        "season_awards_voting",
-        "season_schedule",
-        "standings",
-        "standings_by_date",
-        "team_box_scores",
-    }
-)
+# Native workflow endpoints are exactly those that supply concrete step
+# handlers in ``_NATIVE_STEP_HANDLERS`` below. The public
+# :data:`NATIVE_WORKFLOW_ENDPOINTS` constant is *derived* from that registry
+# (see its definition after the handler map) so the two can never drift apart.
+# The previous hard-coded literal list of endpoint names has been removed in
+# favour of this single source of truth.
 
 _NATIVE_STEP_HANDLERS = {
     "team_box_scores": {
@@ -252,6 +238,12 @@ _NATIVE_STEP_HANDLERS = {
 }
 
 
+# Native workflow endpoints: every endpoint with a concrete step-handler
+# registry entry. Derived from ``_NATIVE_STEP_HANDLERS`` so adding/removing a
+# handler map is the only change needed — no parallel literal list to maintain.
+NATIVE_WORKFLOW_ENDPOINTS: frozenset[str] = frozenset(_NATIVE_STEP_HANDLERS)
+
+
 def is_native_workflow_endpoint(endpoint_name: str) -> bool:
     """Return whether ``endpoint_name`` is executed by concrete workflow steps."""
     return endpoint_name in NATIVE_WORKFLOW_ENDPOINTS
@@ -263,7 +255,7 @@ class WorkflowEndpointHandler:
 
     http: HTTPService
 
-    def execute(self, endpoint_name: str, endpoint: TableEndpoint, params: dict[str, Any]) -> Any:
+    def execute(self, endpoint_name: str, endpoint: EndpointSpec, params: dict[str, Any]) -> Any:
         """Run a workflow endpoint through native steps or the compatibility step."""
         if endpoint.workflow is None:
             raise ValueError(f"Endpoint {endpoint_name!r} does not declare a workflow spec.")
@@ -283,6 +275,6 @@ class WorkflowEndpointHandler:
         return CallCustomHandlerStep().execute(context)
 
 
-def execute_workflow(http: HTTPService, endpoint_name: str, endpoint: TableEndpoint, params: dict[str, Any]) -> Any:
+def execute_workflow(http: HTTPService, endpoint_name: str, endpoint: EndpointSpec, params: dict[str, Any]) -> Any:
     """Execute one workflow endpoint with bound call params."""
     return WorkflowEndpointHandler(http).execute(endpoint_name, endpoint, params)

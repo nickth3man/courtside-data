@@ -1,8 +1,11 @@
-"""``TableEndpoint`` dataclass and factory helpers used to build the ``ENDPOINTS`` dict.
+"""``EndpointSpec`` dataclass and factory helpers used to build the ``ENDPOINTS`` dict.
 
 The registry (:mod:`courtside_data.endpoints._registry`) stays focused on
 its per-domain wiring and the per-endpoint ``output.columns``/``schemas``
 imports; the shared spec type and factories live here.
+
+``TableEndpoint`` is retained as a backwards-compatible alias for
+``EndpointSpec`` (see the bottom of this module).
 """
 
 from __future__ import annotations
@@ -12,6 +15,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
 from courtside_data.endpoints._error_mapping import NOT_FOUND
+from courtside_data.endpoints._metadata import EndpointKind
 from courtside_data.errors import (
     InvalidPlayer,
     InvalidSeason,
@@ -25,7 +29,7 @@ if TYPE_CHECKING:
 
 
 @dataclass(frozen=True, slots=True)
-class TableEndpoint:
+class EndpointSpec:
     """Spec for one generic table endpoint.
 
     Table lookup order in ``HTTPService.fetch_table``:
@@ -46,9 +50,6 @@ class TableEndpoint:
     use_header_fallback: bool = False
     transaction_list_fallback: bool = False
     exclude_summary_rows: bool = False
-    # True for endpoints with a bespoke HTTPService method (e.g. multi-request);
-    # fetch_table() must not be used for these.
-    custom: bool = False
     # If set, the runner validates each extracted row with this BRRow subclass
     # via the Pydantic pipeline. Endpoints with row_model=None use the
     # dict-based coerce_data/validate_rows path instead.
@@ -74,12 +75,16 @@ class TableEndpoint:
     # whose stat column header rotates with the active category (e.g. ``per``,
     # ``pts``, ``ast``). See :meth:`GenericTable._normalize_value_column`.
     value_column: bool = False
-    # Optional taxonomy descriptor. Describes the endpoint's intended shape
-    # without affecting runtime behaviour. Endpoints are annotated
-    # incrementally; ``None`` means "not yet described".
+    # Optional taxonomy descriptor. Drives runtime dispatch: an endpoint
+    # whose ``metadata.kind`` is :attr:`EndpointKind.WORKFLOW` routes through
+    # the workflow executor; every other kind (and endpoints with no metadata)
+    # routes through the generic ``fetch_table`` pipeline. Endpoints are
+    # annotated incrementally; ``None`` means "not yet described" and is
+    # treated as :attr:`EndpointKind.GENERIC_TABLE` by :attr:`kind`.
     metadata: EndpointMetadata | None = None
-    # Optional documentation-only workflow descriptor for custom endpoint
-    # handlers. Dispatch does not consume this field.
+    # Optional documentation-only workflow descriptor for workflow endpoint
+    # handlers. Dispatch consumes ``metadata.kind`` (not this field) to select
+    # the workflow executor; the spec describes the steps the executor runs.
     workflow: WorkflowSpec | None = None
 
     def error_mappings(self, params: dict[str, object]) -> dict[int, Callable[[], Exception]] | None:
@@ -93,6 +98,31 @@ class TableEndpoint:
             return error(**bound)
 
         return dict.fromkeys(self.error_status_codes, factory)
+
+    @property
+    def kind(self) -> EndpointKind:
+        """Resolved dispatch kind for this endpoint.
+
+        Returns :attr:`EndpointKind.GENERIC_TABLE` when ``metadata`` is absent
+        so directly-constructed specs default to the generic table pipeline.
+        Runtime dispatch (runner, coercion, generic guard) reads this instead
+        of the legacy :attr:`custom` flag.
+        """
+        if self.metadata is None:
+            return EndpointKind.GENERIC_TABLE
+        return self.metadata.kind
+
+    @property
+    def custom(self) -> bool:
+        """Deprecated compatibility alias retained for the public surface.
+
+        ``True`` for :attr:`EndpointKind.WORKFLOW` endpoints, ``False``
+        otherwise. Dispatch no longer reads this flag — prefer
+        :attr:`kind` (``endpoint.kind is EndpointKind.WORKFLOW``). Kept so
+        existing callers and traces that reference ``endpoint.custom`` keep
+        working; it is always consistent with :attr:`kind`.
+        """
+        return self.kind is EndpointKind.WORKFLOW
 
 
 def _endpoint(
@@ -108,7 +138,6 @@ def _endpoint(
     use_header_fallback: bool = False,
     transaction_list_fallback: bool = False,
     exclude_summary_rows: bool = False,
-    custom: bool = False,
     row_model: type[BRRow] | None = None,
     projection: tuple[str, ...] | None = None,
     csv_columns: Sequence[str] | None = None,
@@ -117,8 +146,8 @@ def _endpoint(
     value_column: bool = False,
     metadata: EndpointMetadata | None = None,
     workflow: WorkflowSpec | None = None,
-) -> TableEndpoint:
-    return TableEndpoint(
+) -> EndpointSpec:
+    return EndpointSpec(
         path=path,
         params=params,
         table_id=table_id,
@@ -127,7 +156,6 @@ def _endpoint(
         use_header_fallback=use_header_fallback,
         transaction_list_fallback=transaction_list_fallback,
         exclude_summary_rows=exclude_summary_rows,
-        custom=custom,
         row_model=row_model,
         projection=projection,
         csv_columns=csv_columns,
@@ -149,7 +177,7 @@ def _endpoint(
 _DEFAULT_SEASON_MIN_YEAR = 1947
 
 
-def _season(path: str, params: tuple[str, ...] = ("season_end_year",), **overrides: Any) -> TableEndpoint:
+def _season(path: str, params: tuple[str, ...] = ("season_end_year",), **overrides: Any) -> EndpointSpec:
     defaults: dict[str, Any] = {"min_year": _DEFAULT_SEASON_MIN_YEAR}
     defaults.update(overrides)
     return _endpoint(
@@ -163,7 +191,7 @@ def _season(path: str, params: tuple[str, ...] = ("season_end_year",), **overrid
 
 def _team(
     path: str, params: tuple[str, ...] = ("team_abbreviation", "season_end_year"), **overrides: Any
-) -> TableEndpoint:
+) -> EndpointSpec:
     return _endpoint(
         path,
         params=params,
@@ -173,7 +201,7 @@ def _team(
     )
 
 
-def _player(path: str, params: tuple[str, ...] = ("player_identifier",), **overrides: Any) -> TableEndpoint:
+def _player(path: str, params: tuple[str, ...] = ("player_identifier",), **overrides: Any) -> EndpointSpec:
     return _endpoint(
         path,
         params=params,
@@ -181,3 +209,12 @@ def _player(path: str, params: tuple[str, ...] = ("player_identifier",), **overr
         error_params=("player_identifier",),
         **overrides,
     )
+
+
+# Backwards-compatible alias. ``TableEndpoint`` was the original public name
+# for the endpoint spec dataclass; it is retained so existing imports,
+# isinstance checks, and trace/probe surfaces keep working. It is the exact
+# same object as ``EndpointSpec`` (a plain alias, not a subclass) so every
+# registered endpoint is an instance of both names. New code should use
+# :class:`EndpointSpec`.
+TableEndpoint = EndpointSpec

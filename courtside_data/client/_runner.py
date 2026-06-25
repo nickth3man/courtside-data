@@ -41,7 +41,7 @@ from courtside_data.client._runtime._locator import _resolve_service, _service_o
 from courtside_data.data import OutputType, OutputWriteOption
 from courtside_data.debug import DebugTrace, debug_trace_context
 from courtside_data.debug.config import debug_config_from_env
-from courtside_data.endpoints import ENDPOINTS
+from courtside_data.endpoints import ENDPOINTS, EndpointKind
 from courtside_data.parsing.generic import GenericEndpointHandler
 from courtside_data.parsing.workflows import execute_workflow, is_native_workflow_endpoint
 
@@ -70,11 +70,13 @@ def _run_endpoint(
     columns, error mapping); the caller supplies an explicit, typed signature.
     """
     endpoint = ENDPOINTS[name]
-    # Coerce raw string params (``"ATL"``) into typed values for custom
+    # Coerce raw string params (``"ATL"``) into typed values for workflow
     # endpoints so the probe path and the typed-client path dispatch the
-    # same way. Generic (non-custom) endpoints are unaffected; ``str``/``int``
-    # URL params are idempotent.
-    coerced_params = _coerce_params(name, params) if endpoint.custom else params
+    # same way. Generic-table endpoints are unaffected; ``str``/``int``
+    # URL params are idempotent. Dispatch is driven by ``endpoint.kind``
+    # (EndpointKind.WORKFLOW vs GENERIC_TABLE), not a legacy boolean flag.
+    is_workflow = endpoint.kind is EndpointKind.WORKFLOW
+    coerced_params = _coerce_params(name, params) if is_workflow else params
     trace = DebugTrace(endpoint=name, params=coerced_params, config=debug_config_from_env()) if debug else None
     if trace is not None:
         trace.record(
@@ -82,6 +84,7 @@ def _run_endpoint(
             "run_endpoint_start",
             endpoint=name,
             params=coerced_params,
+            endpoint_kind=endpoint.kind.value,
             custom=endpoint.custom,
             path_template=endpoint.path,
             table_id=endpoint.table_id,
@@ -92,7 +95,7 @@ def _run_endpoint(
 
     def service_call() -> Any:
         service = _resolve_service()
-        if endpoint.custom:
+        if is_workflow:
             if trace is not None:
                 trace.record("endpoint", "workflow_service_dispatch", method=name)
                 trace.record(

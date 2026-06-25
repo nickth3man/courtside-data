@@ -39,5 +39,5 @@ courtside-data league_per_game_stats --season-end-year 2024
 ## Where to go next
 
 - **[API: Schemas](api/schemas.md)** — the Pydantic v2 row models behind every endpoint, auto-generated from source via mkdocstrings.
-- **[API: Endpoints](api/endpoints.md)** — the declarative `TableEndpoint` registry and its 50+ entries.
+- **[API: Endpoints](api/endpoints.md)** — the declarative `EndpointSpec` registry and its 50+ entries.
 - **[Source, CLI, rate-limiting policy & endpoint catalog](https://github.com/nickth3man/courtside-data)** — the repository README is the source of truth for installation, lineage, and attribution.

@@ -11,7 +11,7 @@ from courtside_data.parsing.custom._fetch import FetchFacade
 if TYPE_CHECKING:
     from collections.abc import Mapping
 
-    from courtside_data.endpoints import TableEndpoint
+    from courtside_data.endpoints import EndpointSpec
     from courtside_data.http_service import HTTPService
 
 
@@ -20,7 +20,7 @@ class WorkflowExecutionContext:
     """Per-call workflow runtime state, separate from endpoint metadata."""
 
     endpoint_name: str
-    endpoint: TableEndpoint
+    endpoint: EndpointSpec
     params: Mapping[str, Any]
     fetch: FetchFacade
     scratch: dict[str, Any] = field(default_factory=dict)
@@ -31,7 +31,7 @@ class WorkflowExecutionContext:
         http: HTTPService,
         *,
         endpoint_name: str,
-        endpoint: TableEndpoint,
+        endpoint: EndpointSpec,
         params: dict[str, Any],
     ) -> WorkflowExecutionContext:
         """Build a workflow context from the transport and bound endpoint params."""

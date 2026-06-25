@@ -1,4 +1,4 @@
-"""Typed taxonomy for :class:`~courtside_data.endpoints.TableEndpoint` specs.
+"""Typed taxonomy for :class:`~courtside_data.endpoints.EndpointSpec` specs.
 
 These enums describe *what* an endpoint is (domain, shape, features) without
 changing any runtime behaviour.  All values are ``StrEnum`` so they serialise
@@ -137,7 +137,7 @@ class ParserShape(StrEnum):
 class EndpointFeature(StrEnum):
     """Optional behavioural flags present on an endpoint.
 
-    Values mirror the boolean / non-None fields of :class:`~courtside_data.endpoints.TableEndpoint`
+    Values mirror the boolean / non-None fields of :class:`~courtside_data.endpoints.EndpointSpec`
     so that the metadata set can be compared programmatically without
     inspecting the low-level dataclass fields.
     """
@@ -194,7 +194,7 @@ class EndpointFeature(StrEnum):
 
 @dataclass(frozen=True, slots=True)
 class EndpointMetadata:
-    """Immutable taxonomy descriptor for one :class:`~courtside_data.endpoints.TableEndpoint`.
+    """Immutable taxonomy descriptor for one :class:`~courtside_data.endpoints.EndpointSpec`.
 
     Attach via the ``metadata=`` kwarg when registering an endpoint.  All
     fields except ``features`` are required so that every annotated endpoint

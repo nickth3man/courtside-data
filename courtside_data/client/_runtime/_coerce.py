@@ -1,9 +1,9 @@
-"""Typed-param coercion for custom endpoints.
+"""Typed-param coercion for workflow endpoints.
 
-Custom endpoints (``endpoint.custom is True``) are dispatched as named
-methods on :class:`~courtside_data.parsing.custom.CustomEndpointHandler`
-rather than through :func:`HTTPService.fetch_table`. The probe path passes
-raw abbreviations (``"ATL"``); the typed-client path passes
+Workflow endpoints (``endpoint.kind is EndpointKind.WORKFLOW``) are dispatched
+through the workflow executor, which delegates to the bespoke
+:class:`~courtside_data.parsing.custom.CustomEndpointHandler` methods. The
+probe path passes raw abbreviations (``"ATL"``); the typed-client path passes
 :class:`~courtside_data.data.Team` enums. :func:`_coerce_params` unifies
 both by walking the cached method annotations and running
 :func:`courtside_data.schemas._fields._team_field` on any param whose
@@ -14,10 +14,9 @@ dict is never mutated.
 
 :func:`_params_hints` is an ``@lru_cache(maxsize=128)`` over
 ``inspect.signature`` + ``get_type_hints(..., include_extras=True)`` for
-each custom method, so the introspection work happens once per endpoint
-and stays off the hot path. It returns ``None`` for generic
-(non-custom) endpoints so the dispatch path is free of Pydantic
-overhead.
+each workflow-endpoint method, so the introspection work happens once per
+endpoint and stays off the hot path. It returns ``None`` for generic-table
+endpoints so the dispatch path is free of Pydantic overhead.
 
 :data:`_TeamParam` is the ``Annotated[Team, BeforeValidator(_team_field)]``
 alias that downstream Pydantic models reuse for ``Team`` fields. It is
@@ -34,7 +33,7 @@ from typing import Annotated, Any, get_type_hints
 from pydantic import BeforeValidator
 
 from courtside_data.data import Team
-from courtside_data.endpoints import ENDPOINTS
+from courtside_data.endpoints import ENDPOINTS, EndpointKind
 from courtside_data.parsing.custom import CustomEndpointHandler
 from courtside_data.schemas._fields import _team_field
 
@@ -54,15 +53,15 @@ _TeamParam = Annotated[Team, BeforeValidator(_team_field)]
 
 @lru_cache(maxsize=128)
 def _params_hints(endpoint_name: str) -> dict[str, Any] | None:
-    """Return the cached ``{param_name: annotation}`` for one custom endpoint.
+    """Return the cached ``{param_name: annotation}`` for one workflow endpoint.
 
-    Returns ``None`` for generic (non-custom) endpoints so the dispatch path
+    Returns ``None`` for generic-table endpoints so the dispatch path
     stays free of Pydantic overhead. Per-endpoint hints are computed once
     and reused for every call; the ``@lru_cache`` decorator keeps the
     ``inspect``/``get_type_hints`` work off the hot path.
     """
     endpoint = ENDPOINTS[endpoint_name]
-    if not endpoint.custom:
+    if endpoint.kind is not EndpointKind.WORKFLOW:
         return None
     method = getattr(CustomEndpointHandler, endpoint_name, None)
     if method is None:
@@ -86,7 +85,7 @@ def _params_hints(endpoint_name: str) -> dict[str, Any] | None:
 
 
 def _coerce_params(endpoint_name: str, params: dict[str, Any]) -> dict[str, Any]:
-    """Coerce raw string params into typed values for custom endpoint methods.
+    """Coerce raw string params into typed values for workflow endpoint methods.
 
     The probe path passes raw abbreviations (``"ATL"``) to the runner; the
     typed client path passes :class:`Team` enums. This helper unifies both

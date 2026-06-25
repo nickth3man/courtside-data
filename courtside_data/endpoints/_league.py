@@ -215,7 +215,6 @@ LEAGUE_ENDPOINTS = {
     # Backed by the bespoke HTTPService.standings (parses both conference tables).
     "standings": _season(
         "/leagues/NBA_{season_end_year}.html",
-        custom=True,
         row_model=standings.StandingsRow,
         csv_columns=STANDINGS_COLUMNS_NAMES,
         metadata=EndpointMetadata(
@@ -236,7 +235,6 @@ LEAGUE_ENDPOINTS = {
         # contract-test signature check honest and matches the public API.
         params=("season_end_year",),
         table_id="standings_by_date",
-        custom=True,
         row_model=standings.StandingsByDateRow,
         csv_columns=STANDINGS_BY_DATE_COLUMN_NAMES,
         metadata=EndpointMetadata(

@@ -1,4 +1,24 @@
-"""Bespoke (``custom=True``) endpoint handlers — domain-split package.
+"""Bespoke endpoint handlers — compatibility surface for workflow endpoints.
+
+.. deprecated::
+    Endpoint dispatch is now driven by ``EndpointKind.WORKFLOW`` and routed
+    through :func:`courtside_data.parsing.workflows.execute_workflow`.
+    :class:`CustomEndpointHandler` is retained for two reasons:
+
+    1. **Param introspection** — :mod:`courtside_data.client._runtime._coerce`
+       reflects on its method signatures to coerce raw abbreviations into
+       :class:`~courtside_data.data.Team` enums for workflow endpoints.
+    2. **Compatibility fallback** — the workflow executor's
+       :class:`~courtside_data.parsing.workflows.CallCustomHandlerStep`
+       delegates to it for any workflow endpoint that lacks native step
+       handlers. Every registered workflow endpoint currently runs natively,
+       so this fallback is only exercised by tests.
+
+    New endpoints should be added as workflow steps in
+    :mod:`courtside_data.parsing.workflows._executor`, not as methods here.
+    The public import paths (``from courtside_data.parsing.custom import
+    CustomEndpointHandler, dispatch_custom_endpoint`` and the re-export from
+    :mod:`courtside_data.parsing`) remain stable.
 
 The package contains the per-domain free functions used by the
 :class:`CustomEndpointHandler` dispatcher, plus the dispatcher itself.
@@ -51,6 +71,14 @@ __all__ = [
 
 class CustomEndpointHandler:
     """Slim dispatcher that delegates each endpoint to a domain function.
+
+    .. deprecated::
+        Runtime dispatch routes workflow endpoints through
+        :func:`courtside_data.parsing.workflows.execute_workflow`. This class
+        is kept as the param-introspection source for
+        :mod:`courtside_data.client._runtime._coerce` and as the executor's
+        compatibility fallback. Do not add new endpoints here — register
+        workflow steps in :mod:`courtside_data.parsing.workflows._executor`.
 
     The handler holds one :class:`FetchFacade` for the lifetime of the
     instance. Each public method is a one-liner that forwards to the

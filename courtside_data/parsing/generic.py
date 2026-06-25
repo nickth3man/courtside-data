@@ -15,7 +15,7 @@ from courtside_data.debug.provenance import (
     record_table_provenance,
     record_unavailable_table_provenance,
 )
-from courtside_data.endpoints import TableEndpoint
+from courtside_data.endpoints import EndpointKind, EndpointSpec
 from courtside_data.parsing.tables import GenericTable, extract_commented_table, parse_transaction_list
 
 if TYPE_CHECKING:
@@ -49,7 +49,7 @@ class GenericEndpointHandler:
         self._http = http
 
     def _resolve_table_selector(
-        self, selector: Selector, endpoint: TableEndpoint, params: dict[str, Any]
+        self, selector: Selector, endpoint: EndpointSpec, params: dict[str, Any]
     ) -> tuple[Selector | None, str | None]:
         trace = current_debug_trace()
         if endpoint.table_id is not None:
@@ -103,7 +103,7 @@ class GenericEndpointHandler:
 
     def fetch_table(
         self,
-        endpoint: TableEndpoint,
+        endpoint: EndpointSpec,
         *,
         endpoint_name: str | None = None,
         **params: Any,
@@ -114,8 +114,8 @@ class GenericEndpointHandler:
         table with ``commented_table_id``, then the transaction-list fallback,
         then an empty list.
         """
-        if endpoint.custom:
-            raise ValueError("Endpoint requires its bespoke handler method, not fetch_table()")
+        if endpoint.kind is EndpointKind.WORKFLOW:
+            raise ValueError("Workflow endpoints require the workflow executor, not fetch_table()")
         trace = current_debug_trace()
         url = self._http._url(endpoint.path.format(**params))
         if trace is not None:

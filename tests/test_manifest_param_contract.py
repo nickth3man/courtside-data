@@ -28,7 +28,7 @@ from datetime import date
 
 import pytest
 from courtside_data.data import TEAM_ABBREVIATIONS_TO_TEAM
-from courtside_data.endpoints import ENDPOINTS, TableEndpoint
+from courtside_data.endpoints import ENDPOINTS, EndpointKind, EndpointSpec
 from courtside_data.parsing.custom import CustomEndpointHandler
 
 from tests.fixture_manifest import ALL_CASES, Case
@@ -37,12 +37,17 @@ from tests.fixture_manifest import ALL_CASES, Case
 # Each parametrized contract test runs only on the cases that actually apply
 # to it. Cases are excluded at *collection time* rather than skipped at
 # runtime, so the suite reports a clean pass/fail count with no skip noise.
-# The custom↔generic partition invariant is additionally enforced by
-# ``test_endpoint_categories_are_partitioned`` below, which catches endpoint
-# registration drift (custom flag vs. method existence) in one assertion.
+# The workflow↔generic_table partition invariant is additionally enforced by
+# ``test_endpoint_kinds_are_partitioned`` below, which catches endpoint
+# registration drift (EndpointKind.WORKFLOW vs. method existence) in one
+# assertion.
 _CASES_WITH_ENDPOINT: list[Case] = [c for c in ALL_CASES if c.endpoint_name and c.endpoint_name in ENDPOINTS]
-_CUSTOM_ENDPOINT_CASES: list[Case] = [c for c in _CASES_WITH_ENDPOINT if ENDPOINTS[c.endpoint_name].custom]
-_GENERIC_ENDPOINT_CASES: list[Case] = [c for c in _CASES_WITH_ENDPOINT if not ENDPOINTS[c.endpoint_name].custom]
+_WORKFLOW_ENDPOINT_CASES: list[Case] = [
+    c for c in _CASES_WITH_ENDPOINT if ENDPOINTS[c.endpoint_name].kind is EndpointKind.WORKFLOW
+]
+_GENERIC_TABLE_ENDPOINT_CASES: list[Case] = [
+    c for c in _CASES_WITH_ENDPOINT if ENDPOINTS[c.endpoint_name].kind is EndpointKind.GENERIC_TABLE
+]
 _CASES_WITH_YEAR_RANGE: list[Case] = [
     c
     for c in _CASES_WITH_ENDPOINT
@@ -69,13 +74,14 @@ def _sig_params(name: str) -> set[str]:
     return set(sig.parameters) - {"self"}
 
 
-@pytest.mark.parametrize("case", _CUSTOM_ENDPOINT_CASES, ids=[case.id for case in _CUSTOM_ENDPOINT_CASES])
-def test_custom_endpoint_signature_compatible(case: Case) -> None:
-    """Custom endpoints: every declared param must be accepted by the method, and
+@pytest.mark.parametrize("case", _WORKFLOW_ENDPOINT_CASES, ids=[case.id for case in _WORKFLOW_ENDPOINT_CASES])
+def test_workflow_endpoint_signature_compatible(case: Case) -> None:
+    """Workflow endpoints: every declared param must be accepted by the method, and
     every case param must bind cleanly against the method signature.
 
-    Runs only on ``custom=True`` endpoints (filtered at collection time). The
-    generic/generic partition is enforced by ``test_endpoint_categories_are_partitioned``.
+    Runs only on ``EndpointKind.WORKFLOW`` endpoints (filtered at collection
+    time). The workflow↔generic_table partition is enforced by
+    ``test_endpoint_kinds_are_partitioned``.
     """
     endpoint = ENDPOINTS[case.endpoint_name]
 
@@ -113,16 +119,16 @@ def test_custom_endpoint_signature_compatible(case: Case) -> None:
     )
 
 
-@pytest.mark.parametrize("case", _GENERIC_ENDPOINT_CASES, ids=[case.id for case in _GENERIC_ENDPOINT_CASES])
-def test_generic_endpoint_params_match_endpoint_spec(case: Case) -> None:
-    """Generic endpoints: the case params must match the endpoint.params tuple.
+@pytest.mark.parametrize("case", _GENERIC_TABLE_ENDPOINT_CASES, ids=[case.id for case in _GENERIC_TABLE_ENDPOINT_CASES])
+def test_generic_table_endpoint_params_match_endpoint_spec(case: Case) -> None:
+    """Generic-table endpoints: the case params must match the endpoint.params tuple.
 
-    For generic endpoints the case resolver and the endpoint spec must agree
-    exactly — there is no bespoke method to absorb a mismatch. Generic
+    For generic-table endpoints the case resolver and the endpoint spec must agree
+    exactly — there is no bespoke method to absorb a mismatch. Generic-table
     endpoints with no params (``endpoint.params == ()``) get exactly one
     case with ``params == {}``.
 
-    Runs only on ``custom=False`` endpoints (filtered at collection time).
+    Runs only on ``EndpointKind.GENERIC_TABLE`` endpoints (filtered at collection time).
     """
     endpoint = ENDPOINTS[case.endpoint_name]
 
@@ -177,21 +183,31 @@ def test_team_abbreviation_is_known(case: Case) -> None:
 # ─── Supplemental sanity checks (non-parametrized) ──────────────────────
 
 
-def test_endpoint_categories_are_partitioned() -> None:
-    """Every ``custom=True`` endpoint must have a ``CustomEndpointHandler.<name>``
-    method, and every ``custom=False`` endpoint must not.
+def test_endpoint_kinds_are_partitioned() -> None:
+    """Every ``EndpointKind.WORKFLOW`` endpoint must have a
+    ``CustomEndpointHandler.<name>`` method, and every
+    ``EndpointKind.GENERIC_TABLE`` endpoint must not.
 
     This is the invariant the two parametrized contract tests above rely on
-    to keep their scopes disjoint (custom vs. generic). A single registration
-    drift — e.g. setting ``custom=True`` without adding the method, or vice
-    versa — would otherwise be caught only indirectly via confusing
-    parametrized failures; this test surfaces it in one assertion.
+    to keep their scopes disjoint (workflow vs. generic_table). A single
+    registration drift — e.g. declaring ``EndpointKind.WORKFLOW`` without
+    adding the handler method, or vice versa — would otherwise be caught
+    only indirectly via confusing parametrized failures; this test surfaces
+    it in one assertion.
+
+    The deprecated ``endpoint.custom`` compatibility property is asserted in
+    lockstep so the public surface stays consistent with ``endpoint.kind``.
     """
     for name, endpoint in ENDPOINTS.items():
         has_method = getattr(CustomEndpointHandler, name, None) is not None
-        assert endpoint.custom == has_method, (
-            f"{name}: custom={endpoint.custom} but "
+        is_workflow = endpoint.kind is EndpointKind.WORKFLOW
+        assert is_workflow == has_method, (
+            f"{name}: kind={endpoint.kind.value!r} but "
             f"CustomEndpointHandler.{name} {'exists' if has_method else 'is missing'}"
+        )
+        # Compatibility: the deprecated ``.custom`` flag must agree with ``.kind``.
+        assert endpoint.custom is is_workflow, (
+            f"{name}: custom={endpoint.custom} disagrees with kind={endpoint.kind.value!r}"
         )
 
 
@@ -240,20 +256,20 @@ def test_manifest_has_no_duplicate_case_ids() -> None:
 
 
 def test_endpoint_specs_are_frozen() -> None:
-    """TableEndpoint instances must be immutable (frozen dataclass + slots)
+    """EndpointSpec instances must be immutable (frozen dataclass + slots)
     so they can be safely shared across threads. Catches accidental removal
     of ``frozen=True`` or ``slots=True`` from the dataclass decorator.
 
-    Note: TableEndpoint is currently NOT hashable (a pre-existing condition
+    Note: EndpointSpec is currently NOT hashable (a pre-existing condition
     — the ``csv_columns: Sequence[str] | None`` field is mutable). This test
     guards the immutability property only; fixing the hashability is out of
     scope for this lane.
     """
     for name, endpoint in ENDPOINTS.items():
         # Frozen + slots dataclasses raise on any setattr attempt. The exact
-        # exception type depends on whether the field is known:
-        #   - known field (e.g. ``custom``): FrozenInstanceError
-        #   - unknown field: TypeError (slots machinery) or AttributeError
+        # exception type depends on whether the target is a known slot:
+        #   - known field (e.g. ``path``): FrozenInstanceError
+        #   - unknown attribute: TypeError (slots machinery) or AttributeError
         # We accept any of these as proof of immutability.
         try:
             object.__setattr__(endpoint, "_test_frozen_marker", True)  # type: ignore[misc]
@@ -265,4 +281,4 @@ def test_endpoint_specs_are_frozen() -> None:
 
 # Reference the imports so ruff/ty don't flag them as unused while keeping
 # the module's public surface self-documenting.
-_ = (TableEndpoint, date)
+_ = (EndpointSpec, date)

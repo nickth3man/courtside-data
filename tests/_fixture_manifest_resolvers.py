@@ -5,7 +5,7 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
-from courtside_data.endpoints import EndpointFeature, RequestShape, TableEndpoint
+from courtside_data.endpoints import EndpointFeature, EndpointSpec, RequestShape
 
 from tests._fixture_manifest_common import (
     BASE_URL,
@@ -26,7 +26,7 @@ from tests._fixture_manifest_common import (
 from tests.fixture_transport import FixtureValue
 
 
-def is_multi_request_fixture_endpoint(endpoint: TableEndpoint) -> bool:
+def is_multi_request_fixture_endpoint(endpoint: EndpointSpec) -> bool:
     """Return whether an endpoint's fixture case needs a multi-URL map."""
     if endpoint.metadata is None:
         return False
@@ -36,7 +36,7 @@ def is_multi_request_fixture_endpoint(endpoint: TableEndpoint) -> bool:
     )
 
 
-def resolve_endpoint(endpoint_name: str, endpoint: TableEndpoint) -> ResolveResult:
+def resolve_endpoint(endpoint_name: str, endpoint: EndpointSpec) -> ResolveResult:
     """Dispatch an endpoint to the resolver matching its fixture layout."""
     if is_multi_request_fixture_endpoint(endpoint):
         return _resolve_multi_request_endpoint(endpoint_name)
@@ -123,7 +123,7 @@ def _resolve_multi_request_endpoint(endpoint_name: str) -> ResolveResult:
 
 def _resolve_season_endpoint(
     endpoint_name: str,
-    endpoint: TableEndpoint,
+    endpoint: EndpointSpec,
     raw_subdir: str,
     *,
     filename_year_only: bool = True,
@@ -168,7 +168,7 @@ def _resolve_season_endpoint(
     return cases, None
 
 
-def _resolve_player_endpoint(endpoint_name: str, endpoint: TableEndpoint, raw_subdir: str) -> ResolveResult:
+def _resolve_player_endpoint(endpoint_name: str, endpoint: EndpointSpec, raw_subdir: str) -> ResolveResult:
     raw_dir = RAW_ROOT / raw_subdir
     files = list_html(raw_dir)
     if not files:
@@ -191,7 +191,7 @@ def _resolve_player_endpoint(endpoint_name: str, endpoint: TableEndpoint, raw_su
 
 def _resolve_player_season_endpoint(
     endpoint_name: str,
-    endpoint: TableEndpoint,
+    endpoint: EndpointSpec,
     raw_subdir: str,
     *,
     extra_params: dict[str, object] | None = None,
@@ -221,7 +221,7 @@ def _resolve_player_season_endpoint(
 
 def _resolve_single_file_endpoint(
     endpoint_name: str,
-    endpoint: TableEndpoint,
+    endpoint: EndpointSpec,
     raw_subdir: str,
     *,
     fixture_name: str,
@@ -233,7 +233,7 @@ def _resolve_single_file_endpoint(
     return [make_case(endpoint_name, params, {render_url(endpoint, params): raw_path})], None
 
 
-def _resolve_team_only_endpoint(endpoint_name: str, endpoint: TableEndpoint, raw_subdir: str) -> ResolveResult:
+def _resolve_team_only_endpoint(endpoint_name: str, endpoint: EndpointSpec, raw_subdir: str) -> ResolveResult:
     raw_dir = RAW_ROOT / raw_subdir
     files = list_html(raw_dir)
     if not files:
@@ -254,7 +254,7 @@ def _resolve_team_only_endpoint(endpoint_name: str, endpoint: TableEndpoint, raw
     return cases, None
 
 
-def _resolve_player_box_scores(endpoint_name: str, endpoint: TableEndpoint) -> ResolveResult:
+def _resolve_player_box_scores(endpoint_name: str, endpoint: EndpointSpec) -> ResolveResult:
     raw_dir = RAW_ROOT / "player_box_scores"
     files = list_html(raw_dir)
     if not files:
@@ -270,7 +270,7 @@ def _resolve_player_box_scores(endpoint_name: str, endpoint: TableEndpoint) -> R
     return cases, None
 
 
-def _resolve_players_season_totals(endpoint_name: str, endpoint: TableEndpoint) -> ResolveResult:
+def _resolve_players_season_totals(endpoint_name: str, endpoint: EndpointSpec) -> ResolveResult:
     raw_dir = RAW_ROOT / endpoint_name
     files = list_html(raw_dir)
     if not files:
@@ -299,7 +299,7 @@ def _resolve_players_season_totals(endpoint_name: str, endpoint: TableEndpoint) 
     return cases, None
 
 
-def _resolve_season_awards_voting(endpoint_name: str, endpoint: TableEndpoint) -> ResolveResult:
+def _resolve_season_awards_voting(endpoint_name: str, endpoint: EndpointSpec) -> ResolveResult:
     raw_dir = RAW_ROOT / "season_awards_voting"
     files = list_html(raw_dir)
     if not files:
@@ -315,7 +315,7 @@ def _resolve_season_awards_voting(endpoint_name: str, endpoint: TableEndpoint) -
     return cases, None
 
 
-def _resolve_friv_outcomes(endpoint_name: str, endpoint: TableEndpoint) -> ResolveResult:
+def _resolve_friv_outcomes(endpoint_name: str, endpoint: EndpointSpec) -> ResolveResult:
     raw_dir = RAW_ROOT / endpoint_name
     files = list_html(raw_dir)
     if not files:

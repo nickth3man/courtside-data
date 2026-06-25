@@ -232,6 +232,8 @@ def _apply_endpoint_metadata(summary: dict[str, Any], scan: _EventScan, endpoint
     """Fold endpoint-registry metadata into the summary + scan identity fields."""
     endpoint = ENDPOINTS.get(endpoint_name) if endpoint_name is not None else None
     if endpoint is not None:
+        # endpoint_group is a deprecated alias of endpoint_domain, retained for
+        # the probe CSV/report; endpoint_domain is the canonical field.
         summary["endpoint_group"] = _ENDPOINT_GROUPS.get(endpoint_name)
         summary["endpoint_domain"] = _endpoint_domain(endpoint)
         summary["endpoint_kind"] = _endpoint_kind(endpoint)

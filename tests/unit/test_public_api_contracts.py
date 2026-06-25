@@ -432,3 +432,41 @@ def test_probe_facade_matches_submodules():
     assert probe._default_enrichment is enrichment._default_enrichment
     assert probe._with_evaluation is report._with_evaluation
     assert probe.CSV_COLUMNS is csv_report.CSV_COLUMNS
+
+
+# ---------------------------------------------------------------------------
+# 12. EndpointSpec / TableEndpoint alias contract
+# ---------------------------------------------------------------------------
+
+
+def test_endpoint_spec_importable():
+    """``EndpointSpec`` (the canonical spec class) must be importable from
+    ``courtside_data.endpoints``.
+    """
+    from courtside_data.endpoints import EndpointSpec
+
+    assert EndpointSpec is not None
+    assert isinstance(EndpointSpec, type)
+
+
+def test_table_endpoint_alias_importable():
+    """``TableEndpoint`` must remain importable as a backwards-compatible alias."""
+    from courtside_data.endpoints import TableEndpoint
+
+    assert TableEndpoint is not None
+    assert isinstance(TableEndpoint, type)
+
+
+def test_table_endpoint_is_alias_of_endpoint_spec():
+    """``TableEndpoint`` must be the exact same object as ``EndpointSpec`` (a
+    plain alias, not a subclass) so isinstance checks hold for every registered
+    endpoint under both names.
+    """
+    from courtside_data.endpoints import ENDPOINTS, EndpointSpec, TableEndpoint
+
+    assert TableEndpoint is EndpointSpec
+
+    # Every registered endpoint is an instance of BOTH names.
+    for name, endpoint in ENDPOINTS.items():
+        assert isinstance(endpoint, EndpointSpec), f"{name} is not an EndpointSpec"
+        assert isinstance(endpoint, TableEndpoint), f"{name} is not a TableEndpoint"

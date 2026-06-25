@@ -11,7 +11,7 @@ from courtside_data.endpoints._metadata import (
     ParserShape,
     RequestShape,
 )
-from courtside_data.endpoints._table import TableEndpoint, _season
+from courtside_data.endpoints._table import EndpointSpec, _season
 from courtside_data.endpoints._workflow import WorkflowSpec, WorkflowStep
 from courtside_data.output.columns import (
     FRIV_7_GAME_PLAYOFF_SERIES_OUTCOMES_COLUMN_NAMES,
@@ -121,7 +121,6 @@ PLAYOFF_ENDPOINTS = {
     ),
     "playoff_bracket": _season(
         "/playoffs/NBA_{season_end_year}.html",
-        custom=True,
         row_model=playoffs.PlayoffBracketRow,
         csv_columns=PLAYOFF_BRACKET_COLUMN_NAMES,
         metadata=EndpointMetadata(
@@ -134,10 +133,9 @@ PLAYOFF_ENDPOINTS = {
         ),
         workflow=_PLAYOFF_BRACKET_WORKFLOW,
     ),
-    "friv_7_game_playoff_series_outcomes_team_is_down": TableEndpoint(
+    "friv_7_game_playoff_series_outcomes_team_is_down": EndpointSpec(
         path="/friv/7-game-playoff-series-outcomes-22111.html",
         table_id="team-is-down",
-        custom=True,
         row_model=playoffs.SevenGamePlayoffSeriesOutcomesRow,
         csv_columns=FRIV_7_GAME_PLAYOFF_SERIES_OUTCOMES_COLUMN_NAMES,
         metadata=EndpointMetadata(
@@ -150,10 +148,9 @@ PLAYOFF_ENDPOINTS = {
         ),
         workflow=_FRIV_7_GAME_PLAYOFF_OUTCOMES_WORKFLOW,
     ),
-    "friv_7_game_playoff_series_outcomes_team_is_tied": TableEndpoint(
+    "friv_7_game_playoff_series_outcomes_team_is_tied": EndpointSpec(
         path="/friv/7-game-playoff-series-outcomes-22111.html",
         table_id="team-is-tied",
-        custom=True,
         row_model=playoffs.SevenGamePlayoffSeriesOutcomesRow,
         csv_columns=FRIV_7_GAME_PLAYOFF_SERIES_OUTCOMES_COLUMN_NAMES,
         metadata=EndpointMetadata(
@@ -166,10 +163,9 @@ PLAYOFF_ENDPOINTS = {
         ),
         workflow=_FRIV_7_GAME_PLAYOFF_OUTCOMES_WORKFLOW,
     ),
-    "friv_7_game_playoff_series_outcomes_team_is_up": TableEndpoint(
+    "friv_7_game_playoff_series_outcomes_team_is_up": EndpointSpec(
         path="/friv/7-game-playoff-series-outcomes-22111.html",
         table_id="team-is-up",
-        custom=True,
         row_model=playoffs.SevenGamePlayoffSeriesOutcomesRow,
         csv_columns=FRIV_7_GAME_PLAYOFF_SERIES_OUTCOMES_COLUMN_NAMES,
         metadata=EndpointMetadata(

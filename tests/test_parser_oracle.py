@@ -12,7 +12,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 import pytest
-from courtside_data.endpoints import ENDPOINTS
+from courtside_data.endpoints import ENDPOINTS, EndpointKind
 from courtside_data.parsing.generic import xpath_literal
 from parsel import Selector
 from selectolax.parser import HTMLParser
@@ -40,7 +40,7 @@ def _build_oracle_targets() -> list[_OracleTarget]:
         if case.endpoint_name in seen:
             continue
         endpoint = ENDPOINTS[case.endpoint_name]
-        if endpoint.custom or endpoint.table_id is None:
+        if endpoint.kind is EndpointKind.WORKFLOW or endpoint.table_id is None:
             continue
         html_path = next(
             (path for path in (_fixture_path(value) for value in case.url_to_file.values()) if path),
@@ -85,8 +85,12 @@ def test_table_id_selector_agreement(target: _OracleTarget) -> None:
 
 
 def test_oracle_targets_cover_generic_endpoints() -> None:
-    """Sanity check: every non-custom endpoint with ``table_id`` has an oracle target."""
-    expected = {name for name, endpoint in ENDPOINTS.items() if not endpoint.custom and endpoint.table_id is not None}
+    """Sanity check: every generic-table endpoint with ``table_id`` has an oracle target."""
+    expected = {
+        name
+        for name, endpoint in ENDPOINTS.items()
+        if endpoint.kind is EndpointKind.GENERIC_TABLE and endpoint.table_id is not None
+    }
     covered_in_manifest = {case.endpoint_name for case in ALL_CASES if case.endpoint_name in expected}
     oracle_endpoints = {
         target.case_id.rsplit("-", 1)[0] if "-" in target.case_id else target.case_id for target in _ORACLE_TARGETS

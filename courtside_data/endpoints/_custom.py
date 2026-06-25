@@ -387,7 +387,6 @@ CUSTOM_ENDPOINTS = {
         params=("day", "month", "year"),
         error=InvalidDate,
         error_params=("day", "month", "year"),
-        custom=True,
         row_model=boxscores.PlayerBoxScoreRow,
         csv_columns=BOX_SCORE_COLUMN_NAMES,
         metadata=EndpointMetadata(
@@ -405,7 +404,6 @@ CUSTOM_ENDPOINTS = {
         params=("day", "month", "year"),
         error=InvalidDate,
         error_params=("day", "month", "year"),
-        custom=True,
         row_model=boxscores.TeamBoxScoreRow,
         csv_columns=TEAM_BOX_SCORES_COLUMN_NAMES,
         metadata=EndpointMetadata(
@@ -429,7 +427,6 @@ CUSTOM_ENDPOINTS = {
         params=("home_team", "day", "month", "year"),
         error=InvalidDate,
         error_params=("day", "month", "year"),
-        custom=True,
         row_model=playbyplay.PlayByPlayRow,
         csv_columns=PLAY_BY_PLAY_COLUMN_NAMES,
         metadata=EndpointMetadata(
@@ -455,7 +452,6 @@ CUSTOM_ENDPOINTS = {
         error=InvalidPlayerAndSeason,
         error_params=("player_identifier", "season_end_year"),
         error_status_codes=NOT_FOUND_OR_SERVER_ERROR,
-        custom=True,
         row_model=boxscores.RegularSeasonPlayerBoxScoreRow,
         csv_columns=PLAYER_SEASON_BOX_SCORE_COLUMN_NAMES,
         metadata=EndpointMetadata(
@@ -474,7 +470,6 @@ CUSTOM_ENDPOINTS = {
         error=InvalidPlayerAndSeason,
         error_params=("player_identifier", "season_end_year"),
         error_status_codes=NOT_FOUND_OR_SERVER_ERROR,
-        custom=True,
         row_model=boxscores.PlayoffPlayerBoxScoreRow,
         csv_columns=PLAYER_SEASON_BOX_SCORE_COLUMN_NAMES,
         metadata=EndpointMetadata(
@@ -489,7 +484,6 @@ CUSTOM_ENDPOINTS = {
     ),
     "season_schedule": _season(
         "/leagues/NBA_{season_end_year}_games.html",
-        custom=True,
         row_model=schedule.SeasonScheduleRow,
         csv_columns=SCHEDULE_COLUMN_NAMES,
         metadata=EndpointMetadata(
@@ -510,7 +504,6 @@ CUSTOM_ENDPOINTS = {
     ),
     "players_season_totals": _season(
         "/leagues/NBA_{season_end_year}_totals.html",
-        custom=True,
         row_model=players.PlayerSeasonTotalsRow,
         csv_columns=PLAYER_SEASON_TOTALS_COLUMN_NAMES,
         metadata=EndpointMetadata(
@@ -526,7 +519,6 @@ CUSTOM_ENDPOINTS = {
     "players_advanced_season_totals": _season(
         "/leagues/NBA_{season_end_year}_advanced.html",
         params=("season_end_year", "include_combined_values"),
-        custom=True,
         row_model=players.PlayerAdvancedSeasonTotalsRow,
         csv_columns=PLAYER_ADVANCED_SEASON_TOTALS_COLUMN_NAMES,
         metadata=EndpointMetadata(
@@ -545,7 +537,6 @@ CUSTOM_ENDPOINTS = {
         params=("term",),
         error=InvalidSearch,
         error_params=("term",),
-        custom=True,
         row_model=search.SearchResultRow,
         metadata=EndpointMetadata(
             domain=EndpointDomain.GAMES,

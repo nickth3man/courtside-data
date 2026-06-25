@@ -6,7 +6,7 @@ import re
 from dataclasses import dataclass
 from pathlib import Path
 
-from courtside_data.endpoints import TableEndpoint
+from courtside_data.endpoints import EndpointSpec
 
 from tests.fixture_transport import FixtureValue
 
@@ -51,7 +51,7 @@ def case_id(endpoint_name: str, params: dict) -> str:
     return "-".join(parts)
 
 
-def render_url(endpoint: TableEndpoint, params: dict) -> str:
+def render_url(endpoint: EndpointSpec, params: dict) -> str:
     """Render the absolute Basketball-Reference URL for an endpoint call."""
     return BASE_URL + endpoint.path.format(**params)
 

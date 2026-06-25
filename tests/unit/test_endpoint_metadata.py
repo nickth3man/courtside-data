@@ -1,4 +1,4 @@
-"""Tests for the EndpointMetadata taxonomy and its integration with TableEndpoint."""
+"""Tests for the EndpointMetadata taxonomy and its integration with EndpointSpec."""
 
 from __future__ import annotations
 
@@ -12,9 +12,9 @@ from courtside_data.endpoints import (
     EndpointKind,
     EndpointMetadata,
     EndpointScope,
+    EndpointSpec,
     ParserShape,
     RequestShape,
-    TableEndpoint,
     _endpoint,
     _player,
     _season,
@@ -131,31 +131,31 @@ class TestEnumValues:
 
 
 # ---------------------------------------------------------------------------
-# TableEndpoint accepts metadata
+# EndpointSpec accepts metadata
 # ---------------------------------------------------------------------------
 
 
-class TestTableEndpointAcceptsMetadata:
+class TestEndpointSpecAcceptsMetadata:
     def test_metadata_defaults_to_none(self) -> None:
-        ep = TableEndpoint(path="/foo/bar.html")
+        ep = EndpointSpec(path="/foo/bar.html")
         assert ep.metadata is None
 
     def test_metadata_can_be_set(self) -> None:
         meta = _minimal_metadata()
-        ep = TableEndpoint(path="/foo/bar.html", metadata=meta)
+        ep = EndpointSpec(path="/foo/bar.html", metadata=meta)
         assert ep.metadata is meta
 
     def test_table_endpoint_with_metadata_is_frozen(self) -> None:
         meta = _minimal_metadata()
-        ep = TableEndpoint(path="/foo/bar.html", metadata=meta)
+        ep = EndpointSpec(path="/foo/bar.html", metadata=meta)
         attr = "metadata"
         with pytest.raises(FrozenInstanceError):
             setattr(ep, attr, None)
 
     def test_table_endpoint_equality_with_same_metadata(self) -> None:
         meta = _minimal_metadata()
-        ep1 = TableEndpoint(path="/foo/bar.html", metadata=meta)
-        ep2 = TableEndpoint(path="/foo/bar.html", metadata=meta)
+        ep1 = EndpointSpec(path="/foo/bar.html", metadata=meta)
+        ep2 = EndpointSpec(path="/foo/bar.html", metadata=meta)
         assert ep1 == ep2
 
     def test_table_endpoint_inequality_with_different_metadata(self) -> None:
@@ -167,9 +167,53 @@ class TestTableEndpointAcceptsMetadata:
             request_shape=RequestShape.SINGLE_REQUEST,
             parser_shape=ParserShape.TABLE,
         )
-        ep1 = TableEndpoint(path="/foo/bar.html", metadata=meta1)
-        ep2 = TableEndpoint(path="/foo/bar.html", metadata=meta2)
+        ep1 = EndpointSpec(path="/foo/bar.html", metadata=meta1)
+        ep2 = EndpointSpec(path="/foo/bar.html", metadata=meta2)
         assert ep1 != ep2
+
+
+# ---------------------------------------------------------------------------
+# Dispatch kind + deprecated custom compatibility property
+# ---------------------------------------------------------------------------
+
+
+class TestKindAndCustomProperty:
+    """``kind`` drives dispatch; ``custom`` is a deprecated alias of it."""
+
+    def test_kind_defaults_to_generic_table_without_metadata(self) -> None:
+        ep = EndpointSpec(path="/foo/bar.html")
+        assert ep.metadata is None
+        assert ep.kind is EndpointKind.GENERIC_TABLE
+
+    def test_custom_defaults_to_false_without_metadata(self) -> None:
+        ep = EndpointSpec(path="/foo/bar.html")
+        assert ep.custom is False
+
+    def test_kind_reflects_metadata_kind(self) -> None:
+        meta = _minimal_metadata()
+        ep = EndpointSpec(path="/foo/bar.html", metadata=meta)
+        assert ep.kind is EndpointKind.GENERIC_TABLE
+
+    def test_workflow_metadata_makes_kind_workflow(self) -> None:
+        meta = EndpointMetadata(
+            domain=EndpointDomain.GAMES,
+            kind=EndpointKind.WORKFLOW,
+            scope=EndpointScope.DATE,
+            request_shape=RequestShape.SINGLE_REQUEST,
+            parser_shape=ParserShape.TABLE,
+        )
+        ep = EndpointSpec(path="/foo/bar.html", metadata=meta)
+        assert ep.kind is EndpointKind.WORKFLOW
+        assert ep.custom is True
+
+    def test_generic_table_metadata_keeps_custom_false(self) -> None:
+        ep = EndpointSpec(path="/foo/bar.html", metadata=_minimal_metadata())
+        assert ep.kind is EndpointKind.GENERIC_TABLE
+        assert ep.custom is False
+
+    def test_custom_is_consistent_with_kind_across_registry(self) -> None:
+        for name, ep in ENDPOINTS.items():
+            assert ep.custom is (ep.kind is EndpointKind.WORKFLOW), name
 
 
 # ---------------------------------------------------------------------------
@@ -178,7 +222,7 @@ class TestTableEndpointAcceptsMetadata:
 
 
 class TestFactoriesPreserveMetadata:
-    """Each factory must forward ``metadata=`` to the underlying TableEndpoint."""
+    """Each factory must forward ``metadata=`` to the underlying EndpointSpec."""
 
     def test_endpoint_factory_preserves_metadata(self) -> None:
         meta = _minimal_metadata()
@@ -268,7 +312,7 @@ class TestEndpointsRegistryUnaffected:
 
     def test_endpoints_are_tableendpoint_instances(self) -> None:
         for ep in ENDPOINTS.values():
-            assert isinstance(ep, TableEndpoint)
+            assert isinstance(ep, EndpointSpec)
 
     def test_endpoints_still_importable_from_package(self) -> None:
         from courtside_data.endpoints import ENDPOINTS as _ENDPOINTS

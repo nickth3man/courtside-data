@@ -1,4 +1,4 @@
-"""HTTP status-code tuples shared by the endpoint registry and ``TableEndpoint``.
+"""HTTP status-code tuples shared by the endpoint registry and ``EndpointSpec``.
 
 The endpoint factories default ``error_status_codes`` to :data:`NOT_FOUND`, and
 the bespoke player-gamelog endpoints override with

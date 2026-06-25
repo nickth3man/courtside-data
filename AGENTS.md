@@ -460,7 +460,7 @@ uv run mkdocs get-deps          # list PyPI packages the config requires
 
 ### Auto-generated API reference
 
-The `API` section of the site (`docs/api/schemas.md`, `docs/api/endpoints.md`) is rendered by the **mkdocstrings** Python handler with the **griffe-pydantic** extension (configured in `mkdocs.yml` under `plugins:`). Pydantic `BRRow` subclasses in `courtside_data/schemas/` and the `TableEndpoint` registry in `courtside_data/endpoints.py` are documented directly from source — do not hand-edit the rendered schema/field tables; update the docstrings and re-run `mkdocs build`. `docs/index.md` is the hand-written landing page.
+The `API` section of the site (`docs/api/schemas.md`, `docs/api/endpoints.md`) is rendered by the **mkdocstrings** Python handler with the **griffe-pydantic** extension (configured in `mkdocs.yml` under `plugins:`). Pydantic `BRRow` subclasses in `courtside_data/schemas/` and the `EndpointSpec` registry in the `courtside_data/endpoints/` package are documented directly from source — do not hand-edit the rendered schema/field tables; update the docstrings and re-run `mkdocs build`. `docs/index.md` is the hand-written landing page. `TableEndpoint` is retained as a backwards-compatible alias for `EndpointSpec`; both are importable from `courtside_data.endpoints`.
 
 **pymdown-extensions** are provided by the `pymdown-extensions` package (a dep of mkdocs-material ≥ 9) and enabled by name under `markdown_extensions:` in `mkdocs.yml`.
 

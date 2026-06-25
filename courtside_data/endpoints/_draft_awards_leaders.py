@@ -11,7 +11,7 @@ from courtside_data.endpoints._metadata import (
     ParserShape,
     RequestShape,
 )
-from courtside_data.endpoints._table import TableEndpoint, _season
+from courtside_data.endpoints._table import EndpointSpec, _season
 from courtside_data.endpoints._workflow import WorkflowSpec, WorkflowStep
 from courtside_data.output.columns import (
     CAREER_LEADERS_COLUMN_NAMES,
@@ -107,7 +107,6 @@ DRAFT_AWARDS_LEADERS_ENDPOINTS = {
             "leading_all_defense",
             "leading_all_rookie",
         ),
-        custom=True,
         row_model=league.SeasonAwardsVotingRow,
         csv_columns=SEASON_AWARDS_VOTING_COLUMN_NAMES,
         metadata=EndpointMetadata(
@@ -120,7 +119,7 @@ DRAFT_AWARDS_LEADERS_ENDPOINTS = {
         ),
         workflow=_SEASON_AWARDS_VOTING_WORKFLOW,
     ),
-    "season_leaders": TableEndpoint(
+    "season_leaders": EndpointSpec(
         path="/leaders/per_season.html",
         table_id="stats_TOT",
         use_header_fallback=True,
@@ -139,7 +138,7 @@ DRAFT_AWARDS_LEADERS_ENDPOINTS = {
             features=frozenset({EndpointFeature.HEADER_FALLBACK, EndpointFeature.VALUE_COLUMN}),
         ),
     ),
-    "career_leaders": TableEndpoint(
+    "career_leaders": EndpointSpec(
         # Re-registered from ``/leaders/`` (a navigation index) to the
         # canonical career-points leaderboard at ``/leaders/pts_career.html``.
         # The previous registration targeted ``table#leaders_index``, a

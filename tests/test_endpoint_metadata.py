@@ -37,11 +37,19 @@ def test_every_endpoint_has_metadata() -> None:
 
 
 @pytest.mark.parametrize("name", ENDPOINTS)
-def test_metadata_kind_matches_custom_flag(name: str) -> None:
+def test_custom_property_is_derived_from_kind(name: str) -> None:
+    """The deprecated ``.custom`` flag must mirror ``metadata.kind``.
+
+    ``custom`` is no longer a stored field — it is a compatibility property
+    derived from :attr:`EndpointSpec.kind` (``True`` for
+    :attr:`EndpointKind.WORKFLOW`). This pins that relationship so the public
+    surface stays consistent with the kind-based dispatch.
+    """
     endpoint = ENDPOINTS[name]
     assert endpoint.metadata is not None
-    expected = EndpointKind.WORKFLOW if endpoint.custom else EndpointKind.GENERIC_TABLE
-    assert endpoint.metadata.kind is expected
+    expected_custom = endpoint.metadata.kind is EndpointKind.WORKFLOW
+    assert endpoint.kind is endpoint.metadata.kind
+    assert endpoint.custom is expected_custom
 
 
 @pytest.mark.parametrize("name", ENDPOINTS)
@@ -99,5 +107,5 @@ def test_low_level_feature_flags_match_endpoint_fields(name: str) -> None:
     for field_name, feature in _FIELD_FEATURES.items():
         field_is_enabled = bool(getattr(endpoint, field_name))
         assert (feature in endpoint.metadata.features) is field_is_enabled, (
-            f"{name}: {feature.value} should match TableEndpoint.{field_name}"
+            f"{name}: {feature.value} should match EndpointSpec.{field_name}"
         )
