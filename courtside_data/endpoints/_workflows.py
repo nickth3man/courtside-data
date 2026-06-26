@@ -294,8 +294,8 @@ _PLAYERS_SEASON_TOTALS_WORKFLOW = WorkflowSpec(
         WorkflowStep(
             id="parse_player_totals",
             kind=WorkflowStepKind.PARSE,
-            description="Parse player totals rows while dropping combined-team rows.",
-            inputs=("totals_table",),
+            description="Parse player totals rows, optionally retaining combined-team values.",
+            inputs=("totals_table", "include_combined_values"),
             outputs=("rows", "parser_stats"),
             parser_id="player_totals_page",
         ),
@@ -504,6 +504,7 @@ WORKFLOW_ENDPOINTS = {
     ),
     "players_season_totals": _season(
         "/leagues/NBA_{season_end_year}_totals.html",
+        params=("season_end_year", "include_combined_values"),
         row_model=players.PlayerSeasonTotalsRow,
         csv_columns=PLAYER_SEASON_TOTALS_COLUMN_NAMES,
         metadata=EndpointMetadata(

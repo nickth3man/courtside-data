@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from courtside_data.parsing._table_shared import normalize_header, normalize_value_column
+from courtside_data.parsing._table_shared import canonical_cell_value, normalize_header, normalize_value_column
 
 if TYPE_CHECKING:
     from selectolax.lexbor import LexborNode as _SLNode
@@ -36,9 +36,10 @@ class _SelectolaxGenericTableRow:
             if not stat and fallback_headers is not None:
                 stat = fallback_headers[index] if index < len(fallback_headers) else f"col_{index + 1}"
             if stat:
-                self._data[stat] = _node_text(cell)
+                text = _node_text(cell)
                 attrs = _node_all_attrs(cell)
                 attrs.pop("data-stat", None)
+                self._data[stat] = canonical_cell_value(stat, text, attrs)
                 self._metadata[stat] = attrs
 
     def get(self, stat_name: str, default: str = "") -> str:

@@ -220,7 +220,10 @@ _WORKFLOW_EXECUTION_BINDINGS: tuple[WorkflowExecutionBinding, ...] = (
                 output_var="totals_table",
                 table_id="totals_stats",
             ),
-            "parse_player_totals": ParsePlayerTotalsStep(table_id="totals_stats"),
+            "parse_player_totals": ParsePlayerTotalsStep(
+                table_id="totals_stats",
+                include_combined_param="include_combined_values",
+            ),
             "emit_diagnostics": EmitPlayerTotalsDiagnosticsStep(
                 parser_name="players_season_totals",
                 table_id="totals_stats",

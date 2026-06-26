@@ -301,7 +301,7 @@ PLAYER_ALL_STAR_COLUMN_NAMES = [
     "pos",
     "g",
     "gs",
-    "mp",
+    "seconds_played",
     "fg",
     "fga",
     "fg_pct",

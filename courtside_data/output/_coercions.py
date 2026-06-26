@@ -44,6 +44,16 @@ def coerce_years_experience(value: Any) -> Any:
     return coerce_int_or_none(value)
 
 
+def coerce_salary(value: Any) -> Any:
+    """Coerce Basketball-Reference salary strings to whole-dollar integers."""
+    if not isinstance(value, str):
+        return value
+    stripped = value.strip()
+    if not stripped or stripped == "\xa0":
+        return None
+    return coerce_int_or_none(stripped.replace("$", "").replace(",", "").replace(" ", ""))
+
+
 def coerce_int_or_clock(value: Any) -> Any:
     """Coerce numeric minutes while preserving Basketball-Reference clock strings."""
 

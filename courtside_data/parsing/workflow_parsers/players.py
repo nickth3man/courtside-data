@@ -143,13 +143,17 @@ def players_advanced_season_totals(
     return parsed_rows
 
 
-def players_season_totals(facade: FetchFacade, season_end_year: int) -> list[dict[str, Any]]:
-    """Return the league-wide regular season totals table (no combined-team rows)."""
+def players_season_totals(
+    facade: FetchFacade,
+    season_end_year: int,
+    include_combined_values: bool = False,
+) -> list[dict[str, Any]]:
+    """Return the league-wide regular season totals table."""
     url = facade.url(f"/leagues/NBA_{season_end_year}_totals.html")
 
     selector = facade.get_selector(url=url)
     table_id = "totals_stats"
-    parsed_rows, stats = _player_totals_rows_with_stats(selector, table_id, include_combined=False)
+    parsed_rows, stats = _player_totals_rows_with_stats(selector, table_id, include_combined=include_combined_values)
     emit_workflow_endpoint_diagnostics(
         parser_name="players_season_totals",
         endpoint_name="players_season_totals",

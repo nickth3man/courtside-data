@@ -1,8 +1,8 @@
 [
   {
-    "birth_date": "November 7, 1999",
+    "birth_date": "1999-11-07",
     "college": "Nebraska",
-    "flag": "ca CA",
+    "flag": "CA",
     "height": "6-8",
     "number": "45",
     "player": "Dalano Banton",
@@ -13,9 +13,9 @@
     "years_experience": "2"
   },
   {
-    "birth_date": "June 20, 1998",
+    "birth_date": "1998-06-20",
     "college": "Syracuse",
-    "flag": "ca CA",
+    "flag": "CA",
     "height": "6-7",
     "number": "12",
     "player": "Oshae Brissett",
@@ -26,9 +26,9 @@
     "years_experience": "4"
   },
   {
-    "birth_date": "October 24, 1996",
+    "birth_date": "1996-10-24",
     "college": "California",
-    "flag": "us US",
+    "flag": "US",
     "height": "6-6",
     "number": "7",
     "player": "Jaylen Brown",
@@ -39,9 +39,9 @@
     "years_experience": "7"
   },
   {
-    "birth_date": "October 3, 2002",
+    "birth_date": "2002-10-03",
     "college": "Alabama",
-    "flag": "us US",
+    "flag": "US",
     "height": "6-1",
     "number": "20",
     "player": "JD Davison",
@@ -52,9 +52,9 @@
     "years_experience": "1"
   },
   {
-    "birth_date": "December 8, 1997",
+    "birth_date": "1997-12-08",
     "college": "Marquette , Virginia",
-    "flag": "us US",
+    "flag": "US",
     "height": "6-7",
     "number": "30",
     "player": "Sam Hauser",
@@ -65,9 +65,9 @@
     "years_experience": "2"
   },
   {
-    "birth_date": "June 12, 1990",
+    "birth_date": "1990-06-12",
     "college": "UCLA",
-    "flag": "us US",
+    "flag": "US",
     "height": "6-4",
     "number": "4",
     "player": "Jrue Holiday",
@@ -78,9 +78,9 @@
     "years_experience": "14"
   },
   {
-    "birth_date": "June 3, 1986",
+    "birth_date": "1986-06-03",
     "college": "Florida",
-    "flag": "do DO",
+    "flag": "DO",
     "height": "6-8",
     "number": "42",
     "player": "Al Horford",
@@ -91,9 +91,9 @@
     "years_experience": "16"
   },
   {
-    "birth_date": "July 15, 1995",
+    "birth_date": "1995-07-15",
     "college": "Vanderbilt",
-    "flag": "us US",
+    "flag": "US",
     "height": "7-1",
     "number": "40",
     "player": "Luke Kornet",
@@ -104,9 +104,9 @@
     "years_experience": "6"
   },
   {
-    "birth_date": "June 10, 1997",
+    "birth_date": "1997-06-10",
     "college": "Kansas",
-    "flag": "ua UA",
+    "flag": "UA",
     "height": "6-7",
     "number": "50",
     "player": "Svi Mykhailiuk",
@@ -117,9 +117,9 @@
     "years_experience": "5"
   },
   {
-    "birth_date": "November 9, 1999",
+    "birth_date": "1999-11-09",
     "college": "Rice University , USC",
-    "flag": "us US",
+    "flag": "US",
     "height": "6-8",
     "number": "13",
     "player": "Drew Peterson",
@@ -130,9 +130,9 @@
     "years_experience": "R"
   },
   {
-    "birth_date": "August 2, 1995",
+    "birth_date": "1995-08-02",
     "college": "",
-    "flag": "lv LV",
+    "flag": "LV",
     "height": "7-2",
     "number": "8",
     "player": "Kristaps Porzi\u0146\u0123is",
@@ -143,9 +143,9 @@
     "years_experience": "7"
   },
   {
-    "birth_date": "January 28, 1998",
+    "birth_date": "1998-01-28",
     "college": "Oregon",
-    "flag": "us US",
+    "flag": "US",
     "height": "6-1",
     "number": "11",
     "player": "Payton Pritchard",
@@ -156,9 +156,9 @@
     "years_experience": "3"
   },
   {
-    "birth_date": "July 13, 1999",
+    "birth_date": "1999-07-13",
     "college": "Utah State University",
-    "flag": "pt PT",
+    "flag": "PT",
     "height": "7-0",
     "number": "88",
     "player": "Neemias Queta",
@@ -169,9 +169,9 @@
     "years_experience": "2"
   },
   {
-    "birth_date": "September 25, 2002",
+    "birth_date": "2002-09-25",
     "college": "Tennessee",
-    "flag": "us US",
+    "flag": "US",
     "height": "6-4",
     "number": "44",
     "player": "Jaden Springer",
@@ -182,9 +182,9 @@
     "years_experience": "2"
   },
   {
-    "birth_date": "July 9, 1997",
+    "birth_date": "1997-07-09",
     "college": "Penn State",
-    "flag": "us US",
+    "flag": "US",
     "height": "6-7",
     "number": "77",
     "player": "Lamar Stevens",
@@ -195,9 +195,9 @@
     "years_experience": "3"
   },
   {
-    "birth_date": "March 3, 1998",
+    "birth_date": "1998-03-03",
     "college": "Duke",
-    "flag": "us US",
+    "flag": "US",
     "height": "6-8",
     "number": "0",
     "player": "Jayson Tatum",
@@ -208,9 +208,9 @@
     "years_experience": "6"
   },
   {
-    "birth_date": "January 12, 1999",
+    "birth_date": "1999-01-12",
     "college": "Michigan State",
-    "flag": "us US",
+    "flag": "US",
     "height": "6-8",
     "number": "26",
     "player": "Xavier Tillman Sr.",
@@ -221,9 +221,9 @@
     "years_experience": "3"
   },
   {
-    "birth_date": "March 3, 2004",
+    "birth_date": "2004-03-03",
     "college": "Arkansas",
-    "flag": "us US",
+    "flag": "US",
     "height": "6-6",
     "number": "27",
     "player": "Jordan Walsh",
@@ -234,9 +234,9 @@
     "years_experience": "R"
   },
   {
-    "birth_date": "July 2, 1994",
+    "birth_date": "1994-07-02",
     "college": "Colorado-Colorado Springs , Colorado",
-    "flag": "us US",
+    "flag": "US",
     "height": "6-4",
     "number": "9",
     "player": "Derrick White",

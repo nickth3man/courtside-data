@@ -28,8 +28,7 @@ from courtside_data.output.columns import (
     teams,
 )
 
-# Shared primitive consumed by ``boxscores.BOX_SCORE_COLUMN_NAMES`` and
-# ``boxscores.PLAYER_SEASON_BOX_SCORE_COLUMN_NAMES``.
+# Historical shared primitive retained for downstream imports.
 from courtside_data.output.columns._common import SHARED_COLUMN_NAMES
 
 # Per-endpoint contracts — re-exported at the package root so existing

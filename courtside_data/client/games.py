@@ -180,6 +180,7 @@ def season_schedule(
 
 def players_season_totals(
     season_end_year: int,
+    include_combined_values: bool = False,
     output_type: OutputType | None = None,
     output_file_path: str | None = None,
     output_write_option: OutputWriteOption | None = None,
@@ -193,7 +194,7 @@ def players_season_totals(
     """
     return _run_endpoint(
         "players_season_totals",
-        {"season_end_year": season_end_year},
+        {"season_end_year": season_end_year, "include_combined_values": include_combined_values},
         output_type=output_type,
         output_file_path=output_file_path,
         output_write_option=output_write_option,

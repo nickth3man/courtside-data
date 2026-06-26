@@ -74,7 +74,7 @@ def test_generic_table_endpoint_dispatches_to_generic_handler(monkeypatch) -> No
 @pytest.mark.parametrize(
     ("endpoint_name", "params"),
     [
-        ("players_season_totals", {"season_end_year": 2002}),
+        ("players_season_totals", {"season_end_year": 2002, "include_combined_values": False}),
         ("players_advanced_season_totals", {"season_end_year": 1985, "include_combined_values": False}),
         (
             "regular_season_player_box_scores",

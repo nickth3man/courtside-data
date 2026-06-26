@@ -254,6 +254,10 @@ def _conference_field(value: object) -> Conference:
     s = str(value).strip().upper()
     if s.endswith(" CONFERENCE"):
         s = s[:-11].strip()
+    if s == "EAST":
+        s = "EASTERN"
+    elif s == "WEST":
+        s = "WESTERN"
     for conference in Conference:
         if conference.value == s:
             return conference
@@ -270,7 +274,7 @@ def _league_field(value: object) -> League:
     return league
 
 
-_BR_STRICT_DATE_FORMATS = ("%a, %b %d, %Y", "%Y-%m-%d")
+_BR_STRICT_DATE_FORMATS = ("%a, %b %d, %Y", "%Y-%m-%d", "%Y%m%d")
 _BR_STRICT_DATETIME_FORMATS = (
     "%a, %b %d, %Y %I:%M %p",  # "Mon, Jan 01, 2024 8:30 PM"
     "%a, %b %d, %Y %I:%M%p",  # "Mon, Jan 01, 2024 8:30p" (m appended for %p)
@@ -382,7 +386,7 @@ def _br_percentage(value: object) -> float | None:
         parsed = float(s)
     except ValueError as exc:
         raise ValueError(f"Invalid percentage value: {value!r}") from exc
-    if is_percentage:
+    if is_percentage or parsed > 1:
         parsed = parsed / 100.0
     return parsed
 
