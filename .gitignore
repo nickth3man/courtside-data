@@ -70,6 +70,9 @@ pyvenv.cfg
 # Local AI tooling artifacts
 .ignore
 
+# Local UI ideation / scratch diagrams (not product code)
+ideas/
+
 # Generated codemaps
 codemap.md
 courtside_data/codemap.md
