@@ -1,6 +1,6 @@
 # Endpoint Runtime
 
-`courtside_data.endpoints.ENDPOINTS` is the source of truth for endpoint behavior. Each entry is an `EndpointSpec` with URL shape, params, table hints, output columns, error mapping, optional row model, `EndpointMetadata`, and, for workflow endpoints, a `WorkflowSpec`.
+`courtside_data.endpoints.ENDPOINTS` is the source of truth for endpoint behavior. Each entry is an `EndpointSpec` with URL shape, params, table hints, output columns, error mapping, row model, and `EndpointMetadata`; workflow endpoints also declare a `WorkflowSpec`.
 
 ## EndpointMetadata
 
@@ -16,7 +16,7 @@ Workflow endpoints declare an ordered `WorkflowSpec` with typed `WorkflowStepKin
 
 ## Generic Table Path
 
-Generic table endpoints set `EndpointMetadata.kind = EndpointKind.GENERIC_TABLE` and do not declare a workflow spec. The runner calls `GenericEndpointHandler.fetch_table`, which uses `EndpointSpec` table metadata such as `table_id`, `fallback_table_ids`, `commented_table_id`, `transaction_list_fallback`, projection, and value-column normalization. The parsed dict rows then go through the Pydantic row model pipeline when `row_model` is set.
+Generic table endpoints set `EndpointMetadata.kind = EndpointKind.GENERIC_TABLE` and do not declare a workflow spec. The runner calls `GenericEndpointHandler.fetch_table`, which uses `EndpointSpec` table metadata such as `table_id`, `fallback_table_ids`, `commented_table_id`, `transaction_list_fallback`, projection, and value-column normalization. The parsed dict rows then go through the endpoint's Pydantic row model pipeline.
 
 ## Workflow Path
 

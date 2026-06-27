@@ -631,8 +631,6 @@ def test_workflow_diagnostics_fields_are_reported() -> None:
 
 def test_probe_domain_comes_from_endpoint_metadata() -> None:
     for name, endpoint in ENDPOINTS.items():
-        if endpoint.metadata is None:
-            continue
         enrichment = _default_enrichment(endpoint_name=name)
         assert enrichment["endpoint_domain"] == endpoint.metadata.domain.value
 

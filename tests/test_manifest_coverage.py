@@ -41,8 +41,7 @@ def test_multi_request_endpoint_set_is_metadata_derived() -> None:
     metadata_multi_request_endpoints = {
         name
         for name, endpoint in ENDPOINTS.items()
-        if endpoint.metadata is not None
-        and (
+        if (
             endpoint.metadata.request_shape is RequestShape.MULTI_REQUEST
             or EndpointFeature.FANOUT_LINKS in endpoint.metadata.features
         )

@@ -112,11 +112,7 @@ def test_single_page_workflow_endpoints_execute_from_bindings(
 
 
 def _workflow_endpoint_names() -> list[str]:
-    return [
-        name
-        for name, endpoint in ENDPOINTS.items()
-        if endpoint.metadata is not None and endpoint.metadata.kind is EndpointKind.WORKFLOW
-    ]
+    return [name for name, endpoint in ENDPOINTS.items() if endpoint.metadata.kind is EndpointKind.WORKFLOW]
 
 
 def test_every_workflow_endpoint_executes_natively() -> None:

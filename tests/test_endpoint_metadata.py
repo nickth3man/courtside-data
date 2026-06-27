@@ -41,22 +41,21 @@ _EXPECTED_DOMAINS = {
 }
 
 
-def test_every_endpoint_has_metadata() -> None:
-    missing = [name for name, endpoint in ENDPOINTS.items() if endpoint.metadata is None]
-    assert not missing
+def test_every_endpoint_has_required_registry_contract() -> None:
+    for name, endpoint in ENDPOINTS.items():
+        assert endpoint.metadata.domain is _EXPECTED_DOMAINS[name]
+        assert endpoint.row_model is not None
 
 
 @pytest.mark.parametrize("name", ENDPOINTS)
 def test_kind_is_derived_from_metadata(name: str) -> None:
     endpoint = ENDPOINTS[name]
-    assert endpoint.metadata is not None
     assert endpoint.kind is endpoint.metadata.kind
 
 
 @pytest.mark.parametrize("name", ENDPOINTS)
 def test_workflow_endpoints_declare_workflow_spec(name: str) -> None:
     endpoint = ENDPOINTS[name]
-    assert endpoint.metadata is not None
     if endpoint.metadata.kind is EndpointKind.WORKFLOW:
         assert endpoint.workflow is not None
         assert name in NATIVE_WORKFLOW_ENDPOINTS
@@ -66,7 +65,6 @@ def test_workflow_endpoints_declare_workflow_spec(name: str) -> None:
 @pytest.mark.parametrize("name", ENDPOINTS)
 def test_generic_table_endpoints_do_not_declare_workflow_spec(name: str) -> None:
     endpoint = ENDPOINTS[name]
-    assert endpoint.metadata is not None
     if endpoint.metadata.kind is EndpointKind.GENERIC_TABLE:
         assert endpoint.workflow is None
         assert name not in NATIVE_WORKFLOW_ENDPOINTS
@@ -100,15 +98,12 @@ def test_workflow_step_inputs_outputs_are_stable_strings(name: str) -> None:
 @pytest.mark.parametrize("name", ENDPOINTS)
 def test_metadata_domain_is_declared(name: str) -> None:
     endpoint = ENDPOINTS[name]
-    assert endpoint.metadata is not None
-    assert endpoint.metadata.domain is not None
     assert endpoint.metadata.domain is _EXPECTED_DOMAINS[name]
 
 
 @pytest.mark.parametrize("name", ENDPOINTS)
 def test_low_level_feature_flags_match_endpoint_fields(name: str) -> None:
     endpoint = ENDPOINTS[name]
-    assert endpoint.metadata is not None
 
     for field_name, feature in _FIELD_FEATURES.items():
         field_is_enabled = bool(getattr(endpoint, field_name))
@@ -120,7 +115,6 @@ def test_low_level_feature_flags_match_endpoint_fields(name: str) -> None:
 @pytest.mark.parametrize("name", ENDPOINTS)
 def test_request_shape_matches_declared_capabilities(name: str) -> None:
     endpoint = ENDPOINTS[name]
-    assert endpoint.metadata is not None
     features = endpoint.metadata.features
     request_shape = endpoint.metadata.request_shape
     workflow_kinds = {step.kind for step in endpoint.workflow.steps} if endpoint.workflow is not None else set()
@@ -143,7 +137,6 @@ def test_request_shape_matches_declared_capabilities(name: str) -> None:
 @pytest.mark.parametrize("name", ENDPOINTS)
 def test_parser_shape_matches_declared_implementation(name: str) -> None:
     endpoint = ENDPOINTS[name]
-    assert endpoint.metadata is not None
     parser_shape = endpoint.metadata.parser_shape
     workflow_kinds = {step.kind for step in endpoint.workflow.steps} if endpoint.workflow is not None else set()
 
@@ -166,7 +159,6 @@ def test_parser_shape_matches_declared_implementation(name: str) -> None:
 @pytest.mark.parametrize("name", ENDPOINTS)
 def test_workflow_feature_flags_are_backed_by_workflow_steps(name: str) -> None:
     endpoint = ENDPOINTS[name]
-    assert endpoint.metadata is not None
     if endpoint.workflow is None:
         return
 

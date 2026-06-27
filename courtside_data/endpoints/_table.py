@@ -39,6 +39,13 @@ class EndpointSpec:
     """
 
     path: str
+    # Every registered endpoint must declare the Pydantic row model that
+    # validates extracted rows before output formatting.
+    row_model: type[BRRow]
+    # Taxonomy descriptor. Drives runtime dispatch: workflow endpoints route
+    # through the workflow executor; generic-table endpoints route through
+    # the generic fetch-table pipeline.
+    metadata: EndpointMetadata
     # Ordered call-parameter names; defines the positional argument order of
     # the generated HTTPService delegates and client functions.
     params: tuple[str, ...] = ()
@@ -48,10 +55,6 @@ class EndpointSpec:
     use_header_fallback: bool = False
     transaction_list_fallback: bool = False
     exclude_summary_rows: bool = False
-    # If set, the runner validates each extracted row with this BRRow subclass
-    # via the Pydantic pipeline. All registered endpoints are expected to
-    # declare a row model.
-    row_model: type[BRRow] | None = None
     # When set, fetch_table() projects each row down to exactly these keys
     # (missing keys become empty strings).
     projection: tuple[str, ...] | None = None
@@ -73,13 +76,6 @@ class EndpointSpec:
     # whose stat column header rotates with the active category (e.g. ``per``,
     # ``pts``, ``ast``). See :meth:`GenericTable._normalize_value_column`.
     value_column: bool = False
-    # Optional taxonomy descriptor. Drives runtime dispatch: an endpoint
-    # whose ``metadata.kind`` is :attr:`EndpointKind.WORKFLOW` routes through
-    # the workflow executor; every other kind (and endpoints with no metadata)
-    # routes through the generic ``fetch_table`` pipeline. Endpoints are
-    # annotated incrementally; ``None`` means "not yet described" and is
-    # treated as :attr:`EndpointKind.GENERIC_TABLE` by :attr:`kind`.
-    metadata: EndpointMetadata | None = None
     # Optional executable workflow descriptor. Dispatch consumes
     # ``metadata.kind`` to select the workflow executor, then the executor
     # walks this ordered step spec.
@@ -101,13 +97,9 @@ class EndpointSpec:
     def kind(self) -> EndpointKind:
         """Resolved dispatch kind for this endpoint.
 
-        Returns :attr:`EndpointKind.GENERIC_TABLE` when ``metadata`` is absent
-        so directly-constructed specs default to the generic table pipeline.
         Runtime dispatch, parameter coercion, and generic-table guards read
         this field directly.
         """
-        if self.metadata is None:
-            return EndpointKind.GENERIC_TABLE
         return self.metadata.kind
 
 
@@ -117,6 +109,8 @@ def _endpoint(
     params: tuple[str, ...],
     error: type[Exception] | None,
     error_params: tuple[str, ...],
+    row_model: type[BRRow],
+    metadata: EndpointMetadata,
     error_status_codes: tuple[int, ...] = NOT_FOUND,
     table_id: str | None = None,
     fallback_table_ids: tuple[str, ...] = (),
@@ -124,17 +118,17 @@ def _endpoint(
     use_header_fallback: bool = False,
     transaction_list_fallback: bool = False,
     exclude_summary_rows: bool = False,
-    row_model: type[BRRow] | None = None,
     projection: tuple[str, ...] | None = None,
     csv_columns: Sequence[str] | None = None,
     min_year: int | None = None,
     max_year: int | None = None,
     value_column: bool = False,
-    metadata: EndpointMetadata | None = None,
     workflow: WorkflowSpec | None = None,
 ) -> EndpointSpec:
     return EndpointSpec(
         path=path,
+        row_model=row_model,
+        metadata=metadata,
         params=params,
         table_id=table_id,
         fallback_table_ids=fallback_table_ids,
@@ -142,7 +136,6 @@ def _endpoint(
         use_header_fallback=use_header_fallback,
         transaction_list_fallback=transaction_list_fallback,
         exclude_summary_rows=exclude_summary_rows,
-        row_model=row_model,
         projection=projection,
         csv_columns=csv_columns,
         error=error,
@@ -151,7 +144,6 @@ def _endpoint(
         min_year=min_year,
         max_year=max_year,
         value_column=value_column,
-        metadata=metadata,
         workflow=workflow,
     )
 

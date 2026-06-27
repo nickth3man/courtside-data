@@ -98,9 +98,7 @@ def _execute(
         trace.artifact("service_values", values)
         trace.observe_rows("service_values", values, expected_columns=csv_column_names)
 
-    row_model = getattr(endpoint, "row_model", None)
-    if row_model is None:
-        raise RuntimeError(f"Endpoint {endpoint_name!r} does not declare a row_model.")
+    row_model = endpoint.row_model
     data, csv_column_names = validate_rows_pydantic(
         values,
         row_model=row_model,

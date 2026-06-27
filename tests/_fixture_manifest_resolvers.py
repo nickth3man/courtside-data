@@ -28,8 +28,6 @@ from tests.fixture_transport import FixtureValue
 
 def is_multi_request_fixture_endpoint(endpoint: EndpointSpec) -> bool:
     """Return whether an endpoint's fixture case needs a multi-URL map."""
-    if endpoint.metadata is None:
-        return False
     return (
         endpoint.metadata.request_shape is RequestShape.MULTI_REQUEST
         or EndpointFeature.FANOUT_LINKS in endpoint.metadata.features

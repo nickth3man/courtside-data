@@ -6,8 +6,8 @@ generated CLI subcommand tree. Each entry in
 [`ENDPOINTS`][courtside_data.endpoints.ENDPOINTS] is a
 [`EndpointSpec`][courtside_data.endpoints.EndpointSpec] dataclass
 capturing the URL template, the table locator strategy, the CSV column
-contract, the Pydantic row model (if any), the optional column
-projection, and the HTTP-status to domain-error mapping.
+contract, the required Pydantic row model, optional column projection,
+and the HTTP-status to domain-error mapping.
 
 The same registry feeds `GenericEndpointHandler.fetch_table` for
 generic-table endpoints (`EndpointKind.GENERIC_TABLE`) and

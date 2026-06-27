@@ -18,14 +18,14 @@ from courtside_data.endpoints import ENDPOINTS, EndpointSpec
 
 def _endpoint_domain(endpoint: EndpointSpec | None) -> str | None:
     """Return the endpoint domain field."""
-    if endpoint is None or endpoint.metadata is None:
+    if endpoint is None:
         return None
     return endpoint.metadata.domain.value
 
 
 def _endpoint_kind(endpoint: EndpointSpec | None) -> str | None:
     """Return the endpoint kind field (``generic_table`` / ``workflow``)."""
-    if endpoint is None or endpoint.metadata is None:
+    if endpoint is None:
         return None
     return endpoint.metadata.kind.value
 

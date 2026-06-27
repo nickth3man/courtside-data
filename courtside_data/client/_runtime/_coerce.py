@@ -53,7 +53,6 @@ def _coerce_params(endpoint_name: str, params: dict[str, Any]) -> dict[str, Any]
     endpoint = ENDPOINTS[endpoint_name]
     if (
         endpoint.kind is not EndpointKind.WORKFLOW
-        or endpoint.metadata is None
         or EndpointFeature.ENUM_PARAM_COERCION not in endpoint.metadata.features
     ):
         return params
