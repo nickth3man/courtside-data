@@ -16,7 +16,8 @@ from courtside_data.parsing.cells import (
     slug_from_metadata,
     team_name_from_abbreviation,
 )
-from courtside_data.parsing.tables import GenericTableRow
+from courtside_data.parsing.generic import find_table
+from courtside_data.parsing.tables import GenericTable, GenericTableRow
 from courtside_data.parsing.workflow_parsers._diagnostics import (
     IGNORE_EMPTY_TABLE,
     IGNORE_MISSING_FOOTER,
@@ -232,6 +233,42 @@ def parse_box_score_player_basic_with_stats(selector: Selector) -> tuple[list[di
 
 def parse_box_score_player_basic(selector: Selector) -> list[dict[str, Any]]:
     rows, _ = parse_box_score_player_basic_with_stats(selector)
+    return rows
+
+
+def parse_box_score_team_four_factors_with_stats(selector: Selector) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    """Return per-team Four Factors rows from one game box-score page."""
+    table = find_table(selector, "four_factors")
+    if table is None:
+        raise ValueError("Expected four_factors table in box score page")
+
+    raw_rows = [row.to_dict() for row in GenericTable(table).rows]
+    raw_column_count = len(raw_rows[0]) if raw_rows else 0
+    parsed_rows: list[dict[str, Any]] = []
+    for row in raw_rows:
+        team_abbreviation = str(row.get("team_id", "")).strip()
+        if not team_abbreviation:
+            continue
+        row["team_name_abbr"] = team_name_from_abbreviation(team_abbreviation)
+        parsed_rows.append(row)
+
+    if len(parsed_rows) != 2:
+        raise ValueError(f"Expected 2 team four factor rows in box score page, got {len(parsed_rows)}")
+
+    stats = {
+        "game_count": 1,
+        "team_count": len(parsed_rows),
+        "raw_row_count": len(raw_rows),
+        "raw_column_count": raw_column_count,
+        "stat_table_count": 1,
+        "selected_table_id": "four_factors",
+        "ignored_row_reason_counts": {},
+    }
+    return parsed_rows, stats
+
+
+def parse_box_score_team_four_factors(selector: Selector) -> list[dict[str, Any]]:
+    rows, _ = parse_box_score_team_four_factors_with_stats(selector)
     return rows
 
 

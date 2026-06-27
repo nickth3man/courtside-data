@@ -54,6 +54,11 @@ _CASE_BY_ID: dict[str, Case] = {case.id: case for case in ALL_CASES}
 _BOX_SCORE_CSV_CONTRACT_CASES = (
     ("box_score_player_basic", "box_score_player_basic-201701010ATL", boxscores.BoxScorePlayerBasicRow),
     ("box_score_game_info", "box_score_game_info-201701010ATL", boxscores.BoxScoreGameInfoRow),
+    (
+        "box_score_team_four_factors",
+        "box_score_team_four_factors-201701010ATL",
+        boxscores.BoxScoreTeamFourFactorsRow,
+    ),
     ("player_box_scores", "player_box_scores-1-1-2018", boxscores.PlayerBoxScoreRow),
     ("team_box_scores", "team_box_scores-1-1-2001", boxscores.TeamBoxScoreRow),
     (

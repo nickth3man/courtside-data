@@ -5,8 +5,12 @@ from __future__ import annotations
 from pathlib import Path
 
 from courtside_data.domain import Location, Outcome, Team
-from courtside_data.parsing.rows import parse_box_score_game_info_with_stats, parse_box_score_player_basic_with_stats
-from courtside_data.schemas.boxscores import BoxScoreGameInfoRow, BoxScorePlayerBasicRow
+from courtside_data.parsing.rows import (
+    parse_box_score_game_info_with_stats,
+    parse_box_score_player_basic_with_stats,
+    parse_box_score_team_four_factors_with_stats,
+)
+from courtside_data.schemas.boxscores import BoxScoreGameInfoRow, BoxScorePlayerBasicRow, BoxScoreTeamFourFactorsRow
 from parsel import Selector
 
 from tests.fixture_manifest import case_for
@@ -64,6 +68,26 @@ def test_box_score_game_info_parser_extracts_footer_metadata() -> None:
     assert info.inactive_away == ["Bryn Forbes"]
 
 
+def test_box_score_team_four_factors_parser_extracts_commented_table() -> None:
+    rows, stats = parse_box_score_team_four_factors_with_stats(_selector())
+
+    assert stats["team_count"] == 2
+    assert stats["selected_table_id"] == "four_factors"
+    assert stats["raw_column_count"] == 7
+
+    away = BoxScoreTeamFourFactorsRow.model_validate(rows[0])
+    home = BoxScoreTeamFourFactorsRow.model_validate(rows[1])
+    assert away.team is Team.SAN_ANTONIO_SPURS
+    assert away.pace == 92.0
+    assert away.effective_field_goal_percentage == 0.517
+    assert away.turnover_percentage == 10.7
+    assert away.offensive_rebound_percentage == 20.5
+    assert away.free_throw_attempt_rate == 0.211
+    assert away.offensive_rating == 110.3
+    assert home.team is Team.ATLANTA_HAWKS
+    assert home.offensive_rating == 112.3
+
+
 def test_box_score_player_basic_executes_from_offline_fixture(make_offline_client) -> None:
     case = case_for("box_score_player_basic", game_id="201701010ATL")
     assert case is not None
@@ -84,3 +108,14 @@ def test_box_score_game_info_executes_from_offline_fixture(make_offline_client) 
 
     assert len(result) == 1
     assert isinstance(result[0], BoxScoreGameInfoRow)
+
+
+def test_box_score_team_four_factors_executes_from_offline_fixture(make_offline_client) -> None:
+    case = case_for("box_score_team_four_factors", game_id="201701010ATL")
+    assert case is not None
+    client = make_offline_client(case)
+
+    result = client.box_score_team_four_factors(**case.params)
+
+    assert len(result) == 2
+    assert all(isinstance(row, BoxScoreTeamFourFactorsRow) for row in result)

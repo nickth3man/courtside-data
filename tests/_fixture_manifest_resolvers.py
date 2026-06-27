@@ -47,7 +47,7 @@ def resolve_endpoint(endpoint_name: str, endpoint: EndpointSpec) -> ResolveResul
     if endpoint_name == "player_box_scores":
         return _resolve_player_box_scores(endpoint_name, endpoint)
 
-    if endpoint_name in ("box_score_player_basic", "box_score_game_info"):
+    if endpoint_name in ("box_score_player_basic", "box_score_game_info", "box_score_team_four_factors"):
         return _resolve_box_score_game_endpoint(endpoint_name, endpoint)
 
     if endpoint_name in ("regular_season_player_box_scores", "playoff_player_box_scores"):

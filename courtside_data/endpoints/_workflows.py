@@ -19,6 +19,7 @@ from courtside_data.output.columns import (
     BOX_SCORE_COLUMN_NAMES,
     BOX_SCORE_GAME_INFO_COLUMN_NAMES,
     BOX_SCORE_PLAYER_BASIC_COLUMN_NAMES,
+    BOX_SCORE_TEAM_FOUR_FACTORS_COLUMN_NAMES,
     PLAY_BY_PLAY_COLUMN_NAMES,
     PLAYER_ADVANCED_SEASON_TOTALS_COLUMN_NAMES,
     PLAYER_SEASON_BOX_SCORE_COLUMN_NAMES,
@@ -157,6 +158,31 @@ _BOX_SCORE_GAME_INFO_WORKFLOW = WorkflowSpec(
             id="emit_diagnostics",
             kind=WorkflowStepKind.DIAGNOSTICS,
             description="Record parser diagnostics for per-game metadata.",
+            inputs=("rows", "parser_stats"),
+        ),
+    ),
+)
+
+_BOX_SCORE_TEAM_FOUR_FACTORS_WORKFLOW = WorkflowSpec(
+    steps=(
+        WorkflowStep(
+            id="fetch_box_score",
+            kind=WorkflowStepKind.FETCH,
+            description="Fetch the per-game Basketball Reference box-score page.",
+            inputs=("game_id",),
+            outputs=("box_score_page",),
+        ),
+        WorkflowStep(
+            id="parse_team_four_factors",
+            kind=WorkflowStepKind.PARSE,
+            description="Parse the per-team Four Factors table.",
+            inputs=("box_score_page",),
+            outputs=("rows", "parser_stats"),
+        ),
+        WorkflowStep(
+            id="emit_diagnostics",
+            kind=WorkflowStepKind.DIAGNOSTICS,
+            description="Record parser diagnostics for per-game team Four Factors rows.",
             inputs=("rows", "parser_stats"),
         ),
     ),
@@ -467,6 +493,23 @@ WORKFLOW_ENDPOINTS = {
             features=frozenset({EndpointFeature.DERIVED_FIELDS, EndpointFeature.WORKFLOW_DIAGNOSTICS}),
         ),
         workflow=_BOX_SCORE_GAME_INFO_WORKFLOW,
+    ),
+    "box_score_team_four_factors": _endpoint(
+        "/boxscores/{game_id}.html",
+        params=("game_id",),
+        error=None,
+        error_params=(),
+        row_model=boxscores.BoxScoreTeamFourFactorsRow,
+        csv_columns=BOX_SCORE_TEAM_FOUR_FACTORS_COLUMN_NAMES,
+        metadata=EndpointMetadata(
+            domain=EndpointDomain.GAMES,
+            kind=EndpointKind.WORKFLOW,
+            scope=EndpointScope.GAME,
+            request_shape=RequestShape.SINGLE_REQUEST,
+            parser_shape=ParserShape.TABLE,
+            features=frozenset({EndpointFeature.DERIVED_FIELDS, EndpointFeature.WORKFLOW_DIAGNOSTICS}),
+        ),
+        workflow=_BOX_SCORE_TEAM_FOUR_FACTORS_WORKFLOW,
     ),
     "player_box_scores": _endpoint(
         "/friv/dailyleaders.cgi?month={month}&day={day}&year={year}",

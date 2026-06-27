@@ -565,6 +565,16 @@ class ParseBoxScoreGameInfoStep:
 
 
 @dataclass(frozen=True, slots=True)
+class ParseBoxScoreTeamFourFactorsStep:
+    """Parse per-team Four Factors rows from a single game box-score page."""
+
+    def execute(self, context: WorkflowExecutionContext) -> None:
+        parsed_rows, stats = rows.parse_box_score_team_four_factors_with_stats(context.scratch["box_score_page"])
+        context.scratch["rows"] = parsed_rows
+        context.scratch["parser_stats"] = stats
+
+
+@dataclass(frozen=True, slots=True)
 class EmitPlayerBoxScoresDiagnosticsStep:
     """Emit parser diagnostics for the daily-leaders table."""
 

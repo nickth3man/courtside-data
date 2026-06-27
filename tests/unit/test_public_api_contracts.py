@@ -391,8 +391,8 @@ def test_row_adapters_registry_populated():
     assert len(ROW_ADAPTERS) >= 50, f"Expected >=50 registered models, got {len(ROW_ADAPTERS)}"
     # All register() calls happen at import time — every domain module must
     # have contributed its models. The count must remain stable.
-    assert len(ROW_ADAPTERS) == 57, (
-        f"ROW_ADAPTERS count changed from 57 to {len(ROW_ADAPTERS)} — a model was accidentally dropped or added"
+    assert len(ROW_ADAPTERS) == 58, (
+        f"ROW_ADAPTERS count changed from 58 to {len(ROW_ADAPTERS)} — a model was accidentally dropped or added"
     )
 
 

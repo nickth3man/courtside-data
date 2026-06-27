@@ -259,7 +259,7 @@ class BoxScorePlayerAdvancedRow(BRRow, _BoxScoreAdvancedStats):
 
 
 class BoxScoreTeamFourFactorsRow(BRRow):
-    """One row per team from the per-game Four Factors table. SCAFFOLD.
+    """One row per team from the per-game Four Factors table.
 
     Columns: Pace, eFG%, TOV%, ORB%, FT/FGA, ORtg.
     """
@@ -271,6 +271,9 @@ class BoxScoreTeamFourFactorsRow(BRRow):
     offensive_rebound_percentage: BRFloatOrNone = Field(default=None, validation_alias="orb_pct")
     free_throw_attempt_rate: BRFloatOrNone = Field(default=None, validation_alias="ft_rate")
     offensive_rating: BRFloatOrNone = Field(default=None, validation_alias="off_rtg")
+
+
+register("box_score_team_four_factors", BoxScoreTeamFourFactorsRow)
 
 
 class BoxScoreLineScoreRow(BRRow):

@@ -41,6 +41,7 @@ from courtside_data.parsing.workflows._steps import (
     PaginateSearchResultsStep,
     ParseBoxScoreGameInfoStep,
     ParseBoxScorePlayerBasicStep,
+    ParseBoxScoreTeamFourFactorsStep,
     ParseEachTeamBoxScoreStep,
     ParseInlineScheduleMonthStep,
     ParseOptionalTableRowsStep,
@@ -122,6 +123,17 @@ _WORKFLOW_EXECUTION_BINDINGS: tuple[WorkflowExecutionBinding, ...] = (
             "emit_diagnostics": EmitBoxScoreDiagnosticsStep(
                 parser_name="box_score_game_info",
                 source_sections=("div.scorebox", "div.scorebox_meta", "#content > div"),
+            ),
+        },
+    ),
+    _binding(
+        "box_score_team_four_factors",
+        {
+            "fetch_box_score": FetchEndpointPathStep(output_var="box_score_page"),
+            "parse_team_four_factors": ParseBoxScoreTeamFourFactorsStep(),
+            "emit_diagnostics": EmitBoxScoreDiagnosticsStep(
+                parser_name="box_score_team_four_factors",
+                source_sections=("table#four_factors",),
             ),
         },
     ),
