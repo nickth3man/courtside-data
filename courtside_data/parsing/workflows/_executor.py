@@ -3,28 +3,17 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
-from dataclasses import dataclass
+from functools import partial
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Any, Protocol
 
+from courtside_data._frozen import frozen_slot
 from courtside_data.parsing.workflows._context import WorkflowExecutionContext
 from courtside_data.parsing.workflows._steps import (
     AttachStandingsConferenceStep,
     BranchSearchResultsStep,
     BuildSearchResultStep,
-    EmitAwardVotingDiagnosticsStep,
-    EmitBoxScoreDiagnosticsStep,
-    EmitFrivOutcomesDiagnosticsStep,
-    EmitPlayByPlayDiagnosticsStep,
-    EmitPlayerBoxScoresDiagnosticsStep,
-    EmitPlayerGameLogDiagnosticsStep,
-    EmitPlayerTotalsDiagnosticsStep,
-    EmitPlayoffBracketDiagnosticsStep,
-    EmitScheduleDiagnosticsStep,
-    EmitSearchDiagnosticsStep,
-    EmitStandingsByDateDiagnosticsStep,
-    EmitStandingsDiagnosticsStep,
-    EmitTeamBoxScoresDiagnosticsStep,
+    EmitDiagnosticsStep,
     ExpandStandingsConferencesStep,
     FetchDailyBoxScoresIndexStep,
     FetchEndpointPathStep,
@@ -63,6 +52,21 @@ from courtside_data.parsing.workflows._steps import (
     SelectScheduleMonthLinksStep,
     SelectTableStep,
 )
+from courtside_data.parsing.workflows._steps._emit import (
+    _emit_award_voting_diagnostics,
+    _emit_box_score_diagnostics,
+    _emit_friv_outcomes_diagnostics,
+    _emit_play_by_play_diagnostics,
+    _emit_player_box_scores_diagnostics,
+    _emit_player_game_log_diagnostics,
+    _emit_player_totals_diagnostics,
+    _emit_playoff_bracket_diagnostics,
+    _emit_schedule_diagnostics,
+    _emit_search_diagnostics,
+    _emit_standings_by_date_diagnostics,
+    _emit_standings_diagnostics,
+    _emit_team_box_scores_diagnostics,
+)
 
 if TYPE_CHECKING:
     from courtside_data.endpoints import EndpointSpec
@@ -76,7 +80,7 @@ class WorkflowStepHandler(Protocol):
         """Execute the step against the shared workflow context."""
 
 
-@dataclass(frozen=True, slots=True)
+@frozen_slot
 class WorkflowExecutionBinding:
     """Native execution binding for one ``EndpointKind.WORKFLOW`` endpoint."""
 
@@ -112,9 +116,12 @@ _WORKFLOW_EXECUTION_BINDINGS: tuple[WorkflowExecutionBinding, ...] = (
         {
             "fetch_box_score": FetchEndpointPathStep(output_var="box_score_page"),
             "parse_player_basic": ParseBoxScorePlayerBasicStep(),
-            "emit_diagnostics": EmitBoxScoreDiagnosticsStep(
-                parser_name="box_score_player_basic",
-                source_sections=('table.stats_table[id$="-game-basic"]', "div.scorebox"),
+            "emit_diagnostics": EmitDiagnosticsStep(
+                emitter=partial(
+                    _emit_box_score_diagnostics,
+                    parser_name="box_score_player_basic",
+                    source_sections=('table.stats_table[id$="-game-basic"]', "div.scorebox"),
+                ),
             ),
         },
     ),
@@ -123,9 +130,12 @@ _WORKFLOW_EXECUTION_BINDINGS: tuple[WorkflowExecutionBinding, ...] = (
         {
             "fetch_box_score": FetchEndpointPathStep(output_var="box_score_page"),
             "parse_game_info": ParseBoxScoreGameInfoStep(),
-            "emit_diagnostics": EmitBoxScoreDiagnosticsStep(
-                parser_name="box_score_game_info",
-                source_sections=("div.scorebox", "div.scorebox_meta", "#content > div"),
+            "emit_diagnostics": EmitDiagnosticsStep(
+                emitter=partial(
+                    _emit_box_score_diagnostics,
+                    parser_name="box_score_game_info",
+                    source_sections=("div.scorebox", "div.scorebox_meta", "#content > div"),
+                ),
             ),
         },
     ),
@@ -134,9 +144,12 @@ _WORKFLOW_EXECUTION_BINDINGS: tuple[WorkflowExecutionBinding, ...] = (
         {
             "fetch_box_score": FetchEndpointPathStep(output_var="box_score_page"),
             "parse_player_advanced": ParseBoxScorePlayerAdvancedStep(),
-            "emit_diagnostics": EmitBoxScoreDiagnosticsStep(
-                parser_name="box_score_player_advanced",
-                source_sections=('table.stats_table[id$="-game-advanced"]', "div.scorebox"),
+            "emit_diagnostics": EmitDiagnosticsStep(
+                emitter=partial(
+                    _emit_box_score_diagnostics,
+                    parser_name="box_score_player_advanced",
+                    source_sections=('table.stats_table[id$="-game-advanced"]', "div.scorebox"),
+                ),
             ),
         },
     ),
@@ -145,9 +158,12 @@ _WORKFLOW_EXECUTION_BINDINGS: tuple[WorkflowExecutionBinding, ...] = (
         {
             "fetch_box_score": FetchEndpointPathStep(output_var="box_score_page"),
             "parse_line_score": ParseBoxScoreLineScoreStep(),
-            "emit_diagnostics": EmitBoxScoreDiagnosticsStep(
-                parser_name="box_score_line_score",
-                source_sections=("table#line_score",),
+            "emit_diagnostics": EmitDiagnosticsStep(
+                emitter=partial(
+                    _emit_box_score_diagnostics,
+                    parser_name="box_score_line_score",
+                    source_sections=("table#line_score",),
+                ),
             ),
         },
     ),
@@ -156,9 +172,12 @@ _WORKFLOW_EXECUTION_BINDINGS: tuple[WorkflowExecutionBinding, ...] = (
         {
             "fetch_box_score": FetchEndpointPathStep(output_var="box_score_page"),
             "parse_player_quarter_splits": ParseBoxScorePlayerQuarterSplitsStep(),
-            "emit_diagnostics": EmitBoxScoreDiagnosticsStep(
-                parser_name="box_score_player_quarter_splits",
-                source_sections=('table.stats_table[id*="-basic"]', "div.scorebox"),
+            "emit_diagnostics": EmitDiagnosticsStep(
+                emitter=partial(
+                    _emit_box_score_diagnostics,
+                    parser_name="box_score_player_quarter_splits",
+                    source_sections=('table.stats_table[id*="-basic"]', "div.scorebox"),
+                ),
             ),
         },
     ),
@@ -167,9 +186,12 @@ _WORKFLOW_EXECUTION_BINDINGS: tuple[WorkflowExecutionBinding, ...] = (
         {
             "fetch_box_score": FetchEndpointPathStep(output_var="box_score_page"),
             "parse_team_four_factors": ParseBoxScoreTeamFourFactorsStep(),
-            "emit_diagnostics": EmitBoxScoreDiagnosticsStep(
-                parser_name="box_score_team_four_factors",
-                source_sections=("table#four_factors",),
+            "emit_diagnostics": EmitDiagnosticsStep(
+                emitter=partial(
+                    _emit_box_score_diagnostics,
+                    parser_name="box_score_team_four_factors",
+                    source_sections=("table#four_factors",),
+                ),
             ),
         },
     ),
@@ -182,7 +204,7 @@ _WORKFLOW_EXECUTION_BINDINGS: tuple[WorkflowExecutionBinding, ...] = (
             "fetch_and_parse_each_game": ParseEachTeamBoxScoreStep,
             "merge_rows": MergeTeamBoxScoreRowsStep,
             "merge_parser_stats": MergeTeamBoxScoreStatsStep,
-            "emit_diagnostics": EmitTeamBoxScoresDiagnosticsStep(),
+            "emit_diagnostics": EmitDiagnosticsStep(emitter=_emit_team_box_scores_diagnostics),
         },
     ),
     _binding(
@@ -195,7 +217,7 @@ _WORKFLOW_EXECUTION_BINDINGS: tuple[WorkflowExecutionBinding, ...] = (
             ),
             "select_stats_table": SelectDailyLeadersStatsTableStep(),
             "parse_player_box_scores": ParsePlayerBoxScoresStep(),
-            "emit_diagnostics": EmitPlayerBoxScoresDiagnosticsStep(),
+            "emit_diagnostics": EmitDiagnosticsStep(emitter=_emit_player_box_scores_diagnostics),
         },
     ),
     _binding(
@@ -206,7 +228,7 @@ _WORKFLOW_EXECUTION_BINDINGS: tuple[WorkflowExecutionBinding, ...] = (
             "fetch_play_by_play": FetchPlayByPlayPageStep(),
             "resolve_team_labels": ResolvePlayByPlayTeamLabelsStep(),
             "parse_play_by_play": ParsePlayByPlayStep(),
-            "emit_diagnostics": EmitPlayByPlayDiagnosticsStep(),
+            "emit_diagnostics": EmitDiagnosticsStep(emitter=_emit_play_by_play_diagnostics),
         },
     ),
     _binding(
@@ -214,7 +236,7 @@ _WORKFLOW_EXECUTION_BINDINGS: tuple[WorkflowExecutionBinding, ...] = (
         {
             "fetch_league_page": FetchEndpointPathStep(output_var="league_page"),
             "parse_standings_blocks": ParseStandingsBlocksStep(),
-            "emit_diagnostics": EmitStandingsDiagnosticsStep(),
+            "emit_diagnostics": EmitDiagnosticsStep(emitter=_emit_standings_diagnostics),
         },
     ),
     _binding(
@@ -224,7 +246,7 @@ _WORKFLOW_EXECUTION_BINDINGS: tuple[WorkflowExecutionBinding, ...] = (
             "fetch_conference_pages": FetchStandingsConferencePagesStep(),
             "parse_conference_tables": ParseStandingsConferenceTablesStep(),
             "attach_conference": AttachStandingsConferenceStep(),
-            "emit_diagnostics": EmitStandingsByDateDiagnosticsStep(),
+            "emit_diagnostics": EmitDiagnosticsStep(emitter=_emit_standings_by_date_diagnostics),
         },
     ),
     _binding(
@@ -234,7 +256,7 @@ _WORKFLOW_EXECUTION_BINDINGS: tuple[WorkflowExecutionBinding, ...] = (
             "branch_redirect_or_results": BranchSearchResultsStep(),
             "paginate_results": PaginateSearchResultsStep(),
             "parse_search_results": BuildSearchResultStep(),
-            "emit_diagnostics": EmitSearchDiagnosticsStep(),
+            "emit_diagnostics": EmitDiagnosticsStep(emitter=_emit_search_diagnostics),
         },
         result="players",
     ),
@@ -247,7 +269,7 @@ _WORKFLOW_EXECUTION_BINDINGS: tuple[WorkflowExecutionBinding, ...] = (
             "fetch_months": FetchScheduleMonthsStep(),
             "parse_months": ParseScheduleMonthsStep(),
             "merge_rows": MergeScheduleRowsStep(),
-            "emit_diagnostics": EmitScheduleDiagnosticsStep(),
+            "emit_diagnostics": EmitDiagnosticsStep(emitter=_emit_schedule_diagnostics),
         },
     ),
     _binding(
@@ -261,9 +283,12 @@ _WORKFLOW_EXECUTION_BINDINGS: tuple[WorkflowExecutionBinding, ...] = (
                 raise_invalid_player_and_season=True,
             ),
             "parse_player_game_log": ParsePlayerGameLogStep(),
-            "emit_diagnostics": EmitPlayerGameLogDiagnosticsStep(
-                parser_name="regular_season_player_box_scores",
-                table_id="player_game_log_reg",
+            "emit_diagnostics": EmitDiagnosticsStep(
+                emitter=partial(
+                    _emit_player_game_log_diagnostics,
+                    parser_name="regular_season_player_box_scores",
+                    table_id="player_game_log_reg",
+                ),
             ),
         },
     ),
@@ -278,9 +303,12 @@ _WORKFLOW_EXECUTION_BINDINGS: tuple[WorkflowExecutionBinding, ...] = (
                 raise_invalid_player_and_season=True,
             ),
             "parse_player_game_log": ParsePlayerGameLogStep(),
-            "emit_diagnostics": EmitPlayerGameLogDiagnosticsStep(
-                parser_name="playoff_player_box_scores",
-                table_id="player_game_log_post",
+            "emit_diagnostics": EmitDiagnosticsStep(
+                emitter=partial(
+                    _emit_player_game_log_diagnostics,
+                    parser_name="playoff_player_box_scores",
+                    table_id="player_game_log_post",
+                ),
             ),
         },
     ),
@@ -297,9 +325,12 @@ _WORKFLOW_EXECUTION_BINDINGS: tuple[WorkflowExecutionBinding, ...] = (
                 table_id="totals_stats",
                 include_combined_param="include_combined_values",
             ),
-            "emit_diagnostics": EmitPlayerTotalsDiagnosticsStep(
-                parser_name="players_season_totals",
-                table_id="totals_stats",
+            "emit_diagnostics": EmitDiagnosticsStep(
+                emitter=partial(
+                    _emit_player_totals_diagnostics,
+                    parser_name="players_season_totals",
+                    table_id="totals_stats",
+                ),
             ),
         },
     ),
@@ -316,9 +347,12 @@ _WORKFLOW_EXECUTION_BINDINGS: tuple[WorkflowExecutionBinding, ...] = (
                 table_id="advanced",
                 include_combined_param="include_combined_values",
             ),
-            "emit_diagnostics": EmitPlayerTotalsDiagnosticsStep(
-                parser_name="players_advanced_season_totals",
-                table_id="advanced",
+            "emit_diagnostics": EmitDiagnosticsStep(
+                emitter=partial(
+                    _emit_player_totals_diagnostics,
+                    parser_name="players_advanced_season_totals",
+                    table_id="advanced",
+                ),
             ),
         },
     ),
@@ -336,7 +370,7 @@ _WORKFLOW_EXECUTION_BINDINGS: tuple[WorkflowExecutionBinding, ...] = (
                 table_var="award_table",
                 parser_id="awards_voting_table",
             ),
-            "emit_diagnostics": EmitAwardVotingDiagnosticsStep(),
+            "emit_diagnostics": EmitDiagnosticsStep(emitter=_emit_award_voting_diagnostics),
         },
     ),
     _binding(
@@ -352,7 +386,7 @@ _WORKFLOW_EXECUTION_BINDINGS: tuple[WorkflowExecutionBinding, ...] = (
                 table_var="bracket_table",
                 parser_id="playoff_bracket_table",
             ),
-            "emit_diagnostics": EmitPlayoffBracketDiagnosticsStep(),
+            "emit_diagnostics": EmitDiagnosticsStep(emitter=_emit_playoff_bracket_diagnostics),
         },
     ),
     _binding(
@@ -364,7 +398,7 @@ _WORKFLOW_EXECUTION_BINDINGS: tuple[WorkflowExecutionBinding, ...] = (
                 table_var="outcome_table",
                 parser_id="friv_playoff_outcomes_table",
             ),
-            "emit_diagnostics": EmitFrivOutcomesDiagnosticsStep(),
+            "emit_diagnostics": EmitDiagnosticsStep(emitter=_emit_friv_outcomes_diagnostics),
         },
     ),
     _binding(
@@ -376,7 +410,7 @@ _WORKFLOW_EXECUTION_BINDINGS: tuple[WorkflowExecutionBinding, ...] = (
                 table_var="outcome_table",
                 parser_id="friv_playoff_outcomes_table",
             ),
-            "emit_diagnostics": EmitFrivOutcomesDiagnosticsStep(),
+            "emit_diagnostics": EmitDiagnosticsStep(emitter=_emit_friv_outcomes_diagnostics),
         },
     ),
     _binding(
@@ -388,7 +422,7 @@ _WORKFLOW_EXECUTION_BINDINGS: tuple[WorkflowExecutionBinding, ...] = (
                 table_var="outcome_table",
                 parser_id="friv_playoff_outcomes_table",
             ),
-            "emit_diagnostics": EmitFrivOutcomesDiagnosticsStep(),
+            "emit_diagnostics": EmitDiagnosticsStep(emitter=_emit_friv_outcomes_diagnostics),
         },
     ),
 )
@@ -431,7 +465,7 @@ def _validate_binding(endpoint_name: str, endpoint: EndpointSpec, binding: Workf
         )
 
 
-@dataclass(frozen=True, slots=True)
+@frozen_slot
 class WorkflowEndpointHandler:
     """Execute a registry-described workflow endpoint."""
 

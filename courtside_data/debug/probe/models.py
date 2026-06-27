@@ -6,8 +6,9 @@ heavier orchestration and summarization modules focused on logic.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 from typing import Any, TypedDict
+
+from courtside_data._frozen import frozen_slot
 
 
 class ProbeResult(TypedDict, total=False):
@@ -109,7 +110,7 @@ class ProbeResult(TypedDict, total=False):
     metrics: dict[str, Any]
 
 
-@dataclass(frozen=True, slots=True)
+@frozen_slot
 class SampleParamsInfo:
     """Fixture-manifest sample params metadata for one endpoint."""
 

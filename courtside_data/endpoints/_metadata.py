@@ -27,8 +27,10 @@ Usage::
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import field
 from enum import StrEnum
+
+from courtside_data._frozen import frozen_slot
 
 
 class EndpointKind(StrEnum):
@@ -194,7 +196,7 @@ class EndpointFeature(StrEnum):
     """Accepts domain enum values (e.g. ``Team``) in addition to raw strings."""
 
 
-@dataclass(frozen=True, slots=True)
+@frozen_slot
 class EndpointMetadata:
     """Immutable taxonomy descriptor for one :class:`~courtside_data.endpoints.EndpointSpec`.
 

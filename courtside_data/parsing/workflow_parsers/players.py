@@ -85,7 +85,9 @@ def regular_season_player_box_scores(
     if table is None:
         raise InvalidPlayerAndSeason(player_identifier=player_identifier, season_end_year=season_end_year)
 
-    parsed_rows, stats = _player_season_box_score_rows_with_stats(table, include_inactive_games=include_inactive_games)
+    box_score_result = _player_season_box_score_rows_with_stats(table, include_inactive_games=include_inactive_games)
+    parsed_rows = box_score_result.rows
+    stats = box_score_result.stats
     _emit_player_game_log_diagnostics(
         parser_name="regular_season_player_box_scores",
         endpoint_name="regular_season_player_box_scores",
@@ -109,7 +111,9 @@ def playoff_player_box_scores(
     if table is None:
         raise InvalidPlayerAndSeason(player_identifier=player_identifier, season_end_year=season_end_year)
 
-    parsed_rows, stats = _player_season_box_score_rows_with_stats(table, include_inactive_games=include_inactive_games)
+    box_score_result = _player_season_box_score_rows_with_stats(table, include_inactive_games=include_inactive_games)
+    parsed_rows = box_score_result.rows
+    stats = box_score_result.stats
     _emit_player_game_log_diagnostics(
         parser_name="playoff_player_box_scores",
         endpoint_name="playoff_player_box_scores",
@@ -130,7 +134,9 @@ def players_advanced_season_totals(
 
     selector = facade.get_selector(url=url)
     table_id = "advanced"
-    parsed_rows, stats = _player_totals_rows_with_stats(selector, table_id, include_combined=include_combined_values)
+    totals_result = _player_totals_rows_with_stats(selector, table_id, include_combined=include_combined_values)
+    parsed_rows = totals_result.rows
+    stats = totals_result.stats
     emit_workflow_endpoint_diagnostics(
         parser_name="players_advanced_season_totals",
         endpoint_name="players_advanced_season_totals",
@@ -153,7 +159,9 @@ def players_season_totals(
 
     selector = facade.get_selector(url=url)
     table_id = "totals_stats"
-    parsed_rows, stats = _player_totals_rows_with_stats(selector, table_id, include_combined=include_combined_values)
+    totals_result = _player_totals_rows_with_stats(selector, table_id, include_combined=include_combined_values)
+    parsed_rows = totals_result.rows
+    stats = totals_result.stats
     emit_workflow_endpoint_diagnostics(
         parser_name="players_season_totals",
         endpoint_name="players_season_totals",

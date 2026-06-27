@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import field
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Any
 
+from courtside_data._frozen import frozen_slot
 from courtside_data.parsing.workflow_parsers._fetch import FetchFacade
 
 if TYPE_CHECKING:
@@ -15,7 +16,7 @@ if TYPE_CHECKING:
     from courtside_data.http import HTTPService
 
 
-@dataclass(frozen=True, slots=True)
+@frozen_slot
 class WorkflowExecutionContext:
     """Per-call workflow runtime state, separate from endpoint metadata."""
 

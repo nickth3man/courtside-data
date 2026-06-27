@@ -9,18 +9,19 @@ from parsel import Selector
 
 from courtside_data.parsing import rows
 from courtside_data.parsing.workflow_parsers._common import (
+    ExtractResult,
     _player_season_box_score_rows_with_stats,
     _player_totals_rows_with_stats,
 )
 
-SelectorParser = Callable[..., list[dict[str, Any]] | tuple[list[dict[str, Any]], dict[str, Any]]]
+SelectorParser = Callable[..., list[dict[str, Any]] | ExtractResult]
 
 
 def parse_player_game_log_table(
     table: Selector,
     *,
     include_inactive_games: bool,
-) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+) -> ExtractResult:
     """Parse one player game-log table and return rows plus stats."""
     return _player_season_box_score_rows_with_stats(table, include_inactive_games=include_inactive_games)
 
@@ -30,7 +31,7 @@ def parse_player_totals_page(
     *,
     table_id: str,
     include_combined: bool,
-) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+) -> ExtractResult:
     """Parse one league-wide player totals page and return rows plus stats."""
     return _player_totals_rows_with_stats(selector, table_id, include_combined=include_combined)
 

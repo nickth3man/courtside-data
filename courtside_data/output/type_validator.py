@@ -45,7 +45,7 @@ def _get_target_type(column_name: str) -> type | tuple[type, ...] | None:
 # ─── Validation ────────────────────────────────────────────────────────
 
 
-class ValidationError:
+class TypeValidationFailure:
     """A single type-mismatch issue."""
 
     def __init__(self, row_index: int, column: str, expected: str, actual: str, value: Any):
@@ -62,7 +62,7 @@ class ValidationError:
 class ValidationReport:
     """Report from a validation run."""
 
-    def __init__(self, errors: list[ValidationError]):
+    def __init__(self, errors: list[TypeValidationFailure]):
         self.errors = errors
         self.error_count = len(errors)
 
@@ -97,7 +97,7 @@ def validate_rows(
     Returns:
         ValidationReport with any type mismatches found.
     """
-    errors: list[ValidationError] = []
+    errors: list[TypeValidationFailure] = []
 
     for i, row in enumerate(rows):
         columns_to_check = expected_columns or list(row.keys())
@@ -121,7 +121,7 @@ def validate_rows(
                     continue
                 expected_name = _type_name(target_type)
                 actual_name = type(value).__name__
-                error = ValidationError(i, column, expected_name, actual_name, value)
+                error = TypeValidationFailure(i, column, expected_name, actual_name, value)
                 if strict:
                     raise ValueError(str(error))
                 errors.append(error)

@@ -9,9 +9,9 @@ imports; the shared spec type and factories live here.
 from __future__ import annotations
 
 from collections.abc import Callable, Sequence
-from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
+from courtside_data._frozen import frozen_slot
 from courtside_data.endpoints._error_mapping import NOT_FOUND
 from courtside_data.endpoints._metadata import EndpointKind
 from courtside_data.errors import (
@@ -26,7 +26,7 @@ if TYPE_CHECKING:
     from courtside_data.schemas._base import BRRow
 
 
-@dataclass(frozen=True, slots=True)
+@frozen_slot
 class EndpointSpec:
     """Registry spec for one endpoint.
 

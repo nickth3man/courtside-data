@@ -92,7 +92,9 @@ def _record_schedule_diagnostics(
 def schedule_for_month(facade: FetchFacade, url: str) -> list[dict[str, Any]]:
     """Return the schedule rows for one month page at absolute ``url``."""
     selector = facade.get_selector(url=url)
-    parsed_rows, stats = _schedule_rows_with_stats(selector)
+    schedule_result = _schedule_rows_with_stats(selector)
+    parsed_rows = schedule_result.rows
+    stats = schedule_result.stats
     _record_schedule_diagnostics(
         parser_name="schedule_for_month",
         parsed_rows=parsed_rows,
@@ -112,7 +114,9 @@ def season_schedule(facade: FetchFacade, season_end_year: int) -> list[dict[str,
     url = facade.url(f"/leagues/NBA_{season_end_year}_games.html")
 
     selector = facade.get_selector(url=url)
-    season_schedule_values, first_stats = _schedule_rows_with_stats(selector)
+    first_result = _schedule_rows_with_stats(selector)
+    season_schedule_values = first_result.rows
+    first_stats = first_result.stats
     aggregate_stats: dict[str, Any] = {
         "game_count": 0,
         "postponed_game_count": 0,
@@ -129,7 +133,9 @@ def season_schedule(facade: FetchFacade, season_end_year: int) -> list[dict[str,
     ]:
         month_url = facade.url(month_url_path)
         month_selector = facade.get_selector(url=month_url)
-        monthly_schedule, month_stats = _schedule_rows_with_stats(month_selector)
+        month_result = _schedule_rows_with_stats(month_selector)
+        monthly_schedule = month_result.rows
+        month_stats = month_result.stats
         season_schedule_values.extend(monthly_schedule)
         _merge_schedule_stats(aggregate_stats, month_stats)
         month_page_count += 1

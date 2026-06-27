@@ -6,17 +6,21 @@ from collections import Counter
 from collections.abc import Mapping, Sequence
 from typing import Any
 
+from courtside_data._row_exclusion import RowExclusionReason
 from courtside_data.debug import current_debug_trace
 from courtside_data.debug._pipeline_events import emit_parser_diagnostics
 
-# Parser-level ignored-row reasons (emitted before validation).
-IGNORE_MISSING_DATE = "missing_date"
-IGNORE_INACTIVE_GAME = "inactive_game"
-IGNORE_MISSING_NAME_OR_TEAM = "missing_name_or_team"
-IGNORE_COMBINED_TEAM = "combined_team"
-IGNORE_MISSING_TABLE = "missing_table"
-IGNORE_MISSING_FOOTER = "missing_footer"
-IGNORE_EMPTY_TABLE = "empty_table"
+# Parser-level ignored-row reasons (emitted before validation). Each constant
+# is an alias of the corresponding ``RowExclusionReason`` member's ``.value``
+# so the emitted string is byte-identical to the original. See
+# :mod:`courtside_data._row_exclusion` for the canonical registry.
+IGNORE_MISSING_DATE = RowExclusionReason.PARSER_MISSING_DATE.value
+IGNORE_INACTIVE_GAME = RowExclusionReason.PARSER_INACTIVE_GAME.value
+IGNORE_MISSING_NAME_OR_TEAM = RowExclusionReason.PARSER_MISSING_NAME_OR_TEAM.value
+IGNORE_COMBINED_TEAM = RowExclusionReason.PARSER_COMBINED_TEAM.value
+IGNORE_MISSING_TABLE = RowExclusionReason.PARSER_MISSING_TABLE.value
+IGNORE_MISSING_FOOTER = RowExclusionReason.PARSER_MISSING_FOOTER.value
+IGNORE_EMPTY_TABLE = RowExclusionReason.PARSER_EMPTY_TABLE.value
 
 _WORKFLOW_DIAGNOSTIC_KEYS = (
     "game_count",

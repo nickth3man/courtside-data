@@ -11,6 +11,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from enum import StrEnum
 
+from courtside_data._frozen import frozen_slot
+
 
 class WorkflowStepKind(StrEnum):
     """Closed vocabulary for workflow step categories."""
@@ -38,7 +40,7 @@ class WorkflowStep:
     parser_id: str | None = None
 
 
-@dataclass(frozen=True, slots=True)
+@frozen_slot
 class WorkflowSpec:
     """Ordered executable shape for a workflow endpoint."""
 

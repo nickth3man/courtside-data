@@ -14,10 +14,11 @@ Keeping them in a single module avoids circular imports between
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Protocol
 
 from parsel import Selector
 
+from courtside_data._frozen import frozen_slot
 from courtside_data.client._pipelines.drop_reasons import row_drop_reason
 from courtside_data.parsing import cells, rows
 from courtside_data.parsing.generic import find_table
@@ -30,7 +31,35 @@ from courtside_data.parsing.workflow_parsers._diagnostics import (
     increment_ignored,
 )
 
+
+@frozen_slot
+class ExtractResult:
+    """Rows extracted from a table plus the parser-diagnostics stats dict.
+
+    The three ``*_rows_with_stats`` helpers in this module return this
+    dataclass so the rows and the diagnostics move together as a single
+    value. The bare ``*_rows`` wrappers just unwrap :attr:`rows` for the
+    call sites that only need the row list.
+    """
+
+    rows: list[dict[str, Any]]
+    stats: dict[str, Any]
+
+
+class StatsExtractor(Protocol):
+    """A callable that extracts rows + diagnostics stats from a selector/table.
+
+    Each ``*_rows_with_stats`` helper in this module matches this shape;
+    the protocol is the type-level handle for treating them uniformly
+    (e.g. when building a registry of extractors).
+    """
+
+    def __call__(self, *args: Any, **kwargs: Any) -> ExtractResult: ...
+
+
 __all__ = [
+    "ExtractResult",
+    "StatsExtractor",
     "_generic_table_rows",
     "_player_season_box_score_rows",
     "_player_season_box_score_rows_with_stats",
@@ -57,26 +86,29 @@ def _player_totals_rows_with_stats(
     table_id: str,
     *,
     include_combined: bool,
-) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+) -> ExtractResult:
     """Extract league-wide player totals rows and parser diagnostics."""
     table_selector = find_table(selector, table_id)
     ignored_row_reason_counts: dict[str, int] = {}
     repeated_header_count = 0
 
     if table_selector is None:
-        return [], {
-            "player_count": 0,
-            "raw_row_count": 0,
-            "raw_column_count": 0,
-            "stat_table_count": 0,
-            "basic_table_count": 0,
-            "advanced_table_count": 0,
-            "missing_table_count": 1,
-            "ranked_row_count": 0,
-            "repeated_header_count": 0,
-            "ignored_row_reason_counts": {IGNORE_MISSING_TABLE: 1},
-            "selected_table_id": table_id,
-        }
+        return ExtractResult(
+            rows=[],
+            stats={
+                "player_count": 0,
+                "raw_row_count": 0,
+                "raw_column_count": 0,
+                "stat_table_count": 0,
+                "basic_table_count": 0,
+                "advanced_table_count": 0,
+                "missing_table_count": 1,
+                "ranked_row_count": 0,
+                "repeated_header_count": 0,
+                "ignored_row_reason_counts": {IGNORE_MISSING_TABLE: 1},
+                "selected_table_id": table_id,
+            },
+        )
 
     raw_rows = list(rows.raw_rows_from_table(table_selector))
     raw_row_count = len(raw_rows)
@@ -116,7 +148,7 @@ def _player_totals_rows_with_stats(
         "selected_table_id": table_id,
         "season_count": 1,
     }
-    return parsed_rows, stats
+    return ExtractResult(rows=parsed_rows, stats=stats)
 
 
 def _player_totals_rows(selector: Selector, table_id: str, *, include_combined: bool) -> list[dict[str, Any]]:
@@ -131,15 +163,14 @@ def _player_totals_rows(selector: Selector, table_id: str, *, include_combined: 
     ``is_combined_totals`` flag is preserved on the ``"advanced"`` table
     for downstream consumers.
     """
-    parsed_rows, _ = _player_totals_rows_with_stats(selector, table_id, include_combined=include_combined)
-    return parsed_rows
+    return _player_totals_rows_with_stats(selector, table_id, include_combined=include_combined).rows
 
 
 def _player_season_box_score_rows_with_stats(
     table_selector: Selector,
     *,
     include_inactive_games: bool,
-) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+) -> ExtractResult:
     """Extract per-player season game-log rows and parser diagnostics."""
     ignored_row_reason_counts: dict[str, int] = {}
     parsed_rows: list[dict[str, Any]] = []
@@ -180,7 +211,7 @@ def _player_season_box_score_rows_with_stats(
         "raw_column_count": raw_column_count,
         "ignored_row_reason_counts": ignored_row_reason_counts,
     }
-    return parsed_rows, stats
+    return ExtractResult(rows=parsed_rows, stats=stats)
 
 
 def _player_season_box_score_rows(
@@ -197,14 +228,13 @@ def _player_season_box_score_rows(
     Play" / "Did Not Dress" rows — and the row is dropped when
     ``include_inactive_games=False``.
     """
-    parsed_rows, _ = _player_season_box_score_rows_with_stats(
+    return _player_season_box_score_rows_with_stats(
         table_selector,
         include_inactive_games=include_inactive_games,
-    )
-    return parsed_rows
+    ).rows
 
 
-def _schedule_rows_with_stats(selector: Selector) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+def _schedule_rows_with_stats(selector: Selector) -> ExtractResult:
     """Return schedule rows and parser diagnostics for one month page."""
     all_rows = _generic_table_rows(selector, "schedule")
     ignored_row_reason_counts: dict[str, int] = {}
@@ -235,7 +265,7 @@ def _schedule_rows_with_stats(selector: Selector) -> tuple[list[dict[str, Any]],
         "ignored_row_reason_counts": ignored_row_reason_counts,
         "candidate_row_count": len(all_rows),
     }
-    return kept_rows, stats
+    return ExtractResult(rows=kept_rows, stats=stats)
 
 
 def _schedule_rows(selector: Selector) -> list[dict[str, Any]]:
@@ -245,5 +275,4 @@ def _schedule_rows(selector: Selector) -> list[dict[str, Any]]:
     both the visitor and home team names must be present (rows lacking
     either are all-star / exhibition / data-spacer rows).
     """
-    rows, _ = _schedule_rows_with_stats(selector)
-    return rows
+    return _schedule_rows_with_stats(selector).rows

@@ -10,8 +10,10 @@ from __future__ import annotations
 from dataclasses import asdict, dataclass, field
 from typing import Any
 
+from courtside_data._frozen import frozen_slot
 
-@dataclass(frozen=True, slots=True)
+
+@frozen_slot
 class SourceColumn:
     """One independently observed table column."""
 
@@ -21,7 +23,7 @@ class SourceColumn:
     column_index: int
 
 
-@dataclass(frozen=True, slots=True)
+@frozen_slot
 class SourceCell:
     """One independently observed table cell."""
 
@@ -34,7 +36,7 @@ class SourceCell:
     normalized_text: str
 
 
-@dataclass(frozen=True, slots=True)
+@frozen_slot
 class SourceTableSnapshot:
     """Independent source-table evidence for one selected table."""
 

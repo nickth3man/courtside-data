@@ -1,33 +1,41 @@
-"""Drop-reason constants (single source of truth)."""
+"""Drop-reason constants (single source of truth).
+
+The ``DROP_REASON_*`` constants are module-level aliases of the
+corresponding :class:`~courtside_data._row_exclusion.RowExclusionReason`
+member's ``.value``. The emitted string is byte-identical to the legacy
+literal; this is a purely additive canonicalization.
+"""
 
 from __future__ import annotations
+
+from courtside_data._row_exclusion import RowExclusionReason
 
 # ---------------------------------------------------------------------------
 # Drop reason constants (single source of truth)
 # ---------------------------------------------------------------------------
 
-DROP_REASON_BLANK_ROW = "blank_row"
-DROP_REASON_REPEATED_HEADER = "repeated_header"
-DROP_REASON_PARSER_EXCLUDED = "parser_excluded"
-DROP_REASON_AGGREGATE_ROW = "aggregate_row"
-DROP_REASON_COMBINED_TEAM = "combined_team"
-DROP_REASON_HISTORICAL_TEAM_NAME = "historical_team_name"
-DROP_REASON_INVALID_TEAM_VALUE = "invalid_team_value"
-DROP_REASON_INVALID_PLAYER_VALUE = "invalid_player_value"
-DROP_REASON_INVALID_DATE = "invalid_date"
-DROP_REASON_MISSING_REQUIRED_FIELD = "missing_required_field"
-DROP_REASON_UNSUPPORTED_SENTINEL_VALUE = "unsupported_sentinel_value"
-DROP_REASON_SCHEMA_VALIDATION_ERROR = "schema_validation_error"
-DROP_REASON_UNKNOWN = "unknown"
-DROP_REASON_INVALID_VALUE = "invalid_value"
+DROP_REASON_BLANK_ROW = RowExclusionReason.PIPELINE_BLANK_ROW.value
+DROP_REASON_REPEATED_HEADER = RowExclusionReason.PIPELINE_REPEATED_HEADER.value
+DROP_REASON_PARSER_EXCLUDED = RowExclusionReason.PIPELINE_PARSER_EXCLUDED.value
+DROP_REASON_AGGREGATE_ROW = RowExclusionReason.PIPELINE_AGGREGATE_ROW.value
+DROP_REASON_COMBINED_TEAM = RowExclusionReason.PIPELINE_COMBINED_TEAM.value
+DROP_REASON_HISTORICAL_TEAM_NAME = RowExclusionReason.PIPELINE_HISTORICAL_TEAM_NAME.value
+DROP_REASON_INVALID_TEAM_VALUE = RowExclusionReason.PIPELINE_INVALID_TEAM_VALUE.value
+DROP_REASON_INVALID_PLAYER_VALUE = RowExclusionReason.PIPELINE_INVALID_PLAYER_VALUE.value
+DROP_REASON_INVALID_DATE = RowExclusionReason.PIPELINE_INVALID_DATE.value
+DROP_REASON_MISSING_REQUIRED_FIELD = RowExclusionReason.PIPELINE_MISSING_REQUIRED_FIELD.value
+DROP_REASON_UNSUPPORTED_SENTINEL_VALUE = RowExclusionReason.PIPELINE_UNSUPPORTED_SENTINEL_VALUE.value
+DROP_REASON_SCHEMA_VALIDATION_ERROR = RowExclusionReason.PIPELINE_SCHEMA_VALIDATION_ERROR.value
+DROP_REASON_UNKNOWN = RowExclusionReason.PIPELINE_UNKNOWN.value
+DROP_REASON_INVALID_VALUE = RowExclusionReason.PIPELINE_INVALID_VALUE.value
 
 # Schedule-specific (parser/validation classification)
-DROP_REASON_MONTH_HEADER = "month_header"
-DROP_REASON_PLAYOFFS_MARKER = "playoffs_marker"
-DROP_REASON_POSTPONED_GAME = "postponed_game"
-DROP_REASON_NEUTRAL_SITE_NOTE = "neutral_site_note"
-DROP_REASON_MISSING_BOX_SCORE_LINK = "missing_box_score_link"
-DROP_REASON_MALFORMED_ROW = "malformed_row"
+DROP_REASON_MONTH_HEADER = RowExclusionReason.PIPELINE_MONTH_HEADER.value
+DROP_REASON_PLAYOFFS_MARKER = RowExclusionReason.PIPELINE_PLAYOFFS_MARKER.value
+DROP_REASON_POSTPONED_GAME = RowExclusionReason.PIPELINE_POSTPONED_GAME.value
+DROP_REASON_NEUTRAL_SITE_NOTE = RowExclusionReason.PIPELINE_NEUTRAL_SITE_NOTE.value
+DROP_REASON_MISSING_BOX_SCORE_LINK = RowExclusionReason.PIPELINE_MISSING_BOX_SCORE_LINK.value
+DROP_REASON_MALFORMED_ROW = RowExclusionReason.PIPELINE_MALFORMED_ROW.value
 
 _AGGREGATE_TEAM_ABBREVIATIONS = frozenset({"TOT", "2TM", "3TM", "4TM", "LG"})
 _AGGREGATE_ROW_MARKERS = frozenset(

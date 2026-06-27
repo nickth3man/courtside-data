@@ -265,7 +265,9 @@ def test_schedule_parser_emits_workflow_diagnostics() -> None:
     assert SCHEDULE_FIXTURE.exists(), f"missing fixture: {SCHEDULE_FIXTURE}"
     html = SCHEDULE_FIXTURE.read_text(encoding="utf-8")
     selector = Selector(text=html)
-    parsed_rows, stats = _schedule_rows_with_stats(selector)
+    schedule_result = _schedule_rows_with_stats(selector)
+    parsed_rows = schedule_result.rows
+    stats = schedule_result.stats
 
     assert parsed_rows
     assert stats["game_count"] == len(parsed_rows)
@@ -443,7 +445,9 @@ def test_players_season_totals_with_stats_matches_direct_parser_output() -> None
     html = PLAYERS_SEASON_TOTALS_FIXTURE.read_text(encoding="utf-8")
     selector = Selector(text=html)
     direct_rows = _player_totals_rows(selector, "totals_stats", include_combined=False)
-    parsed_rows, stats = _player_totals_rows_with_stats(selector, "totals_stats", include_combined=False)
+    totals_result = _player_totals_rows_with_stats(selector, "totals_stats", include_combined=False)
+    parsed_rows = totals_result.rows
+    stats = totals_result.stats
 
     assert parsed_rows == direct_rows
     assert stats["player_count"] == len(parsed_rows)
@@ -466,7 +470,9 @@ def test_regular_season_player_box_scores_emits_workflow_diagnostics() -> None:
     assert table is not None
 
     direct_rows = _player_season_box_score_rows(table, include_inactive_games=False)
-    parsed_rows, stats = _player_season_box_score_rows_with_stats(table, include_inactive_games=False)
+    box_score_result = _player_season_box_score_rows_with_stats(table, include_inactive_games=False)
+    parsed_rows = box_score_result.rows
+    stats = box_score_result.stats
 
     assert parsed_rows == direct_rows
     assert stats["game_count"] == len(parsed_rows)
@@ -508,7 +514,9 @@ def test_playoff_player_box_scores_with_stats_matches_direct_parser_output() -> 
     assert table is not None
 
     direct_rows = _player_season_box_score_rows(table, include_inactive_games=False)
-    parsed_rows, stats = _player_season_box_score_rows_with_stats(table, include_inactive_games=False)
+    box_score_result = _player_season_box_score_rows_with_stats(table, include_inactive_games=False)
+    parsed_rows = box_score_result.rows
+    stats = box_score_result.stats
 
     assert parsed_rows == direct_rows
     assert stats["game_count"] == len(parsed_rows)
@@ -521,7 +529,9 @@ def test_players_advanced_season_totals_emits_workflow_diagnostics() -> None:
     assert ADVANCED_TOTALS_FIXTURE.exists(), f"missing fixture: {ADVANCED_TOTALS_FIXTURE}"
     html = ADVANCED_TOTALS_FIXTURE.read_text(encoding="utf-8")
     selector = Selector(text=html)
-    parsed_rows, stats = _player_totals_rows_with_stats(selector, "advanced", include_combined=False)
+    advanced_result = _player_totals_rows_with_stats(selector, "advanced", include_combined=False)
+    parsed_rows = advanced_result.rows
+    stats = advanced_result.stats
 
     trace = DebugTrace(endpoint="players_advanced_season_totals", params={"season_end_year": 1985})
     with debug_trace_context(trace):
