@@ -1,7 +1,7 @@
 """Common row-extraction helper shared by domain parsers.
 
 Lives in its own module so the box-scores sub-module can reuse
-:func:`raw_rows_from_table` without creating a cycle through the facade.
+:func:`raw_rows_from_table` without creating a circular dependency through the facade.
 """
 
 from __future__ import annotations

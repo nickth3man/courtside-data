@@ -19,7 +19,7 @@ any ``validation/pydantic_validation_failed`` events with
 
 :mod:`courtside_data.client._runtime._flush` lazy-imports
 :func:`_make_output_service` from :mod:`courtside_data.client._runtime._output`
-at call time to break the ``_output`` ↔ ``_flush`` import cycle
+at call time to break the ``_output`` ↔ ``_flush`` circular import
 (``_output._output_debug_result`` calls back into
 :func:`_flush_trace`).
 """
@@ -70,7 +70,7 @@ def _flush_trace(
     (including any ``validation/pydantic_validation_failed`` events with
     ``exc.errors()``) is recoverable from disk.
     """
-    # Lazy import to break the _output ↔ _flush import cycle: _output defines
+    # Lazy import to break the _output ↔ _flush circular import: _output defines
     # _make_output_service and calls back into this function, so this module
     # must not import _output at module-load time.
     from courtside_data.client._runtime._output import _make_output_service

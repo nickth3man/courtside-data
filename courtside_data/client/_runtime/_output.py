@@ -23,7 +23,7 @@ Three collaborators live here:
 
 :mod:`courtside_data.client._runtime._flush` lazy-imports
 :func:`_make_output_service` at call time to break the
-``_output`` ↔ ``_flush`` import cycle.
+``_output`` ↔ ``_flush`` circular import.
 """
 
 from __future__ import annotations

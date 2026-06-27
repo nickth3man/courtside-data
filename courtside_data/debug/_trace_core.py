@@ -13,7 +13,7 @@ from courtside_data.debug.config import DebugConfig
 
 
 class DebugTraceCore:
-    """Core debug trace — event recording, artifacts, metrics, and lifecycle.
+    """Core debug trace — event recording, artifacts, metrics, and lifetime.
 
     This class is intended to be used as a base class in a mixin chain::
 

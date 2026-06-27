@@ -7,10 +7,20 @@ from pathlib import Path
 from courtside_data.domain import Location, Outcome, Team
 from courtside_data.parsing.rows import (
     parse_box_score_game_info_with_stats,
+    parse_box_score_line_score_with_stats,
+    parse_box_score_player_advanced_with_stats,
     parse_box_score_player_basic_with_stats,
+    parse_box_score_player_quarter_splits_with_stats,
     parse_box_score_team_four_factors_with_stats,
 )
-from courtside_data.schemas.boxscores import BoxScoreGameInfoRow, BoxScorePlayerBasicRow, BoxScoreTeamFourFactorsRow
+from courtside_data.schemas.boxscores import (
+    BoxScoreGameInfoRow,
+    BoxScoreLineScoreRow,
+    BoxScorePlayerAdvancedRow,
+    BoxScorePlayerBasicRow,
+    BoxScorePlayerQuarterSplitRow,
+    BoxScoreTeamFourFactorsRow,
+)
 from parsel import Selector
 
 from tests.fixture_manifest import case_for
@@ -68,6 +78,22 @@ def test_box_score_game_info_parser_extracts_footer_metadata() -> None:
     assert info.inactive_away == ["Bryn Forbes"]
 
 
+def test_box_score_player_advanced_parser_extracts_player_context() -> None:
+    rows, stats = parse_box_score_player_advanced_with_stats(_selector())
+
+    assert stats["player_count"] == 25
+    assert stats["advanced_table_count"] == 2
+
+    first = BoxScorePlayerAdvancedRow.model_validate(rows[0])
+    assert first.slug == "aldrila01"
+    assert first.name == "LaMarcus Aldridge"
+    assert first.team is Team.SAN_ANTONIO_SPURS
+    assert first.opponent is Team.ATLANTA_HAWKS
+    assert first.seconds_played == 2607
+    assert first.true_shooting_percentage == 0.755
+    assert first.offensive_rating == 137.0
+
+
 def test_box_score_team_four_factors_parser_extracts_commented_table() -> None:
     rows, stats = parse_box_score_team_four_factors_with_stats(_selector())
 
@@ -88,6 +114,38 @@ def test_box_score_team_four_factors_parser_extracts_commented_table() -> None:
     assert home.offensive_rating == 112.3
 
 
+def test_box_score_line_score_parser_extracts_overtime_points() -> None:
+    rows, stats = parse_box_score_line_score_with_stats(_selector())
+
+    assert stats["team_count"] == 2
+    assert stats["overtime_period_count"] == 1
+
+    away = BoxScoreLineScoreRow.model_validate(rows[0])
+    home = BoxScoreLineScoreRow.model_validate(rows[1])
+    assert away.team is Team.SAN_ANTONIO_SPURS
+    assert away.first_quarter_points == 27
+    assert away.overtime_points == [12]
+    assert away.total_points == 112
+    assert home.team is Team.ATLANTA_HAWKS
+    assert home.overtime_points == [14]
+    assert home.total_points == 114
+
+
+def test_box_score_player_quarter_splits_parser_extracts_selected_period() -> None:
+    rows, stats = parse_box_score_player_quarter_splits_with_stats(_selector(), period="q1")
+
+    assert stats["player_count"] == 25
+    assert stats["selected_period"] == "q1"
+
+    first = BoxScorePlayerQuarterSplitRow.model_validate(rows[0])
+    assert first.period == "q1"
+    assert first.slug == "aldrila01"
+    assert first.team is Team.SAN_ANTONIO_SPURS
+    assert first.opponent is Team.ATLANTA_HAWKS
+    assert first.seconds_played == 597
+    assert first.points == 5
+
+
 def test_box_score_player_basic_executes_from_offline_fixture(make_offline_client) -> None:
     case = case_for("box_score_player_basic", game_id="201701010ATL")
     assert case is not None
@@ -99,6 +157,17 @@ def test_box_score_player_basic_executes_from_offline_fixture(make_offline_clien
     assert all(isinstance(row, BoxScorePlayerBasicRow) for row in result)
 
 
+def test_box_score_player_advanced_executes_from_offline_fixture(make_offline_client) -> None:
+    case = case_for("box_score_player_advanced", game_id="201701010ATL")
+    assert case is not None
+    client = make_offline_client(case)
+
+    result = client.box_score_player_advanced(**case.params)
+
+    assert len(result) == 25
+    assert all(isinstance(row, BoxScorePlayerAdvancedRow) for row in result)
+
+
 def test_box_score_game_info_executes_from_offline_fixture(make_offline_client) -> None:
     case = case_for("box_score_game_info", game_id="201701010ATL")
     assert case is not None
@@ -108,6 +177,28 @@ def test_box_score_game_info_executes_from_offline_fixture(make_offline_client) 
 
     assert len(result) == 1
     assert isinstance(result[0], BoxScoreGameInfoRow)
+
+
+def test_box_score_line_score_executes_from_offline_fixture(make_offline_client) -> None:
+    case = case_for("box_score_line_score", game_id="201701010ATL")
+    assert case is not None
+    client = make_offline_client(case)
+
+    result = client.box_score_line_score(**case.params)
+
+    assert len(result) == 2
+    assert all(isinstance(row, BoxScoreLineScoreRow) for row in result)
+
+
+def test_box_score_player_quarter_splits_executes_from_offline_fixture(make_offline_client) -> None:
+    case = case_for("box_score_player_quarter_splits", game_id="201701010ATL", period="q1")
+    assert case is not None
+    client = make_offline_client(case)
+
+    result = client.box_score_player_quarter_splits(**case.params)
+
+    assert len(result) == 25
+    assert all(isinstance(row, BoxScorePlayerQuarterSplitRow) for row in result)
 
 
 def test_box_score_team_four_factors_executes_from_offline_fixture(make_offline_client) -> None:

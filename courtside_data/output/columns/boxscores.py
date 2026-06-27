@@ -29,10 +29,10 @@ PLAYER_SEASON_BOX_SCORE_COLUMN_NAMES = _schema_columns(boxscore_schemas.RegularS
 TEAM_BOX_SCORES_COLUMN_NAMES = _schema_columns(boxscore_schemas.TeamBoxScoreRow)
 
 
-# -- Per-game box-score readers (SCAFFOLD - PDCA Cycle 1) -----------------
+# -- Per-game box-score readers -------------------------------------------
 # The matching row models live in courtside_data/schemas/boxscores.py.
-# Keep these forward-declared contracts schema-derived so newly promoted
-# readers inherit the same drift guard before their endpoint registrations land.
+# Keep these contracts schema-derived so CSV output stays aligned with each
+# registered row model.
 
 BOX_SCORE_PLAYER_ADVANCED_COLUMN_NAMES = _schema_columns(boxscore_schemas.BoxScorePlayerAdvancedRow)
 

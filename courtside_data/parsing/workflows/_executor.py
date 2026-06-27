@@ -40,7 +40,10 @@ from courtside_data.parsing.workflows._steps import (
     NormalizeAwardIdStep,
     PaginateSearchResultsStep,
     ParseBoxScoreGameInfoStep,
+    ParseBoxScoreLineScoreStep,
+    ParseBoxScorePlayerAdvancedStep,
     ParseBoxScorePlayerBasicStep,
+    ParseBoxScorePlayerQuarterSplitsStep,
     ParseBoxScoreTeamFourFactorsStep,
     ParseEachTeamBoxScoreStep,
     ParseInlineScheduleMonthStep,
@@ -123,6 +126,39 @@ _WORKFLOW_EXECUTION_BINDINGS: tuple[WorkflowExecutionBinding, ...] = (
             "emit_diagnostics": EmitBoxScoreDiagnosticsStep(
                 parser_name="box_score_game_info",
                 source_sections=("div.scorebox", "div.scorebox_meta", "#content > div"),
+            ),
+        },
+    ),
+    _binding(
+        "box_score_player_advanced",
+        {
+            "fetch_box_score": FetchEndpointPathStep(output_var="box_score_page"),
+            "parse_player_advanced": ParseBoxScorePlayerAdvancedStep(),
+            "emit_diagnostics": EmitBoxScoreDiagnosticsStep(
+                parser_name="box_score_player_advanced",
+                source_sections=('table.stats_table[id$="-game-advanced"]', "div.scorebox"),
+            ),
+        },
+    ),
+    _binding(
+        "box_score_line_score",
+        {
+            "fetch_box_score": FetchEndpointPathStep(output_var="box_score_page"),
+            "parse_line_score": ParseBoxScoreLineScoreStep(),
+            "emit_diagnostics": EmitBoxScoreDiagnosticsStep(
+                parser_name="box_score_line_score",
+                source_sections=("table#line_score",),
+            ),
+        },
+    ),
+    _binding(
+        "box_score_player_quarter_splits",
+        {
+            "fetch_box_score": FetchEndpointPathStep(output_var="box_score_page"),
+            "parse_player_quarter_splits": ParseBoxScorePlayerQuarterSplitsStep(),
+            "emit_diagnostics": EmitBoxScoreDiagnosticsStep(
+                parser_name="box_score_player_quarter_splits",
+                source_sections=('table.stats_table[id*="-basic"]', "div.scorebox"),
             ),
         },
     ),

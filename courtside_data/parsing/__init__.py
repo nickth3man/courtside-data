@@ -22,7 +22,13 @@ _LAZY_EXPORTS = {
     "find_table_by_id": ("courtside_data.parsing.generic", "find_table_by_id"),
     "is_combined_team": ("courtside_data.parsing.cells", "is_combined_team"),
     "parse_box_score_game_info": ("courtside_data.parsing.rows", "parse_box_score_game_info"),
+    "parse_box_score_line_score": ("courtside_data.parsing.rows", "parse_box_score_line_score"),
+    "parse_box_score_player_advanced": ("courtside_data.parsing.rows", "parse_box_score_player_advanced"),
     "parse_box_score_player_basic": ("courtside_data.parsing.rows", "parse_box_score_player_basic"),
+    "parse_box_score_player_quarter_splits": (
+        "courtside_data.parsing.rows",
+        "parse_box_score_player_quarter_splits",
+    ),
     "parse_friv_playoff_outcomes_row": ("courtside_data.parsing.rows", "parse_friv_playoff_outcomes_row"),
     "parse_play_by_play_rows": ("courtside_data.parsing.rows", "parse_play_by_play_rows"),
     "parse_player_direct_search_results": ("courtside_data.parsing.rows", "parse_player_direct_search_results"),

@@ -7,7 +7,6 @@ from typing import Any
 
 from courtside_data.client._pipelines.drop_reasons.constants import (
     _AGGREGATE_TEAM_ABBREVIATIONS,
-    _DATE_FIELD_NAMES,  # noqa: F401
     _INVALID_VALUE_ERROR_TYPES,
     _PLAYER_FIELD_NAMES,
     _TEAM_FIELD_NAMES,

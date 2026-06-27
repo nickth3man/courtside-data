@@ -7,7 +7,7 @@ on ``/search/search.fcgi`` (with paginated results, terminated by a
 match. The handler covers both branches:
 
 * On the index, follow the "Next 100" pagination links (with a
-  ``seen_pagination_urls`` cycle guard) and parse each page through
+  ``seen_pagination_urls`` repeat guard) and parse each page through
   :func:`rows.parse_search_rows`.
 * On a player redirect, parse the redirected page once via
   :func:`rows.parse_player_direct_search_results` and pass the final URL

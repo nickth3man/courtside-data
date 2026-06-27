@@ -47,7 +47,14 @@ def resolve_endpoint(endpoint_name: str, endpoint: EndpointSpec) -> ResolveResul
     if endpoint_name == "player_box_scores":
         return _resolve_player_box_scores(endpoint_name, endpoint)
 
-    if endpoint_name in ("box_score_player_basic", "box_score_game_info", "box_score_team_four_factors"):
+    if endpoint_name in (
+        "box_score_game_info",
+        "box_score_line_score",
+        "box_score_player_advanced",
+        "box_score_player_basic",
+        "box_score_player_quarter_splits",
+        "box_score_team_four_factors",
+    ):
         return _resolve_box_score_game_endpoint(endpoint_name, endpoint)
 
     if endpoint_name in ("regular_season_player_box_scores", "playoff_player_box_scores"):
@@ -289,6 +296,8 @@ def _resolve_box_score_game_endpoint(endpoint_name: str, endpoint: EndpointSpec)
 
     game_id = files[0].stem
     params = {"game_id": game_id}
+    if "period" in endpoint.params:
+        params["period"] = "q1"
     return [make_case(endpoint_name, params, {render_url(endpoint, params): files[0]})], None
 
 

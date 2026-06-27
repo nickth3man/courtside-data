@@ -76,6 +76,9 @@ def test_generic_table_endpoint_dispatches_to_generic_handler(monkeypatch) -> No
     [
         ("box_score_player_basic", {"game_id": "201701010ATL"}),
         ("box_score_game_info", {"game_id": "201701010ATL"}),
+        ("box_score_player_advanced", {"game_id": "201701010ATL"}),
+        ("box_score_line_score", {"game_id": "201701010ATL"}),
+        ("box_score_player_quarter_splits", {"game_id": "201701010ATL", "period": "q1"}),
         ("box_score_team_four_factors", {"game_id": "201701010ATL"}),
         ("players_season_totals", {"season_end_year": 2002, "include_combined_values": False}),
         ("players_advanced_season_totals", {"season_end_year": 1985, "include_combined_values": False}),

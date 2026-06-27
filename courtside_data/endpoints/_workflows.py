@@ -18,7 +18,10 @@ from courtside_data.errors import InvalidDate, InvalidPlayerAndSeason, InvalidSe
 from courtside_data.output.columns import (
     BOX_SCORE_COLUMN_NAMES,
     BOX_SCORE_GAME_INFO_COLUMN_NAMES,
+    BOX_SCORE_LINE_SCORE_COLUMN_NAMES,
+    BOX_SCORE_PLAYER_ADVANCED_COLUMN_NAMES,
     BOX_SCORE_PLAYER_BASIC_COLUMN_NAMES,
+    BOX_SCORE_PLAYER_QUARTER_SPLITS_COLUMN_NAMES,
     BOX_SCORE_TEAM_FOUR_FACTORS_COLUMN_NAMES,
     PLAY_BY_PLAY_COLUMN_NAMES,
     PLAYER_ADVANCED_SEASON_TOTALS_COLUMN_NAMES,
@@ -138,6 +141,31 @@ _BOX_SCORE_PLAYER_BASIC_WORKFLOW = WorkflowSpec(
     ),
 )
 
+_BOX_SCORE_PLAYER_ADVANCED_WORKFLOW = WorkflowSpec(
+    steps=(
+        WorkflowStep(
+            id="fetch_box_score",
+            kind=WorkflowStepKind.FETCH,
+            description="Fetch the per-game Basketball Reference box-score page.",
+            inputs=("game_id",),
+            outputs=("box_score_page",),
+        ),
+        WorkflowStep(
+            id="parse_player_advanced",
+            kind=WorkflowStepKind.PARSE,
+            description="Parse both teams' advanced player rows and inject team context.",
+            inputs=("box_score_page",),
+            outputs=("rows", "parser_stats"),
+        ),
+        WorkflowStep(
+            id="emit_diagnostics",
+            kind=WorkflowStepKind.DIAGNOSTICS,
+            description="Record parser diagnostics for per-game player advanced rows.",
+            inputs=("rows", "parser_stats"),
+        ),
+    ),
+)
+
 _BOX_SCORE_GAME_INFO_WORKFLOW = WorkflowSpec(
     steps=(
         WorkflowStep(
@@ -163,6 +191,31 @@ _BOX_SCORE_GAME_INFO_WORKFLOW = WorkflowSpec(
     ),
 )
 
+_BOX_SCORE_LINE_SCORE_WORKFLOW = WorkflowSpec(
+    steps=(
+        WorkflowStep(
+            id="fetch_box_score",
+            kind=WorkflowStepKind.FETCH,
+            description="Fetch the per-game Basketball Reference box-score page.",
+            inputs=("game_id",),
+            outputs=("box_score_page",),
+        ),
+        WorkflowStep(
+            id="parse_line_score",
+            kind=WorkflowStepKind.PARSE,
+            description="Parse the per-team line score table.",
+            inputs=("box_score_page",),
+            outputs=("rows", "parser_stats"),
+        ),
+        WorkflowStep(
+            id="emit_diagnostics",
+            kind=WorkflowStepKind.DIAGNOSTICS,
+            description="Record parser diagnostics for per-game line-score rows.",
+            inputs=("rows", "parser_stats"),
+        ),
+    ),
+)
+
 _BOX_SCORE_TEAM_FOUR_FACTORS_WORKFLOW = WorkflowSpec(
     steps=(
         WorkflowStep(
@@ -183,6 +236,31 @@ _BOX_SCORE_TEAM_FOUR_FACTORS_WORKFLOW = WorkflowSpec(
             id="emit_diagnostics",
             kind=WorkflowStepKind.DIAGNOSTICS,
             description="Record parser diagnostics for per-game team Four Factors rows.",
+            inputs=("rows", "parser_stats"),
+        ),
+    ),
+)
+
+_BOX_SCORE_PLAYER_QUARTER_SPLITS_WORKFLOW = WorkflowSpec(
+    steps=(
+        WorkflowStep(
+            id="fetch_box_score",
+            kind=WorkflowStepKind.FETCH,
+            description="Fetch the per-game Basketball Reference box-score page.",
+            inputs=("game_id", "period"),
+            outputs=("box_score_page",),
+        ),
+        WorkflowStep(
+            id="parse_player_quarter_splits",
+            kind=WorkflowStepKind.PARSE,
+            description="Parse both teams' player rows for the selected quarter, half, or overtime period.",
+            inputs=("box_score_page", "period"),
+            outputs=("rows", "parser_stats"),
+        ),
+        WorkflowStep(
+            id="emit_diagnostics",
+            kind=WorkflowStepKind.DIAGNOSTICS,
+            description="Record parser diagnostics for per-period player rows.",
             inputs=("rows", "parser_stats"),
         ),
     ),
@@ -438,7 +516,7 @@ _SEARCH_WORKFLOW = WorkflowSpec(
         WorkflowStep(
             id="paginate_results",
             kind=WorkflowStepKind.FETCH,
-            description="Follow Next 100 pagination links with a cycle guard and merge page results.",
+            description="Follow Next 100 pagination links with a repeat guard and merge page results.",
             inputs=("pagination_url",),
             outputs=("paginated_rows", "parser_stats"),
         ),
@@ -493,6 +571,57 @@ WORKFLOW_ENDPOINTS = {
             features=frozenset({EndpointFeature.DERIVED_FIELDS, EndpointFeature.WORKFLOW_DIAGNOSTICS}),
         ),
         workflow=_BOX_SCORE_GAME_INFO_WORKFLOW,
+    ),
+    "box_score_player_advanced": _endpoint(
+        "/boxscores/{game_id}.html",
+        params=("game_id",),
+        error=None,
+        error_params=(),
+        row_model=boxscores.BoxScorePlayerAdvancedRow,
+        csv_columns=BOX_SCORE_PLAYER_ADVANCED_COLUMN_NAMES,
+        metadata=EndpointMetadata(
+            domain=EndpointDomain.GAMES,
+            kind=EndpointKind.WORKFLOW,
+            scope=EndpointScope.GAME,
+            request_shape=RequestShape.SINGLE_REQUEST,
+            parser_shape=ParserShape.TABLE,
+            features=frozenset({EndpointFeature.DERIVED_FIELDS, EndpointFeature.WORKFLOW_DIAGNOSTICS}),
+        ),
+        workflow=_BOX_SCORE_PLAYER_ADVANCED_WORKFLOW,
+    ),
+    "box_score_line_score": _endpoint(
+        "/boxscores/{game_id}.html",
+        params=("game_id",),
+        error=None,
+        error_params=(),
+        row_model=boxscores.BoxScoreLineScoreRow,
+        csv_columns=BOX_SCORE_LINE_SCORE_COLUMN_NAMES,
+        metadata=EndpointMetadata(
+            domain=EndpointDomain.GAMES,
+            kind=EndpointKind.WORKFLOW,
+            scope=EndpointScope.GAME,
+            request_shape=RequestShape.SINGLE_REQUEST,
+            parser_shape=ParserShape.TABLE,
+            features=frozenset({EndpointFeature.DERIVED_FIELDS, EndpointFeature.WORKFLOW_DIAGNOSTICS}),
+        ),
+        workflow=_BOX_SCORE_LINE_SCORE_WORKFLOW,
+    ),
+    "box_score_player_quarter_splits": _endpoint(
+        "/boxscores/{game_id}.html",
+        params=("game_id", "period"),
+        error=None,
+        error_params=(),
+        row_model=boxscores.BoxScorePlayerQuarterSplitRow,
+        csv_columns=BOX_SCORE_PLAYER_QUARTER_SPLITS_COLUMN_NAMES,
+        metadata=EndpointMetadata(
+            domain=EndpointDomain.GAMES,
+            kind=EndpointKind.WORKFLOW,
+            scope=EndpointScope.GAME,
+            request_shape=RequestShape.SINGLE_REQUEST,
+            parser_shape=ParserShape.TABLE,
+            features=frozenset({EndpointFeature.DERIVED_FIELDS, EndpointFeature.WORKFLOW_DIAGNOSTICS}),
+        ),
+        workflow=_BOX_SCORE_PLAYER_QUARTER_SPLITS_WORKFLOW,
     ),
     "box_score_team_four_factors": _endpoint(
         "/boxscores/{game_id}.html",

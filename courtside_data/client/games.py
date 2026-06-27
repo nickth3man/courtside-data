@@ -34,6 +34,31 @@ def box_score_player_basic(
     )
 
 
+def box_score_player_advanced(
+    game_id: str,
+    output_type: OutputType | None = None,
+    output_file_path: str | None = None,
+    output_write_option: OutputWriteOption | None = None,
+    json_options: dict[str, Any] | None = None,
+    raw: bool = False,
+    debug: bool = False,
+) -> Any:
+    """Per-player advanced box-score rows for one game.
+
+    URL: /boxscores/{game_id}.html
+    """
+    return _run_endpoint(
+        "box_score_player_advanced",
+        {"game_id": game_id},
+        output_type=output_type,
+        output_file_path=output_file_path,
+        output_write_option=output_write_option,
+        json_options=json_options,
+        raw=raw,
+        debug=debug,
+    )
+
+
 def box_score_game_info(
     game_id: str,
     output_type: OutputType | None = None,
@@ -50,6 +75,57 @@ def box_score_game_info(
     return _run_endpoint(
         "box_score_game_info",
         {"game_id": game_id},
+        output_type=output_type,
+        output_file_path=output_file_path,
+        output_write_option=output_write_option,
+        json_options=json_options,
+        raw=raw,
+        debug=debug,
+    )
+
+
+def box_score_line_score(
+    game_id: str,
+    output_type: OutputType | None = None,
+    output_file_path: str | None = None,
+    output_write_option: OutputWriteOption | None = None,
+    json_options: dict[str, Any] | None = None,
+    raw: bool = False,
+    debug: bool = False,
+) -> Any:
+    """Per-team line-score rows for one game.
+
+    URL: /boxscores/{game_id}.html
+    """
+    return _run_endpoint(
+        "box_score_line_score",
+        {"game_id": game_id},
+        output_type=output_type,
+        output_file_path=output_file_path,
+        output_write_option=output_write_option,
+        json_options=json_options,
+        raw=raw,
+        debug=debug,
+    )
+
+
+def box_score_player_quarter_splits(
+    game_id: str,
+    period: str,
+    output_type: OutputType | None = None,
+    output_file_path: str | None = None,
+    output_write_option: OutputWriteOption | None = None,
+    json_options: dict[str, Any] | None = None,
+    raw: bool = False,
+    debug: bool = False,
+) -> Any:
+    """Per-player period-split box-score rows for one game.
+
+    URL: /boxscores/{game_id}.html
+    """
+    return _run_endpoint(
+        "box_score_player_quarter_splits",
+        {"game_id": game_id, "period": period},
         output_type=output_type,
         output_file_path=output_file_path,
         output_write_option=output_write_option,

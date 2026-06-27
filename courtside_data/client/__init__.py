@@ -28,7 +28,10 @@ from courtside_data.client.draft import (  # noqa: F401
 )
 from courtside_data.client.games import (  # noqa: F401
     box_score_game_info,
+    box_score_line_score,
+    box_score_player_advanced,
     box_score_player_basic,
+    box_score_player_quarter_splits,
     box_score_team_four_factors,
     play_by_play,
     player_box_scores,

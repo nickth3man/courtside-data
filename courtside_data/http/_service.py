@@ -63,7 +63,7 @@ def _build_client(
     The import is delayed until the first :class:`HTTPService` is
     constructed, which is after both :mod:`courtside_data.http`
     and :mod:`courtside_data.http._transport` are fully loaded, so the
-    late import cannot create a cycle.
+    late import cannot create a circular dependency.
     """
     from courtside_data import http as http_module
 

@@ -12,6 +12,7 @@ from courtside_data.parsing._rows_common import raw_rows_from_table
 from courtside_data.parsing.cells import (
     cell_text,
     require_slug,
+    resource_identifier,
     score_outcome,
     slug_from_metadata,
     team_name_from_abbreviation,
@@ -28,6 +29,7 @@ _TEAM_HREF_RE = re.compile(r"/teams/([A-Z]{2,3})/\d{4}\.html")
 _TIP_OFF_DATE_RE = re.compile(r"^(?P<tip_off>\d{1,2}:\d{2}\s*[AP]M),\s*(?P<game_date>.+)$")
 _ATTENDANCE_RE = re.compile(r"Attendance:\s*([\d,]+)")
 _DURATION_RE = re.compile(r"(?:Time of Game|Duration):\s*([0-9:]+)")
+_OVERTIME_LINE_SCORE_RE = re.compile(r"^\d+OT$")
 
 
 def _game_date_to_iso(value: str) -> str:
@@ -85,6 +87,13 @@ def _table_team_abbreviation(table: Selector, suffix: str) -> str | None:
     if not table_id.startswith("box-") or not table_id.endswith(suffix):
         return None
     return table_id.removeprefix("box-").removesuffix(suffix)
+
+
+def _player_slug_from_metadata(metadata: dict[str, dict[str, str]]) -> str:
+    slug = slug_from_metadata(metadata, "player")
+    if slug:
+        return slug
+    return resource_identifier(metadata.get("player", {}).get("href"))
 
 
 def parse_team_box_score_with_stats(selector: Selector) -> tuple[list[dict[str, Any]], dict[str, Any]]:
@@ -207,7 +216,7 @@ def parse_box_score_player_basic_with_stats(selector: Selector) -> tuple[list[di
             if not row:
                 continue
 
-            row["slug"] = slug_from_metadata(generic_row.metadata, "player")
+            row["slug"] = _player_slug_from_metadata(generic_row.metadata)
             require_slug("box_score_player_basic", row, row_index)
             row["team_id"] = team_id
             row["opp_id"] = team_context["opponent"]
@@ -236,13 +245,61 @@ def parse_box_score_player_basic(selector: Selector) -> list[dict[str, Any]]:
     return rows
 
 
+def parse_box_score_player_advanced_with_stats(selector: Selector) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    """Return per-player advanced rows from one game box-score page."""
+    context_by_team = _team_context(selector)
+    parsed_rows: list[dict[str, Any]] = []
+    ignored_row_reason_counts: dict[str, int] = {}
+    advanced_table_count = 0
+
+    for table in selector.css('table.stats_table[id$="-game-advanced"]'):
+        team_id = _table_team_abbreviation(table, "-game-advanced")
+        if team_id is None:
+            continue
+        advanced_table_count += 1
+        team_context = context_by_team.get(team_id)
+        if team_context is None:
+            increment_ignored(ignored_row_reason_counts, "unknown_team")
+            continue
+
+        for row_index, row_selector in enumerate(table.css("tbody tr")):
+            if "thead" in row_selector.attrib.get("class", "").split():
+                continue
+            generic_row = GenericTableRow(row_selector)
+            row: dict[str, Any] = dict(generic_row.to_dict())
+            if not row:
+                continue
+
+            row["slug"] = _player_slug_from_metadata(generic_row.metadata)
+            require_slug("box_score_player_advanced", row, row_index)
+            row["team_id"] = team_id
+            row["opp_id"] = team_context["opponent"]
+            parsed_rows.append(row)
+
+    stats = {
+        "game_count": 1,
+        "player_count": len(parsed_rows),
+        "team_count": len(context_by_team),
+        "stat_table_count": advanced_table_count,
+        "basic_table_count": len(selector.css('table.stats_table[id$="-game-basic"]')),
+        "advanced_table_count": advanced_table_count,
+        "ignored_row_reason_counts": dict(ignored_row_reason_counts),
+    }
+    return parsed_rows, stats
+
+
+def parse_box_score_player_advanced(selector: Selector) -> list[dict[str, Any]]:
+    rows, _ = parse_box_score_player_advanced_with_stats(selector)
+    return rows
+
+
 def parse_box_score_team_four_factors_with_stats(selector: Selector) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     """Return per-team Four Factors rows from one game box-score page."""
     table = find_table(selector, "four_factors")
     if table is None:
         raise ValueError("Expected four_factors table in box score page")
 
-    raw_rows = [row.to_dict() for row in GenericTable(table).rows]
+    raw_rows: list[dict[str, Any]] = [dict(row.to_dict()) for row in GenericTable(table).rows]
     raw_column_count = len(raw_rows[0]) if raw_rows else 0
     parsed_rows: list[dict[str, Any]] = []
     for row in raw_rows:
@@ -269,6 +326,104 @@ def parse_box_score_team_four_factors_with_stats(selector: Selector) -> tuple[li
 
 def parse_box_score_team_four_factors(selector: Selector) -> list[dict[str, Any]]:
     rows, _ = parse_box_score_team_four_factors_with_stats(selector)
+    return rows
+
+
+def parse_box_score_line_score_with_stats(selector: Selector) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    """Return team line-score rows from one game box-score page."""
+    table = find_table(selector, "line_score")
+    if table is None:
+        raise ValueError("Expected line_score table in box score page")
+
+    raw_rows: list[dict[str, Any]] = [dict(row.to_dict()) for row in GenericTable(table).rows]
+    parsed_rows: list[dict[str, Any]] = []
+    for row in raw_rows:
+        team_abbreviation = str(row.get("team", "")).strip()
+        if not team_abbreviation:
+            continue
+        overtime_points = [
+            int(str(row[key]).strip())
+            for key in sorted(row)
+            if _OVERTIME_LINE_SCORE_RE.match(key) and str(row[key]).strip().isdigit()
+        ]
+        row["team_name_abbr"] = team_name_from_abbreviation(team_abbreviation)
+        row["overtime_points"] = overtime_points
+        parsed_rows.append(row)
+
+    if len(parsed_rows) != 2:
+        raise ValueError(f"Expected 2 line-score rows in box score page, got {len(parsed_rows)}")
+
+    stats = {
+        "game_count": 1,
+        "team_count": len(parsed_rows),
+        "raw_row_count": len(raw_rows),
+        "raw_column_count": len(raw_rows[0]) if raw_rows else 0,
+        "stat_table_count": 1,
+        "selected_table_id": "line_score",
+        "overtime_period_count": max((len(row["overtime_points"]) for row in parsed_rows), default=0),
+        "ignored_row_reason_counts": {},
+    }
+    return parsed_rows, stats
+
+
+def parse_box_score_line_score(selector: Selector) -> list[dict[str, Any]]:
+    rows, _ = parse_box_score_line_score_with_stats(selector)
+    return rows
+
+
+def parse_box_score_player_quarter_splits_with_stats(
+    selector: Selector,
+    *,
+    period: str,
+) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    """Return per-player basic rows for one period from a game box-score page."""
+    context_by_team = _team_context(selector)
+    parsed_rows: list[dict[str, Any]] = []
+    ignored_row_reason_counts: dict[str, int] = {}
+    period_table_count = 0
+    table_suffix = f"-{period}-basic"
+
+    for table in selector.css(f'table.stats_table[id$="{table_suffix}"]'):
+        team_id = _table_team_abbreviation(table, table_suffix)
+        if team_id is None:
+            continue
+        period_table_count += 1
+        team_context = context_by_team.get(team_id)
+        if team_context is None:
+            increment_ignored(ignored_row_reason_counts, "unknown_team")
+            continue
+
+        for row_index, row_selector in enumerate(table.css("tbody tr")):
+            if "thead" in row_selector.attrib.get("class", "").split():
+                continue
+            generic_row = GenericTableRow(row_selector)
+            row: dict[str, Any] = dict(generic_row.to_dict())
+            if not row:
+                continue
+
+            row["period"] = period
+            row["slug"] = _player_slug_from_metadata(generic_row.metadata)
+            require_slug("box_score_player_quarter_splits", row, row_index)
+            row["team_id"] = team_id
+            row["opp_id"] = team_context["opponent"]
+            parsed_rows.append(row)
+
+    if period_table_count == 0:
+        raise ValueError(f"Expected period tables for {period!r} in box score page")
+
+    stats = {
+        "game_count": 1,
+        "player_count": len(parsed_rows),
+        "team_count": len(context_by_team),
+        "stat_table_count": period_table_count,
+        "selected_period": period,
+        "ignored_row_reason_counts": dict(ignored_row_reason_counts),
+    }
+    return parsed_rows, stats
+
+
+def parse_box_score_player_quarter_splits(selector: Selector, *, period: str) -> list[dict[str, Any]]:
+    rows, _ = parse_box_score_player_quarter_splits_with_stats(selector, period=period)
     return rows
 
 

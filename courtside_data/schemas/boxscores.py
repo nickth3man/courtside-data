@@ -188,7 +188,7 @@ class TeamBoxScoreRow(BRRow, _BoxScoreTeamCountingStats, _BoxScorePctStats):
 register("team_box_scores", TeamBoxScoreRow)
 
 
-# ── Per-game box-score readers (SCAFFOLD — PDCA Cycle 1) ─────────────────
+# ── Per-game box-score readers ───────────────────────────────────────────
 #
 # Data models for the tables/sections present on a per-game Basketball
 # Reference box-score page (``/boxscores/YYYYMMDD0XXX.html``) that the
@@ -202,28 +202,16 @@ register("team_box_scores", TeamBoxScoreRow)
 #   • game-level metadata           → promoted as ``box_score_game_info``
 #   • per-player basic + status     → promoted as ``box_score_player_basic``
 #
-# SCAFFOLD STATE — mostly forward-declared data models:
-# The classes below are passed to ``register()`` only as their endpoint/parser
-# slices land. Two CI canaries enforce that schemas and endpoints move
-# together as complete, fixture-backed units:
-#   1. ``test_row_adapters_registry_populated`` pins the current count;
-#   2. ``test_manifest_meets_coverage_target`` requires ≥95% of registered
-#      endpoints to have offline fixtures (which need the parser).
-# So each reader is promoted as one atomic unit in PDCA Cycle 2+: ``register()``
-# + an ``EndpointSpec`` in ``WORKFLOW_ENDPOINTS`` + a ``WorkflowSpec`` +
-# executor binding + parser + offline fixture, bumping the registry count and
-# coverage together.
-#
 # The ``validation_alias`` values below are the standard Basketball Reference
-# ``data-stat`` keys and are provisional until each reader's Cycle 2 parser
-# verifies them against live HTML. The matching CSV column contracts live in
-# ``courtside_data/output/columns/boxscores.py`` (also forward-declared).
+# ``data-stat`` keys. The matching CSV column contracts live in
+# ``courtside_data/output/columns/boxscores.py``.
 
 
 class _BoxScoreAdvancedStats:
     """Advanced rate/rating columns from a per-game ``-game-advanced`` table.
 
-    Every ``data-stat`` is provisional (TODO Cycle 2: verify against live HTML).
+    Values are sourced from the standard Basketball Reference advanced
+    ``data-stat`` keys.
     """
 
     true_shooting_percentage: BRFloatOrNone = Field(default=None, validation_alias="ts_pct")
@@ -246,8 +234,8 @@ class _BoxScoreAdvancedStats:
 class BoxScorePlayerAdvancedRow(BRRow, _BoxScoreAdvancedStats):
     """Per-player advanced stat line from one game's ``-game-advanced`` table.
 
-    SCAFFOLD: identity (``slug``/``name``/``team``) is injected by the Cycle 2
-    parser from row metadata (``data-append-csv`` + the ``box-<ABBR>`` table id).
+    Identity (``slug``/``name``/``team``) is injected from row metadata
+    (``data-append-csv`` + the ``box-<ABBR>`` table id).
     """
 
     slug: StrOrNone = Field(default=None, validation_alias="slug")
@@ -256,6 +244,9 @@ class BoxScorePlayerAdvancedRow(BRRow, _BoxScoreAdvancedStats):
     opponent: TeamField = Field(validation_alias=AliasChoices("opp_name_abbr", "opp_id"))
     seconds_played: SecondsPlayedOrNone = Field(default=None, validation_alias="mp")
     plus_minus: BRIntOrNone = Field(default=None, validation_alias="plus_minus")
+
+
+register("box_score_player_advanced", BoxScorePlayerAdvancedRow)
 
 
 class BoxScoreTeamFourFactorsRow(BRRow):
@@ -277,10 +268,10 @@ register("box_score_team_four_factors", BoxScoreTeamFourFactorsRow)
 
 
 class BoxScoreLineScoreRow(BRRow):
-    """One row per team from the per-game Line Score table. SCAFFOLD.
+    """One row per team from the per-game Line Score table.
 
-    Quarter-by-quarter scoring (Q1-Q4 + final total). Overtime periods are
-    variable on Basketball Reference and are TODO for Cycle 2.
+    Quarter-by-quarter scoring includes Q1-Q4, optional overtime scores, and
+    final total.
     """
 
     team: TeamNameField = Field(validation_alias=AliasChoices("team_name_abbr", "team_id"))
@@ -288,21 +279,29 @@ class BoxScoreLineScoreRow(BRRow):
     second_quarter_points: BRIntOrNone = Field(default=None, validation_alias="2")
     third_quarter_points: BRIntOrNone = Field(default=None, validation_alias="3")
     fourth_quarter_points: BRIntOrNone = Field(default=None, validation_alias="4")
+    overtime_points: list[int] = Field(default_factory=list, validation_alias="overtime_points")
     total_points: BRIntOrNone = Field(default=None, validation_alias="T")
 
 
+register("box_score_line_score", BoxScoreLineScoreRow)
+
+
 class BoxScorePlayerQuarterSplitRow(BRRow, _BoxScoreCountingStats, _BoxScorePctStats):
-    """Per-player basic stat line scoped to one quarter/half period. SCAFFOLD.
+    """Per-player basic stat line scoped to one quarter/half/overtime period.
 
     The ``period`` call param (``q1``/``q2``/``h1``/``q3``/``q4``/``h2``)
-    selects which per-quarter ``box-<ABBR>-game-basic`` variant the Cycle 2
-    parser targets on the per-game page.
+    selects which ``box-<ABBR>-<period>-basic`` variant the parser targets on
+    the per-game page.
     """
 
+    period: str = Field(validation_alias="period")
     slug: StrOrNone = Field(default=None, validation_alias="slug")
     name: StrOrNone = Field(default=None, validation_alias="player")
     team: TeamField = Field(validation_alias=AliasChoices("team_name_abbr", "team_id"))
     opponent: TeamField = Field(validation_alias=AliasChoices("opp_name_abbr", "opp_id"))
+
+
+register("box_score_player_quarter_splits", BoxScorePlayerQuarterSplitRow)
 
 
 class BoxScoreGameInfoRow(BRRow):

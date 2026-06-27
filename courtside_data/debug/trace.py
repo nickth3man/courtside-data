@@ -3,7 +3,7 @@
 ``DebugTrace`` is composed from several mixin classes that each own a
 focused responsibility:
 
-* :class:`DebugTraceCore` — event recording, artifacts, metrics, lifecycle.
+* :class:`DebugTraceCore` — event recording, artifacts, metrics, lifetime.
 * :class:`SpansMixin` — nested spans, profiling (pyinstrument), exception recording.
 * :class:`RowDiagnosticsMixin` — row-shape observation, header sanitisation.
 * :class:`SerializationMixin` — ``to_dict()``, ``to_json()``, ``events_jsonl()``.

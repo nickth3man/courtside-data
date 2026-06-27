@@ -555,11 +555,44 @@ class ParseBoxScorePlayerBasicStep:
 
 
 @dataclass(frozen=True, slots=True)
+class ParseBoxScorePlayerAdvancedStep:
+    """Parse per-player advanced rows from a single game box-score page."""
+
+    def execute(self, context: WorkflowExecutionContext) -> None:
+        parsed_rows, stats = rows.parse_box_score_player_advanced_with_stats(context.scratch["box_score_page"])
+        context.scratch["rows"] = parsed_rows
+        context.scratch["parser_stats"] = stats
+
+
+@dataclass(frozen=True, slots=True)
 class ParseBoxScoreGameInfoStep:
     """Parse game-level metadata from a single box-score page."""
 
     def execute(self, context: WorkflowExecutionContext) -> None:
         parsed_rows, stats = rows.parse_box_score_game_info_with_stats(context.scratch["box_score_page"])
+        context.scratch["rows"] = parsed_rows
+        context.scratch["parser_stats"] = stats
+
+
+@dataclass(frozen=True, slots=True)
+class ParseBoxScoreLineScoreStep:
+    """Parse team line-score rows from a single game box-score page."""
+
+    def execute(self, context: WorkflowExecutionContext) -> None:
+        parsed_rows, stats = rows.parse_box_score_line_score_with_stats(context.scratch["box_score_page"])
+        context.scratch["rows"] = parsed_rows
+        context.scratch["parser_stats"] = stats
+
+
+@dataclass(frozen=True, slots=True)
+class ParseBoxScorePlayerQuarterSplitsStep:
+    """Parse per-player period split rows from a single game box-score page."""
+
+    def execute(self, context: WorkflowExecutionContext) -> None:
+        parsed_rows, stats = rows.parse_box_score_player_quarter_splits_with_stats(
+            context.scratch["box_score_page"],
+            period=str(context.params["period"]),
+        )
         context.scratch["rows"] = parsed_rows
         context.scratch["parser_stats"] = stats
 
@@ -815,7 +848,7 @@ class EmitStandingsByDateDiagnosticsStep:
         return standings_rows
 
 
-# ── search (index pagination cycle or player redirect) ──────────────────────
+# ── search (index pagination loop or player redirect) ───────────────────────
 
 
 @dataclass(frozen=True, slots=True)
@@ -878,7 +911,7 @@ class BranchSearchResultsStep:
 
 @dataclass(frozen=True, slots=True)
 class PaginateSearchResultsStep:
-    """Follow ``Next 100`` pagination links with a cycle guard, merging each page."""
+    """Follow ``Next 100`` pagination links with a repeat guard, merging each page."""
 
     def execute(self, context: WorkflowExecutionContext) -> None:
         facade = context.fetch
