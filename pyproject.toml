@@ -43,6 +43,12 @@ dependencies = [
     "browserforge>=0.4",
 ]
 
+[project.optional-dependencies]
+server = [
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.30.0",
+]
+
 [dependency-groups]
 dev = [
     # test framework
@@ -84,6 +90,9 @@ dev = [
     "pymdown-extensions>=10.0",
     "mkdocstrings[python]",
     "griffe-pydantic",
+    # optional server test/runtime dependencies
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.30.0",
 ]
 
 [project.scripts]

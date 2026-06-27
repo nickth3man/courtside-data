@@ -105,6 +105,12 @@ def build_parser() -> argparse.ArgumentParser:
     )
     subparsers = parser.add_subparsers(dest="endpoint", required=True, metavar="endpoint")
     subparsers.add_parser("list", help="list every available endpoint and its parameters")
+    serve_parser = subparsers.add_parser("serve", help="run the optional Player Hub API server")
+    serve_parser.add_argument("--transport", choices=["fixture", "live"], default="fixture")
+    serve_parser.add_argument("--host", default="127.0.0.1")
+    serve_parser.add_argument("--port", type=int, default=8765)
+    serve_parser.add_argument("--raw-root", default=None, help="override the raw fixture directory in fixture mode")
+    serve_parser.add_argument("--reload", action="store_true", help="enable Uvicorn reload mode")
     for name, endpoint in ENDPOINTS.items():
         _add_endpoint_parser(subparsers, name, endpoint)
     return parser
@@ -125,6 +131,17 @@ def main(argv: list[str] | None = None) -> int:
                 params = ", ".join(endpoint.params)
                 print(f"{name}({params})")
         return 0
+
+    if args.endpoint == "serve":
+        from courtside_data.server.cli import serve
+
+        return serve(
+            transport=args.transport,
+            host=args.host,
+            port=args.port,
+            raw_root=args.raw_root,
+            reload=args.reload,
+        )
 
     endpoint = ENDPOINTS[args.endpoint]
     func = getattr(client, args.endpoint)

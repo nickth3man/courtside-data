@@ -20,6 +20,7 @@ from courtside_data.schemas import register
 from courtside_data.schemas._base import BRRow
 from courtside_data.schemas._blocks import (
     IdentityBlock,
+    PctZoneBlock,
     PerGameRateStatsBlock,
     TeamOrAggregateFieldOrNone,
     TotalStatsBlock,
@@ -69,7 +70,8 @@ class LeaguePerGameStatsRow(BRRow, LeaguePerGameStats):
 
     The per-game layout (counting stats normalised to per-game values plus an
     effective field-goal percentage) is reused verbatim by the
-    :data:`PerGameStats` mixin, so this row only needs to override the
+    :class:`courtside_data.schemas._blocks.PerGameRateStatsBlock` mixin, so
+    this row only needs to override the
     ``team`` field to tolerate empty ``team_name_abbr`` cells (mid-season
     trades, multi-team stints). ``name_display`` is the one truly required
     column — without it the row is unidentifiable.
@@ -84,10 +86,10 @@ register("league_per_game_stats", LeaguePerGameStatsRow)
 class LeagueTotalsRow(BRRow, LeagueTotalStats):
     """Row from a league totals table (``/leagues/NBA_{year}_totals.html``).
 
-    The :data:`TotalStats` mixin covers the counting stat block; the player
-    info, two-point split, and shooting percentages are added here because
-    the BR totals table emits them as separate columns rather than derived
-    fields.
+    The :class:`courtside_data.schemas._blocks.TotalStatsBlock` mixin covers
+    the counting stat block; the player info, two-point split, and shooting
+    percentages are added here because the BR totals table emits them as
+    separate columns rather than derived fields.
     """
 
     name_display: str = Field(validation_alias="name_display")
@@ -156,20 +158,17 @@ register("rookie_stats", RookieStatsRow)
 # ---------------------------------------------------------------------------
 
 
-class LeaguePer36MinutesRow(BRRow):
+class LeaguePer36MinutesRow(BRRow, IdentityBlock):
     """Row from a league per-36-minutes table.
 
     The per-36 layout does not include effective field-goal percentage and
     uses ``*_per_36_min`` aliases rather than the per-game ``*_per_g`` names,
-    so this row redeclares the stat block explicitly.
+    so this row redeclares the stat block explicitly. Identity fields are
+    inherited from :class:`IdentityBlock`; ``name_display`` is overridden to
+    be required (mirroring the :class:`LeaguePerGameStats` pattern).
     """
 
     name_display: str = Field(validation_alias="name_display")
-    team: TeamOrAggregateFieldOrNone = Field(default=None, validation_alias="team_name_abbr")
-    positions: PositionsField = Field(default_factory=list, validation_alias="pos")
-    age: BRIntOrNone = Field(default=None, validation_alias="age")
-    games_played: BRIntOrNone = Field(default=None, validation_alias="games")
-    games_started: BRIntOrNone = Field(default=None, validation_alias="games_started")
     minutes_played: BRIntOrNone = Field(default=None, validation_alias="mp")
     made_field_goals_per_36_min: BRFloatOrNone = Field(default=None, validation_alias="fg_per_minute_36")
     attempted_field_goals_per_36_min: BRFloatOrNone = Field(default=None, validation_alias="fga_per_minute_36")
@@ -203,19 +202,16 @@ class LeaguePer36MinutesRow(BRRow):
 register("league_per_36_minutes", LeaguePer36MinutesRow)
 
 
-class LeaguePer100PossessionsRow(BRRow):
+class LeaguePer100PossessionsRow(BRRow, IdentityBlock):
     """Row from a league per-100-possessions table.
 
     The per-100 layout does not include effective field-goal percentage and
-    uses ``*_per_100_poss`` aliases for the rate columns.
+    uses ``*_per_100_poss`` aliases for the rate columns. Identity fields are
+    inherited from :class:`IdentityBlock`; ``name_display`` is overridden to
+    be required (mirroring the :class:`LeaguePerGameStats` pattern).
     """
 
     name_display: str = Field(validation_alias="name_display")
-    team: TeamOrAggregateFieldOrNone = Field(default=None, validation_alias="team_name_abbr")
-    positions: PositionsField = Field(default_factory=list, validation_alias="pos")
-    age: BRIntOrNone = Field(default=None, validation_alias="age")
-    games_played: BRIntOrNone = Field(default=None, validation_alias="games")
-    games_started: BRIntOrNone = Field(default=None, validation_alias="games_started")
     minutes_played: BRIntOrNone = Field(default=None, validation_alias="mp")
     made_field_goals_per_100_possessions: BRFloatOrNone = Field(default=None, validation_alias="fg_per_poss")
     attempted_field_goals_per_100_possessions: BRFloatOrNone = Field(default=None, validation_alias="fga_per_poss")
@@ -253,21 +249,18 @@ class LeaguePer100PossessionsRow(BRRow):
 register("league_per_100_possessions", LeaguePer100PossessionsRow)
 
 
-class LeagueShootingRow(BRRow):
+class LeagueShootingRow(BRRow, IdentityBlock):
     """Row from a league shooting table (``/leagues/NBA_{year}_shooting.html``).
 
     Field ``validation_alias`` values are the table's real ``data-stat`` keys:
     the distance buckets ``*_00_03`` / ``*_03_10`` / ``*_10_16`` / ``*_16_xx``,
     the two-point/three-point splits ``*_fg2a`` / ``*_fg3a``, the assisted,
-    dunk, corner-three, and heave columns.
+    dunk, corner-three, and heave columns. Identity fields are inherited
+    from :class:`IdentityBlock`; ``name_display`` is overridden to be
+    required (mirroring the :class:`LeaguePerGameStats` pattern).
     """
 
     name_display: str = Field(validation_alias="name_display")
-    team: TeamOrAggregateFieldOrNone = Field(default=None, validation_alias="team_name_abbr")
-    positions: PositionsField = Field(default_factory=list, validation_alias="pos")
-    age: BRIntOrNone = Field(default=None, validation_alias="age")
-    games_played: BRIntOrNone = Field(default=None, validation_alias="games")
-    games_started: BRIntOrNone = Field(default=None, validation_alias="games_started")
     minutes_played: BRIntOrNone = Field(default=None, validation_alias="mp")
     field_goal_percentage: BRPercentage = Field(default=None, validation_alias="fg_pct")
     average_shot_distance: BRFloatOrNone = Field(default=None, validation_alias="avg_dist")
@@ -317,7 +310,7 @@ class LeagueShootingRow(BRRow):
 register("league_shooting", LeagueShootingRow)
 
 
-class LeaguePlayByPlayRow(BRRow):
+class LeaguePlayByPlayRow(BRRow, PctZoneBlock):
     """Row from a league play-by-play stats table.
 
     This is the league-wide version of the player-page ``pbp_stats`` table:
@@ -332,11 +325,6 @@ class LeaguePlayByPlayRow(BRRow):
     games: BRIntOrNone = Field(default=None, validation_alias="games")
     games_started: BRIntOrNone = Field(default=None, validation_alias="games_started")
     mp: BRIntOrNone = Field(default=None, validation_alias="mp")
-    pct_1: BRPercentage = Field(default=None, validation_alias="pct_1")
-    pct_2: BRPercentage = Field(default=None, validation_alias="pct_2")
-    pct_3: BRPercentage = Field(default=None, validation_alias="pct_3")
-    pct_4: BRPercentage = Field(default=None, validation_alias="pct_4")
-    pct_5: BRPercentage = Field(default=None, validation_alias="pct_5")
     plus_minus_on: BRFloatOrNone = Field(default=None, validation_alias="plus_minus_on")
     plus_minus_net: BRFloatOrNone = Field(default=None, validation_alias="plus_minus_net")
     tov_bad_pass: BRIntOrNone = Field(default=None, validation_alias="tov_bad_pass")

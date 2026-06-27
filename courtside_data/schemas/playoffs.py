@@ -17,14 +17,18 @@ from pydantic import BaseModel, Field
 
 from courtside_data.schemas import register
 from courtside_data.schemas._base import BRRow
-from courtside_data.schemas._blocks import IdentityBlock, PerGameRateStatsBlock, TotalStatsBlock
+from courtside_data.schemas._blocks import (
+    IdentityBlock,
+    PerGameRateStatsBlock,
+    TeamOrAggregateFieldOrNone,
+    TotalStatsBlock,
+)
 from courtside_data.schemas._fields import (
     BRIntOrNone,
     BRPercentage,
     PositionsField,
     StrOrNone,
 )
-from courtside_data.schemas.league import TeamOrAggregateFieldOrNone
 
 
 class PlayoffPerGameStats(IdentityBlock, PerGameRateStatsBlock):
@@ -46,11 +50,13 @@ class PlayoffPerGameRow(BRRow, PlayoffPerGameStats):
     """Row from a playoff per-game table (``/leagues/NBA_{year}_per_game.html``).
 
     Structurally identical to the league per-game table, so the
-    :data:`PerGameStats` mixin covers every stat column. The ``team`` field is
-    re-declared as :data:`TeamFieldOrNone` so the model tolerates empty
-    ``team_name_abbr`` cells (mid-series trades, multi-team playoff stints).
-    ``name_display`` is the only truly required column — without it the row
-    is unidentifiable.
+    :class:`courtside_data.schemas._blocks.PerGameRateStatsBlock` mixin
+    covers every stat column. The ``team`` field is inherited from
+    :class:`~courtside_data.schemas._blocks.IdentityBlock` and typed as
+    :data:`~courtside_data.schemas._blocks.TeamOrAggregateFieldOrNone`,
+    so the model tolerates empty ``team_name_abbr`` cells (mid-series
+    trades, multi-team playoff stints). ``name_display`` is the only truly
+    required column — without it the row is unidentifiable.
     """
 
     awards: StrOrNone = Field(default=None, validation_alias="awards")
@@ -63,10 +69,10 @@ class PlayoffTotalsRow(BRRow, PlayoffTotalStats):
     """Row from a playoff totals table (``/leagues/NBA_{year}_totals.html``).
 
     Mirrors :class:`courtside_data.schemas.league.LeagueTotalsRow`: the
-    :data:`TotalStats` mixin covers the counting stat block, and the
-    two-point split, shooting percentages, position, and age columns are
-    re-declared explicitly because the BR table emits them as their own
-    columns rather than derived fields.
+    :class:`courtside_data.schemas._blocks.TotalStatsBlock` mixin covers
+    the counting stat block, and the two-point split, shooting percentages,
+    position, and age columns are re-declared explicitly because the BR
+    table emits them as their own columns rather than derived fields.
     """
 
     name_display: str = Field(validation_alias="name_display")

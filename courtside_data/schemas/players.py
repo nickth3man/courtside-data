@@ -13,7 +13,12 @@ from pydantic import AliasChoices, Field
 
 from courtside_data.schemas import register
 from courtside_data.schemas._base import BRRow
-from courtside_data.schemas._blocks import PerGameRateStatsBlock
+from courtside_data.schemas._blocks import (
+    PctZoneBlock,
+    PerGameRateStatsBlock,
+    TeamOrAggregateFieldOrNone,
+    TotalStatsBlock,
+)
 from courtside_data.schemas._fields import (
     BRFloatOrNone,
     BRIntOrNone,
@@ -24,7 +29,6 @@ from courtside_data.schemas._fields import (
     StrOrNone,
     TeamField,
 )
-from courtside_data.schemas.league import TeamOrAggregateFieldOrNone
 
 # ── Per-game career tables (per_game_stats on the player page) ───────────
 
@@ -45,8 +49,17 @@ class PlayerCareerStatsRow(BRRow, PerGameRateStatsBlock):
 register("player_career_stats", PlayerCareerStatsRow)
 
 
-class PlayerPlayoffSeriesRow(BRRow):
-    """Row from a player's playoff-series stats table (``playoffs_series``)."""
+class PlayerPlayoffSeriesRow(BRRow, TotalStatsBlock):
+    """Row from a player's playoff-series stats table (``playoffs_series``).
+
+    The counting-stat block (``games`` … ``pts``) is inherited from
+    :class:`TotalStatsBlock`; ``games_started`` and ``minutes_played`` from
+    the block are ``None`` for every row because the BR series table does not
+    emit those columns (only per-game splits are reported). Per-game splits,
+    shooting percentages, and the two-point/three-point splits are
+    re-declared explicitly because the BR table emits them as their own
+    columns rather than derived fields.
+    """
 
     year_id: StrOrNone = Field(default=None, validation_alias="year_id")
     age: BRIntOrNone = Field(default=None, validation_alias="age")
@@ -55,35 +68,19 @@ class PlayerPlayoffSeriesRow(BRRow):
     playoff_round: StrOrNone = Field(default=None, validation_alias="ps_round")
     opponent_name_abbr: StrOrNone = Field(default=None, validation_alias="opp_name_abbr")
     series_result: StrOrNone = Field(default=None, validation_alias="series_result")
-    games_played: BRIntOrNone = Field(default=None, validation_alias="games")
     minutes_played_per_game: BRFloatOrNone = Field(default=None, validation_alias="mp_per_g")
     points_per_game: BRFloatOrNone = Field(default=None, validation_alias="pts_per_g")
     total_rebounds_per_game: BRFloatOrNone = Field(default=None, validation_alias="trb_per_g")
     assists_per_game: BRFloatOrNone = Field(default=None, validation_alias="ast_per_g")
     steals_per_game: BRFloatOrNone = Field(default=None, validation_alias="stl_per_g")
     blocks_per_game: BRFloatOrNone = Field(default=None, validation_alias="blk_per_g")
-    made_field_goals: BRIntOrNone = Field(default=None, validation_alias="fg")
-    attempted_field_goals: BRIntOrNone = Field(default=None, validation_alias="fga")
     field_goal_percentage: BRPercentage = Field(default=None, validation_alias="fg_pct")
-    made_three_point_field_goals: BRIntOrNone = Field(default=None, validation_alias="fg3")
-    attempted_three_point_field_goals: BRIntOrNone = Field(default=None, validation_alias="fg3a")
-    three_point_field_goal_percentage: BRPercentage = Field(default=None, validation_alias="fg3_pct")
     made_two_point_field_goals: BRIntOrNone = Field(default=None, validation_alias="fg2")
     attempted_two_point_field_goals: BRIntOrNone = Field(default=None, validation_alias="fg2a")
     two_point_field_goal_percentage: BRPercentage = Field(default=None, validation_alias="fg2_pct")
     effective_field_goal_percentage: BRPercentage = Field(default=None, validation_alias="efg_pct")
-    made_free_throws: BRIntOrNone = Field(default=None, validation_alias="ft")
-    attempted_free_throws: BRIntOrNone = Field(default=None, validation_alias="fta")
+    three_point_field_goal_percentage: BRPercentage = Field(default=None, validation_alias="fg3_pct")
     free_throw_percentage: BRPercentage = Field(default=None, validation_alias="ft_pct")
-    offensive_rebounds: BRIntOrNone = Field(default=None, validation_alias="orb")
-    defensive_rebounds: BRIntOrNone = Field(default=None, validation_alias="drb")
-    total_rebounds: BRIntOrNone = Field(default=None, validation_alias="trb")
-    assists: BRIntOrNone = Field(default=None, validation_alias="ast")
-    steals: BRIntOrNone = Field(default=None, validation_alias="stl")
-    blocks: BRIntOrNone = Field(default=None, validation_alias="blk")
-    turnovers: BRIntOrNone = Field(default=None, validation_alias="tov")
-    personal_fouls: BRIntOrNone = Field(default=None, validation_alias="pf")
-    points: BRIntOrNone = Field(default=None, validation_alias="pts")
     awards: StrOrNone = Field(default=None, validation_alias="awards")
 
 
@@ -161,7 +158,7 @@ class PlayerAdjustedShootingRow(BRRow):
 register("player_adjusted_shooting", PlayerAdjustedShootingRow)
 
 
-class PlayerPlayByPlayStatsRow(BRRow):
+class PlayerPlayByPlayStatsRow(BRRow, PctZoneBlock):
     """Row from the play-by-play derived table (``pbp_stats``).
 
     Carries percentages of field goals by zone/type — not the live play log
@@ -176,11 +173,6 @@ class PlayerPlayByPlayStatsRow(BRRow):
     games_played: BRIntOrNone = Field(default=None, validation_alias="games")
     games_started: BRIntOrNone = Field(default=None, validation_alias="games_started")
     minutes_played: BRIntOrNone = Field(default=None, validation_alias="mp")
-    pct_1: BRPercentage = Field(default=None, validation_alias="pct_1")
-    pct_2: BRPercentage = Field(default=None, validation_alias="pct_2")
-    pct_3: BRPercentage = Field(default=None, validation_alias="pct_3")
-    pct_4: BRPercentage = Field(default=None, validation_alias="pct_4")
-    pct_5: BRPercentage = Field(default=None, validation_alias="pct_5")
     plus_minus_on: BRFloatOrNone = Field(default=None, validation_alias="plus_minus_on")
     plus_minus_net: BRFloatOrNone = Field(default=None, validation_alias="plus_minus_net")
     turnovers_bad_pass: BRIntOrNone = Field(default=None, validation_alias="tov_bad_pass")

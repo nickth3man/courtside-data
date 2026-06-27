@@ -10,6 +10,8 @@ The public API is intentionally typed-only. Raw Basketball-Reference pages in `r
 pip install courtside-data
 ```
 
+Requires Python 3.12 or newer.
+
 ## Quick Start
 
 ```python
@@ -25,7 +27,7 @@ roster = client.team_roster(season_end_year=2024, team_abbreviation="BOS")
 career = client.player_career_stats(player_identifier="jamesle01")
 
 # Save to CSV
-from courtside_data import OutputType
+from courtside_data.domain import OutputType
 
 client.league_per_game_stats(
     season_end_year=2024,
@@ -61,13 +63,23 @@ courtside-data team_roster --team-abbreviation BOS --season-end-year 2024 \
 
 ## Endpoints
 
-The authoritative list of served endpoints is the `ENDPOINTS` registry in [`courtside_data/endpoints.py`](courtside_data/endpoints.py), or at runtime:
+The authoritative list of served endpoints is the `ENDPOINTS` registry in the [`courtside_data/endpoints/`](courtside_data/endpoints/) package (assembled in `_registry.py`), or at runtime:
 
 ```bash
 courtside-data list
 ```
 
-No static list is maintained here — the code is the source of truth. An endpoint name appearing anywhere in this repo outside of `endpoints.py` does not mean it is fully implemented and tested.
+No static list is maintained here — the code is the source of truth. An endpoint name appearing anywhere in this repo outside of that registry does not mean it is fully implemented and tested. For the rendered field tables and per-endpoint metadata, see the [API reference](docs/api/endpoints.md).
+
+## Documentation
+
+Rendered docs are published at <https://nickth3man.github.io/courtside-data>. Source lives under [`docs/`](docs/):
+
+- [Endpoint Runtime](docs/architecture/endpoints.md) — how `EndpointSpec`, `EndpointMetadata`, `WorkflowSpec`, and the generic-table path drive every call.
+- [Schemas](docs/api/schemas.md) — the typed `BRRow` Pydantic models returned by each endpoint (auto-generated from source).
+- [Endpoints](docs/api/endpoints.md) — the `ENDPOINTS` registry and `EndpointSpec` reference (auto-generated from source).
+
+Schema and endpoint field tables in those pages are generated from source via mkdocstrings — do not hand-edit them; update the docstrings and rebuild.
 
 ## Raw Fixture Corpus
 
@@ -89,16 +101,19 @@ rate limiting is built in and **not configurable**:
 
 ## Development
 
+[**`AGENTS.md`**](AGENTS.md) is the authoritative guide for the dev toolchain: environment setup (`uv sync` with the PEP 735 `dev` group), the Ruff + ty + pytest-xdist workflow, the full set of `uv run task <name>` tasks, the live endpoint probe, environment variables, and the one-command pre-commit gate.
+
+Quick reference:
+
 ```bash
-# Install with dev dependencies
+# Install with dev dependencies (PEP 735 dev group)
 uv sync
 
-# Run tests
-uv run pytest
+# Run the offline fixture-replay suite in parallel
+uv run pytest tests -n auto
 
-# Run tests with coverage
-uv run coverage run -m pytest
-uv run coverage report
+# Full pre-commit gate: lint + format check + type + tests
+uv run task audit
 ```
 
 ## Lineage and Attribution

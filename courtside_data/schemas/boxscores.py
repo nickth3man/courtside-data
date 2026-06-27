@@ -15,6 +15,7 @@ from pydantic import AliasChoices, Field
 
 from courtside_data.schemas import register
 from courtside_data.schemas._base import BRRow
+from courtside_data.schemas._blocks import AdvancedRateStatsBlock
 from courtside_data.schemas._fields import (
     BRDate,
     BRFloatOrNone,
@@ -207,31 +208,7 @@ register("team_box_scores", TeamBoxScoreRow)
 # ``courtside_data/output/columns/boxscores.py``.
 
 
-class _BoxScoreAdvancedStats:
-    """Advanced rate/rating columns from a per-game ``-game-advanced`` table.
-
-    Values are sourced from the standard Basketball Reference advanced
-    ``data-stat`` keys.
-    """
-
-    true_shooting_percentage: BRFloatOrNone = Field(default=None, validation_alias="ts_pct")
-    effective_field_goal_percentage: BRPercentage = Field(default=None, validation_alias="efg_pct")
-    three_point_attempt_rate: BRFloatOrNone = Field(default=None, validation_alias="fg3a_per_fga_pct")
-    free_throw_rate: BRFloatOrNone = Field(default=None, validation_alias="fta_per_fga_pct")
-    offensive_rebound_percentage: BRFloatOrNone = Field(default=None, validation_alias="orb_pct")
-    defensive_rebound_percentage: BRFloatOrNone = Field(default=None, validation_alias="drb_pct")
-    total_rebound_percentage: BRFloatOrNone = Field(default=None, validation_alias="trb_pct")
-    assist_percentage: BRFloatOrNone = Field(default=None, validation_alias="ast_pct")
-    steal_percentage: BRFloatOrNone = Field(default=None, validation_alias="stl_pct")
-    block_percentage: BRFloatOrNone = Field(default=None, validation_alias="blk_pct")
-    turnover_percentage: BRFloatOrNone = Field(default=None, validation_alias="tov_pct")
-    usage_percentage: BRFloatOrNone = Field(default=None, validation_alias="usg_pct")
-    offensive_rating: BRFloatOrNone = Field(default=None, validation_alias="off_rtg")
-    defensive_rating: BRFloatOrNone = Field(default=None, validation_alias="def_rtg")
-    box_plus_minus: BRFloatOrNone = Field(default=None, validation_alias="bpm")
-
-
-class BoxScorePlayerAdvancedRow(BRRow, _BoxScoreAdvancedStats):
+class BoxScorePlayerAdvancedRow(BRRow, AdvancedRateStatsBlock):
     """Per-player advanced stat line from one game's ``-game-advanced`` table.
 
     Identity (``slug``/``name``/``team``) is injected from row metadata
