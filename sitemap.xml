@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+    <url>
+         <loc>https://nickth3man.github.io/courtside-data/</loc>
+         <lastmod>2026-06-27</lastmod>
+    </url>
+    <url>
+         <loc>https://nickth3man.github.io/courtside-data/api/endpoints/</loc>
+         <lastmod>2026-06-27</lastmod>
+    </url>
+    <url>
+         <loc>https://nickth3man.github.io/courtside-data/api/schemas/</loc>
+         <lastmod>2026-06-27</lastmod>
+    </url>
+    <url>
+         <loc>https://nickth3man.github.io/courtside-data/architecture/endpoints/</loc>
+         <lastmod>2026-06-27</lastmod>
+    </url>
+</urlset>
