@@ -30,9 +30,9 @@ import warnings
 import weakref
 from typing import Any
 
-from courtside_data.data import OutputType, OutputWriteOption
 from courtside_data.debug import DebugTrace
 from courtside_data.debug.sink import debug_log_path, prepare_log_dir
+from courtside_data.domain import OutputType, OutputWriteOption
 from courtside_data.output.writers import FileOptions, OutputOptions
 
 __all__ = [

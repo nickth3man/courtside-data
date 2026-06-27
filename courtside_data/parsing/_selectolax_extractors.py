@@ -30,42 +30,64 @@ def selectolax_parse_transaction_list(html_text: str) -> list[dict[str, Any]]:
     root = LexborHTMLParser(html_text)
     transactions: list[dict[str, Any]] = []
 
-    def _is_transaction_p(node: _SLNode) -> bool:
-        cls = node.attributes.get("class") or ""
-        if "transaction" in cls.split():
-            return True
-        return bool(node.text(separator=" ", strip=True) or "")
+    def _append_unique(values: list[str], value: str) -> None:
+        if value and value not in values:
+            values.append(value)
+
+    def _node_text(node: _SLNode) -> str:
+        return clean_text([(node.text(separator=" ", strip=True) or "")])
+
+    def _is_trade(node: _SLNode) -> bool:
+        return " traded " in f" {_node_text(node).lower()} "
+
+    def _player_hrefs(node: _SLNode) -> set[str]:
+        return {
+            href for href in ((link.attributes.get("href") or "") for link in node.css('a[href^="/players/"]')) if href
+        }
+
+    def _transaction_groups(day: _SLNode) -> list[list[_SLNode]]:
+        nodes = [node for node in day.css("p") if _node_text(node)]
+        groups: list[list[_SLNode]] = []
+        for transaction in nodes:
+            if (
+                groups
+                and _is_trade(groups[-1][-1])
+                and _is_trade(transaction)
+                and _player_hrefs(groups[-1][-1]) & _player_hrefs(transaction)
+            ):
+                groups[-1].append(transaction)
+            else:
+                groups.append([transaction])
+        return groups
 
     for day in root.css("ul.page_index > li"):
         first_span = day.css_first("span")
         date = (first_span.text(separator=" ", strip=True) if first_span is not None else "") or ""
-        transaction_nodes = [node for node in day.css("p.transaction") if _is_transaction_p(node)]
-        if not transaction_nodes:
-            transaction_nodes = [node for node in day.css("p") if _is_transaction_p(node)]
-        for transaction in transaction_nodes:
+        for transaction_group in _transaction_groups(day):
             linked_resources: list[dict[str, Any]] = []
             from_team_abbreviations: list[str] = []
             to_team_abbreviations: list[str] = []
-            for link in transaction.css("a"):
-                attrs = link.attributes
-                from_team = attrs.get("data-attr-from") or ""
-                to_team = attrs.get("data-attr-to") or ""
-                if from_team:
-                    from_team_abbreviations.append(from_team)
-                if to_team:
-                    to_team_abbreviations.append(to_team)
-                linked_resources.append(
-                    {
-                        "text": clean_text([(link.text(separator=" ", strip=True) or "")]),
-                        "href": attrs.get("href") or "",
-                        "from_team_abbreviation": from_team,
-                        "to_team_abbreviation": to_team,
-                    }
-                )
+            transaction_text: list[str] = []
+            for transaction in transaction_group:
+                transaction_text.append(_node_text(transaction))
+                for link in transaction.css("a"):
+                    attrs = link.attributes
+                    from_team = attrs.get("data-attr-from") or ""
+                    to_team = attrs.get("data-attr-to") or ""
+                    _append_unique(from_team_abbreviations, from_team)
+                    _append_unique(to_team_abbreviations, to_team)
+                    linked_resources.append(
+                        {
+                            "text": clean_text([(link.text(separator=" ", strip=True) or "")]),
+                            "href": attrs.get("href") or "",
+                            "from_team_abbreviation": from_team,
+                            "to_team_abbreviation": to_team,
+                        }
+                    )
             transactions.append(
                 {
                     "date": date,
-                    "transaction": clean_text([(transaction.text(separator=" ", strip=True) or "")]),
+                    "transaction": clean_text(transaction_text),
                     "from_team_abbreviations": from_team_abbreviations,
                     "to_team_abbreviations": to_team_abbreviations,
                     "linked_resources": linked_resources,

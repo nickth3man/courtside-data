@@ -29,7 +29,6 @@ BASKETBALL_REF_RATE_LIMIT_INTERVAL_ENV = "BASKETBALL_REF_RATE_LIMIT_INTERVAL"
 BASKETBALL_REF_RATE_LIMIT_JITTER_ENV = "BASKETBALL_REF_RATE_LIMIT_JITTER"
 COURTSIDE_DEBUG_LOG_DIR_ENV = "COURTSIDE_DEBUG_LOG_DIR"
 COURTSIDE_DATA_PARSE_BACKEND_ENV = "COURTSIDE_DATA_PARSE_BACKEND"
-COURTSIDE_DATA_FAST_PARSE_ENV = "COURTSIDE_DATA_FAST_PARSE"  # compatibility alias for COURTSIDE_DATA_PARSE_BACKEND
 
 # ─── Default values ─────────────────────────────────────────────────────────
 
@@ -64,8 +63,7 @@ def max_retry_after_wait() -> float:
 
     Reads ``BASKETBALL_REF_MAX_RETRY_AFTER`` on every call. The
     import-time constant ``_MAX_RETRY_AFTER_WAIT`` in
-    :mod:`courtside_data.http_service`/`:mod:`courtside_data.http._constants`
-    is seeded from this value for backward compatibility.
+    :mod:`courtside_data.http._constants` is seeded from this value.
     """
     return float(os.environ.get(BASKETBALL_REF_MAX_RETRY_AFTER_ENV, str(DEFAULT_MAX_RETRY_AFTER_WAIT)))
 
@@ -116,16 +114,9 @@ def parse_backend() -> str:
 
     1. ``COURTSIDE_DATA_PARSE_BACKEND`` — case-insensitive, whitespace-stripped.
        Unknown values are ignored.
-    2. ``COURTSIDE_DATA_FAST_PARSE`` — compatibility alias. ``"1"`` → ``selectolax``,
-       ``"0"`` → ``parsel``. Any other value is ignored.
-    3. Default → :data:`DEFAULT_PARSE_BACKEND`.
+    2. Default → :data:`DEFAULT_PARSE_BACKEND`.
     """
     backend = os.environ.get(COURTSIDE_DATA_PARSE_BACKEND_ENV, "").strip().lower()
     if backend in _VALID_PARSE_BACKENDS:
         return backend
-    legacy = os.environ.get(COURTSIDE_DATA_FAST_PARSE_ENV)
-    if legacy == "1":
-        return "selectolax"
-    if legacy == "0":
-        return "parsel"
     return DEFAULT_PARSE_BACKEND

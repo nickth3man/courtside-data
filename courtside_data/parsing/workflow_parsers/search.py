@@ -31,7 +31,7 @@ from courtside_data.debug._pipeline_events import emit_parser_diagnostics
 from courtside_data.parsing import rows
 
 if TYPE_CHECKING:
-    from courtside_data.parsing.custom._fetch import FetchFacade
+    from courtside_data.parsing.workflow_parsers._fetch import FetchFacade
 
 __all__ = ["search"]
 
@@ -105,7 +105,7 @@ def search(facade: FetchFacade, term: str) -> dict[str, list[dict[str, Any]]]:
             source_sections=source_sections,
             ignored_event_count=sum(ignored.values()) if ignored else None,
             ignored_event_reason_counts=dict(ignored) if ignored else None,
-            custom_diagnostics={
+            workflow_diagnostics={
                 "query": term,
                 "result_count": len(player_results),
                 "candidate_count": aggregate_stats.get("candidate_count"),

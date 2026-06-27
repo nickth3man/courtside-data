@@ -3,8 +3,6 @@
 from __future__ import annotations
 
 from courtside_data.debug._provenance_constants import (
-    PROVENANCE_CUSTOM_PARSER_METADATA_UNAVAILABLE,
-    PROVENANCE_CUSTOM_PARSER_VALUE,
     PROVENANCE_DEBUG_UNAVAILABLE,
     PROVENANCE_PARSER_EMITTED_VALUE,
     PROVENANCE_PARSER_OMITTED_PRESENT_COLUMN,
@@ -18,6 +16,8 @@ from courtside_data.debug._provenance_constants import (
     PROVENANCE_UNKNOWN,
     PROVENANCE_VALIDATOR_COERCED_TO_NONE,
     PROVENANCE_VALIDATOR_TRANSFORMED_VALUE,
+    PROVENANCE_WORKFLOW_PARSER_METADATA_UNAVAILABLE,
+    PROVENANCE_WORKFLOW_PARSER_VALUE,
     ProvenanceReason,
 )
 from courtside_data.debug._provenance_context import (
@@ -52,9 +52,6 @@ from courtside_data.debug._provenance_types import (
 )
 
 __all__ = [
-    # Reason constants
-    "PROVENANCE_CUSTOM_PARSER_METADATA_UNAVAILABLE",
-    "PROVENANCE_CUSTOM_PARSER_VALUE",
     "PROVENANCE_DEBUG_UNAVAILABLE",
     "PROVENANCE_PARSER_EMITTED_VALUE",
     "PROVENANCE_PARSER_OMITTED_PRESENT_COLUMN",
@@ -68,18 +65,15 @@ __all__ = [
     "PROVENANCE_UNKNOWN",
     "PROVENANCE_VALIDATOR_COERCED_TO_NONE",
     "PROVENANCE_VALIDATOR_TRANSFORMED_VALUE",
-    # Internal-but-preserved names (originally underscore-prefixed module
-    # attributes that callers historically reached for; kept here so the
-    # facade is a true drop-in for the pre-split module).
+    "PROVENANCE_WORKFLOW_PARSER_METADATA_UNAVAILABLE",
+    "PROVENANCE_WORKFLOW_PARSER_VALUE",
     "_SAMPLE_LIMIT",
     "_TRACE_CONTEXTS",
-    # Types
     "ProvenanceContext",
     "ProvenanceReason",
     "SourceCell",
     "SourceColumn",
     "SourceTableSnapshot",
-    # Public functions
     "accepted_input_keys",
     "build_dropped_row_provenance_records",
     "build_field_provenance_records",

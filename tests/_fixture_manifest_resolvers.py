@@ -47,6 +47,9 @@ def resolve_endpoint(endpoint_name: str, endpoint: EndpointSpec) -> ResolveResul
     if endpoint_name == "player_box_scores":
         return _resolve_player_box_scores(endpoint_name, endpoint)
 
+    if endpoint_name in ("box_score_player_basic", "box_score_game_info", "box_score_team_four_factors"):
+        return _resolve_box_score_game_endpoint(endpoint_name, endpoint)
+
     if endpoint_name in ("regular_season_player_box_scores", "playoff_player_box_scores"):
         return _resolve_player_season_endpoint(
             endpoint_name,
@@ -268,6 +271,25 @@ def _resolve_player_box_scores(endpoint_name: str, endpoint: EndpointSpec) -> Re
         params = {"year": int(match.group(1)), "month": int(match.group(2)), "day": int(match.group(3))}
         cases.append(make_case(endpoint_name, params, {render_url(endpoint, params): path}))
     return cases, None
+
+
+def _resolve_box_score_game_endpoint(endpoint_name: str, endpoint: EndpointSpec) -> ResolveResult:
+    raw_dir = RAW_ROOT / "team_box_scores"
+    if not raw_dir.is_dir():
+        return None, "no raw/team_box_scores/ directory"
+
+    preferred = raw_dir / "2017_01_01" / "201701010ATL.html"
+    files = [preferred] if preferred.is_file() else []
+    if not files:
+        files = sorted(
+            path for path in raw_dir.glob("*/*.html") if path.name != "index.html" and GAME_ID_RE.match(path.stem)
+        )
+    if not files:
+        return None, "no per-game box-score fixtures in raw/team_box_scores"
+
+    game_id = files[0].stem
+    params = {"game_id": game_id}
+    return [make_case(endpoint_name, params, {render_url(endpoint, params): files[0]})], None
 
 
 def _resolve_players_season_totals(endpoint_name: str, endpoint: EndpointSpec) -> ResolveResult:

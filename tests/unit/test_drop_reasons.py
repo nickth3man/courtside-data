@@ -8,7 +8,7 @@ from courtside_data.client._pipelines._data_quality import (
     DATA_QUALITY_WARNINGS,
     evaluate_data_quality,
 )
-from courtside_data.client._pipelines._drop_reasons import (
+from courtside_data.client._pipelines.drop_reasons import (
     DROP_REASON_AGGREGATE_ROW,
     DROP_REASON_BLANK_ROW,
     DROP_REASON_COMBINED_TEAM,
@@ -23,8 +23,8 @@ from courtside_data.client._pipelines._drop_reasons import (
     validation_error_drop_reason,
 )
 from courtside_data.client._pipelines.pydantic import _validate_row_model_rows
-from courtside_data.data import Team
 from courtside_data.debug.probe import _csv_row, _with_evaluation
+from courtside_data.domain import Team
 from courtside_data.schemas._fields import TeamNameField
 from pydantic import BaseModel, Field
 

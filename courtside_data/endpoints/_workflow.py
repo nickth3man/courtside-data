@@ -1,21 +1,37 @@
-"""Lightweight workflow descriptors for bespoke endpoint metadata.
+"""Workflow descriptors consumed by the executable workflow engine.
 
-These value objects document the current shape of ``EndpointKind.WORKFLOW``
-handlers. They are intentionally non-executable: runtime dispatch still lives
-in the custom parsing layer.
+``EndpointKind.WORKFLOW`` registrations declare a ``WorkflowSpec`` whose typed
+steps are executed, in order, by ``courtside_data.parsing.workflows``. The
+descriptor is the ordered workflow contract; concrete Python step objects are
+bound to those step ids by the workflow executor's native binding registry.
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass
+from enum import StrEnum
 
 
-@dataclass(frozen=True, slots=True)
+class WorkflowStepKind(StrEnum):
+    """Closed vocabulary for workflow step categories."""
+
+    BRANCH = "branch"
+    DERIVE = "derive"
+    DIAGNOSTICS = "diagnostics"
+    FANOUT = "fanout"
+    FETCH = "fetch"
+    MERGE = "merge"
+    PARSE = "parse"
+    SELECT = "select"
+    VALIDATE = "validate"
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
 class WorkflowStep:
-    """One documented step in a bespoke endpoint workflow."""
+    """One named step in a workflow endpoint."""
 
     id: str
-    kind: str
+    kind: WorkflowStepKind
     description: str
     inputs: tuple[str, ...] = ()
     outputs: tuple[str, ...] = ()
@@ -24,7 +40,7 @@ class WorkflowStep:
 
 @dataclass(frozen=True, slots=True)
 class WorkflowSpec:
-    """Documentation-only workflow shape for a bespoke endpoint."""
+    """Ordered executable shape for a workflow endpoint."""
 
     steps: tuple[WorkflowStep, ...]
     result: str = "rows"

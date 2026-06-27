@@ -6,7 +6,82 @@ from __future__ import annotations
 from typing import Any
 
 from courtside_data.client._runner import _run_endpoint
-from courtside_data.data import OutputType, OutputWriteOption, Team
+from courtside_data.domain import OutputType, OutputWriteOption, Team
+
+
+def box_score_player_basic(
+    game_id: str,
+    output_type: OutputType | None = None,
+    output_file_path: str | None = None,
+    output_write_option: OutputWriteOption | None = None,
+    json_options: dict[str, Any] | None = None,
+    raw: bool = False,
+    debug: bool = False,
+) -> Any:
+    """Per-player basic box-score rows for one game.
+
+    URL: /boxscores/{game_id}.html
+    """
+    return _run_endpoint(
+        "box_score_player_basic",
+        {"game_id": game_id},
+        output_type=output_type,
+        output_file_path=output_file_path,
+        output_write_option=output_write_option,
+        json_options=json_options,
+        raw=raw,
+        debug=debug,
+    )
+
+
+def box_score_game_info(
+    game_id: str,
+    output_type: OutputType | None = None,
+    output_file_path: str | None = None,
+    output_write_option: OutputWriteOption | None = None,
+    json_options: dict[str, Any] | None = None,
+    raw: bool = False,
+    debug: bool = False,
+) -> Any:
+    """Game-level metadata for one box-score page.
+
+    URL: /boxscores/{game_id}.html
+    """
+    return _run_endpoint(
+        "box_score_game_info",
+        {"game_id": game_id},
+        output_type=output_type,
+        output_file_path=output_file_path,
+        output_write_option=output_write_option,
+        json_options=json_options,
+        raw=raw,
+        debug=debug,
+    )
+
+
+def box_score_team_four_factors(
+    game_id: str,
+    output_type: OutputType | None = None,
+    output_file_path: str | None = None,
+    output_write_option: OutputWriteOption | None = None,
+    json_options: dict[str, Any] | None = None,
+    raw: bool = False,
+    debug: bool = False,
+) -> Any:
+    """Per-team Four Factors rows for one game.
+
+    URL: /boxscores/{game_id}.html
+    """
+    return _run_endpoint(
+        "box_score_team_four_factors",
+        {"game_id": game_id},
+        output_type=output_type,
+        output_file_path=output_file_path,
+        output_write_option=output_write_option,
+        json_options=json_options,
+        raw=raw,
+        debug=debug,
+    )
 
 
 def player_box_scores(
@@ -180,6 +255,7 @@ def season_schedule(
 
 def players_season_totals(
     season_end_year: int,
+    include_combined_values: bool = False,
     output_type: OutputType | None = None,
     output_file_path: str | None = None,
     output_write_option: OutputWriteOption | None = None,
@@ -193,7 +269,7 @@ def players_season_totals(
     """
     return _run_endpoint(
         "players_season_totals",
-        {"season_end_year": season_end_year},
+        {"season_end_year": season_end_year, "include_combined_values": include_combined_values},
         output_type=output_type,
         output_file_path=output_file_path,
         output_write_option=output_write_option,

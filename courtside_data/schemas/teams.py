@@ -8,10 +8,12 @@ from courtside_data.schemas import register
 from courtside_data.schemas._base import BRRow
 from courtside_data.schemas._blocks import TeamOpponentStatsBlock
 from courtside_data.schemas._fields import (
+    BRDate,
     BRFloatOrNone,
     BRInt,
     BRIntOrNone,
     BRPercentage,
+    BRSalary,
     PositionsField,
     SecondsPlayedOrNone,
     StrOrNone,
@@ -26,7 +28,7 @@ class TeamRosterRow(BRRow):
     positions: PositionsField = Field(default_factory=list, validation_alias="pos")
     height: str = Field(validation_alias="height")
     weight: BRInt = Field(validation_alias="weight")
-    birth_date: str = Field(validation_alias="birth_date")
+    birth_date: BRDate = Field(validation_alias="birth_date")
     flag: str = Field(validation_alias="flag")
     years_experience: str = Field(validation_alias="years_experience")
     college: str | None = Field(default=None, validation_alias="college")
@@ -40,7 +42,7 @@ class TeamInjuryReportRow(BRRow):
 
     player: str = Field(validation_alias="player")
     team_name: StrOrNone = Field(default=None, validation_alias="team_name")
-    date_update: StrOrNone = Field(default=None, validation_alias="date_update")
+    date_update: BRDate | None = Field(default=None, validation_alias="date_update")
     note: StrOrNone = Field(default=None, validation_alias="note")
 
 
@@ -74,12 +76,12 @@ class TeamMiscFourFactorsRow(BRRow):
     fta_per_fga_pct: BRFloatOrNone = Field(default=None, validation_alias="fta_per_fga_pct")
     fg3a_per_fga_pct: BRFloatOrNone = Field(default=None, validation_alias="fg3a_per_fga_pct")
     efg_pct: BRFloatOrNone = Field(default=None, validation_alias="efg_pct")
-    tov_pct: BRFloatOrNone = Field(default=None, validation_alias="tov_pct")
-    orb_pct: BRFloatOrNone = Field(default=None, validation_alias="orb_pct")
+    tov_pct: BRPercentage = Field(default=None, validation_alias="tov_pct")
+    orb_pct: BRPercentage = Field(default=None, validation_alias="orb_pct")
     ft_rate: BRFloatOrNone = Field(default=None, validation_alias="ft_rate")
     opp_efg_pct: BRFloatOrNone = Field(default=None, validation_alias="opp_efg_pct")
-    opp_tov_pct: BRFloatOrNone = Field(default=None, validation_alias="opp_tov_pct")
-    drb_pct: BRFloatOrNone = Field(default=None, validation_alias="drb_pct")
+    opp_tov_pct: BRPercentage = Field(default=None, validation_alias="opp_tov_pct")
+    drb_pct: BRPercentage = Field(default=None, validation_alias="drb_pct")
     opp_ft_rate: BRFloatOrNone = Field(default=None, validation_alias="opp_ft_rate")
     arena_name: StrOrNone = Field(default=None, validation_alias="arena_name")
     attendance: BRIntOrNone = Field(default=None, validation_alias="attendance")
@@ -173,14 +175,14 @@ class TeamContractsRow(BRRow):
     """
 
     player: str = Field(validation_alias="player")
-    age_today: StrOrNone = Field(default=None, validation_alias="age_today")
-    y1: StrOrNone = Field(default=None, validation_alias="y1")
-    y2: StrOrNone = Field(default=None, validation_alias="y2")
-    y3: StrOrNone = Field(default=None, validation_alias="y3")
-    y4: StrOrNone = Field(default=None, validation_alias="y4")
-    y5: StrOrNone = Field(default=None, validation_alias="y5")
-    y6: StrOrNone = Field(default=None, validation_alias="y6")
-    remain_gtd: StrOrNone = Field(default=None, validation_alias="remain_gtd")
+    age_today: BRIntOrNone = Field(default=None, validation_alias="age_today")
+    y1: BRSalary = Field(default=None, validation_alias="y1")
+    y2: BRSalary = Field(default=None, validation_alias="y2")
+    y3: BRSalary = Field(default=None, validation_alias="y3")
+    y4: BRSalary = Field(default=None, validation_alias="y4")
+    y5: BRSalary = Field(default=None, validation_alias="y5")
+    y6: BRSalary = Field(default=None, validation_alias="y6")
+    remain_gtd: BRSalary = Field(default=None, validation_alias="remain_gtd")
 
 
 register("team_contracts", TeamContractsRow)
@@ -190,7 +192,7 @@ class TeamLineupsRow(BRRow):
     """Row from a team's ``#lineups_5-man_`` table."""
 
     lineup: StrOrNone = Field(default=None, validation_alias="lineup")
-    mp: SecondsPlayedOrNone = Field(default=None, validation_alias="mp")
+    seconds_played: SecondsPlayedOrNone = Field(default=None, validation_alias="mp")
     diff_pts: BRFloatOrNone = Field(default=None, validation_alias="diff_pts")
     diff_fg: BRFloatOrNone = Field(default=None, validation_alias="diff_fg")
     diff_fga: BRFloatOrNone = Field(default=None, validation_alias="diff_fga")

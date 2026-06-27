@@ -4,7 +4,7 @@ import json
 from pathlib import Path
 
 import pytest
-from courtside_data.client._pipelines._drop_reasons import (
+from courtside_data.client._pipelines.drop_reasons import (
     DROP_REASON_INVALID_PLAYER_VALUE,
     DROP_REASON_INVALID_VALUE,
     DROP_REASON_UNSUPPORTED_SENTINEL_VALUE,
@@ -15,12 +15,12 @@ from courtside_data.debug._pipeline_events import emit_parser_diagnostics, recor
 from courtside_data.debug.probe import _csv_row, _summarize_debug_events, _summarize_row_counts
 from courtside_data.debug.trace import DebugTrace, debug_trace_context
 from courtside_data.parsing import rows
-from courtside_data.parsing.custom._common import _schedule_rows_with_stats
 from courtside_data.parsing.rows import (
     parse_play_by_play_rows_with_stats,
     parse_search_rows_with_stats,
     parse_standings_with_stats,
 )
+from courtside_data.parsing.workflow_parsers._common import _schedule_rows_with_stats
 from parsel import Selector
 from pydantic import BaseModel
 
@@ -168,7 +168,7 @@ def test_validate_row_model_rows_records_filter_reasons_on_trace() -> None:
 
 
 @pytest.mark.skipif(not PBP_FIXTURE.exists(), reason="play_by_play fixture missing")
-def test_play_by_play_parser_emits_custom_diagnostics() -> None:
+def test_play_by_play_parser_emits_workflow_diagnostics() -> None:
     html = PBP_FIXTURE.read_text(encoding="utf-8")
     selector = Selector(text=html)
     parsed_rows, stats = parse_play_by_play_rows_with_stats(selector, "SAS", "ATL")
@@ -200,7 +200,7 @@ def test_play_by_play_parser_emits_custom_diagnostics() -> None:
 
 
 @pytest.mark.skipif(not STANDINGS_FIXTURE.exists(), reason="standings fixture missing")
-def test_standings_parser_emits_custom_diagnostics() -> None:
+def test_standings_parser_emits_workflow_diagnostics() -> None:
     html = STANDINGS_FIXTURE.read_text(encoding="utf-8")
     selector = Selector(text=html)
     parsed_rows, stats = parse_standings_with_stats(selector)
@@ -217,7 +217,7 @@ def test_standings_parser_emits_custom_diagnostics() -> None:
         rows=parsed_rows,
         source_sections=["table#divs_standings_E", "table#divs_standings_W"],
         ignored_row_reason_counts=stats["ignored_row_reason_counts"],
-        custom_diagnostics={
+        workflow_diagnostics={
             "conference_count": stats["conference_count"],
             "division_count": stats["division_count"],
             "team_count": stats["team_count"],
@@ -229,12 +229,12 @@ def test_standings_parser_emits_custom_diagnostics() -> None:
 
     assert summary["parser_name"] == "standings"
     assert summary["parsed_row_count"] == len(parsed_rows)
-    assert summary["custom_diagnostics_json"]["team_count"] == len(parsed_rows)
-    assert summary["custom_diagnostics_json"]["conference_count"] >= 1
+    assert summary["workflow_diagnostics_json"]["team_count"] == len(parsed_rows)
+    assert summary["workflow_diagnostics_json"]["conference_count"] >= 1
 
 
 @pytest.mark.skipif(not SEARCH_FIXTURE.exists(), reason="search fixture missing")
-def test_search_parser_emits_custom_diagnostics() -> None:
+def test_search_parser_emits_workflow_diagnostics() -> None:
     html = SEARCH_FIXTURE.read_text(encoding="utf-8")
     selector = Selector(text=html)
     parsed_rows, stats = parse_search_rows_with_stats(selector)
@@ -245,7 +245,7 @@ def test_search_parser_emits_custom_diagnostics() -> None:
         parser_name="search",
         rows=parsed_rows,
         source_sections=["div#searches div#players"],
-        custom_diagnostics={
+        workflow_diagnostics={
             "query": "kobe",
             "result_count": len(parsed_rows),
             "candidate_count": stats["candidate_count"],
@@ -257,13 +257,13 @@ def test_search_parser_emits_custom_diagnostics() -> None:
     summary = _summarize_debug_events(trace.to_dict(), data=parsed_rows, endpoint_name="search")
 
     assert summary["parser_name"] == "search"
-    assert summary["custom_diagnostics_json"]["query"] == "kobe"
-    assert summary["custom_diagnostics_json"]["result_count"] == len(parsed_rows)
-    assert summary["custom_diagnostics_json"]["candidate_count"] == stats["candidate_count"]
+    assert summary["workflow_diagnostics_json"]["query"] == "kobe"
+    assert summary["workflow_diagnostics_json"]["result_count"] == len(parsed_rows)
+    assert summary["workflow_diagnostics_json"]["candidate_count"] == stats["candidate_count"]
 
 
 @pytest.mark.skipif(not SCHEDULE_FIXTURE.exists(), reason="season_schedule fixture missing")
-def test_schedule_parser_emits_custom_diagnostics() -> None:
+def test_schedule_parser_emits_workflow_diagnostics() -> None:
     html = SCHEDULE_FIXTURE.read_text(encoding="utf-8")
     selector = Selector(text=html)
     parsed_rows, stats = _schedule_rows_with_stats(selector)
@@ -278,7 +278,7 @@ def test_schedule_parser_emits_custom_diagnostics() -> None:
         rows=parsed_rows,
         source_sections=["table#schedule"],
         ignored_row_reason_counts=stats["ignored_row_reason_counts"],
-        custom_diagnostics={
+        workflow_diagnostics={
             "game_count": stats["game_count"],
             "postponed_game_count": stats["postponed_game_count"],
             "box_score_link_count": stats["box_score_link_count"],
@@ -289,8 +289,8 @@ def test_schedule_parser_emits_custom_diagnostics() -> None:
     summary = _summarize_debug_events(trace.to_dict(), data=parsed_rows, endpoint_name="season_schedule")
 
     assert summary["parser_name"] == "season_schedule"
-    assert summary["custom_diagnostics_json"]["game_count"] == len(parsed_rows)
-    assert summary["custom_diagnostics_json"]["box_score_link_count"] >= 0
+    assert summary["workflow_diagnostics_json"]["game_count"] == len(parsed_rows)
+    assert summary["workflow_diagnostics_json"]["box_score_link_count"] >= 0
 
 
 def test_season_schedule_debug_diagnostics_include_aggregate_fields(make_offline_client) -> None:
@@ -301,7 +301,7 @@ def test_season_schedule_debug_diagnostics_include_aggregate_fields(make_offline
     envelope = client.season_schedule(**case.params, debug=True)
     summary = _summarize_debug_events(envelope["debug"], data=envelope["data"], endpoint_name="season_schedule")
 
-    diagnostics = summary["custom_diagnostics_json"]
+    diagnostics = summary["workflow_diagnostics_json"]
     assert diagnostics["game_count"] >= len(envelope["data"])
     assert diagnostics["box_score_link_count"] >= 0
     assert diagnostics["month_page_count"] >= 1
@@ -314,11 +314,11 @@ def test_season_schedule_debug_diagnostics_include_aggregate_fields(make_offline
     assert parser_events
 
 
-def test_probe_csv_consumes_custom_diagnostics_json() -> None:
+def test_probe_csv_consumes_workflow_diagnostics_json() -> None:
     from courtside_data.debug.probe import _csv_row
 
     debug = {
-        "trace_id": "trace-custom-diag",
+        "trace_id": "trace-workflow-diag",
         "duration_ms": 1.0,
         "status": {"code": "ok", "error_type": None, "error_message": None},
         "metrics": {},
@@ -332,7 +332,7 @@ def test_probe_csv_consumes_custom_diagnostics_json() -> None:
                     "parser_name": "standings",
                     "source_sections": ["table#divs_standings_E"],
                     "parsed_row_count": 15,
-                    "custom_diagnostics": {
+                    "workflow_diagnostics": {
                         "team_count": 15,
                         "conference_count": 2,
                     },
@@ -354,9 +354,9 @@ def test_probe_csv_consumes_custom_diagnostics_json() -> None:
     summary = _summarize_debug_events(debug, endpoint_name="standings")
     row = _csv_row({"endpoint": "standings", "ok": True, **summary})
 
-    custom = json.loads(row["custom_diagnostics_json"])
-    assert custom["team_count"] == 15
-    assert custom["conference_count"] == 2
+    workflow = json.loads(row["workflow_diagnostics_json"])
+    assert workflow["team_count"] == 15
+    assert workflow["conference_count"] == 2
     assert row["parser_name"] == "standings"
 
 
@@ -370,7 +370,7 @@ ADVANCED_TOTALS_FIXTURE = PROJECT_ROOT / "raw" / "players_advanced_season_totals
 
 
 @pytest.mark.skipif(not PLAYER_BOX_SCORES_FIXTURE.exists(), reason="player_box_scores fixture missing")
-def test_player_box_scores_with_stats_matches_legacy_output() -> None:
+def test_player_box_scores_with_stats_matches_direct_parser_output() -> None:
     from courtside_data.parsing.generic import find_table
 
     html = PLAYER_BOX_SCORES_FIXTURE.read_text(encoding="utf-8")
@@ -378,30 +378,30 @@ def test_player_box_scores_with_stats_matches_legacy_output() -> None:
     table = find_table(selector, "stats")
     assert table is not None
 
-    legacy_rows = rows.parse_player_box_scores_from_table(table)
+    direct_rows = rows.parse_player_box_scores_from_table(table)
     parsed_rows, stats = rows.parse_player_box_scores_from_table_with_stats(table)
 
-    assert parsed_rows == legacy_rows
+    assert parsed_rows == direct_rows
     assert stats["player_count"] == len(parsed_rows)
     assert stats["selected_table_id"] == "stats"
 
 
 @pytest.mark.skipif(not TEAM_BOX_SCORE_FIXTURE.exists(), reason="team_box_score fixture missing")
-def test_team_box_score_parser_emits_custom_diagnostics() -> None:
+def test_team_box_score_parser_emits_workflow_diagnostics() -> None:
     html = TEAM_BOX_SCORE_FIXTURE.read_text(encoding="utf-8")
     selector = Selector(text=html)
     parsed_rows, stats = rows.parse_team_box_score_with_stats(selector)
-    legacy_rows = rows.parse_team_box_score(selector)
+    direct_rows = rows.parse_team_box_score(selector)
 
-    assert parsed_rows == legacy_rows
+    assert parsed_rows == direct_rows
     assert stats["game_count"] == 1
     assert stats["team_count"] == 2
 
     trace = DebugTrace(endpoint="team_box_score", params={})
-    from courtside_data.parsing.custom._diagnostics import emit_custom_endpoint_diagnostics
+    from courtside_data.parsing.workflow_parsers._diagnostics import emit_workflow_endpoint_diagnostics
 
     with debug_trace_context(trace):
-        emit_custom_endpoint_diagnostics(
+        emit_workflow_endpoint_diagnostics(
             parser_name="team_box_score",
             endpoint_name="team_box_score",
             rows=parsed_rows,
@@ -411,8 +411,8 @@ def test_team_box_score_parser_emits_custom_diagnostics() -> None:
     summary = _summarize_debug_events(trace.to_dict(), data=parsed_rows, endpoint_name="team_box_score")
 
     assert summary["parser_name"] == "team_box_score"
-    assert summary["custom_diagnostics_json"]["team_count"] == 2
-    assert summary["custom_diagnostics_json"]["game_count"] == 1
+    assert summary["workflow_diagnostics_json"]["team_count"] == 2
+    assert summary["workflow_diagnostics_json"]["game_count"] == 1
 
 
 def test_team_box_scores_debug_diagnostics_include_aggregate_fields(make_offline_client) -> None:
@@ -423,7 +423,7 @@ def test_team_box_scores_debug_diagnostics_include_aggregate_fields(make_offline
     envelope = client.team_box_scores(**case.params, debug=True)
     summary = _summarize_debug_events(envelope["debug"], data=envelope["data"], endpoint_name="team_box_scores")
 
-    diagnostics = summary["custom_diagnostics_json"]
+    diagnostics = summary["workflow_diagnostics_json"]
     assert diagnostics["game_count"] == 2
     assert diagnostics["team_count"] == 4
     assert diagnostics["stat_table_count"] >= 4
@@ -438,47 +438,47 @@ def test_team_box_scores_debug_diagnostics_include_aggregate_fields(make_offline
 
 
 @pytest.mark.skipif(not PLAYERS_SEASON_TOTALS_FIXTURE.exists(), reason="players_season_totals fixture missing")
-def test_players_season_totals_with_stats_matches_legacy_output() -> None:
-    from courtside_data.parsing.custom._common import _player_totals_rows, _player_totals_rows_with_stats
+def test_players_season_totals_with_stats_matches_direct_parser_output() -> None:
+    from courtside_data.parsing.workflow_parsers._common import _player_totals_rows, _player_totals_rows_with_stats
 
     html = PLAYERS_SEASON_TOTALS_FIXTURE.read_text(encoding="utf-8")
     selector = Selector(text=html)
-    legacy_rows = _player_totals_rows(selector, "totals_stats", include_combined=False)
+    direct_rows = _player_totals_rows(selector, "totals_stats", include_combined=False)
     parsed_rows, stats = _player_totals_rows_with_stats(selector, "totals_stats", include_combined=False)
 
-    assert parsed_rows == legacy_rows
+    assert parsed_rows == direct_rows
     assert stats["player_count"] == len(parsed_rows)
     assert stats["selected_table_id"] == "totals_stats"
     assert stats["season_count"] == 1
 
 
 @pytest.mark.skipif(not REGULAR_SEASON_BOX_FIXTURE.exists(), reason="regular season box score fixture missing")
-def test_regular_season_player_box_scores_emits_custom_diagnostics() -> None:
-    from courtside_data.parsing.custom._common import (
+def test_regular_season_player_box_scores_emits_workflow_diagnostics() -> None:
+    from courtside_data.parsing.generic import find_table
+    from courtside_data.parsing.workflow_parsers._common import (
         _player_season_box_score_rows,
         _player_season_box_score_rows_with_stats,
     )
-    from courtside_data.parsing.custom._diagnostics import IGNORE_INACTIVE_GAME, IGNORE_MISSING_DATE
-    from courtside_data.parsing.generic import find_table
+    from courtside_data.parsing.workflow_parsers._diagnostics import IGNORE_INACTIVE_GAME, IGNORE_MISSING_DATE
 
     html = REGULAR_SEASON_BOX_FIXTURE.read_text(encoding="utf-8")
     selector = Selector(text=html)
     table = find_table(selector, "player_game_log_reg")
     assert table is not None
 
-    legacy_rows = _player_season_box_score_rows(table, include_inactive_games=False)
+    direct_rows = _player_season_box_score_rows(table, include_inactive_games=False)
     parsed_rows, stats = _player_season_box_score_rows_with_stats(table, include_inactive_games=False)
 
-    assert parsed_rows == legacy_rows
+    assert parsed_rows == direct_rows
     assert stats["game_count"] == len(parsed_rows)
     ignored = stats["ignored_row_reason_counts"]
     assert IGNORE_MISSING_DATE in ignored or IGNORE_INACTIVE_GAME in ignored or not ignored
 
     trace = DebugTrace(endpoint="regular_season_player_box_scores", params={})
-    from courtside_data.parsing.custom._diagnostics import emit_custom_endpoint_diagnostics
+    from courtside_data.parsing.workflow_parsers._diagnostics import emit_workflow_endpoint_diagnostics
 
     with debug_trace_context(trace):
-        emit_custom_endpoint_diagnostics(
+        emit_workflow_endpoint_diagnostics(
             parser_name="regular_season_player_box_scores",
             endpoint_name="regular_season_player_box_scores",
             rows=parsed_rows,
@@ -492,33 +492,33 @@ def test_regular_season_player_box_scores_emits_custom_diagnostics() -> None:
 
     assert summary["parser_name"] == "regular_season_player_box_scores"
     assert summary["selected_table_id"] == "player_game_log_reg"
-    assert summary["custom_diagnostics_json"]["game_count"] == len(parsed_rows)
+    assert summary["workflow_diagnostics_json"]["game_count"] == len(parsed_rows)
 
 
 @pytest.mark.skipif(not PLAYOFF_BOX_FIXTURE.exists(), reason="playoff box score fixture missing")
-def test_playoff_player_box_scores_with_stats_matches_legacy_output() -> None:
-    from courtside_data.parsing.custom._common import (
+def test_playoff_player_box_scores_with_stats_matches_direct_parser_output() -> None:
+    from courtside_data.parsing.generic import find_table
+    from courtside_data.parsing.workflow_parsers._common import (
         _player_season_box_score_rows,
         _player_season_box_score_rows_with_stats,
     )
-    from courtside_data.parsing.generic import find_table
 
     html = PLAYOFF_BOX_FIXTURE.read_text(encoding="utf-8")
     selector = Selector(text=html)
     table = find_table(selector, "player_game_log_post")
     assert table is not None
 
-    legacy_rows = _player_season_box_score_rows(table, include_inactive_games=False)
+    direct_rows = _player_season_box_score_rows(table, include_inactive_games=False)
     parsed_rows, stats = _player_season_box_score_rows_with_stats(table, include_inactive_games=False)
 
-    assert parsed_rows == legacy_rows
+    assert parsed_rows == direct_rows
     assert stats["game_count"] == len(parsed_rows)
 
 
 @pytest.mark.skipif(not ADVANCED_TOTALS_FIXTURE.exists(), reason="advanced season totals fixture missing")
-def test_players_advanced_season_totals_emits_custom_diagnostics() -> None:
-    from courtside_data.parsing.custom._common import _player_totals_rows_with_stats
-    from courtside_data.parsing.custom._diagnostics import emit_custom_endpoint_diagnostics
+def test_players_advanced_season_totals_emits_workflow_diagnostics() -> None:
+    from courtside_data.parsing.workflow_parsers._common import _player_totals_rows_with_stats
+    from courtside_data.parsing.workflow_parsers._diagnostics import emit_workflow_endpoint_diagnostics
 
     html = ADVANCED_TOTALS_FIXTURE.read_text(encoding="utf-8")
     selector = Selector(text=html)
@@ -526,7 +526,7 @@ def test_players_advanced_season_totals_emits_custom_diagnostics() -> None:
 
     trace = DebugTrace(endpoint="players_advanced_season_totals", params={"season_end_year": 1985})
     with debug_trace_context(trace):
-        emit_custom_endpoint_diagnostics(
+        emit_workflow_endpoint_diagnostics(
             parser_name="players_advanced_season_totals",
             endpoint_name="players_advanced_season_totals",
             rows=parsed_rows,
@@ -539,10 +539,10 @@ def test_players_advanced_season_totals_emits_custom_diagnostics() -> None:
 
     assert summary["parser_name"] == "players_advanced_season_totals"
     assert summary["selected_table_id"] == "advanced"
-    assert json.loads(row["custom_diagnostics_json"])["advanced_table_count"] == 1
+    assert json.loads(row["workflow_diagnostics_json"])["advanced_table_count"] == 1
 
 
-def test_probe_csv_consumes_box_score_custom_diagnostics() -> None:
+def test_probe_csv_consumes_box_score_workflow_diagnostics() -> None:
     debug = {
         "trace_id": "trace-box",
         "duration_ms": 1.0,
@@ -558,7 +558,7 @@ def test_probe_csv_consumes_box_score_custom_diagnostics() -> None:
                     "parser_name": "team_box_scores",
                     "source_sections": ["td.gamelink a"],
                     "parsed_row_count": 4,
-                    "custom_diagnostics": {
+                    "workflow_diagnostics": {
                         "endpoint_name": "team_box_scores",
                         "game_count": 2,
                         "team_count": 4,
@@ -584,8 +584,8 @@ def test_probe_csv_consumes_box_score_custom_diagnostics() -> None:
     summary = _summarize_debug_events(debug, endpoint_name="team_box_scores")
     row = _csv_row({"endpoint": "team_box_scores", "ok": True, **summary})
 
-    custom = json.loads(row["custom_diagnostics_json"])
-    assert custom["game_count"] == 2
-    assert custom["team_count"] == 4
+    workflow = json.loads(row["workflow_diagnostics_json"])
+    assert workflow["game_count"] == 2
+    assert workflow["team_count"] == 4
     assert row["selected_table_id"] == "box-ATL-game-basic"
     assert json.loads(row["candidate_table_ids_json"]) == ["box-ATL-game-basic", "box-SAS-game-basic"]

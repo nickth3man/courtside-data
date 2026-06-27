@@ -13,7 +13,6 @@ from courtside_data.schemas._fields import (
     BRPercentage,
     PositionsField,
     StrOrNone,
-    TeamField,
 )
 
 
@@ -24,7 +23,7 @@ class PlayerSeasonTotalsRow(BRRow):
     name: str = Field(validation_alias="name_display")
     positions: PositionsField = Field(default_factory=list, validation_alias="pos")
     age: BRIntOrNone = Field(default=None, validation_alias="age")
-    team: TeamField = Field(validation_alias="team_name_abbr")
+    team: TeamOrAggregateFieldOrNone = Field(validation_alias="team_name_abbr")
     games_played: BRIntOrNone = Field(default=None, validation_alias="games")
     games_started: BRIntOrNone = Field(default=None, validation_alias="games_started")
     minutes_played: BRIntOrNone = Field(default=None, validation_alias="mp")

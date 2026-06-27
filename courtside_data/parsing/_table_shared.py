@@ -19,6 +19,23 @@ from typing import Any
 # rightmost non-text column and rename it to ``value``.
 _LEADER_TEXT_COLUMN_KEYS: frozenset[str] = frozenset({"rank", "player", "season", "team", "team_id"})
 
+_CSK_VALUE_KEYS: frozenset[str] = frozenset(
+    {
+        "birth_date",
+        "date_update",
+        "salary",
+        "age_today",
+        "y1",
+        "y2",
+        "y3",
+        "y4",
+        "y5",
+        "y6",
+        "remain_gtd",
+    }
+)
+_FLAG_CLASS_RE = re.compile(r"(?:^|\s)f-([a-z]{2})(?:\s|$)", re.IGNORECASE)
+
 
 # ─── Text helpers ───────────────────────────────────────────────────────────
 
@@ -32,6 +49,36 @@ def normalize_header(value: str) -> str:
     """Slugify a header value to a safe key."""
     header = re.sub(r"[^0-9A-Za-z]+", "_", value.strip().lower()).strip("_")
     return header or "col"
+
+
+def canonical_cell_value(stat: str, text: str, attrs: dict[str, str]) -> str:
+    """Return the stable machine value for BR cells that expose one.
+
+    Basketball-Reference often renders a display value (``"$4,171,200"``,
+    ``"November 7, 1999"``, ``"ca CA"``) alongside a better machine value
+    in either ``csk`` or the flag span class. This helper is deliberately
+    stat-key scoped: many unrelated cells also carry ``csk`` sort values
+    (player names, positions, heights) whose display value is the public API
+    contract.
+    """
+    if stat == "flag":
+        return _canonical_flag_value(text, attrs)
+    csk = attrs.get("csk")
+    if stat in _CSK_VALUE_KEYS and csk:
+        return csk.strip()
+    return text
+
+
+def _canonical_flag_value(text: str, attrs: dict[str, str]) -> str:
+    class_value = attrs.get("class", "")
+    match = _FLAG_CLASS_RE.search(class_value)
+    if match is not None:
+        return match.group(1).upper()
+
+    parts = text.split()
+    if parts:
+        return parts[-1].upper()
+    return text
 
 
 # ─── Value-column normalization (leaderboard tables) ────────────────────────

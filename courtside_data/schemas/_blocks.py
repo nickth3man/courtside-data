@@ -21,7 +21,7 @@ from typing import Annotated
 
 from pydantic import BeforeValidator, Field
 
-from courtside_data.data import Team
+from courtside_data.domain import Team
 from courtside_data.schemas._fields import (
     BRFloatOrNone,
     BRIntOrNone,

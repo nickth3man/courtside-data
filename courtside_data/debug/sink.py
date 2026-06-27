@@ -20,13 +20,6 @@ from courtside_data import config
 if TYPE_CHECKING:
     from courtside_data.debug.trace import DebugTrace
 
-# Re-exports for backward compatibility — the env-var name and default
-# directory live in :mod:`courtside_data.config` (the single source of
-# truth for env-var access). Tests and external code that imported these
-# from ``sink`` still get the same values.
-LOG_DIR_ENV_VAR = config.COURTSIDE_DEBUG_LOG_DIR_ENV
-DEFAULT_LOG_DIR = config.DEFAULT_DEBUG_LOG_DIR
-
 
 def resolve_log_dir() -> Path:
     """Return the directory debug traces are written to (``./logs`` by default)."""

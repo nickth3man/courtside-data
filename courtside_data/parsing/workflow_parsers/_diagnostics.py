@@ -18,12 +18,16 @@ IGNORE_MISSING_TABLE = "missing_table"
 IGNORE_MISSING_FOOTER = "missing_footer"
 IGNORE_EMPTY_TABLE = "empty_table"
 
-_CUSTOM_DIAGNOSTIC_KEYS = (
+_WORKFLOW_DIAGNOSTIC_KEYS = (
     "game_count",
     "team_count",
     "player_count",
+    "active_player_count",
+    "inactive_player_count",
     "starter_count",
     "bench_count",
+    "official_count",
+    "scorebox_meta_count",
     "stat_table_count",
     "basic_table_count",
     "advanced_table_count",
@@ -53,7 +57,7 @@ def merge_numeric_stats(aggregate: dict[str, Any], page: Mapping[str, Any], *, k
             aggregate[key] = int(aggregate.get(key, 0)) + int(value)
 
 
-def emit_custom_endpoint_diagnostics(
+def emit_workflow_endpoint_diagnostics(
     *,
     parser_name: str,
     endpoint_name: str,
@@ -70,18 +74,18 @@ def emit_custom_endpoint_diagnostics(
 
     ignored = stats.get("ignored_row_reason_counts") or {}
     ignored_mapping = dict(ignored) if isinstance(ignored, Mapping) else {}
-    custom: dict[str, Any] = {"endpoint_name": endpoint_name}
-    for key in _CUSTOM_DIAGNOSTIC_KEYS:
+    workflow: dict[str, Any] = {"endpoint_name": endpoint_name}
+    for key in _WORKFLOW_DIAGNOSTIC_KEYS:
         if key in stats and stats[key] is not None:
-            custom[key] = stats[key]
+            workflow[key] = stats[key]
 
     table_id = selected_table_id or stats.get("selected_table_id")
     if isinstance(table_id, str):
-        custom["selected_table_id"] = table_id
+        workflow["selected_table_id"] = table_id
     if candidate_table_ids:
-        custom["candidate_table_ids"] = [str(table_id) for table_id in candidate_table_ids]
+        workflow["candidate_table_ids"] = [str(table_id) for table_id in candidate_table_ids]
     elif isinstance(stats.get("candidate_table_ids"), list):
-        custom["candidate_table_ids"] = [str(table_id) for table_id in stats["candidate_table_ids"]]
+        workflow["candidate_table_ids"] = [str(table_id) for table_id in stats["candidate_table_ids"]]
 
     emit_parser_diagnostics(
         trace,
@@ -91,5 +95,5 @@ def emit_custom_endpoint_diagnostics(
         ignored_event_count=sum(ignored_mapping.values()) if ignored_mapping else None,
         ignored_event_reason_counts=ignored_mapping,
         ignored_row_reason_counts=ignored_mapping,
-        custom_diagnostics=custom,
+        workflow_diagnostics=workflow,
     )

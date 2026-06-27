@@ -1,7 +1,7 @@
 """Row schema for the play-by-play endpoint.
 
 The play-by-play table is structural rather than ``data-stat`` driven, so the
-custom fetcher is responsible for producing rows with stable keys.  In
+workflow parser is responsible for producing rows with stable keys.  In
 particular, ``relevant_team`` must be resolved from the event description and
 the away/home team context before the row reaches this model.
 """
@@ -13,7 +13,7 @@ from typing import Annotated
 
 from pydantic import BeforeValidator
 
-from courtside_data.data import PeriodType
+from courtside_data.domain import PeriodType
 from courtside_data.schemas._base import BRRow
 from courtside_data.schemas._fields import BRFloat, BRInt, TeamField
 from courtside_data.schemas._registry import register

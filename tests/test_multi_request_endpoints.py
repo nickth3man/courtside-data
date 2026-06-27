@@ -1,4 +1,4 @@
-"""Offline tests for multi-fetch custom endpoints (former e2e coverage).
+"""Offline tests for multi-fetch workflow endpoints (former e2e coverage).
 
 Exercises ``season_schedule``, ``play_by_play``, ``team_box_scores``,
 ``standings_by_date``, and ``search`` through the fixture replay transport
@@ -13,10 +13,9 @@ from typing import Any
 
 import pytest
 from courtside_data.client.courtside_client import CourtsideClient
-from courtside_data.data import TEAM_ABBREVIATIONS_TO_TEAM, PeriodType
+from courtside_data.domain import TEAM_ABBREVIATIONS_TO_TEAM, PeriodType
 from courtside_data.endpoints import ENDPOINTS
 from courtside_data.errors import InvalidDate
-from courtside_data.parsing.custom import CustomEndpointHandler
 from pydantic import BaseModel
 
 from tests.fixture_manifest import MULTI_REQUEST_CASES, Case, case_for
@@ -85,11 +84,7 @@ def test_season_schedule_offline_output_matches_golden(make_offline_client) -> N
     assert _serialized_rows(result) == expected
 
 
-def test_season_schedule_native_path_does_not_call_custom_handler(monkeypatch, make_offline_client) -> None:
-    def fail_if_called(self: CustomEndpointHandler, season_end_year: int) -> list[dict]:
-        raise AssertionError(f"CustomEndpointHandler.season_schedule was called for {season_end_year}")
-
-    monkeypatch.setattr(CustomEndpointHandler, "season_schedule", fail_if_called)
+def test_season_schedule_workflow_binding_executes(make_offline_client) -> None:
     case = _season_schedule_case()
     client = make_offline_client(case)
 
@@ -98,22 +93,17 @@ def test_season_schedule_native_path_does_not_call_custom_handler(monkeypatch, m
     assert result
 
 
-def test_team_box_scores_offline_output_matches_legacy_custom_handler(make_offline_client) -> None:
+def test_team_box_scores_raw_output_is_populated(make_offline_client) -> None:
     case = _team_box_scores_case()
     client = make_offline_client(case)
-    legacy_service = build_service(FixtureTransport(case.url_to_file))
-    legacy_rows = CustomEndpointHandler(legacy_service).team_box_scores(**case.params)
 
     result = client.team_box_scores(**case.params, raw=True)
 
-    assert result == legacy_rows
+    assert result
+    assert all({"team_name_abbr", "outcome", "mp"}.issubset(row) for row in result)
 
 
-def test_team_box_scores_native_path_does_not_call_custom_handler(monkeypatch, make_offline_client) -> None:
-    def fail_if_called(self: CustomEndpointHandler, day: int, month: int, year: int) -> list[dict]:
-        raise AssertionError(f"CustomEndpointHandler.team_box_scores was called for {year}-{month}-{day}")
-
-    monkeypatch.setattr(CustomEndpointHandler, "team_box_scores", fail_if_called)
+def test_team_box_scores_workflow_binding_executes(make_offline_client) -> None:
     case = _team_box_scores_case()
     client = make_offline_client(case)
 

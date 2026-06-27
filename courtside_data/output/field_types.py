@@ -4,8 +4,8 @@ Generic endpoints return all values as raw strings from HTML. This module
 converts them to proper Python types (int, float) using a column-name registry
 plus heuristic fallback rules.
 
-Custom endpoints already produce typed values, so coercion is idempotent for
-them: values already matching the target type pass through unchanged.
+Workflow endpoints already produce typed values, so coercion is idempotent
+for them: values already matching the target type pass through unchanged.
 """
 
 from __future__ import annotations
@@ -14,7 +14,7 @@ from collections.abc import Callable, Sequence
 from typing import Any
 
 from courtside_data.output import _coercions
-from courtside_data.output._column_type_map import _COLUMN_TYPE_MAP, _infer_coercion
+from courtside_data.output.coercions import _COLUMN_TYPE_MAP, _infer_coercion
 
 coerce_float = _coercions.coerce_float
 coerce_float_or_none = _coercions.coerce_float_or_none

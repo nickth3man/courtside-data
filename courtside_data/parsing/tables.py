@@ -4,10 +4,8 @@
 :func:`extract_commented_table`, and :func:`parse_transaction_list` all
 operate on the **selectolax (Lexbor)** backend by default — set the
 environment variable ``COURTSIDE_DATA_PARSE_BACKEND=parsel`` to switch to
-the parsel + lxml backend. The ``COURTSIDE_DATA_FAST_PARSE=1``
-compatibility flag is also honored and treated as ``selectolax``;
-``COURTSIDE_DATA_FAST_PARSE=0`` is treated as ``parsel``. The public
-function signatures and return shapes are unchanged on either path.
+the parsel + lxml backend. The public function signatures and return
+shapes are unchanged on either path.
 """
 
 from __future__ import annotations
@@ -17,6 +15,7 @@ from typing import TYPE_CHECKING, Any, Protocol
 from parsel import Selector
 
 from courtside_data.parsing._table_shared import (
+    canonical_cell_value,
     clean_text,
     normalize_header,
     normalize_value_column,
@@ -79,7 +78,7 @@ class GenericTableRow:
             if stat:
                 text: str = " ".join(value.strip() for value in cell.css("::text").getall() if value.strip())
                 # Remove asterisks (used for player notes like All-Star)
-                self._data[stat] = text.replace("*", "").strip()
+                text = text.replace("*", "").strip()
                 # Collect all attributes from the cell and its descendants
                 # (e.g., data-append-csv is sometimes on child <a> tags)
                 all_attrs: dict[str, str] = {}
@@ -87,6 +86,7 @@ class GenericTableRow:
                     for key, value in element.attrib.items():
                         if key != "data-stat":
                             all_attrs[key] = value
+                self._data[stat] = canonical_cell_value(stat, text, all_attrs)
                 self._metadata[stat] = all_attrs
 
     def get(self, stat_name: str, default: str = "") -> str:
@@ -114,9 +114,8 @@ class GenericTable:
     and stores its rows directly. The selectolax rows are duck-typed as
     :class:`GenericTableRow` (same ``to_dict`` / ``metadata`` surface) so
     callers don't need to know which backend produced them. Set the
-    environment variable ``COURTSIDE_DATA_PARSE_BACKEND=parsel`` (or the
-    ``COURTSIDE_DATA_FAST_PARSE=0`` compatibility flag) to fall back to the parsel +
-    lxml implementation.
+    environment variable ``COURTSIDE_DATA_PARSE_BACKEND=parsel`` to fall
+    back to the parsel + lxml implementation.
     """
 
     def __init__(
@@ -172,9 +171,7 @@ class GenericTable:
     ) -> list[_GenericRowLike]:
         """Build rows via the selectolax backend.
 
-        Imported lazily so the default (parsel) path costs nothing at import
-        time and the selectolax module is only loaded when the fast-parse
-        flag is set.
+        Imported lazily so the parsel path costs nothing at import time.
         """
         from typing import cast
 
@@ -230,9 +227,8 @@ def extract_commented_table(selector: Selector, table_id: str) -> Selector | Non
     returned table is wrapped in a parsel ``Selector`` to preserve the
     public ``Selector | None`` return shape; the caller's eventual
     :class:`GenericTable` call will re-parse it through selectolax. Set
-    the environment variable ``COURTSIDE_DATA_PARSE_BACKEND=parsel`` (or
-    the ``COURTSIDE_DATA_FAST_PARSE=0`` compatibility flag) to fall back to the
-    parsel + lxml implementation.
+    the environment variable ``COURTSIDE_DATA_PARSE_BACKEND=parsel`` to
+    fall back to the parsel + lxml implementation.
 
     Args:
         selector: The page-level Parsel Selector
@@ -282,9 +278,8 @@ def parse_transaction_list(selector: Selector) -> list[dict[str, Any]]:
     which scans ``<ul.page_index > li>`` date groups and the ``<p>``
     transactions inside each group. The output shape is identical to the
     parsel-based path. Set the environment variable
-    ``COURTSIDE_DATA_PARSE_BACKEND=parsel`` (or the
-    ``COURTSIDE_DATA_FAST_PARSE=0`` compatibility flag) to fall back to the parsel + lxml
-    implementation.
+    ``COURTSIDE_DATA_PARSE_BACKEND=parsel`` to fall back to the parsel +
+    lxml implementation.
     """
     if not _is_parsel_backend():
         from courtside_data.parsing._selectolax_backend import selectolax_parse_transaction_list
@@ -296,36 +291,61 @@ def parse_transaction_list(selector: Selector) -> list[dict[str, Any]]:
         page_html = selector_subtree_to_html(selector.root)
         return selectolax_parse_transaction_list(page_html)
 
+    def _append_unique(values: list[str], value: str | None) -> None:
+        if value and value not in values:
+            values.append(value)
+
+    def _player_hrefs(transaction: Selector) -> set[str]:
+        return {
+            href for href in (link.attrib.get("href", "") for link in transaction.css('a[href^="/players/"]')) if href
+        }
+
+    def _is_trade(transaction: Selector) -> bool:
+        return " traded " in f" {clean_text(transaction.css('::text').getall()).lower()} "
+
+    def _transaction_groups(day: Selector) -> list[list[Selector]]:
+        nodes = day.xpath("./p[normalize-space()]")
+        groups: list[list[Selector]] = []
+        for transaction in nodes:
+            if (
+                groups
+                and _is_trade(groups[-1][-1])
+                and _is_trade(transaction)
+                and _player_hrefs(groups[-1][-1]) & _player_hrefs(transaction)
+            ):
+                groups[-1].append(transaction)
+            else:
+                groups.append([transaction])
+        return groups
+
     transactions = []
     for day in selector.css("ul.page_index > li"):
         date = clean_text(day.xpath("./span//text()").getall())
-        transaction_nodes = day.xpath('./p[contains(concat(" ", normalize-space(@class), " "), " transaction ")]')
-        if not transaction_nodes:
-            transaction_nodes = day.xpath("./p[normalize-space()]")
-        for transaction in transaction_nodes:
+        for transaction_group in _transaction_groups(day):
             linked_resources = []
             from_team_abbreviations = []
             to_team_abbreviations = []
-            for link in transaction.css("a"):
-                from_team = link.attrib.get("data-attr-from")
-                to_team = link.attrib.get("data-attr-to")
-                if from_team:
-                    from_team_abbreviations.append(from_team)
-                if to_team:
-                    to_team_abbreviations.append(to_team)
-                linked_resources.append(
-                    {
-                        "text": clean_text(link.css("::text").getall()),
-                        "href": link.attrib.get("href", ""),
-                        "from_team_abbreviation": from_team or "",
-                        "to_team_abbreviation": to_team or "",
-                    }
-                )
+            transaction_text: list[str] = []
+            for transaction in transaction_group:
+                transaction_text.append(clean_text(transaction.css("::text").getall()))
+                for link in transaction.css("a"):
+                    from_team = link.attrib.get("data-attr-from")
+                    to_team = link.attrib.get("data-attr-to")
+                    _append_unique(from_team_abbreviations, from_team)
+                    _append_unique(to_team_abbreviations, to_team)
+                    linked_resources.append(
+                        {
+                            "text": clean_text(link.css("::text").getall()),
+                            "href": link.attrib.get("href", ""),
+                            "from_team_abbreviation": from_team or "",
+                            "to_team_abbreviation": to_team or "",
+                        }
+                    )
 
             transactions.append(
                 {
                     "date": date,
-                    "transaction": clean_text(transaction.css("::text").getall()),
+                    "transaction": clean_text(transaction_text),
                     "from_team_abbreviations": from_team_abbreviations,
                     "to_team_abbreviations": to_team_abbreviations,
                     "linked_resources": linked_resources,

@@ -67,7 +67,7 @@ dev = [
     "bandit>=1.7",
     # type checker
     "ty>=0.0.1a14",
-    # custom structural codemods
+    # structural codemods
     "libcst>=1.0",
     # task runner
     "taskipy>=1.13",
@@ -110,6 +110,9 @@ testpaths = "tests"
 # -p no:benchmark: opt-in parse benchmarks; avoids xdist worker warnings and
 # plugin overhead on the default parallel test run. Re-enable with -p benchmark.
 addopts = ["--disable-socket", "--timeout=300", "-p", "no:benchmark"]
+markers = [
+    "benchmark(group): opt-in pytest-benchmark parse regression tests",
+]
 
 [tool.ruff]
 target-version = "py312"

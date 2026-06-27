@@ -1,17 +1,14 @@
-"""Declarative registry for generic ("beta") Basketball Reference endpoints.
+"""Declarative registry for Basketball Reference endpoints.
 
 Each :class:`EndpointSpec` captures everything that distinguishes one
-table-scraping endpoint from another: the URL path template, how to locate the
-table on the page, which CSV columns the output contract promises, and which
-domain error a failed lookup maps to. ``HTTPService.fetch_table`` and the
-generated client functions consume these specs, so adding a new endpoint is a
-single registry entry.
+endpoint from another: the URL path template, how to locate the page content,
+which CSV columns the output contract promises, which domain error a failed
+lookup maps to, and whether the endpoint routes through the generic table
+pipeline or the native workflow executor. The generated client functions
+consume these specs, so adding a new endpoint starts with a registry entry.
 
 Path and table-id templates are ``str.format`` templates over the endpoint's
 call parameters, e.g. ``"/players/{player_identifier[0]}/{player_identifier}.html"``.
-
-``TableEndpoint`` is retained as a backwards-compatible alias for
-``EndpointSpec`` and is re-exported below.
 
 The package layout:
 
@@ -21,6 +18,8 @@ The package layout:
   the ``_endpoint`` / ``_season`` / ``_team`` / ``_player`` factory helpers.
 * :mod:`courtside_data.endpoints._registry` — the ``ENDPOINTS`` dict literal
   plus the per-domain ``output.columns`` / ``schemas`` imports it needs.
+* :mod:`courtside_data.endpoints._workflows` — native workflow endpoint
+  registrations.
 """
 
 from __future__ import annotations
@@ -39,13 +38,12 @@ from courtside_data.endpoints._registry import ENDPOINTS
 from courtside_data.endpoints._table import (
     _DEFAULT_SEASON_MIN_YEAR,
     EndpointSpec,
-    TableEndpoint,
     _endpoint,
     _player,
     _season,
     _team,
 )
-from courtside_data.endpoints._workflow import WorkflowSpec, WorkflowStep
+from courtside_data.endpoints._workflow import WorkflowSpec, WorkflowStep, WorkflowStepKind
 
 __all__ = [
     "ENDPOINTS",
@@ -60,9 +58,9 @@ __all__ = [
     "EndpointSpec",
     "ParserShape",
     "RequestShape",
-    "TableEndpoint",
     "WorkflowSpec",
     "WorkflowStep",
+    "WorkflowStepKind",
     "_endpoint",
     "_player",
     "_season",

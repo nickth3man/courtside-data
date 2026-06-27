@@ -27,6 +27,9 @@ from courtside_data.client.draft import (  # noqa: F401
     season_leaders,
 )
 from courtside_data.client.games import (  # noqa: F401
+    box_score_game_info,
+    box_score_player_basic,
+    box_score_team_four_factors,
     play_by_play,
     player_box_scores,
     players_advanced_season_totals,
@@ -90,7 +93,7 @@ from courtside_data.client.teams import (  # noqa: F401
 # Re-exported for the registry drift test and for callers that need direct
 # service access.
 from courtside_data.endpoints import ENDPOINTS
-from courtside_data.http_service import HTTPService  # noqa: F401
+from courtside_data.http import HTTPService  # noqa: F401
 
 ENDPOINT_FUNCTION_NAMES: tuple[str, ...] = tuple(ENDPOINTS)
 

@@ -12,7 +12,7 @@ from typing import Annotated
 
 from pydantic import BeforeValidator, TypeAdapter
 
-from courtside_data.data import League
+from courtside_data.domain import League
 from courtside_data.schemas._base import BRRow
 from courtside_data.schemas._fields import LeagueField
 from courtside_data.schemas._registry import register

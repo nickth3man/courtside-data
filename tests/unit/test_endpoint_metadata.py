@@ -173,21 +173,17 @@ class TestEndpointSpecAcceptsMetadata:
 
 
 # ---------------------------------------------------------------------------
-# Dispatch kind + deprecated custom compatibility property
+# Dispatch kind
 # ---------------------------------------------------------------------------
 
 
-class TestKindAndCustomProperty:
-    """``kind`` drives dispatch; ``custom`` is a deprecated alias of it."""
+class TestKindProperty:
+    """``kind`` drives dispatch."""
 
     def test_kind_defaults_to_generic_table_without_metadata(self) -> None:
         ep = EndpointSpec(path="/foo/bar.html")
         assert ep.metadata is None
         assert ep.kind is EndpointKind.GENERIC_TABLE
-
-    def test_custom_defaults_to_false_without_metadata(self) -> None:
-        ep = EndpointSpec(path="/foo/bar.html")
-        assert ep.custom is False
 
     def test_kind_reflects_metadata_kind(self) -> None:
         meta = _minimal_metadata()
@@ -204,16 +200,15 @@ class TestKindAndCustomProperty:
         )
         ep = EndpointSpec(path="/foo/bar.html", metadata=meta)
         assert ep.kind is EndpointKind.WORKFLOW
-        assert ep.custom is True
 
-    def test_generic_table_metadata_keeps_custom_false(self) -> None:
+    def test_generic_table_metadata_keeps_kind_generic(self) -> None:
         ep = EndpointSpec(path="/foo/bar.html", metadata=_minimal_metadata())
         assert ep.kind is EndpointKind.GENERIC_TABLE
-        assert ep.custom is False
 
-    def test_custom_is_consistent_with_kind_across_registry(self) -> None:
+    def test_kind_is_consistent_with_metadata_across_registry(self) -> None:
         for name, ep in ENDPOINTS.items():
-            assert ep.custom is (ep.kind is EndpointKind.WORKFLOW), name
+            assert ep.metadata is not None, name
+            assert ep.kind is ep.metadata.kind, name
 
 
 # ---------------------------------------------------------------------------

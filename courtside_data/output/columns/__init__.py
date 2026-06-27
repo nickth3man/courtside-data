@@ -4,10 +4,11 @@ This package is intentionally small at the top level. Domain modules
 contribute one ``*_COLUMN_NAMES`` list per endpoint; consumers import the
 specific contract list they need from here.
 
-The explicit per-endpoint lists exist because there is no way to derive
-CSV column names from typed values directly — enums, lists, and
-other non-string types do not round-trip through ``csv.DictWriter`` without
-the writer knowing which columns to emit.
+Most endpoint contracts are explicit lists because enums, lists, and other
+non-string values do not round-trip through ``csv.DictWriter`` without the
+writer knowing which columns to emit. Box-score contracts are the exception:
+they are derived from their Pydantic row models to keep CSV output aligned
+with the schema as those readers evolve.
 
 Importing the domain submodules here is what populates the module
 namespace. The domain modules themselves hold no side effects beyond
@@ -28,8 +29,7 @@ from courtside_data.output.columns import (
     teams,
 )
 
-# Shared primitive consumed by ``boxscores.BOX_SCORE_COLUMN_NAMES`` and
-# ``boxscores.PLAYER_SEASON_BOX_SCORE_COLUMN_NAMES``.
+# Historical shared primitive retained for downstream imports.
 from courtside_data.output.columns._common import SHARED_COLUMN_NAMES
 
 # Per-endpoint contracts — re-exported at the package root so existing
@@ -41,6 +41,9 @@ from courtside_data.output.columns._misc import (
 )
 from courtside_data.output.columns.boxscores import (
     BOX_SCORE_COLUMN_NAMES,
+    BOX_SCORE_GAME_INFO_COLUMN_NAMES,
+    BOX_SCORE_PLAYER_BASIC_COLUMN_NAMES,
+    BOX_SCORE_TEAM_FOUR_FACTORS_COLUMN_NAMES,
     PLAYER_SEASON_BOX_SCORE_COLUMN_NAMES,
     TEAM_BOX_SCORES_COLUMN_NAMES,
 )
@@ -104,6 +107,9 @@ from courtside_data.output.columns.teams import (
 __all__ = [
     "ATTENDANCE_COLUMN_NAMES",
     "BOX_SCORE_COLUMN_NAMES",
+    "BOX_SCORE_GAME_INFO_COLUMN_NAMES",
+    "BOX_SCORE_PLAYER_BASIC_COLUMN_NAMES",
+    "BOX_SCORE_TEAM_FOUR_FACTORS_COLUMN_NAMES",
     "CAREER_LEADERS_COLUMN_NAMES",
     "DRAFT_PICKS_COLUMN_NAMES",
     "FRANCHISE_HISTORY_COLUMN_NAMES",

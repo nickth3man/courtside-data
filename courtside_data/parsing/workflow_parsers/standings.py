@@ -21,7 +21,7 @@ from courtside_data.parsing import rows
 from courtside_data.parsing.tables import GenericTable
 
 if TYPE_CHECKING:
-    from courtside_data.parsing.custom._fetch import FetchFacade
+    from courtside_data.parsing.workflow_parsers._fetch import FetchFacade
 
 __all__ = ["standings", "standings_by_date"]
 
@@ -45,7 +45,7 @@ def _record_standings_diagnostics(
         ignored_event_count=sum(ignored.values()) if isinstance(ignored, dict) else None,
         ignored_event_reason_counts=ignored if isinstance(ignored, dict) else None,
         ignored_row_reason_counts=ignored if isinstance(ignored, dict) else None,
-        custom_diagnostics={
+        workflow_diagnostics={
             key: stats[key]
             for key in (
                 "conference_count",
@@ -111,7 +111,7 @@ def standings_by_date(facade: FetchFacade, season_end_year: int) -> list[dict[st
             rows=standings_rows,
             source_sections=source_sections,
             ignored_row_reason_counts=dict(ignored_row_reason_counts),
-            custom_diagnostics={
+            workflow_diagnostics={
                 "conference_count": len(conference_names),
                 "team_count": len(standings_rows),
                 "standings_section_count": len(source_sections),

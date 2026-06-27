@@ -1,9 +1,7 @@
 """Shared CSV column primitives reused across multiple endpoint contracts.
 
-``SHARED_COLUMN_NAMES`` is the base of both ``BOX_SCORE_COLUMN_NAMES`` and
-``PLAYER_SEASON_BOX_SCORE_COLUMN_NAMES`` in
-:mod:`courtside_data.output.columns.boxscores`, so it lives here as the
-single source of truth.
+``SHARED_COLUMN_NAMES`` is kept for downstream imports that consumed the
+historical player box-score stat block.
 """
 
 SHARED_COLUMN_NAMES = [

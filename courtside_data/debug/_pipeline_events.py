@@ -9,12 +9,12 @@ from courtside_data.debug.trace import DebugTrace
 
 __all__ = [
     "emit_parser_diagnostics",
-    "record_custom_parser_parsed",
     "record_parsed_rows_summary",
     "record_rows_filtered",
     "record_sentinel_rows",
     "record_validation_failed",
     "record_validation_passed",
+    "record_workflow_parser_parsed",
     "validation_error_paths",
 ]
 
@@ -51,7 +51,7 @@ def record_parsed_rows_summary(
     )
 
 
-def record_custom_parser_parsed(
+def record_workflow_parser_parsed(
     trace: DebugTrace,
     *,
     parser_name: str,
@@ -61,12 +61,12 @@ def record_custom_parser_parsed(
     ignored_event_count: int | None = None,
     ignored_event_reason_counts: Mapping[str, int] | None = None,
     ignored_row_reason_counts: Mapping[str, int] | None = None,
-    custom_diagnostics: Mapping[str, Any] | None = None,
+    workflow_diagnostics: Mapping[str, Any] | None = None,
     period_count: int | None = None,
     score_event_count: int | None = None,
     substitution_event_count: int | None = None,
 ) -> None:
-    """Record parser-specific diagnostics for non-table custom endpoints."""
+    """Record parser-specific diagnostics for workflow parsers."""
     attributes: dict[str, Any] = {
         "parser_name": parser_name,
         "source_sections": [str(section) for section in source_sections],
@@ -81,8 +81,8 @@ def record_custom_parser_parsed(
         attributes["ignored_event_reason_counts"] = dict(ignored_event_reason_counts)
     if ignored_row_reason_counts:
         attributes["ignored_row_reason_counts"] = dict(ignored_row_reason_counts)
-    if custom_diagnostics:
-        attributes["custom_diagnostics"] = dict(custom_diagnostics)
+    if workflow_diagnostics:
+        attributes["workflow_diagnostics"] = dict(workflow_diagnostics)
     if period_count is not None:
         attributes["period_count"] = period_count
     if score_event_count is not None:
@@ -102,12 +102,12 @@ def emit_parser_diagnostics(
     ignored_event_count: int | None = None,
     ignored_event_reason_counts: Mapping[str, int] | None = None,
     ignored_row_reason_counts: Mapping[str, int] | None = None,
-    custom_diagnostics: Mapping[str, Any] | None = None,
+    workflow_diagnostics: Mapping[str, Any] | None = None,
     **extra_attributes: Any,
 ) -> None:
     """Record parsed-row summary plus parser-specific diagnostics in one call."""
     record_parsed_rows_summary(trace, parser_name=parser_name, rows=rows)
-    record_custom_parser_parsed(
+    record_workflow_parser_parsed(
         trace,
         parser_name=parser_name,
         source_sections=source_sections,
@@ -116,7 +116,7 @@ def emit_parser_diagnostics(
         ignored_event_count=ignored_event_count,
         ignored_event_reason_counts=ignored_event_reason_counts,
         ignored_row_reason_counts=ignored_row_reason_counts,
-        custom_diagnostics=custom_diagnostics,
+        workflow_diagnostics=workflow_diagnostics,
         **extra_attributes,
     )
 

@@ -32,7 +32,7 @@ from courtside_data.client._pipelines.drop_reasons.row import (
     summarize_drop_counts,
 )
 from courtside_data.client._pipelines.drop_reasons.schedule import (
-    _schedule_drop_reason,  # noqa: F401  (re-exported for backward compat)
+    _schedule_drop_reason,  # noqa: F401
 )
 from courtside_data.client._pipelines.drop_reasons.sentinel import (
     sentinel_marker,

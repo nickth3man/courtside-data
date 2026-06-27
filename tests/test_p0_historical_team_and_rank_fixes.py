@@ -15,9 +15,9 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
-from courtside_data.client._pipelines._drop_reasons import DROP_REASON_INVALID_VALUE
+from courtside_data.client._pipelines.drop_reasons import DROP_REASON_INVALID_VALUE
 from courtside_data.client._pipelines.pydantic import _validate_row_model_rows_detailed
-from courtside_data.data import (
+from courtside_data.domain import (
     TEAM_ABBREVIATIONS_TO_TEAM,
     TEAM_NAME_TO_TEAM,
     TEAM_TO_TEAM_ABBREVIATION,
@@ -25,7 +25,7 @@ from courtside_data.data import (
 )
 from courtside_data.parsing.generic import find_table
 from courtside_data.schemas._fields import BRInt, TeamField
-from courtside_data.schemas.league import CareerLeadersRow, SeasonAwardsRow, SeasonAwardsVotingRow
+from courtside_data.schemas.awards import CareerLeadersRow, SeasonAwardsRow, SeasonAwardsVotingRow
 from parsel import Selector
 from pydantic import BaseModel, TypeAdapter, ValidationError
 
@@ -66,6 +66,78 @@ class TestHistoricalTeamAbbreviations:
         adapter = TypeAdapter(TeamField)
         assert adapter.validate_python("BAL") is Team.BALTIMORE_BULLETS
         assert adapter.validate_python("CIN") is Team.CINCINNATI_ROYALS
+
+    @pytest.mark.parametrize(
+        ("abbr", "team"),
+        [
+            ("MNL", Team.MINNEAPOLIS_LAKERS),
+            ("ROC", Team.ROCHESTER_ROYALS),
+            ("SYR", Team.SYRACUSE_NATIONALS),
+            ("TRI", Team.TRI_CITIES_BLACKHAWKS),
+            ("MLH", Team.MILWAUKEE_HAWKS),
+            ("FTW", Team.FORT_WAYNE_PISTONS),
+            ("SDR", Team.SAN_DIEGO_ROCKETS),
+            ("SDC", Team.SAN_DIEGO_CLIPPERS),
+            ("CHP", Team.CHICAGO_PACKERS),
+            ("CHZ", Team.CHICAGO_ZEPHYRS),
+            ("DNN", Team.DENVER_NUGGETS_1949),
+            ("NOJ", Team.NEW_ORLEANS_JAZZ),
+        ],
+    )
+    def test_historical_nba_baa_codes_resolve(self, abbr: str, team: Team) -> None:
+        assert TEAM_ABBREVIATIONS_TO_TEAM[abbr] is team
+
+    @pytest.mark.parametrize(
+        "abbr",
+        [
+            "KEN",
+            "NYA",
+            "DNR",
+            "INA",
+            "SAA",
+            "MMT",
+            "CAR",
+            "SDA",
+            "MMS",
+            "NOB",
+            "OAK",
+            "PTC",
+            "SDS",
+            "SSL",
+            "UTS",
+            "VIR",
+        ],
+    )
+    def test_aba_codes_resolve(self, abbr: str) -> None:
+        assert abbr in TEAM_ABBREVIATIONS_TO_TEAM
+
+    def test_correct_bbref_codes_replace_fabricated_codes(self) -> None:
+        assert TEAM_ABBREVIATIONS_TO_TEAM["DTF"] is Team.DETROIT_FALCONS
+        assert TEAM_ABBREVIATIONS_TO_TEAM["INJ"] is Team.INDIANAPOLIS_JETS
+        assert TEAM_ABBREVIATIONS_TO_TEAM["PRO"] is Team.PROVIDENCE_STEAMROLLERS
+        assert TEAM_ABBREVIATIONS_TO_TEAM["CAP"] is Team.CAPITAL_BULLETS
+        assert TEAM_ABBREVIATIONS_TO_TEAM["WSC"] is Team.WASHINGTON_CAPITOLS
+        assert "DF" not in TEAM_ABBREVIATIONS_TO_TEAM
+        assert "JET" not in TEAM_ABBREVIATIONS_TO_TEAM
+        assert "PRS" not in TEAM_ABBREVIATIONS_TO_TEAM
+
+    @pytest.mark.parametrize(
+        "name",
+        [
+            "FORT WAYNE PISTONS",
+            "MINNEAPOLIS LAKERS",
+            "ROCHESTER ROYALS",
+            "SYRACUSE NATIONALS",
+            "TRI-CITIES BLACKHAWKS",
+            "MILWAUKEE HAWKS",
+            "SAN DIEGO ROCKETS",
+            "SAN DIEGO CLIPPERS",
+            "CHICAGO PACKERS",
+            "CHICAGO ZEPHYRS",
+        ],
+    )
+    def test_historical_team_names_resolve(self, name: str) -> None:
+        assert name in TEAM_NAME_TO_TEAM
 
     @pytest.mark.parametrize("bad", ["NOT_A_REAL_TEAM", "XYZ", "BALTIMORE", "CINN"])
     def test_unknown_abbreviations_still_rejected(self, bad: str) -> None:

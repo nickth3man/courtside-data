@@ -1,14 +1,14 @@
 """Public-API contract tests.
 
 These tests lock down *public-surface* contracts (importable names, constant
-values, parser CLI argument shapes) that must not change unless the change
-is intentional and accompanied by a compatibility plan.
+values, parser CLI argument shapes) that should change only when the public
+surface is intentionally revised.
 
 They are deliberately hermetic: no live network, no fixtures, no I/O. They
 verify the wiring and the contract surface that downstream tooling and the
 ``uv run python -m courtside_data.debug`` / ``courtside-data probe`` flows
 depend on. If any of these tests fail, a public name was removed, a stable
-constant changed, or a CLI flag was reshaped in a backwards-incompatible way.
+constant changed, or a CLI flag was reshaped.
 
 Note: the contract tests intentionally *import* a long list of public names
 without using them — the import itself is the test. ``# ruff: noqa: F401``
@@ -46,8 +46,6 @@ def test_probe_public_api_imports():
 def test_provenance_public_api_imports():
     """Key provenance names importable from ``courtside_data.debug.provenance``."""
     from courtside_data.debug.provenance import (
-        PROVENANCE_CUSTOM_PARSER_METADATA_UNAVAILABLE,
-        PROVENANCE_CUSTOM_PARSER_VALUE,
         PROVENANCE_DEBUG_UNAVAILABLE,
         PROVENANCE_PARSER_EMITTED_VALUE,
         PROVENANCE_PARSER_OMITTED_PRESENT_COLUMN,
@@ -61,6 +59,8 @@ def test_provenance_public_api_imports():
         PROVENANCE_UNKNOWN,
         PROVENANCE_VALIDATOR_COERCED_TO_NONE,
         PROVENANCE_VALIDATOR_TRANSFORMED_VALUE,
+        PROVENANCE_WORKFLOW_PARSER_METADATA_UNAVAILABLE,
+        PROVENANCE_WORKFLOW_PARSER_VALUE,
         ProvenanceContext,
         ProvenanceReason,
         SourceCell,
@@ -107,8 +107,8 @@ def test_provenance_reason_constants_unchanged():
     assert provenance.PROVENANCE_VALIDATOR_TRANSFORMED_VALUE == "validator_transformed_value"
     assert provenance.PROVENANCE_ROW_DROPPED_EXPECTED_REASON == "row_dropped_expected_reason"
     assert provenance.PROVENANCE_ROW_DROPPED_UNRESOLVED_VALIDATION_ERROR == "row_dropped_unresolved_validation_error"
-    assert provenance.PROVENANCE_CUSTOM_PARSER_VALUE == "custom_parser_value"
-    assert provenance.PROVENANCE_CUSTOM_PARSER_METADATA_UNAVAILABLE == "custom_parser_metadata_unavailable"
+    assert provenance.PROVENANCE_WORKFLOW_PARSER_VALUE == "workflow_parser_value"
+    assert provenance.PROVENANCE_WORKFLOW_PARSER_METADATA_UNAVAILABLE == "workflow_parser_metadata_unavailable"
     assert provenance.PROVENANCE_DEBUG_UNAVAILABLE == "debug_provenance_unavailable"
     assert provenance.PROVENANCE_UNKNOWN == "unknown"
 
@@ -305,6 +305,8 @@ def test_parsing_rows_functions_importable():
     — both are stable public surfaces of the parsing package.
     """
     from courtside_data.parsing.rows import (
+        parse_box_score_game_info,
+        parse_box_score_player_basic,
         parse_friv_playoff_outcomes_row,
         parse_play_by_play_rows,
         parse_player_box_scores_from_table,
@@ -317,6 +319,8 @@ def test_parsing_rows_functions_importable():
 
     for fn in (
         parse_standings,
+        parse_box_score_game_info,
+        parse_box_score_player_basic,
         parse_play_by_play_rows,
         parse_team_box_score,
         parse_player_box_scores_from_table,
@@ -329,7 +333,7 @@ def test_parsing_rows_functions_importable():
 
 
 # ---------------------------------------------------------------------------
-# 10. Schemas league import contract
+# 10. Schema import contracts
 # ---------------------------------------------------------------------------
 
 
@@ -339,7 +343,6 @@ def test_schemas_league_imports_work():
     """
     from courtside_data.schemas.league import (
         AttendanceRow,
-        CareerLeadersRow,
         LeaguePer36MinutesRow,
         LeaguePer100PossessionsRow,
         LeaguePerGameStatsRow,
@@ -348,9 +351,6 @@ def test_schemas_league_imports_work():
         LeagueTotalsRow,
         LeagueTransactionRow,
         RookieStatsRow,
-        SeasonAwardsRow,
-        SeasonAwardsVotingRow,
-        SeasonLeadersRow,
     )
 
     assert LeaguePerGameStatsRow is not None
@@ -358,7 +358,6 @@ def test_schemas_league_imports_work():
     # Sanity-check the classes are types and module surfaces remain importable.
     for cls in (
         AttendanceRow,
-        CareerLeadersRow,
         LeaguePer100PossessionsRow,
         LeaguePer36MinutesRow,
         LeaguePerGameStatsRow,
@@ -366,10 +365,22 @@ def test_schemas_league_imports_work():
         LeagueShootingRow,
         LeagueTotalsRow,
         LeagueTransactionRow,
+    ):
+        assert isinstance(cls, type), f"{cls!r} should be a class"
+
+
+def test_schemas_awards_imports_work():
+    """Awards and leaders row classes must be importable from
+    ``courtside_data.schemas.awards``.
+    """
+    from courtside_data.schemas.awards import (
+        CareerLeadersRow,
         SeasonAwardsRow,
         SeasonAwardsVotingRow,
         SeasonLeadersRow,
-    ):
+    )
+
+    for cls in (CareerLeadersRow, SeasonAwardsRow, SeasonAwardsVotingRow, SeasonLeadersRow):
         assert isinstance(cls, type), f"{cls!r} should be a class"
 
 
@@ -380,32 +391,14 @@ def test_row_adapters_registry_populated():
     assert len(ROW_ADAPTERS) >= 50, f"Expected >=50 registered models, got {len(ROW_ADAPTERS)}"
     # All register() calls happen at import time — every domain module must
     # have contributed its models. The count must remain stable.
-    assert len(ROW_ADAPTERS) == 55, (
-        f"ROW_ADAPTERS count changed from 55 to {len(ROW_ADAPTERS)} — a model was accidentally dropped or added"
+    assert len(ROW_ADAPTERS) == 58, (
+        f"ROW_ADAPTERS count changed from 58 to {len(ROW_ADAPTERS)} — a model was accidentally dropped or added"
     )
 
 
 # ---------------------------------------------------------------------------
-# 11. Probe package back-compat shim + facade wiring
+# 11. Probe package facade wiring
 # ---------------------------------------------------------------------------
-
-
-def test_probe_report_shim_reexports():
-    """The ``courtside_data.debug.probe_report`` import path must keep
-    re-exporting the evaluation and CSV names from
-    ``probe.report`` and ``probe.csv_report``.
-    """
-    from courtside_data.debug import probe_report
-    from courtside_data.debug.probe import csv_report, report
-
-    # Evaluation half is sourced from probe.report.
-    assert probe_report._with_evaluation is report._with_evaluation
-    assert probe_report._failure_category is report._failure_category
-    assert probe_report.FAILURE_NONE == report.FAILURE_NONE == "none"
-    # CSV half is sourced from probe.csv_report.
-    assert probe_report.CSV_COLUMNS is csv_report.CSV_COLUMNS
-    assert probe_report.write_probe_csv_report is csv_report.write_probe_csv_report
-    assert probe_report._csv_row is csv_report._csv_row
 
 
 def test_probe_facade_matches_submodules():
@@ -435,7 +428,7 @@ def test_probe_facade_matches_submodules():
 
 
 # ---------------------------------------------------------------------------
-# 12. EndpointSpec / TableEndpoint alias contract
+# 12. EndpointSpec contract
 # ---------------------------------------------------------------------------
 
 
@@ -449,24 +442,8 @@ def test_endpoint_spec_importable():
     assert isinstance(EndpointSpec, type)
 
 
-def test_table_endpoint_alias_importable():
-    """``TableEndpoint`` must remain importable as a backwards-compatible alias."""
-    from courtside_data.endpoints import TableEndpoint
+def test_registered_endpoints_are_endpoint_specs():
+    from courtside_data.endpoints import ENDPOINTS, EndpointSpec
 
-    assert TableEndpoint is not None
-    assert isinstance(TableEndpoint, type)
-
-
-def test_table_endpoint_is_alias_of_endpoint_spec():
-    """``TableEndpoint`` must be the exact same object as ``EndpointSpec`` (a
-    plain alias, not a subclass) so isinstance checks hold for every registered
-    endpoint under both names.
-    """
-    from courtside_data.endpoints import ENDPOINTS, EndpointSpec, TableEndpoint
-
-    assert TableEndpoint is EndpointSpec
-
-    # Every registered endpoint is an instance of BOTH names.
     for name, endpoint in ENDPOINTS.items():
         assert isinstance(endpoint, EndpointSpec), f"{name} is not an EndpointSpec"
-        assert isinstance(endpoint, TableEndpoint), f"{name} is not a TableEndpoint"

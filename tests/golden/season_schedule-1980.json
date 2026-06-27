@@ -105,6 +105,21 @@
     "start_time": "1979-10-12T04:00:00Z"
   },
   {
+    "arena_name": "San Diego Sports Arena",
+    "attendance": 8503,
+    "away_team": "LOS ANGELES LAKERS",
+    "away_team_score": 103,
+    "box_score_text": "Box Score",
+    "date_game": "Fri, Oct 12, 1979",
+    "game_duration": "2:15",
+    "game_remarks": null,
+    "game_start_time": null,
+    "home_team": "SAN DIEGO CLIPPERS",
+    "home_team_score": 102,
+    "overtimes": null,
+    "start_time": "1979-10-12T04:00:00Z"
+  },
+  {
     "arena_name": "Capital Centre",
     "attendance": null,
     "away_team": "PHILADELPHIA 76ERS",
@@ -255,6 +270,21 @@
     "start_time": "1979-10-14T04:00:00Z"
   },
   {
+    "arena_name": "San Diego Sports Arena",
+    "attendance": null,
+    "away_team": "SEATTLE SUPERSONICS",
+    "away_team_score": 93,
+    "box_score_text": "Box Score",
+    "date_game": "Sun, Oct 14, 1979",
+    "game_duration": null,
+    "game_remarks": null,
+    "game_start_time": null,
+    "home_team": "SAN DIEGO CLIPPERS",
+    "home_team_score": 98,
+    "overtimes": null,
+    "start_time": "1979-10-14T04:00:00Z"
+  },
+  {
     "arena_name": "Salt Palace",
     "attendance": 7721,
     "away_team": "MILWAUKEE BUCKS",
@@ -371,6 +401,21 @@
     "game_start_time": null,
     "home_team": "PHOENIX SUNS",
     "home_team_score": 102,
+    "overtimes": null,
+    "start_time": "1979-10-16T04:00:00Z"
+  },
+  {
+    "arena_name": "Memorial Coliseum",
+    "attendance": null,
+    "away_team": "SAN DIEGO CLIPPERS",
+    "away_team_score": 81,
+    "box_score_text": "Box Score",
+    "date_game": "Tue, Oct 16, 1979",
+    "game_duration": null,
+    "game_remarks": null,
+    "game_start_time": null,
+    "home_team": "PORTLAND TRAIL BLAZERS",
+    "home_team_score": 88,
     "overtimes": null,
     "start_time": "1979-10-16T04:00:00Z"
   },
@@ -525,6 +570,21 @@
     "start_time": "1979-10-18T04:00:00Z"
   },
   {
+    "arena_name": "San Diego Sports Arena",
+    "attendance": null,
+    "away_team": "CHICAGO BULLS",
+    "away_team_score": 107,
+    "box_score_text": "Box Score",
+    "date_game": "Thu, Oct 18, 1979",
+    "game_duration": null,
+    "game_remarks": null,
+    "game_start_time": null,
+    "home_team": "SAN DIEGO CLIPPERS",
+    "home_team_score": 111,
+    "overtimes": null,
+    "start_time": "1979-10-18T04:00:00Z"
+  },
+  {
     "arena_name": "Salt Palace",
     "attendance": null,
     "away_team": "PORTLAND TRAIL BLAZERS",
@@ -626,6 +686,21 @@
     "game_start_time": null,
     "home_team": "PHILADELPHIA 76ERS",
     "home_team_score": 112,
+    "overtimes": null,
+    "start_time": "1979-10-19T04:00:00Z"
+  },
+  {
+    "arena_name": "Seattle Kingdome",
+    "attendance": null,
+    "away_team": "SAN DIEGO CLIPPERS",
+    "away_team_score": 98,
+    "box_score_text": "Box Score",
+    "date_game": "Fri, Oct 19, 1979",
+    "game_duration": null,
+    "game_remarks": null,
+    "game_start_time": null,
+    "home_team": "SEATTLE SUPERSONICS",
+    "home_team_score": 106,
     "overtimes": null,
     "start_time": "1979-10-19T04:00:00Z"
   },
@@ -795,6 +870,21 @@
     "start_time": "1979-10-21T04:00:00Z"
   },
   {
+    "arena_name": "Salt Palace",
+    "attendance": null,
+    "away_team": "SAN DIEGO CLIPPERS",
+    "away_team_score": 109,
+    "box_score_text": "Box Score",
+    "date_game": "Mon, Oct 22, 1979",
+    "game_duration": null,
+    "game_remarks": null,
+    "game_start_time": null,
+    "home_team": "UTAH JAZZ",
+    "home_team_score": 110,
+    "overtimes": null,
+    "start_time": "1979-10-22T04:00:00Z"
+  },
+  {
     "arena_name": "Chicago Stadium",
     "attendance": null,
     "away_team": "NEW JERSEY NETS",
@@ -896,6 +986,21 @@
     "game_start_time": null,
     "home_team": "SAN ANTONIO SPURS",
     "home_team_score": 129,
+    "overtimes": null,
+    "start_time": "1979-10-23T04:00:00Z"
+  },
+  {
+    "arena_name": "San Diego Sports Arena",
+    "attendance": null,
+    "away_team": "DENVER NUGGETS",
+    "away_team_score": 127,
+    "box_score_text": "Box Score",
+    "date_game": "Tue, Oct 23, 1979",
+    "game_duration": null,
+    "game_remarks": null,
+    "game_start_time": null,
+    "home_team": "SAN DIEGO CLIPPERS",
+    "home_team_score": 132,
     "overtimes": null,
     "start_time": "1979-10-23T04:00:00Z"
   },
@@ -1003,6 +1108,21 @@
     "home_team_score": 105,
     "overtimes": null,
     "start_time": "1979-10-24T04:00:00Z"
+  },
+  {
+    "arena_name": "San Diego Sports Arena",
+    "attendance": null,
+    "away_team": "MILWAUKEE BUCKS",
+    "away_team_score": 118,
+    "box_score_text": "Box Score",
+    "date_game": "Thu, Oct 25, 1979",
+    "game_duration": null,
+    "game_remarks": null,
+    "game_start_time": null,
+    "home_team": "SAN DIEGO CLIPPERS",
+    "home_team_score": 115,
+    "overtimes": null,
+    "start_time": "1979-10-25T04:00:00Z"
   },
   {
     "arena_name": "Salt Palace",
@@ -1230,6 +1350,21 @@
     "start_time": "1979-10-27T04:00:00Z"
   },
   {
+    "arena_name": "San Diego Sports Arena",
+    "attendance": null,
+    "away_team": "SEATTLE SUPERSONICS",
+    "away_team_score": 105,
+    "box_score_text": "Box Score",
+    "date_game": "Sat, Oct 27, 1979",
+    "game_duration": null,
+    "game_remarks": null,
+    "game_start_time": null,
+    "home_team": "SAN DIEGO CLIPPERS",
+    "home_team_score": 110,
+    "overtimes": null,
+    "start_time": "1979-10-27T04:00:00Z"
+  },
+  {
     "arena_name": "The Forum",
     "attendance": null,
     "away_team": "GOLDEN STATE WARRIORS",
@@ -1271,6 +1406,21 @@
     "game_start_time": null,
     "home_team": "PORTLAND TRAIL BLAZERS",
     "home_team_score": 88,
+    "overtimes": null,
+    "start_time": "1979-10-28T04:00:00Z"
+  },
+  {
+    "arena_name": "San Diego Sports Arena",
+    "attendance": null,
+    "away_team": "KANSAS CITY KINGS",
+    "away_team_score": 106,
+    "box_score_text": "Box Score",
+    "date_game": "Sun, Oct 28, 1979",
+    "game_duration": null,
+    "game_remarks": null,
+    "game_start_time": null,
+    "home_team": "SAN DIEGO CLIPPERS",
+    "home_team_score": 101,
     "overtimes": null,
     "start_time": "1979-10-28T04:00:00Z"
   },
@@ -1440,6 +1590,21 @@
     "start_time": "1979-10-31T05:00:00Z"
   },
   {
+    "arena_name": "San Diego Sports Arena",
+    "attendance": null,
+    "away_team": "SAN ANTONIO SPURS",
+    "away_team_score": 130,
+    "box_score_text": "Box Score",
+    "date_game": "Wed, Oct 31, 1979",
+    "game_duration": null,
+    "game_remarks": null,
+    "game_start_time": null,
+    "home_team": "SAN DIEGO CLIPPERS",
+    "home_team_score": 123,
+    "overtimes": null,
+    "start_time": "1979-10-31T05:00:00Z"
+  },
+  {
     "arena_name": "Seattle Kingdome",
     "attendance": null,
     "away_team": "DENVER NUGGETS",
@@ -1575,6 +1740,21 @@
     "start_time": "1979-11-02T05:00:00Z"
   },
   {
+    "arena_name": "San Diego Sports Arena",
+    "attendance": null,
+    "away_team": "PORTLAND TRAIL BLAZERS",
+    "away_team_score": 123,
+    "box_score_text": "Box Score",
+    "date_game": "Fri, Nov 2, 1979",
+    "game_duration": null,
+    "game_remarks": null,
+    "game_start_time": null,
+    "home_team": "SAN DIEGO CLIPPERS",
+    "home_team_score": 102,
+    "overtimes": null,
+    "start_time": "1979-11-02T05:00:00Z"
+  },
+  {
     "arena_name": "Seattle Kingdome",
     "attendance": null,
     "away_team": "SAN ANTONIO SPURS",
@@ -1680,6 +1860,21 @@
     "start_time": "1979-11-03T05:00:00Z"
   },
   {
+    "arena_name": "San Diego Sports Arena",
+    "attendance": null,
+    "away_team": "UTAH JAZZ",
+    "away_team_score": 109,
+    "box_score_text": "Box Score",
+    "date_game": "Sat, Nov 3, 1979",
+    "game_duration": null,
+    "game_remarks": null,
+    "game_start_time": null,
+    "home_team": "SAN DIEGO CLIPPERS",
+    "home_team_score": 126,
+    "overtimes": null,
+    "start_time": "1979-11-03T05:00:00Z"
+  },
+  {
     "arena_name": "Capital Centre",
     "attendance": 17635,
     "away_team": "BOSTON CELTICS",
@@ -1766,6 +1961,21 @@
     "game_start_time": null,
     "home_team": "CLEVELAND CAVALIERS",
     "home_team_score": 134,
+    "overtimes": null,
+    "start_time": "1979-11-06T05:00:00Z"
+  },
+  {
+    "arena_name": "The Forum",
+    "attendance": null,
+    "away_team": "SAN DIEGO CLIPPERS",
+    "away_team_score": 112,
+    "box_score_text": "Box Score",
+    "date_game": "Tue, Nov 6, 1979",
+    "game_duration": null,
+    "game_remarks": null,
+    "game_start_time": null,
+    "home_team": "LOS ANGELES LAKERS",
+    "home_team_score": 127,
     "overtimes": null,
     "start_time": "1979-11-06T05:00:00Z"
   },
@@ -1935,6 +2145,21 @@
     "start_time": "1979-11-07T05:00:00Z"
   },
   {
+    "arena_name": "Arizona Veterans Memorial Coliseum",
+    "attendance": null,
+    "away_team": "SAN DIEGO CLIPPERS",
+    "away_team_score": 114,
+    "box_score_text": "Box Score",
+    "date_game": "Wed, Nov 7, 1979",
+    "game_duration": null,
+    "game_remarks": null,
+    "game_start_time": null,
+    "home_team": "PHOENIX SUNS",
+    "home_team_score": 102,
+    "overtimes": null,
+    "start_time": "1979-11-07T05:00:00Z"
+  },
+  {
     "arena_name": "MECCA Arena",
     "attendance": null,
     "away_team": "PORTLAND TRAIL BLAZERS",
@@ -1976,6 +2201,21 @@
     "game_start_time": null,
     "home_team": "BOSTON CELTICS",
     "home_team_score": 127,
+    "overtimes": null,
+    "start_time": "1979-11-09T05:00:00Z"
+  },
+  {
+    "arena_name": "Chicago Stadium",
+    "attendance": null,
+    "away_team": "SAN DIEGO CLIPPERS",
+    "away_team_score": 92,
+    "box_score_text": "Box Score",
+    "date_game": "Fri, Nov 9, 1979",
+    "game_duration": null,
+    "game_remarks": null,
+    "game_start_time": null,
+    "home_team": "CHICAGO BULLS",
+    "home_team_score": 107,
     "overtimes": null,
     "start_time": "1979-11-09T05:00:00Z"
   },
@@ -2096,6 +2336,21 @@
     "game_start_time": null,
     "home_team": "HOUSTON ROCKETS",
     "home_team_score": 112,
+    "overtimes": null,
+    "start_time": "1979-11-10T05:00:00Z"
+  },
+  {
+    "arena_name": "MECCA Arena",
+    "attendance": null,
+    "away_team": "SAN DIEGO CLIPPERS",
+    "away_team_score": 104,
+    "box_score_text": "Box Score",
+    "date_game": "Sat, Nov 10, 1979",
+    "game_duration": null,
+    "game_remarks": null,
+    "game_start_time": null,
+    "home_team": "MILWAUKEE BUCKS",
+    "home_team_score": 133,
     "overtimes": null,
     "start_time": "1979-11-10T05:00:00Z"
   },
@@ -2307,6 +2562,21 @@
     "home_team": "SAN ANTONIO SPURS",
     "home_team_score": 131,
     "overtimes": "OT",
+    "start_time": "1979-11-13T05:00:00Z"
+  },
+  {
+    "arena_name": "San Diego Sports Arena",
+    "attendance": null,
+    "away_team": "LOS ANGELES LAKERS",
+    "away_team_score": 137,
+    "box_score_text": "Box Score",
+    "date_game": "Tue, Nov 13, 1979",
+    "game_duration": null,
+    "game_remarks": null,
+    "game_start_time": null,
+    "home_team": "SAN DIEGO CLIPPERS",
+    "home_team_score": 91,
+    "overtimes": null,
     "start_time": "1979-11-13T05:00:00Z"
   },
   {
@@ -2550,6 +2820,21 @@
     "start_time": "1979-11-16T05:00:00Z"
   },
   {
+    "arena_name": "San Diego Sports Arena",
+    "attendance": null,
+    "away_team": "INDIANA PACERS",
+    "away_team_score": 97,
+    "box_score_text": "Box Score",
+    "date_game": "Fri, Nov 16, 1979",
+    "game_duration": null,
+    "game_remarks": null,
+    "game_start_time": null,
+    "home_team": "SAN DIEGO CLIPPERS",
+    "home_team_score": 105,
+    "overtimes": null,
+    "start_time": "1979-11-16T05:00:00Z"
+  },
+  {
     "arena_name": "Seattle Kingdome",
     "attendance": null,
     "away_team": "CLEVELAND CAVALIERS",
@@ -2745,6 +3030,21 @@
     "start_time": "1979-11-18T05:00:00Z"
   },
   {
+    "arena_name": "San Diego Sports Arena",
+    "attendance": null,
+    "away_team": "MILWAUKEE BUCKS",
+    "away_team_score": 96,
+    "box_score_text": "Box Score",
+    "date_game": "Sun, Nov 18, 1979",
+    "game_duration": null,
+    "game_remarks": null,
+    "game_start_time": null,
+    "home_team": "SAN DIEGO CLIPPERS",
+    "home_team_score": 112,
+    "overtimes": null,
+    "start_time": "1979-11-18T05:00:00Z"
+  },
+  {
     "arena_name": "Omni Coliseum",
     "attendance": null,
     "away_team": "DETROIT PISTONS",
@@ -2850,6 +3150,21 @@
     "start_time": "1979-11-20T05:00:00Z"
   },
   {
+    "arena_name": "San Diego Sports Arena",
+    "attendance": null,
+    "away_team": "PHOENIX SUNS",
+    "away_team_score": 110,
+    "box_score_text": "Box Score",
+    "date_game": "Tue, Nov 20, 1979",
+    "game_duration": null,
+    "game_remarks": null,
+    "game_start_time": null,
+    "home_team": "SAN DIEGO CLIPPERS",
+    "home_team_score": 117,
+    "overtimes": null,
+    "start_time": "1979-11-20T05:00:00Z"
+  },
+  {
     "arena_name": "Boston Garden",
     "attendance": 13265,
     "away_team": "NEW JERSEY NETS",
@@ -2861,6 +3176,21 @@
     "game_start_time": null,
     "home_team": "BOSTON CELTICS",
     "home_team_score": 111,
+    "overtimes": null,
+    "start_time": "1979-11-21T05:00:00Z"
+  },
+  {
+    "arena_name": "McNichols Sports Arena",
+    "attendance": null,
+    "away_team": "SAN DIEGO CLIPPERS",
+    "away_team_score": 84,
+    "box_score_text": "Box Score",
+    "date_game": "Wed, Nov 21, 1979",
+    "game_duration": null,
+    "game_remarks": null,
+    "game_start_time": null,
+    "home_team": "DENVER NUGGETS",
+    "home_team_score": 105,
     "overtimes": null,
     "start_time": "1979-11-21T05:00:00Z"
   },
@@ -3086,6 +3416,21 @@
     "game_start_time": null,
     "home_team": "SAN ANTONIO SPURS",
     "home_team_score": 128,
+    "overtimes": null,
+    "start_time": "1979-11-23T05:00:00Z"
+  },
+  {
+    "arena_name": "San Diego Sports Arena",
+    "attendance": null,
+    "away_team": "KANSAS CITY KINGS",
+    "away_team_score": 107,
+    "box_score_text": "Box Score",
+    "date_game": "Fri, Nov 23, 1979",
+    "game_duration": null,
+    "game_remarks": null,
+    "game_start_time": null,
+    "home_team": "SAN DIEGO CLIPPERS",
+    "home_team_score": 91,
     "overtimes": null,
     "start_time": "1979-11-23T05:00:00Z"
   },
@@ -3345,6 +3690,21 @@
     "start_time": "1979-11-27T05:00:00Z"
   },
   {
+    "arena_name": "San Diego Sports Arena",
+    "attendance": null,
+    "away_team": "CHICAGO BULLS",
+    "away_team_score": 103,
+    "box_score_text": "Box Score",
+    "date_game": "Tue, Nov 27, 1979",
+    "game_duration": null,
+    "game_remarks": null,
+    "game_start_time": null,
+    "home_team": "SAN DIEGO CLIPPERS",
+    "home_team_score": 128,
+    "overtimes": null,
+    "start_time": "1979-11-27T05:00:00Z"
+  },
+  {
     "arena_name": "Salt Palace",
     "attendance": null,
     "away_team": "LOS ANGELES LAKERS",
@@ -3401,6 +3761,21 @@
     "game_start_time": null,
     "home_team": "BOSTON CELTICS",
     "home_team_score": 119,
+    "overtimes": null,
+    "start_time": "1979-11-28T05:00:00Z"
+  },
+  {
+    "arena_name": "Oakland-Alameda County Coliseum Arena",
+    "attendance": null,
+    "away_team": "SAN DIEGO CLIPPERS",
+    "away_team_score": 114,
+    "box_score_text": "Box Score",
+    "date_game": "Wed, Nov 28, 1979",
+    "game_duration": null,
+    "game_remarks": null,
+    "game_start_time": null,
+    "home_team": "GOLDEN STATE WARRIORS",
+    "home_team_score": 108,
     "overtimes": null,
     "start_time": "1979-11-28T05:00:00Z"
   },
@@ -3600,6 +3975,21 @@
     "start_time": "1979-11-30T05:00:00Z"
   },
   {
+    "arena_name": "The Spectrum",
+    "attendance": null,
+    "away_team": "SAN DIEGO CLIPPERS",
+    "away_team_score": 101,
+    "box_score_text": "Box Score",
+    "date_game": "Fri, Nov 30, 1979",
+    "game_duration": null,
+    "game_remarks": null,
+    "game_start_time": null,
+    "home_team": "PHILADELPHIA 76ERS",
+    "home_team_score": 104,
+    "overtimes": null,
+    "start_time": "1979-11-30T05:00:00Z"
+  },
+  {
     "arena_name": "HemisFair Arena",
     "attendance": null,
     "away_team": "PORTLAND TRAIL BLAZERS",
@@ -3628,6 +4018,21 @@
     "home_team_score": 91,
     "overtimes": null,
     "start_time": "1979-11-30T05:00:00Z"
+  },
+  {
+    "arena_name": "Omni Coliseum",
+    "attendance": null,
+    "away_team": "SAN DIEGO CLIPPERS",
+    "away_team_score": 96,
+    "box_score_text": "Box Score",
+    "date_game": "Sat, Dec 1, 1979",
+    "game_duration": null,
+    "game_remarks": null,
+    "game_start_time": null,
+    "home_team": "ATLANTA HAWKS",
+    "home_team_score": 106,
+    "overtimes": null,
+    "start_time": "1979-12-01T05:00:00Z"
   },
   {
     "arena_name": "Pontiac Silverdome",
@@ -3840,6 +4245,21 @@
     "start_time": "1979-12-03T05:00:00Z"
   },
   {
+    "arena_name": "Coliseum at Richfield",
+    "attendance": null,
+    "away_team": "SAN DIEGO CLIPPERS",
+    "away_team_score": 112,
+    "box_score_text": "Box Score",
+    "date_game": "Tue, Dec 4, 1979",
+    "game_duration": null,
+    "game_remarks": null,
+    "game_start_time": null,
+    "home_team": "CLEVELAND CAVALIERS",
+    "home_team_score": 115,
+    "overtimes": null,
+    "start_time": "1979-12-04T05:00:00Z"
+  },
+  {
     "arena_name": "Pontiac Silverdome",
     "attendance": 11839,
     "away_team": "BOSTON CELTICS",
@@ -4035,6 +4455,21 @@
     "start_time": "1979-12-05T05:00:00Z"
   },
   {
+    "arena_name": "San Diego Sports Arena",
+    "attendance": null,
+    "away_team": "GOLDEN STATE WARRIORS",
+    "away_team_score": 103,
+    "box_score_text": "Box Score",
+    "date_game": "Thu, Dec 6, 1979",
+    "game_duration": null,
+    "game_remarks": null,
+    "game_start_time": null,
+    "home_team": "SAN DIEGO CLIPPERS",
+    "home_team_score": 105,
+    "overtimes": null,
+    "start_time": "1979-12-06T05:00:00Z"
+  },
+  {
     "arena_name": "Salt Palace",
     "attendance": null,
     "away_team": "PORTLAND TRAIL BLAZERS",
@@ -4076,6 +4511,21 @@
     "game_start_time": null,
     "home_team": "HOUSTON ROCKETS",
     "home_team_score": 124,
+    "overtimes": null,
+    "start_time": "1979-12-07T05:00:00Z"
+  },
+  {
+    "arena_name": "The Forum",
+    "attendance": null,
+    "away_team": "SAN DIEGO CLIPPERS",
+    "away_team_score": 116,
+    "box_score_text": "Box Score",
+    "date_game": "Fri, Dec 7, 1979",
+    "game_duration": null,
+    "game_remarks": null,
+    "game_start_time": null,
+    "home_team": "LOS ANGELES LAKERS",
+    "home_team_score": 108,
     "overtimes": null,
     "start_time": "1979-12-07T05:00:00Z"
   },
@@ -4275,6 +4725,21 @@
     "start_time": "1979-12-09T05:00:00Z"
   },
   {
+    "arena_name": "Memorial Coliseum",
+    "attendance": null,
+    "away_team": "SAN DIEGO CLIPPERS",
+    "away_team_score": 98,
+    "box_score_text": "Box Score",
+    "date_game": "Sun, Dec 9, 1979",
+    "game_duration": null,
+    "game_remarks": null,
+    "game_start_time": null,
+    "home_team": "PORTLAND TRAIL BLAZERS",
+    "home_team_score": 96,
+    "overtimes": null,
+    "start_time": "1979-12-09T05:00:00Z"
+  },
+  {
     "arena_name": "Seattle Kingdome",
     "attendance": null,
     "away_team": "CHICAGO BULLS",
@@ -4470,6 +4935,21 @@
     "start_time": "1979-12-12T05:00:00Z"
   },
   {
+    "arena_name": "San Diego Sports Arena",
+    "attendance": null,
+    "away_team": "HOUSTON ROCKETS",
+    "away_team_score": 118,
+    "box_score_text": "Box Score",
+    "date_game": "Wed, Dec 12, 1979",
+    "game_duration": null,
+    "game_remarks": null,
+    "game_start_time": null,
+    "home_team": "SAN DIEGO CLIPPERS",
+    "home_team_score": 107,
+    "overtimes": null,
+    "start_time": "1979-12-12T05:00:00Z"
+  },
+  {
     "arena_name": "Coliseum at Richfield",
     "attendance": null,
     "away_team": "WASHINGTON BULLETS",
@@ -4601,6 +5081,21 @@
     "game_start_time": null,
     "home_team": "PHILADELPHIA 76ERS",
     "home_team_score": 98,
+    "overtimes": null,
+    "start_time": "1979-12-14T05:00:00Z"
+  },
+  {
+    "arena_name": "San Diego Sports Arena",
+    "attendance": null,
+    "away_team": "DENVER NUGGETS",
+    "away_team_score": 108,
+    "box_score_text": "Box Score",
+    "date_game": "Fri, Dec 14, 1979",
+    "game_duration": null,
+    "game_remarks": null,
+    "game_start_time": null,
+    "home_team": "SAN DIEGO CLIPPERS",
+    "home_team_score": 112,
     "overtimes": null,
     "start_time": "1979-12-14T05:00:00Z"
   },
@@ -4800,6 +5295,21 @@
     "start_time": "1979-12-16T05:00:00Z"
   },
   {
+    "arena_name": "San Diego Sports Arena",
+    "attendance": null,
+    "away_team": "DETROIT PISTONS",
+    "away_team_score": 126,
+    "box_score_text": "Box Score",
+    "date_game": "Sun, Dec 16, 1979",
+    "game_duration": null,
+    "game_remarks": null,
+    "game_start_time": null,
+    "home_team": "SAN DIEGO CLIPPERS",
+    "home_team_score": 133,
+    "overtimes": null,
+    "start_time": "1979-12-16T05:00:00Z"
+  },
+  {
     "arena_name": "Seattle Kingdome",
     "attendance": null,
     "away_team": "DENVER NUGGETS",
@@ -4841,6 +5351,21 @@
     "game_start_time": null,
     "home_team": "DETROIT PISTONS",
     "home_team_score": 102,
+    "overtimes": null,
+    "start_time": "1979-12-18T05:00:00Z"
+  },
+  {
+    "arena_name": "Municipal Auditorium",
+    "attendance": null,
+    "away_team": "SAN DIEGO CLIPPERS",
+    "away_team_score": 96,
+    "box_score_text": "Box Score",
+    "date_game": "Tue, Dec 18, 1979",
+    "game_duration": null,
+    "game_remarks": null,
+    "game_start_time": null,
+    "home_team": "KANSAS CITY KINGS",
+    "home_team_score": 110,
     "overtimes": null,
     "start_time": "1979-12-18T05:00:00Z"
   },
@@ -5040,6 +5565,21 @@
     "start_time": "1979-12-20T05:00:00Z"
   },
   {
+    "arena_name": "San Diego Sports Arena",
+    "attendance": null,
+    "away_team": "NEW YORK KNICKS",
+    "away_team_score": 118,
+    "box_score_text": "Box Score",
+    "date_game": "Thu, Dec 20, 1979",
+    "game_duration": null,
+    "game_remarks": null,
+    "game_start_time": null,
+    "home_team": "SAN DIEGO CLIPPERS",
+    "home_team_score": 128,
+    "overtimes": null,
+    "start_time": "1979-12-20T05:00:00Z"
+  },
+  {
     "arena_name": "Boston Garden",
     "attendance": 15320,
     "away_team": "SAN ANTONIO SPURS",
@@ -5126,6 +5666,21 @@
     "game_start_time": null,
     "home_team": "SEATTLE SUPERSONICS",
     "home_team_score": 121,
+    "overtimes": null,
+    "start_time": "1979-12-21T05:00:00Z"
+  },
+  {
+    "arena_name": "Salt Palace",
+    "attendance": null,
+    "away_team": "SAN DIEGO CLIPPERS",
+    "away_team_score": 110,
+    "box_score_text": "Box Score",
+    "date_game": "Fri, Dec 21, 1979",
+    "game_duration": null,
+    "game_remarks": null,
+    "game_start_time": null,
+    "home_team": "UTAH JAZZ",
+    "home_team_score": 98,
     "overtimes": null,
     "start_time": "1979-12-21T05:00:00Z"
   },
@@ -5292,6 +5847,21 @@
     "home_team": "PORTLAND TRAIL BLAZERS",
     "home_team_score": 103,
     "overtimes": null,
+    "start_time": "1979-12-23T05:00:00Z"
+  },
+  {
+    "arena_name": "San Diego Sports Arena",
+    "attendance": null,
+    "away_team": "UTAH JAZZ",
+    "away_team_score": 118,
+    "box_score_text": "Box Score",
+    "date_game": "Sun, Dec 23, 1979",
+    "game_duration": null,
+    "game_remarks": null,
+    "game_start_time": null,
+    "home_team": "SAN DIEGO CLIPPERS",
+    "home_team_score": 124,
+    "overtimes": "OT",
     "start_time": "1979-12-23T05:00:00Z"
   },
   {
@@ -5475,6 +6045,21 @@
     "start_time": "1979-12-26T05:00:00Z"
   },
   {
+    "arena_name": "Seattle Kingdome",
+    "attendance": null,
+    "away_team": "SAN DIEGO CLIPPERS",
+    "away_team_score": 104,
+    "box_score_text": "Box Score",
+    "date_game": "Wed, Dec 26, 1979",
+    "game_duration": null,
+    "game_remarks": null,
+    "game_start_time": null,
+    "home_team": "SEATTLE SUPERSONICS",
+    "home_team_score": 124,
+    "overtimes": null,
+    "start_time": "1979-12-26T05:00:00Z"
+  },
+  {
     "arena_name": "Omni Coliseum",
     "attendance": null,
     "away_team": "HOUSTON ROCKETS",
@@ -5516,6 +6101,21 @@
     "game_start_time": null,
     "home_team": "SAN ANTONIO SPURS",
     "home_team_score": 114,
+    "overtimes": null,
+    "start_time": "1979-12-27T05:00:00Z"
+  },
+  {
+    "arena_name": "San Diego Sports Arena",
+    "attendance": 13841,
+    "away_team": "BOSTON CELTICS",
+    "away_team_score": 118,
+    "box_score_text": "Box Score",
+    "date_game": "Thu, Dec 27, 1979",
+    "game_duration": "2:00",
+    "game_remarks": null,
+    "game_start_time": null,
+    "home_team": "SAN DIEGO CLIPPERS",
+    "home_team_score": 97,
     "overtimes": null,
     "start_time": "1979-12-27T05:00:00Z"
   },
@@ -5745,6 +6345,21 @@
     "start_time": "1979-12-29T05:00:00Z"
   },
   {
+    "arena_name": "Capital Centre",
+    "attendance": null,
+    "away_team": "SAN DIEGO CLIPPERS",
+    "away_team_score": 93,
+    "box_score_text": "Box Score",
+    "date_game": "Sat, Dec 29, 1979",
+    "game_duration": null,
+    "game_remarks": null,
+    "game_start_time": null,
+    "home_team": "WASHINGTON BULLETS",
+    "home_team_score": 90,
+    "overtimes": null,
+    "start_time": "1979-12-29T05:00:00Z"
+  },
+  {
     "arena_name": "The Forum",
     "attendance": null,
     "away_team": "PHOENIX SUNS",
@@ -5880,6 +6495,21 @@
     "start_time": "1980-01-02T05:00:00Z"
   },
   {
+    "arena_name": "Rutgers Athletic Center",
+    "attendance": null,
+    "away_team": "SAN DIEGO CLIPPERS",
+    "away_team_score": 103,
+    "box_score_text": "Box Score",
+    "date_game": "Wed, Jan 2, 1980",
+    "game_duration": null,
+    "game_remarks": null,
+    "game_start_time": null,
+    "home_team": "NEW JERSEY NETS",
+    "home_team_score": 97,
+    "overtimes": null,
+    "start_time": "1980-01-02T05:00:00Z"
+  },
+  {
     "arena_name": "HemisFair Arena",
     "attendance": null,
     "away_team": "PHOENIX SUNS",
@@ -5968,6 +6598,36 @@
     "home_team_score": 106,
     "overtimes": null,
     "start_time": "1980-01-03T05:00:00Z"
+  },
+  {
+    "arena_name": "Madison Square Garden (IV)",
+    "attendance": null,
+    "away_team": "SAN DIEGO CLIPPERS",
+    "away_team_score": 101,
+    "box_score_text": "Box Score",
+    "date_game": "Thu, Jan 3, 1980",
+    "game_duration": null,
+    "game_remarks": null,
+    "game_start_time": null,
+    "home_team": "NEW YORK KNICKS",
+    "home_team_score": 138,
+    "overtimes": null,
+    "start_time": "1980-01-03T05:00:00Z"
+  },
+  {
+    "arena_name": "Chicago Stadium",
+    "attendance": null,
+    "away_team": "SAN DIEGO CLIPPERS",
+    "away_team_score": 118,
+    "box_score_text": "Box Score",
+    "date_game": "Fri, Jan 4, 1980",
+    "game_duration": null,
+    "game_remarks": null,
+    "game_start_time": null,
+    "home_team": "CHICAGO BULLS",
+    "home_team_score": 121,
+    "overtimes": null,
+    "start_time": "1980-01-04T05:00:00Z"
   },
   {
     "arena_name": "Oakland-Alameda County Coliseum Arena",
@@ -6225,6 +6885,21 @@
     "start_time": "1980-01-06T05:00:00Z"
   },
   {
+    "arena_name": "San Diego Sports Arena",
+    "attendance": null,
+    "away_team": "SEATTLE SUPERSONICS",
+    "away_team_score": 103,
+    "box_score_text": "Box Score",
+    "date_game": "Sun, Jan 6, 1980",
+    "game_duration": null,
+    "game_remarks": null,
+    "game_start_time": null,
+    "home_team": "SAN DIEGO CLIPPERS",
+    "home_team_score": 105,
+    "overtimes": null,
+    "start_time": "1980-01-06T05:00:00Z"
+  },
+  {
     "arena_name": "Chicago Stadium",
     "attendance": null,
     "away_team": "MILWAUKEE BUCKS",
@@ -6252,6 +6927,21 @@
     "home_team": "CLEVELAND CAVALIERS",
     "home_team_score": 115,
     "overtimes": "OT",
+    "start_time": "1980-01-08T05:00:00Z"
+  },
+  {
+    "arena_name": "Municipal Auditorium",
+    "attendance": null,
+    "away_team": "SAN DIEGO CLIPPERS",
+    "away_team_score": 124,
+    "box_score_text": "Box Score",
+    "date_game": "Tue, Jan 8, 1980",
+    "game_duration": null,
+    "game_remarks": null,
+    "game_start_time": null,
+    "home_team": "KANSAS CITY KINGS",
+    "home_team_score": 116,
+    "overtimes": null,
     "start_time": "1980-01-08T05:00:00Z"
   },
   {
@@ -6356,6 +7046,21 @@
     "game_start_time": null,
     "home_team": "HOUSTON ROCKETS",
     "home_team_score": 114,
+    "overtimes": null,
+    "start_time": "1980-01-09T05:00:00Z"
+  },
+  {
+    "arena_name": "MECCA Arena",
+    "attendance": null,
+    "away_team": "SAN DIEGO CLIPPERS",
+    "away_team_score": 111,
+    "box_score_text": "Box Score",
+    "date_game": "Wed, Jan 9, 1980",
+    "game_duration": null,
+    "game_remarks": null,
+    "game_start_time": null,
+    "home_team": "MILWAUKEE BUCKS",
+    "home_team_score": 107,
     "overtimes": null,
     "start_time": "1980-01-09T05:00:00Z"
   },
@@ -6555,6 +7260,21 @@
     "start_time": "1980-01-11T05:00:00Z"
   },
   {
+    "arena_name": "San Diego Sports Arena",
+    "attendance": null,
+    "away_team": "GOLDEN STATE WARRIORS",
+    "away_team_score": 112,
+    "box_score_text": "Box Score",
+    "date_game": "Fri, Jan 11, 1980",
+    "game_duration": null,
+    "game_remarks": null,
+    "game_start_time": null,
+    "home_team": "SAN DIEGO CLIPPERS",
+    "home_team_score": 116,
+    "overtimes": null,
+    "start_time": "1980-01-11T05:00:00Z"
+  },
+  {
     "arena_name": "Seattle Kingdome",
     "attendance": null,
     "away_team": "UTAH JAZZ",
@@ -6641,6 +7361,21 @@
     "game_start_time": null,
     "home_team": "INDIANA PACERS",
     "home_team_score": 122,
+    "overtimes": null,
+    "start_time": "1980-01-12T05:00:00Z"
+  },
+  {
+    "arena_name": "San Diego Sports Arena",
+    "attendance": null,
+    "away_team": "UTAH JAZZ",
+    "away_team_score": 102,
+    "box_score_text": "Box Score",
+    "date_game": "Sat, Jan 12, 1980",
+    "game_duration": null,
+    "game_remarks": null,
+    "game_start_time": null,
+    "home_team": "SAN DIEGO CLIPPERS",
+    "home_team_score": 119,
     "overtimes": null,
     "start_time": "1980-01-12T05:00:00Z"
   },
@@ -6960,6 +7695,21 @@
     "start_time": "1980-01-16T05:00:00Z"
   },
   {
+    "arena_name": "San Diego Sports Arena",
+    "attendance": null,
+    "away_team": "ATLANTA HAWKS",
+    "away_team_score": 108,
+    "box_score_text": "Box Score",
+    "date_game": "Wed, Jan 16, 1980",
+    "game_duration": null,
+    "game_remarks": null,
+    "game_start_time": null,
+    "home_team": "SAN DIEGO CLIPPERS",
+    "home_team_score": 111,
+    "overtimes": null,
+    "start_time": "1980-01-16T05:00:00Z"
+  },
+  {
     "arena_name": "Salt Palace",
     "attendance": null,
     "away_team": "PHOENIX SUNS",
@@ -7046,6 +7796,21 @@
     "game_start_time": null,
     "home_team": "CHICAGO BULLS",
     "home_team_score": 102,
+    "overtimes": null,
+    "start_time": "1980-01-18T05:00:00Z"
+  },
+  {
+    "arena_name": "Oakland-Alameda County Coliseum Arena",
+    "attendance": null,
+    "away_team": "SAN DIEGO CLIPPERS",
+    "away_team_score": 91,
+    "box_score_text": "Box Score",
+    "date_game": "Fri, Jan 18, 1980",
+    "game_duration": null,
+    "game_remarks": null,
+    "game_start_time": null,
+    "home_team": "GOLDEN STATE WARRIORS",
+    "home_team_score": 92,
     "overtimes": null,
     "start_time": "1980-01-18T05:00:00Z"
   },
@@ -7185,6 +7950,21 @@
     "start_time": "1980-01-19T05:00:00Z"
   },
   {
+    "arena_name": "Arizona Veterans Memorial Coliseum",
+    "attendance": null,
+    "away_team": "SAN DIEGO CLIPPERS",
+    "away_team_score": 123,
+    "box_score_text": "Box Score",
+    "date_game": "Sat, Jan 19, 1980",
+    "game_duration": null,
+    "game_remarks": null,
+    "game_start_time": null,
+    "home_team": "PHOENIX SUNS",
+    "home_team_score": 137,
+    "overtimes": null,
+    "start_time": "1980-01-19T05:00:00Z"
+  },
+  {
     "arena_name": "HemisFair Arena",
     "attendance": null,
     "away_team": "WASHINGTON BULLETS",
@@ -7320,6 +8100,21 @@
     "start_time": "1980-01-22T05:00:00Z"
   },
   {
+    "arena_name": "HemisFair Arena",
+    "attendance": null,
+    "away_team": "SAN DIEGO CLIPPERS",
+    "away_team_score": 109,
+    "box_score_text": "Box Score",
+    "date_game": "Tue, Jan 22, 1980",
+    "game_duration": null,
+    "game_remarks": null,
+    "game_start_time": null,
+    "home_team": "SAN ANTONIO SPURS",
+    "home_team_score": 129,
+    "overtimes": null,
+    "start_time": "1980-01-22T05:00:00Z"
+  },
+  {
     "arena_name": "Salt Palace",
     "attendance": null,
     "away_team": "MILWAUKEE BUCKS",
@@ -7392,6 +8187,21 @@
     "home_team": "GOLDEN STATE WARRIORS",
     "home_team_score": 102,
     "overtimes": null,
+    "start_time": "1980-01-23T05:00:00Z"
+  },
+  {
+    "arena_name": "The Summit",
+    "attendance": null,
+    "away_team": "SAN DIEGO CLIPPERS",
+    "away_team_score": 110,
+    "box_score_text": "Box Score",
+    "date_game": "Wed, Jan 23, 1980",
+    "game_duration": null,
+    "game_remarks": null,
+    "game_start_time": null,
+    "home_team": "HOUSTON ROCKETS",
+    "home_team_score": 111,
+    "overtimes": "2OT",
     "start_time": "1980-01-23T05:00:00Z"
   },
   {
@@ -7530,6 +8340,21 @@
     "start_time": "1980-01-25T05:00:00Z"
   },
   {
+    "arena_name": "Market Square Arena",
+    "attendance": null,
+    "away_team": "SAN DIEGO CLIPPERS",
+    "away_team_score": 117,
+    "box_score_text": "Box Score",
+    "date_game": "Fri, Jan 25, 1980",
+    "game_duration": null,
+    "game_remarks": null,
+    "game_start_time": null,
+    "home_team": "INDIANA PACERS",
+    "home_team_score": 139,
+    "overtimes": null,
+    "start_time": "1980-01-25T05:00:00Z"
+  },
+  {
     "arena_name": "The Forum",
     "attendance": null,
     "away_team": "PHILADELPHIA 76ERS",
@@ -7663,6 +8488,21 @@
     "home_team_score": 112,
     "overtimes": null,
     "start_time": "1980-01-26T05:00:00Z"
+  },
+  {
+    "arena_name": "Boston Garden",
+    "attendance": 15320,
+    "away_team": "SAN DIEGO CLIPPERS",
+    "away_team_score": 108,
+    "box_score_text": "Box Score",
+    "date_game": "Sun, Jan 27, 1980",
+    "game_duration": "2:09",
+    "game_remarks": null,
+    "game_start_time": null,
+    "home_team": "BOSTON CELTICS",
+    "home_team_score": 131,
+    "overtimes": null,
+    "start_time": "1980-01-27T05:00:00Z"
   },
   {
     "arena_name": "Pontiac Silverdome",
@@ -7901,6 +8741,21 @@
     "game_start_time": null,
     "home_team": "PORTLAND TRAIL BLAZERS",
     "home_team_score": 96,
+    "overtimes": null,
+    "start_time": "1980-01-29T05:00:00Z"
+  },
+  {
+    "arena_name": "San Diego Sports Arena",
+    "attendance": 11428,
+    "away_team": "PHOENIX SUNS",
+    "away_team_score": 121,
+    "box_score_text": "Box Score",
+    "date_game": "Tue, Jan 29, 1980",
+    "game_duration": null,
+    "game_remarks": null,
+    "game_start_time": null,
+    "home_team": "SAN DIEGO CLIPPERS",
+    "home_team_score": 133,
     "overtimes": null,
     "start_time": "1980-01-29T05:00:00Z"
   },
@@ -8250,6 +9105,21 @@
     "start_time": "1980-02-06T05:00:00Z"
   },
   {
+    "arena_name": "Oakland-Alameda County Coliseum Arena",
+    "attendance": null,
+    "away_team": "SAN DIEGO CLIPPERS",
+    "away_team_score": 92,
+    "box_score_text": "Box Score",
+    "date_game": "Wed, Feb 6, 1980",
+    "game_duration": null,
+    "game_remarks": null,
+    "game_start_time": null,
+    "home_team": "GOLDEN STATE WARRIORS",
+    "home_team_score": 117,
+    "overtimes": null,
+    "start_time": "1980-02-06T05:00:00Z"
+  },
+  {
     "arena_name": "The Summit",
     "attendance": null,
     "away_team": "NEW JERSEY NETS",
@@ -8443,6 +9313,36 @@
     "home_team_score": 94,
     "overtimes": null,
     "start_time": "1980-02-08T05:00:00Z"
+  },
+  {
+    "arena_name": "San Diego Sports Arena",
+    "attendance": null,
+    "away_team": "PORTLAND TRAIL BLAZERS",
+    "away_team_score": 104,
+    "box_score_text": "Box Score",
+    "date_game": "Fri, Feb 8, 1980",
+    "game_duration": null,
+    "game_remarks": null,
+    "game_start_time": null,
+    "home_team": "SAN DIEGO CLIPPERS",
+    "home_team_score": 118,
+    "overtimes": null,
+    "start_time": "1980-02-08T05:00:00Z"
+  },
+  {
+    "arena_name": "McNichols Sports Arena",
+    "attendance": null,
+    "away_team": "SAN DIEGO CLIPPERS",
+    "away_team_score": 104,
+    "box_score_text": "Box Score",
+    "date_game": "Sat, Feb 9, 1980",
+    "game_duration": null,
+    "game_remarks": null,
+    "game_start_time": null,
+    "home_team": "DENVER NUGGETS",
+    "home_team_score": 123,
+    "overtimes": null,
+    "start_time": "1980-02-09T05:00:00Z"
   },
   {
     "arena_name": "The Summit",
@@ -8771,6 +9671,21 @@
     "game_start_time": null,
     "home_team": "PHOENIX SUNS",
     "home_team_score": 135,
+    "overtimes": null,
+    "start_time": "1980-02-13T05:00:00Z"
+  },
+  {
+    "arena_name": "San Diego Sports Arena",
+    "attendance": null,
+    "away_team": "WASHINGTON BULLETS",
+    "away_team_score": 108,
+    "box_score_text": "Box Score",
+    "date_game": "Wed, Feb 13, 1980",
+    "game_duration": null,
+    "game_remarks": null,
+    "game_start_time": null,
+    "home_team": "SAN DIEGO CLIPPERS",
+    "home_team_score": 103,
     "overtimes": null,
     "start_time": "1980-02-13T05:00:00Z"
   },
@@ -9150,6 +10065,21 @@
     "start_time": "1980-02-17T05:00:00Z"
   },
   {
+    "arena_name": "San Diego Sports Arena",
+    "attendance": null,
+    "away_team": "KANSAS CITY KINGS",
+    "away_team_score": 108,
+    "box_score_text": "Box Score",
+    "date_game": "Sun, Feb 17, 1980",
+    "game_duration": null,
+    "game_remarks": null,
+    "game_start_time": null,
+    "home_team": "SAN DIEGO CLIPPERS",
+    "home_team_score": 107,
+    "overtimes": null,
+    "start_time": "1980-02-17T05:00:00Z"
+  },
+  {
     "arena_name": "Seattle Kingdome",
     "attendance": 28726,
     "away_team": "BOSTON CELTICS",
@@ -9205,6 +10135,21 @@
     "game_remarks": null,
     "game_start_time": null,
     "home_team": "NEW YORK KNICKS",
+    "home_team_score": 113,
+    "overtimes": null,
+    "start_time": "1980-02-19T05:00:00Z"
+  },
+  {
+    "arena_name": "San Diego Sports Arena",
+    "attendance": null,
+    "away_team": "NEW JERSEY NETS",
+    "away_team_score": 123,
+    "box_score_text": "Box Score",
+    "date_game": "Tue, Feb 19, 1980",
+    "game_duration": null,
+    "game_remarks": null,
+    "game_start_time": null,
+    "home_team": "SAN DIEGO CLIPPERS",
     "home_team_score": 113,
     "overtimes": null,
     "start_time": "1980-02-19T05:00:00Z"
@@ -9326,6 +10271,21 @@
     "game_start_time": null,
     "home_team": "DETROIT PISTONS",
     "home_team_score": 116,
+    "overtimes": null,
+    "start_time": "1980-02-21T05:00:00Z"
+  },
+  {
+    "arena_name": "San Diego Sports Arena",
+    "attendance": null,
+    "away_team": "PHILADELPHIA 76ERS",
+    "away_team_score": 99,
+    "box_score_text": "Box Score",
+    "date_game": "Thu, Feb 21, 1980",
+    "game_duration": null,
+    "game_remarks": null,
+    "game_start_time": null,
+    "home_team": "SAN DIEGO CLIPPERS",
+    "home_team_score": 104,
     "overtimes": null,
     "start_time": "1980-02-21T05:00:00Z"
   },
@@ -9478,6 +10438,21 @@
     "home_team_score": 95,
     "overtimes": null,
     "start_time": "1980-02-23T05:00:00Z"
+  },
+  {
+    "arena_name": "Chicago Stadium",
+    "attendance": null,
+    "away_team": "SAN DIEGO CLIPPERS",
+    "away_team_score": 102,
+    "box_score_text": "Box Score",
+    "date_game": "Sun, Feb 24, 1980",
+    "game_duration": null,
+    "game_remarks": null,
+    "game_start_time": null,
+    "home_team": "CHICAGO BULLS",
+    "home_team_score": 110,
+    "overtimes": null,
+    "start_time": "1980-02-24T05:00:00Z"
   },
   {
     "arena_name": "Coliseum at Richfield",
@@ -9675,6 +10650,21 @@
     "start_time": "1980-02-26T05:00:00Z"
   },
   {
+    "arena_name": "MECCA Arena",
+    "attendance": null,
+    "away_team": "SAN DIEGO CLIPPERS",
+    "away_team_score": 88,
+    "box_score_text": "Box Score",
+    "date_game": "Tue, Feb 26, 1980",
+    "game_duration": null,
+    "game_remarks": null,
+    "game_start_time": null,
+    "home_team": "MILWAUKEE BUCKS",
+    "home_team_score": 122,
+    "overtimes": null,
+    "start_time": "1980-02-26T05:00:00Z"
+  },
+  {
     "arena_name": "Memorial Coliseum",
     "attendance": null,
     "away_team": "PHILADELPHIA 76ERS",
@@ -9716,6 +10706,21 @@
     "game_start_time": null,
     "home_team": "BOSTON CELTICS",
     "home_team_score": 130,
+    "overtimes": null,
+    "start_time": "1980-02-27T05:00:00Z"
+  },
+  {
+    "arena_name": "Pontiac Silverdome",
+    "attendance": null,
+    "away_team": "SAN DIEGO CLIPPERS",
+    "away_team_score": 129,
+    "box_score_text": "Box Score",
+    "date_game": "Wed, Feb 27, 1980",
+    "game_duration": null,
+    "game_remarks": null,
+    "game_start_time": null,
+    "home_team": "DETROIT PISTONS",
+    "home_team_score": 113,
     "overtimes": null,
     "start_time": "1980-02-27T05:00:00Z"
   },
@@ -9867,6 +10872,21 @@
     "home_team": "DETROIT PISTONS",
     "home_team_score": 137,
     "overtimes": "OT",
+    "start_time": "1980-02-29T05:00:00Z"
+  },
+  {
+    "arena_name": "Checkerdome",
+    "attendance": null,
+    "away_team": "SAN DIEGO CLIPPERS",
+    "away_team_score": 93,
+    "box_score_text": "Box Score",
+    "date_game": "Fri, Feb 29, 1980",
+    "game_duration": null,
+    "game_remarks": "at St. Louis, MO",
+    "game_start_time": null,
+    "home_team": "KANSAS CITY KINGS",
+    "home_team_score": 98,
+    "overtimes": null,
     "start_time": "1980-02-29T05:00:00Z"
   },
   {
@@ -10065,6 +11085,21 @@
     "start_time": "1980-03-02T05:00:00Z"
   },
   {
+    "arena_name": "San Diego Sports Arena",
+    "attendance": null,
+    "away_team": "MILWAUKEE BUCKS",
+    "away_team_score": 101,
+    "box_score_text": "Box Score",
+    "date_game": "Sun, Mar 2, 1980",
+    "game_duration": null,
+    "game_remarks": null,
+    "game_start_time": null,
+    "home_team": "SAN DIEGO CLIPPERS",
+    "home_team_score": 98,
+    "overtimes": null,
+    "start_time": "1980-03-02T05:00:00Z"
+  },
+  {
     "arena_name": "Seattle Kingdome",
     "attendance": null,
     "away_team": "UTAH JAZZ",
@@ -10166,6 +11201,21 @@
     "game_start_time": null,
     "home_team": "SAN ANTONIO SPURS",
     "home_team_score": 108,
+    "overtimes": null,
+    "start_time": "1980-03-04T05:00:00Z"
+  },
+  {
+    "arena_name": "San Diego Sports Arena",
+    "attendance": null,
+    "away_team": "CLEVELAND CAVALIERS",
+    "away_team_score": 105,
+    "box_score_text": "Box Score",
+    "date_game": "Tue, Mar 4, 1980",
+    "game_duration": null,
+    "game_remarks": null,
+    "game_start_time": null,
+    "home_team": "SAN DIEGO CLIPPERS",
+    "home_team_score": 116,
     "overtimes": null,
     "start_time": "1980-03-04T05:00:00Z"
   },
@@ -10530,6 +11580,21 @@
     "start_time": "1980-03-08T05:00:00Z"
   },
   {
+    "arena_name": "Salt Palace",
+    "attendance": null,
+    "away_team": "SAN DIEGO CLIPPERS",
+    "away_team_score": 113,
+    "box_score_text": "Box Score",
+    "date_game": "Sat, Mar 8, 1980",
+    "game_duration": null,
+    "game_remarks": null,
+    "game_start_time": null,
+    "home_team": "UTAH JAZZ",
+    "home_team_score": 98,
+    "overtimes": null,
+    "start_time": "1980-03-08T05:00:00Z"
+  },
+  {
     "arena_name": "Omni Coliseum",
     "attendance": null,
     "away_team": "NEW YORK KNICKS",
@@ -10650,6 +11715,21 @@
     "start_time": "1980-03-09T05:00:00Z"
   },
   {
+    "arena_name": "San Diego Sports Arena",
+    "attendance": null,
+    "away_team": "GOLDEN STATE WARRIORS",
+    "away_team_score": 125,
+    "box_score_text": "Box Score",
+    "date_game": "Sun, Mar 9, 1980",
+    "game_duration": null,
+    "game_remarks": null,
+    "game_start_time": null,
+    "home_team": "SAN DIEGO CLIPPERS",
+    "home_team_score": 107,
+    "overtimes": null,
+    "start_time": "1980-03-09T05:00:00Z"
+  },
+  {
     "arena_name": "Omni Coliseum",
     "attendance": null,
     "away_team": "PHILADELPHIA 76ERS",
@@ -10736,6 +11816,21 @@
     "game_start_time": null,
     "home_team": "NEW YORK KNICKS",
     "home_team_score": 129,
+    "overtimes": null,
+    "start_time": "1980-03-11T05:00:00Z"
+  },
+  {
+    "arena_name": "San Diego Sports Arena",
+    "attendance": null,
+    "away_team": "LOS ANGELES LAKERS",
+    "away_team_score": 123,
+    "box_score_text": "Box Score",
+    "date_game": "Tue, Mar 11, 1980",
+    "game_duration": null,
+    "game_remarks": null,
+    "game_start_time": null,
+    "home_team": "SAN DIEGO CLIPPERS",
+    "home_team_score": 106,
     "overtimes": null,
     "start_time": "1980-03-11T05:00:00Z"
   },
@@ -10856,6 +11951,21 @@
     "game_start_time": null,
     "home_team": "NEW YORK KNICKS",
     "home_team_score": 100,
+    "overtimes": null,
+    "start_time": "1980-03-13T05:00:00Z"
+  },
+  {
+    "arena_name": "San Diego Sports Arena",
+    "attendance": null,
+    "away_team": "DENVER NUGGETS",
+    "away_team_score": 102,
+    "box_score_text": "Box Score",
+    "date_game": "Thu, Mar 13, 1980",
+    "game_duration": null,
+    "game_remarks": null,
+    "game_start_time": null,
+    "home_team": "SAN DIEGO CLIPPERS",
+    "home_team_score": 116,
     "overtimes": null,
     "start_time": "1980-03-13T05:00:00Z"
   },
@@ -11010,6 +12120,21 @@
     "start_time": "1980-03-15T05:00:00Z"
   },
   {
+    "arena_name": "San Diego Sports Arena",
+    "attendance": null,
+    "away_team": "PHOENIX SUNS",
+    "away_team_score": 109,
+    "box_score_text": "Box Score",
+    "date_game": "Sat, Mar 15, 1980",
+    "game_duration": null,
+    "game_remarks": null,
+    "game_start_time": null,
+    "home_team": "SAN DIEGO CLIPPERS",
+    "home_team_score": 120,
+    "overtimes": null,
+    "start_time": "1980-03-15T05:00:00Z"
+  },
+  {
     "arena_name": "Omni Coliseum",
     "attendance": null,
     "away_team": "INDIANA PACERS",
@@ -11036,6 +12161,21 @@
     "game_start_time": null,
     "home_team": "CLEVELAND CAVALIERS",
     "home_team_score": 123,
+    "overtimes": null,
+    "start_time": "1980-03-16T05:00:00Z"
+  },
+  {
+    "arena_name": "McNichols Sports Arena",
+    "attendance": null,
+    "away_team": "SAN DIEGO CLIPPERS",
+    "away_team_score": 107,
+    "box_score_text": "Box Score",
+    "date_game": "Sun, Mar 16, 1980",
+    "game_duration": null,
+    "game_remarks": null,
+    "game_start_time": null,
+    "home_team": "DENVER NUGGETS",
+    "home_team_score": 127,
     "overtimes": null,
     "start_time": "1980-03-16T05:00:00Z"
   },
@@ -11276,6 +12416,21 @@
     "game_start_time": null,
     "home_team": "SAN ANTONIO SPURS",
     "home_team_score": 100,
+    "overtimes": null,
+    "start_time": "1980-03-18T05:00:00Z"
+  },
+  {
+    "arena_name": "San Diego Sports Arena",
+    "attendance": null,
+    "away_team": "CHICAGO BULLS",
+    "away_team_score": 115,
+    "box_score_text": "Box Score",
+    "date_game": "Tue, Mar 18, 1980",
+    "game_duration": null,
+    "game_remarks": null,
+    "game_start_time": null,
+    "home_team": "SAN DIEGO CLIPPERS",
+    "home_team_score": 101,
     "overtimes": null,
     "start_time": "1980-03-18T05:00:00Z"
   },
@@ -11550,6 +12705,21 @@
     "start_time": "1980-03-21T05:00:00Z"
   },
   {
+    "arena_name": "Seattle Kingdome",
+    "attendance": null,
+    "away_team": "SAN DIEGO CLIPPERS",
+    "away_team_score": 104,
+    "box_score_text": "Box Score",
+    "date_game": "Fri, Mar 21, 1980",
+    "game_duration": null,
+    "game_remarks": null,
+    "game_start_time": null,
+    "home_team": "SEATTLE SUPERSONICS",
+    "home_team_score": 107,
+    "overtimes": null,
+    "start_time": "1980-03-21T05:00:00Z"
+  },
+  {
     "arena_name": "Salt Palace",
     "attendance": null,
     "away_team": "KANSAS CITY KINGS",
@@ -11711,6 +12881,21 @@
     "game_start_time": null,
     "home_team": "PHOENIX SUNS",
     "home_team_score": 118,
+    "overtimes": null,
+    "start_time": "1980-03-23T05:00:00Z"
+  },
+  {
+    "arena_name": "Memorial Coliseum",
+    "attendance": null,
+    "away_team": "SAN DIEGO CLIPPERS",
+    "away_team_score": 91,
+    "box_score_text": "Box Score",
+    "date_game": "Sun, Mar 23, 1980",
+    "game_duration": null,
+    "game_remarks": null,
+    "game_start_time": null,
+    "home_team": "PORTLAND TRAIL BLAZERS",
+    "home_team_score": 98,
     "overtimes": null,
     "start_time": "1980-03-23T05:00:00Z"
   },
@@ -12015,6 +13200,21 @@
     "start_time": "1980-03-27T05:00:00Z"
   },
   {
+    "arena_name": "San Diego Sports Arena",
+    "attendance": null,
+    "away_team": "PORTLAND TRAIL BLAZERS",
+    "away_team_score": 96,
+    "box_score_text": "Box Score",
+    "date_game": "Thu, Mar 27, 1980",
+    "game_duration": null,
+    "game_remarks": null,
+    "game_start_time": null,
+    "home_team": "SAN DIEGO CLIPPERS",
+    "home_team_score": 93,
+    "overtimes": null,
+    "start_time": "1980-03-27T05:00:00Z"
+  },
+  {
     "arena_name": "Salt Palace",
     "attendance": null,
     "away_team": "LOS ANGELES LAKERS",
@@ -12086,6 +13286,21 @@
     "game_start_time": null,
     "home_team": "KANSAS CITY KINGS",
     "home_team_score": 116,
+    "overtimes": null,
+    "start_time": "1980-03-28T05:00:00Z"
+  },
+  {
+    "arena_name": "The Forum",
+    "attendance": null,
+    "away_team": "SAN DIEGO CLIPPERS",
+    "away_team_score": 88,
+    "box_score_text": "Box Score",
+    "date_game": "Fri, Mar 28, 1980",
+    "game_duration": null,
+    "game_remarks": null,
+    "game_start_time": null,
+    "home_team": "LOS ANGELES LAKERS",
+    "home_team_score": 126,
     "overtimes": null,
     "start_time": "1980-03-28T05:00:00Z"
   },
@@ -12266,6 +13481,21 @@
     "game_start_time": null,
     "home_team": "PHILADELPHIA 76ERS",
     "home_team_score": 116,
+    "overtimes": null,
+    "start_time": "1980-03-30T05:00:00Z"
+  },
+  {
+    "arena_name": "Arizona Veterans Memorial Coliseum",
+    "attendance": null,
+    "away_team": "SAN DIEGO CLIPPERS",
+    "away_team_score": 104,
+    "box_score_text": "Box Score",
+    "date_game": "Sun, Mar 30, 1980",
+    "game_duration": null,
+    "game_remarks": null,
+    "game_start_time": null,
+    "home_team": "PHOENIX SUNS",
+    "home_team_score": 122,
     "overtimes": null,
     "start_time": "1980-03-30T05:00:00Z"
   },

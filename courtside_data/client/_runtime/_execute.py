@@ -13,9 +13,8 @@ The runner's per-endpoint pipeline is composed of two pieces:
 
 - :func:`_execute` — the template method. It (1) wires the service call
   through :func:`_call_with_error_mapping` inside a debug-trace span
-  (when one is active), (2) branches on ``endpoint.row_model`` to choose
-  the Pydantic row-model validation pipeline or the dict-based
-  fallback for endpoints without a row model, and (3) hands the
+  (when one is active), (2) validates rows through the declared
+  Pydantic row-model pipeline, and (3) hands the
   validated data to :func:`_output_debug_result`
   (when ``debug=True``) or :func:`_format_output` (otherwise).
 """
@@ -27,11 +26,10 @@ from typing import Any
 
 import httpx
 
-from courtside_data.client._pipelines.legacy import validate_rows_legacy
 from courtside_data.client._pipelines.pydantic import validate_rows_pydantic
 from courtside_data.client._runtime._output import _format_output, _output_debug_result
-from courtside_data.data import OutputType, OutputWriteOption
 from courtside_data.debug import DebugTrace
+from courtside_data.domain import OutputType, OutputWriteOption
 
 __all__ = [
     "_call_with_error_mapping",
@@ -101,26 +99,19 @@ def _execute(
         trace.observe_rows("service_values", values, expected_columns=csv_column_names)
 
     row_model = getattr(endpoint, "row_model", None)
-    if row_model is not None:
-        data, csv_column_names = validate_rows_pydantic(
-            values,
-            row_model=row_model,
-            endpoint=endpoint,
-            endpoint_name=endpoint_name,
-            endpoint_params=endpoint_params,
-            csv_column_names=csv_column_names,
-            output_type=output_type,
-            raw=raw,
-            trace=trace,
-        )
-    else:
-        data, csv_column_names = validate_rows_legacy(
-            values,
-            csv_column_names=csv_column_names,
-            output_type=output_type,
-            validate_output=validate_output,
-            trace=trace,
-        )
+    if row_model is None:
+        raise RuntimeError(f"Endpoint {endpoint_name!r} does not declare a row_model.")
+    data, csv_column_names = validate_rows_pydantic(
+        values,
+        row_model=row_model,
+        endpoint=endpoint,
+        endpoint_name=endpoint_name,
+        endpoint_params=endpoint_params,
+        csv_column_names=csv_column_names,
+        output_type=output_type,
+        raw=raw,
+        trace=trace,
+    )
 
     if debug and trace is not None:
         return _output_debug_result(

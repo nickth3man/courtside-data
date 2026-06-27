@@ -1,27 +1,47 @@
-"""CSV column contracts for box-score Basketball-Reference endpoints."""
+"""CSV column contracts for box-score Basketball-Reference endpoints.
 
-from courtside_data.output.columns._common import SHARED_COLUMN_NAMES
+Box-score CSV contracts are derived from the Pydantic row models so the
+writer cannot silently drift from JSON/model output when schemas gain fields.
+"""
 
-BOX_SCORE_COLUMN_NAMES = ["slug", "name", *SHARED_COLUMN_NAMES, "plus_minus"]
+from __future__ import annotations
 
-PLAYER_SEASON_BOX_SCORE_COLUMN_NAMES = ["active", "date", "points_scored", "plus_minus", *SHARED_COLUMN_NAMES]
+from pydantic import BaseModel
 
-TEAM_BOX_SCORES_COLUMN_NAMES = [
-    "team",
-    "minutes_played",
-    "made_field_goals",
-    "attempted_field_goals",
-    "made_three_point_field_goals",
-    "attempted_three_point_field_goals",
-    "made_free_throws",
-    "attempted_free_throws",
-    "offensive_rebounds",
-    "defensive_rebounds",
-    "assists",
-    "steals",
-    "blocks",
-    "turnovers",
-    "personal_fouls",
-    "points",
-    "outcome",
-]
+from courtside_data.schemas import boxscores as boxscore_schemas
+
+
+def _schema_columns(row_model: type[BaseModel]) -> list[str]:
+    return list(row_model.model_fields)
+
+
+def _schema_prefix(row_model: type[BaseModel], before: str) -> list[str]:
+    columns = _schema_columns(row_model)
+    return columns[: columns.index(before)]
+
+
+BOX_SCORE_STAT_COLUMN_NAMES = _schema_prefix(boxscore_schemas.PlayerBoxScoreRow, "slug")
+
+BOX_SCORE_COLUMN_NAMES = _schema_columns(boxscore_schemas.PlayerBoxScoreRow)
+
+PLAYER_SEASON_BOX_SCORE_COLUMN_NAMES = _schema_columns(boxscore_schemas.RegularSeasonPlayerBoxScoreRow)
+
+TEAM_BOX_SCORES_COLUMN_NAMES = _schema_columns(boxscore_schemas.TeamBoxScoreRow)
+
+
+# -- Per-game box-score readers (SCAFFOLD - PDCA Cycle 1) -----------------
+# The matching row models live in courtside_data/schemas/boxscores.py.
+# Keep these forward-declared contracts schema-derived so newly promoted
+# readers inherit the same drift guard before their endpoint registrations land.
+
+BOX_SCORE_PLAYER_ADVANCED_COLUMN_NAMES = _schema_columns(boxscore_schemas.BoxScorePlayerAdvancedRow)
+
+BOX_SCORE_TEAM_FOUR_FACTORS_COLUMN_NAMES = _schema_columns(boxscore_schemas.BoxScoreTeamFourFactorsRow)
+
+BOX_SCORE_LINE_SCORE_COLUMN_NAMES = _schema_columns(boxscore_schemas.BoxScoreLineScoreRow)
+
+BOX_SCORE_PLAYER_QUARTER_SPLITS_COLUMN_NAMES = _schema_columns(boxscore_schemas.BoxScorePlayerQuarterSplitRow)
+
+BOX_SCORE_GAME_INFO_COLUMN_NAMES = _schema_columns(boxscore_schemas.BoxScoreGameInfoRow)
+
+BOX_SCORE_PLAYER_BASIC_COLUMN_NAMES = _schema_columns(boxscore_schemas.BoxScorePlayerBasicRow)

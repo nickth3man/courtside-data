@@ -4,12 +4,12 @@ Private subpackage (leading underscore). The modules here hold the
 clearly-separable moving parts of the per-endpoint pipeline:
 
 - :mod:`courtside_data.client._runtime._locator` — process-wide
-  :class:`~courtside_data.http_service.HTTPService` singleton and the
+  :class:`~courtside_data.http.HTTPService` singleton and the
   :class:`~contextvars.ContextVar` that lets a
   :class:`~courtside_data.client.courtside_client.CourtsideClient` swap in
   its own service for the duration of one method call.
 - :mod:`courtside_data.client._runtime._coerce` — typed-param coercion
-  (raw abbreviations → :class:`~courtside_data.data.Team` enum) for custom
+  (raw abbreviations → :class:`~courtside_data.domain.Team` enum) for workflow
   endpoints, plus the ``@lru_cache``-d annotation map.
 - :mod:`courtside_data.client._runtime._output` — :class:`OutputService`
   factory, the strategy-pattern :func:`_format_output` dispatch, and the
@@ -20,8 +20,7 @@ clearly-separable moving parts of the per-endpoint pipeline:
 - :mod:`courtside_data.client._runtime._execute` — the
   :func:`_call_with_error_mapping` HTTP-status-to-domain-error translator
   and the :func:`_execute` template method that ties the service call to
-  the Pydantic and dict-based validation pipelines and the output
-  formatter.
+  the Pydantic validation pipeline and the output formatter.
 
 The :func:`_run_endpoint` template itself stays in
 :mod:`courtside_data.client._runner` and re-exports

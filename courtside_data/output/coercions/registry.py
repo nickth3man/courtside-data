@@ -10,6 +10,7 @@ from courtside_data.output._coercions import (
     coerce_int,
     coerce_int_or_clock,
     coerce_int_or_none,
+    coerce_salary,
     coerce_years_experience,
 )
 
@@ -82,7 +83,7 @@ _COLUMN_TYPE_MAP: dict[str, Callable] = {
     "team_name_abbr": _pass_through,
     "team_id": _pass_through,
     "team_abbreviation": _pass_through,
-    "team": _pass_through,  # could be Team enum (custom endpoint) or str (generic)
+    "team": _pass_through,  # could be Team enum (workflow) or str (generic table)
     "opponent": _pass_through,
     "location": _pass_through,
     "outcome": _pass_through,
@@ -118,6 +119,7 @@ _COLUMN_TYPE_MAP: dict[str, Callable] = {
     "active": _pass_through,
     # ── Integer stats ──
     "age": coerce_int_or_none,
+    "age_today": coerce_int_or_none,
     "games": coerce_int,
     "games_played": coerce_int,
     "games_started": coerce_int,
@@ -185,7 +187,14 @@ _COLUMN_TYPE_MAP: dict[str, Callable] = {
     "seasons": coerce_int,
     "years_experience": coerce_years_experience,
     "years_remaining": coerce_int,
-    "salary": coerce_int,  # NBA salaries are whole dollars
+    "salary": coerce_salary,  # NBA salaries are whole dollars
+    "y1": coerce_salary,
+    "y2": coerce_salary,
+    "y3": coerce_salary,
+    "y4": coerce_salary,
+    "y5": coerce_salary,
+    "y6": coerce_salary,
+    "remain_gtd": coerce_salary,
     "overtimes": coerce_int,
     "home_games": coerce_int,
     "away_games": coerce_int,

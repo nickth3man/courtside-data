@@ -96,8 +96,7 @@ the complete catalogue.
 ## League-wide tables
 
 Row models for the per-season league tables under
-`/leagues/NBA_{year}_*.html`, plus league-wide awards, leaders, and
-attendance.
+`/leagues/NBA_{year}_*.html`, plus league-wide transactions and attendance.
 
 ::: courtside_data.schemas.league.LeaguePerGameStatsRow
     options:
@@ -153,25 +152,27 @@ attendance.
       show_root_full_path: false
       members: true
 
-::: courtside_data.schemas.league.SeasonAwardsRow
+## Awards and leaders
+
+::: courtside_data.schemas.awards.SeasonAwardsRow
     options:
       show_root_heading: true
       show_root_full_path: false
       members: true
 
-::: courtside_data.schemas.league.SeasonAwardsVotingRow
+::: courtside_data.schemas.awards.SeasonAwardsVotingRow
     options:
       show_root_heading: true
       show_root_full_path: false
       members: true
 
-::: courtside_data.schemas.league.SeasonLeadersRow
+::: courtside_data.schemas.awards.SeasonLeadersRow
     options:
       show_root_heading: true
       show_root_full_path: false
       members: true
 
-::: courtside_data.schemas.league.CareerLeadersRow
+::: courtside_data.schemas.awards.CareerLeadersRow
     options:
       show_root_heading: true
       show_root_full_path: false

@@ -4,9 +4,7 @@ Instructions for AI coding agents working in this repository.
 
 ## Before you start
 
-1. Read `codemap.md` for architecture, entry points, and data flow.
-2. For folder-specific work, read that folder’s `codemap.md` if present.
-3. Use the PEP 735 dev group via `uv sync --group dev` and run checks with `uv run <tool>`; do not use `--extra dev`.
+1. Use the PEP 735 dev group via `uv sync --group dev` and run checks with `uv run <tool>`; do not use `--extra dev`.
 
 ```bash
 uv sync
@@ -26,8 +24,8 @@ Runtime configuration is env-var driven. The values agents are most likely to ne
 |----------|---------|---------|
 | `BASKETBALL_REF_JAIL_STATE_PATH` | `platformdirs.user_cache_dir("courtside-data", "courtside") / "jail.json"` | Path to the persisted 429 rate-limit-jail state file (so the cap survives process restarts). |
 | `BASKETBALL_REF_IMPERSONATE` | `chrome131` | curl-cffi TLS-impersonation target. Pin an older Chrome version when debugging a sudden 403 wave. |
-| `COURTSIDE_DATA_FAST_PARSE` | unset | Set to `1` to route the HTML-parsing hot path through the selectolax (Lexbor) backend (~6× faster on table-heavy pages). Default is the lxml+parsel pipeline; both backends are cross-validated by `tests/test_selectolax_backend.py`. |
-| `COURTSIDE_DEBUG_LOG_DIR` | `./logs` | Directory for per-call debug-trace JSON envelopes (see "Live endpoint probe"). |
+| `COURTSIDE_DATA_PARSE_BACKEND` | `selectolax` | HTML parsing backend. Use `parsel` only when debugging backend-specific parsing behavior; both backends are cross-validated by `tests/test_selectolax_backend.py`. |
+| `COURTSIDE_DEBUG_LOG_DIR` | `logs` | Directory for per-call debug-trace JSON envelopes (see "Live endpoint probe"). |
 
 ---
 
@@ -97,7 +95,7 @@ Prefer fixing the issue or a `[tool.ruff.lint.per-file-ignores]` entry over blan
 
 [ty](https://docs.astral.sh/ty/) is the type checker (Astral; beta). Config: `[tool.ty.environment]` and `[tool.ty.src]` in `pyproject.toml`.
 
-**This project:** Python 3.12 · `extra-paths = ["courtside_data"]` · excludes `.venv`, `dist`, `.slim`.
+**This project:** Python 3.12 · `extra-paths = ["courtside_data"]` · excludes `.venv`, `dist`,
 
 ### Commands (run from repo root)
 
@@ -168,7 +166,7 @@ Override severity in `pyproject.toml` under `[tool.ty.rules]` or per-path via `[
 
 ## Tests
 
-Offline fixture-replay suite in `tests/` (~300 cases). Network access is blocked by `tests/conftest.py`. The suite is **parallel-safe** via [pytest-xdist](https://pytest-xdist.readthedocs.io/).
+Offline fixture-replay suite in `tests/` (1,500+ cases). Network access is blocked by `tests/conftest.py`. The suite is **parallel-safe** via [pytest-xdist](https://pytest-xdist.readthedocs.io/).
 
 **Preferred local command** — use workers (roughly 2× faster than serial):
 
@@ -183,6 +181,8 @@ uv run pytest tests
 ```
 
 `-n auto` is **not** in `[tool.pytest.ini_options] addopts` because CI collects coverage with `coverage run -m pytest`, which does not merge metrics from xdist worker subprocesses. CI therefore runs serial; local dev should prefer `-n auto`.
+
+**CI matrix (`.github/workflows/ci.yml`):** the test job runs on **Python 3.12 / 3.13 / 3.14** (ubuntu-latest), plus **3.12 on macOS-latest and windows-latest**. A change can pass locally on 3.12 and still fail CI on a newer version or another OS — don't assume single-version safety. Coverage is uploaded to Codecov on the ubuntu/3.12 leg only.
 
 Coverage locally (serial — matches CI):
 
@@ -460,7 +460,7 @@ uv run mkdocs get-deps          # list PyPI packages the config requires
 
 ### Auto-generated API reference
 
-The `API` section of the site (`docs/api/schemas.md`, `docs/api/endpoints.md`) is rendered by the **mkdocstrings** Python handler with the **griffe-pydantic** extension (configured in `mkdocs.yml` under `plugins:`). Pydantic `BRRow` subclasses in `courtside_data/schemas/` and the `EndpointSpec` registry in the `courtside_data/endpoints/` package are documented directly from source — do not hand-edit the rendered schema/field tables; update the docstrings and re-run `mkdocs build`. `docs/index.md` is the hand-written landing page. `TableEndpoint` is retained as a backwards-compatible alias for `EndpointSpec`; both are importable from `courtside_data.endpoints`.
+The `API` section of the site (`docs/api/schemas.md`, `docs/api/endpoints.md`) is rendered by the **mkdocstrings** Python handler with the **griffe-pydantic** extension (configured in `mkdocs.yml` under `plugins:`). Pydantic `BRRow` subclasses in `courtside_data/schemas/` and the `EndpointSpec` registry in the `courtside_data/endpoints/` package are documented directly from source — do not hand-edit the rendered schema/field tables; update the docstrings and re-run `mkdocs build`. The nav also includes a hand-written `architecture/endpoints.md` page. `docs/index.md` is the hand-written landing page. Endpoint registry entries are exposed as `EndpointSpec` objects from `courtside_data.endpoints`.
 
 **pymdown-extensions** are provided by the `pymdown-extensions` package (a dep of mkdocs-material ≥ 9) and enabled by name under `markdown_extensions:` in `mkdocs.yml`.
 
@@ -470,13 +470,13 @@ The `API` section of the site (`docs/api/schemas.md`, `docs/api/endpoints.md`) i
 
 ## Live endpoint probe (debug)
 
-Opt-in debug tracing lives in `courtside_data/debug/`. See that folder’s `codemap.md` for trace schema, sinks, and runner integration.
+Opt-in debug tracing lives in `courtside_data/debug/`. Refer to the modules in that folder for trace schema, sinks, and runner integration.
 
 **Requires live network access** to Basketball Reference. Respects built-in rate limiting (~8–9 req/min); a full probe of all ~55 endpoints takes several minutes.
 
 ### Probe all or selected endpoints
 
-The `courtside_data/debug/probe/` package calls each endpoint once with `debug=True`, using **one sample param set per endpoint** from `tests/fixture_manifest.py` (`ALL_CASES`). Paramless endpoints fall back to `{}`.
+The `courtside_data/debug/probe/` package calls each endpoint once with `debug=True`, using **one sample param set per endpoint**. The base set comes from `tests/fixture_manifest.py` (`ALL_CASES`) (paramless endpoints fall back to `{}`); `courtside_data/debug/probe/samples.py` then overlays explicit **live-audit samples** from `courtside_data.debug.live_probe_cases` for selected endpoints — those overrides are preferred for the probe and do not affect `ALL_CASES` or any offline regression test.
 
 ```bash
 # All registry endpoints → summary report + one debug trace JSON per successful call
@@ -562,14 +562,3 @@ uv run pytest tests -n auto
 - diff-cover: https://github.com/Bachmann1234/diff_cover
 - mkdocs: https://www.mkdocs.org/
 - mkdocs-material: https://squidfunk.github.io/mkdocs-material/
-
-## Repository Map
-
-A full codemap is available at `codemap.md` in the project root.
-
-Before working on any task, read `codemap.md` to understand:
-- Project architecture and entry points
-- Directory responsibilities and design patterns
-- Data flow and integration points between modules
-
-For deep work on a specific folder, also read that folder's `codemap.md`.

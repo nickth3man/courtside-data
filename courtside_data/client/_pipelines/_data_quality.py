@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections.abc import Mapping
 from typing import Any
 
-from courtside_data.client._pipelines._drop_reasons import (
+from courtside_data.client._pipelines.drop_reasons import (
     DROP_REASON_HISTORICAL_TEAM_NAME,
     DROP_REASON_INVALID_VALUE,
     DROP_REASON_UNKNOWN,

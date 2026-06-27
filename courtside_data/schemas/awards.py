@@ -1,8 +1,4 @@
-"""Row schemas for Basketball-Reference awards and leaders endpoints.
-
-All models remain importable from ``courtside_data.schemas.league`` for
-backward compatibility.
-"""
+"""Row schemas for Basketball-Reference awards and leaders endpoints."""
 
 from __future__ import annotations
 

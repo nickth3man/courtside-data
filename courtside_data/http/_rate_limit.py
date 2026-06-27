@@ -1,13 +1,13 @@
 """Process-wide rate-limit pacing and persistent circuit-breaker ("jail") state.
 
 This module owns the singleton state previously held as ``ClassVar`` on
-:class:`courtside_data.http_service.HTTPService`:
+:class:`courtside_data.http.HTTPService`:
 
 * :data:`_last_request_time` — monotonic pacing anchor.
 * :data:`_jailed_until` — monotonic jail deadline (``0.0`` = not jailed).
 * :data:`_jail_state_loaded` — one-shot guard around :func:`_read_persisted_jail`.
 * :data:`_rate_limit_lock` — re-entrant lock that serializes every pacing
-  decision across every :class:`~courtside_data.http_service.HTTPService`
+  decision across every :class:`~courtside_data.http.HTTPService`
   instance in the process.
 
 The state is intentionally module-level (not class-level) so that all

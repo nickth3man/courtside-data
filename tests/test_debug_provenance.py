@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import Annotated, Any
 
 import pytest
-from courtside_data.client._pipelines._drop_reasons import DROP_REASON_INVALID_TEAM_VALUE
+from courtside_data.client._pipelines.drop_reasons import DROP_REASON_INVALID_TEAM_VALUE
 from courtside_data.client._pipelines.pydantic import _validate_row_model_rows_detailed
 from courtside_data.debug.probe import _summarize_debug_events, probe_endpoints
 from courtside_data.debug.probe import main as probe_main
@@ -183,7 +183,7 @@ def test_generic_field_provenance_classifies_source_parser_validator_and_default
         validated_rows=validated,
         kept_row_indices=[0],
         context=ProvenanceContext(source_snapshot=snapshot),
-        custom=False,
+        workflow=False,
     )
     by_field = {record["field_name"]: record for record in records}
 
@@ -208,7 +208,7 @@ def test_field_provenance_classifies_schema_default_when_source_metadata_unavail
         validated_rows=validated,
         kept_row_indices=[0],
         context=None,
-        custom=False,
+        workflow=False,
     )
     by_field = {record["field_name"]: record for record in records}
 
@@ -255,7 +255,7 @@ def test_dropped_row_provenance_captures_invalid_team_raw_value_and_source_cell(
         raw_rows=raw_rows,
         dropped=dropped_details,
         context=ProvenanceContext(source_snapshot=snapshot),
-        custom=False,
+        workflow=False,
     )
 
     assert records[0]["validation_error_drop_reason"] == DROP_REASON_INVALID_TEAM_VALUE
@@ -284,7 +284,7 @@ def test_unresolved_dropped_row_provenance_records_schema_validation_error() -> 
         raw_rows=raw_rows,
         dropped=dropped_details,
         context=None,
-        custom=False,
+        workflow=False,
     )
 
     assert records[0]["unresolved_drop"] is True
@@ -300,9 +300,9 @@ def test_probe_summary_consumes_provenance_events() -> None:
     )
     trace.record(
         "provenance",
-        "custom_endpoint_provenance",
+        "workflow_endpoint_provenance",
         source_cell_mapping_available=False,
-        provenance_reason="custom_parser_metadata_unavailable",
+        provenance_reason="workflow_parser_metadata_unavailable",
     )
     trace.record(
         "provenance",
@@ -318,7 +318,7 @@ def test_probe_summary_consumes_provenance_events() -> None:
         provenance_dropped_row_count=1,
         provenance_dropped_row_reason_counts={"invalid_team_value": 1},
         provenance_unresolved_drop_count=0,
-        custom_provenance_unavailable_count=0,
+        workflow_provenance_unavailable_count=0,
     )
 
     summary = _summarize_debug_events(trace.to_dict(), endpoint_name="team_roster")
@@ -327,7 +327,7 @@ def test_probe_summary_consumes_provenance_events() -> None:
     assert summary["provenance_none_reason_counts_json"] == {"source_column_absent": 2}
     assert summary["parser_missed_column_count"] == 2
     assert summary["provenance_dropped_row_reason_counts_json"] == {"invalid_team_value": 1}
-    assert summary["custom_provenance_unavailable_count"] == 1
+    assert summary["workflow_provenance_unavailable_count"] == 1
 
 
 def test_probe_params_override_requires_single_endpoint(tmp_path: Path) -> None:
@@ -385,7 +385,7 @@ def test_rookie_stats_1980_selected_source_table_has_no_team_column() -> None:
         validated_rows=validated,
         kept_row_indices=kept_indices,
         context=ProvenanceContext(source_snapshot=snapshot),
-        custom=False,
+        workflow=False,
     )
     team_records = [record for record in records if record["field_name"] == "team"]
 
@@ -419,7 +419,7 @@ def test_draft_picks_1965_historical_team_abbreviations_validate() -> None:
     # Every source row is retained (no team-driven loss).
     assert len(validated) == len(parser_rows)
     # BAL/CIN rows resolve to the expected historical Team enum values.
-    from courtside_data.data import Team
+    from courtside_data.domain import Team
 
     validated_teams = {row.team for row in validated if row.team is not None}
     assert Team.BALTIMORE_BULLETS in validated_teams
@@ -464,7 +464,7 @@ def test_draft_picks_1965_invalid_team_provenance_captures_source_team_values() 
         raw_rows=parser_rows,
         dropped=dropped_details,
         context=ProvenanceContext(source_snapshot=snapshot),
-        custom=False,
+        workflow=False,
     )
     invalid_team_records = [
         record for record in records if record["validation_error_drop_reason"] == DROP_REASON_INVALID_TEAM_VALUE

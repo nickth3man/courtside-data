@@ -15,7 +15,6 @@ from courtside_data.debug.probe import (
     _with_evaluation,
     write_probe_csv_report,
 )
-from courtside_data.debug.probe.samples import _ENDPOINT_GROUPS
 from courtside_data.endpoints import ENDPOINTS
 
 
@@ -33,7 +32,6 @@ def _successful_debug_envelope(*, trace_log_path: str | None = None) -> dict:
             "attributes": {
                 "path_template": "teams/{team_abbreviation}/{season_end_year}.html",
                 "row_model": "TeamRosterRow",
-                "custom": False,
             },
         },
         {
@@ -173,10 +171,8 @@ def test_probe_csv_happy_path_marks_endpoint_working(tmp_path: Path) -> None:
     assert row["response_bytes"] == "120000"
     assert row["redirect_count"] == "0"
     assert row["rate_limit_wait_ms"] == "250.0"
-    assert row["endpoint_group"] == "teams"
     assert row["endpoint_domain"] == "teams"
     assert row["endpoint_kind"] == "generic_table"
-    assert row["endpoint_legacy_kind"] == "generic"
     assert row["sample_params_source"] == "fixture_manifest"
     assert row["parser_name"] == "generic_table"
     assert row["model_name"] == "TeamRosterRow"
@@ -390,7 +386,6 @@ def test_probe_csv_serializes_nested_fields_as_json(tmp_path: Path) -> None:
         "endpoint": "league_player_stats",
         "params": params,
         "ok": True,
-        "status_code": "ok",
         "debug_status": "ok",
         "row_count": 3,
         "metrics": metrics,
@@ -398,7 +393,6 @@ def test_probe_csv_serializes_nested_fields_as_json(tmp_path: Path) -> None:
         "required_params_json": ["season_end_year"],
         "candidate_table_ids_json": ["stats"],
         "validation_error_paths_json": [],
-        "columns_json": ["player", "pts"],
         "first_row_preview_json": {"player": "Tatum", "pts": 26.9},
     }
 
@@ -410,7 +404,6 @@ def test_probe_csv_serializes_nested_fields_as_json(tmp_path: Path) -> None:
     assert json.loads(row["stage_counts_json"]) == stage_counts
     assert json.loads(row["required_params_json"]) == ["season_end_year"]
     assert json.loads(row["candidate_table_ids_json"]) == ["stats"]
-    assert json.loads(row["columns_json"]) == ["player", "pts"]
     assert json.loads(row["first_row_preview_json"]) == {"player": "Tatum", "pts": 26.9}
 
 
@@ -537,9 +530,9 @@ def test_output_type_inferred_from_data_and_model() -> None:
     assert _infer_output_type({"rows": []}, None) == "dict"
 
 
-def test_custom_endpoint_has_no_raw_table_columns() -> None:
+def test_workflow_endpoint_has_no_raw_table_columns() -> None:
     debug = {
-        "trace_id": "trace-custom",
+        "trace_id": "trace-workflow",
         "duration_ms": 5.0,
         "status": {"code": "ok", "error_type": None, "error_message": None},
         "metrics": {"debug.enabled": True},
@@ -549,11 +542,11 @@ def test_custom_endpoint_has_no_raw_table_columns() -> None:
                 "stage": "endpoint",
                 "event": "run_endpoint_start",
                 "status": "ok",
-                "attributes": {"row_model": "PlayByPlayRow", "custom": True},
+                "attributes": {"row_model": "PlayByPlayRow", "endpoint_kind": "workflow"},
             },
             {
                 "stage": "endpoint",
-                "event": "custom_service_dispatch",
+                "event": "workflow_service_dispatch",
                 "status": "ok",
                 "attributes": {"method": "play_by_play"},
             },
@@ -565,22 +558,86 @@ def test_custom_endpoint_has_no_raw_table_columns() -> None:
         endpoint_name="play_by_play",
     )
 
-    assert summary["parser_name"] == "custom"
+    assert summary["parser_name"] == "workflow"
     assert summary["raw_columns_json"] == []
     assert summary["raw_column_count"] is None
     assert summary["selected_table_id"] is None
     assert summary["parsed_event_count"] is None
 
 
-def test_probe_grouping_comes_from_endpoint_metadata() -> None:
-    groups_from_metadata = {
-        name: endpoint.metadata.domain.value for name, endpoint in ENDPOINTS.items() if endpoint.metadata is not None
+def test_workflow_dispatch_uses_canonical_parser_name() -> None:
+    debug = {
+        "trace_id": "trace-workflow-dispatch",
+        "duration_ms": 5.0,
+        "status": {"code": "ok", "error_type": None, "error_message": None},
+        "metrics": {"debug.enabled": True},
+        "stage_counts": {"endpoint": 3},
+        "events": [
+            {
+                "stage": "endpoint",
+                "event": "run_endpoint_start",
+                "status": "ok",
+                "attributes": {
+                    "row_model": "PlayByPlayRow",
+                    "endpoint_kind": "workflow",
+                },
+            },
+            {
+                "stage": "endpoint",
+                "event": "workflow_service_dispatch",
+                "status": "ok",
+                "attributes": {"method": "play_by_play"},
+            },
+        ],
     }
+    summary = _summarize_debug_events(debug, data=[{"period": 1}], endpoint_name="play_by_play")
 
-    assert groups_from_metadata == _ENDPOINT_GROUPS
+    assert summary["parser_name"] == "workflow"
+    assert summary["endpoint_kind"] == "workflow"
 
 
-def test_custom_module_endpoint_uses_metadata_domain_not_custom_group() -> None:
+def test_workflow_diagnostics_fields_are_reported() -> None:
+    debug = {
+        "trace_id": "trace-workflow-diagnostics",
+        "duration_ms": 5.0,
+        "status": {"code": "ok", "error_type": None, "error_message": None},
+        "metrics": {"debug.enabled": True},
+        "stage_counts": {"parse": 1, "provenance": 1},
+        "events": [
+            {
+                "stage": "parse",
+                "event": "play_by_play_parsed",
+                "status": "ok",
+                "attributes": {
+                    "parser_name": "play_by_play",
+                    "workflow_diagnostics": {"selected_table_id": "pbp", "candidate_table_ids": ["pbp"]},
+                },
+            },
+            {
+                "stage": "provenance",
+                "event": "workflow_endpoint_provenance",
+                "status": "ok",
+                "attributes": {"source_cell_mapping_available": False},
+            },
+        ],
+    }
+    summary = _summarize_debug_events(debug, data=[{"period": 1}], endpoint_name="play_by_play")
+    row = _csv_row({"endpoint": "play_by_play", "ok": True, **summary})
+
+    assert summary["workflow_provenance_unavailable_count"] == 1
+    assert json.loads(row["workflow_diagnostics_json"]) == {"selected_table_id": "pbp", "candidate_table_ids": ["pbp"]}
+    assert row["workflow_provenance_unavailable_count"] == "1"
+
+
+def test_probe_domain_comes_from_endpoint_metadata() -> None:
+    for name, endpoint in ENDPOINTS.items():
+        if endpoint.metadata is None:
+            continue
+        enrichment = _default_enrichment(endpoint_name=name)
+        assert enrichment["endpoint_domain"] == endpoint.metadata.domain.value
+
+
+def test_workflow_endpoint_uses_metadata_domain() -> None:
     summary = _summarize_debug_events(
         {
             "trace_id": "trace-pbp-domain",
@@ -593,11 +650,8 @@ def test_custom_module_endpoint_uses_metadata_domain_not_custom_group() -> None:
         endpoint_name="play_by_play",
     )
 
-    assert summary["endpoint_group"] == "games"
     assert summary["endpoint_domain"] == "games"
     assert summary["endpoint_kind"] == "workflow"
-    assert summary["endpoint_legacy_kind"] == "custom"
-    assert summary["endpoint_group"] != "custom"
 
 
 def test_first_row_preview_truncation_flags() -> None:
@@ -648,14 +702,13 @@ def test_summarize_report_computes_rate_limit_and_trace_aggregates(tmp_path: Pat
     assert summary["largest_trace_log_size_bytes"] == trace_b.stat().st_size
 
 
-def test_status_code_is_deprecated_alias_for_debug_status() -> None:
+def test_debug_status_is_serialized() -> None:
     debug = _successful_debug_envelope()
     summary = _summarize_debug_events(debug, endpoint_name="team_roster")
     evaluated = _with_evaluation({"endpoint": "team_roster", "ok": True, **summary})
     row = _csv_row(evaluated)
 
     assert row["debug_status"] == "ok"
-    assert row["status_code"] == "ok"
     assert row["http_status_code"] == "200"
 
 

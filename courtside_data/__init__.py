@@ -10,6 +10,9 @@ package-level aliases.
 from courtside_data.client import (
     CourtsideClient,
     attendance,
+    box_score_game_info,
+    box_score_player_basic,
+    box_score_team_four_factors,
     career_leaders,
     draft_picks,
     franchise_history,
@@ -73,6 +76,9 @@ from courtside_data.client import (
 __all__ = [
     "CourtsideClient",
     "attendance",
+    "box_score_game_info",
+    "box_score_player_basic",
+    "box_score_team_four_factors",
     "career_leaders",
     "draft_picks",
     "franchise_history",

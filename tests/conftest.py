@@ -6,7 +6,7 @@ import pytest
 import pytest_socket
 import stamina
 from courtside_data.client.courtside_client import CourtsideClient
-from courtside_data.http_service import HTTPService
+from courtside_data.http import _rate_limit
 
 from tests.fixture_manifest import Case
 from tests.fixture_transport import FixtureTransport, build_service
@@ -30,15 +30,15 @@ def disable_rate_limiting_and_tls():
     # Keep tests hermetic: never read or write the on-disk jail state
     os.environ["BASKETBALL_REF_JAIL_STATE_PATH"] = ""
 
-    from courtside_data import http_service
+    from courtside_data import http
 
-    _original_build_client = http_service.build_client
+    _original_build_client = http.build_client
 
     def _test_build_client(**kwargs):
         kwargs["impersonate"] = None
         return _original_build_client(**kwargs)
 
-    with mock.patch.object(http_service, "build_client", _test_build_client):
+    with mock.patch.object(http, "build_client", _test_build_client):
         yield
 
 
@@ -51,12 +51,12 @@ def stamina_testing():
 
 
 @pytest.fixture(autouse=True)
-def reset_http_service_classvars():
-    """Clear HTTPService ClassVars mutated by rate-limit code paths after each test."""
+def reset_http_rate_limit_state():
+    """Clear module-level rate-limit state mutated by rate-limit code paths."""
     yield
-    HTTPService._last_request_time = float("-inf")
-    HTTPService._jailed_until = 0.0
-    HTTPService._jail_state_loaded = False
+    _rate_limit._last_request_time = float("-inf")
+    _rate_limit._jailed_until = 0.0
+    _rate_limit._jail_state_loaded = False
 
 
 @pytest.fixture(autouse=True)

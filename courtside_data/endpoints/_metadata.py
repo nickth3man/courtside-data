@@ -1,8 +1,8 @@
 """Typed taxonomy for :class:`~courtside_data.endpoints.EndpointSpec` specs.
 
-These enums describe *what* an endpoint is (domain, shape, features) without
-changing any runtime behaviour.  All values are ``StrEnum`` so they serialise
-to plain strings and compare equal to their string representations.
+These enums describe *what* an endpoint is (domain, shape, features) and provide
+the canonical runtime dispatch kind. All values are ``StrEnum`` so they
+serialise to plain strings and compare equal to their string representations.
 
 Usage::
 
@@ -35,11 +35,10 @@ class EndpointKind(StrEnum):
     """Top-level classification of how an endpoint is implemented."""
 
     GENERIC_TABLE = "generic_table"
-    """Standard ``fetch_table`` pipeline (``custom=False``)."""
+    """Standard ``GenericEndpointHandler.fetch_table`` pipeline."""
 
     WORKFLOW = "workflow"
-    """Bespoke multi-step request handled by a dedicated ``HTTPService`` method
-    (``custom=True``)."""
+    """Bespoke multi-step request handled by the workflow executor."""
 
 
 class EndpointDomain(StrEnum):
@@ -76,6 +75,9 @@ class EndpointScope(StrEnum):
 
     DATE_TEAM = "date_team"
     """Date x team combination."""
+
+    GAME = "game"
+    """Single game id (``YYYYMMDD0XXX``)."""
 
     SEARCH = "search"
     """Free-text search query."""
@@ -181,7 +183,7 @@ class EndpointFeature(StrEnum):
     REQUIRES_NON_EMPTY = "requires_non_empty"
     """Raises an error when the extracted row set is empty."""
 
-    CUSTOM_DIAGNOSTICS = "custom_diagnostics"
+    WORKFLOW_DIAGNOSTICS = "workflow_diagnostics"
     """Emits non-standard debug telemetry beyond the default trace envelope."""
 
     INTERNAL_TEMPLATE_PARAMS = "internal_template_params"

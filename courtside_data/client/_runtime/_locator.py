@@ -3,7 +3,7 @@
 Two pieces of state live here:
 
 - :data:`_shared_service` / :data:`_shared_service_lock` — a single,
-  lazily-created process-wide :class:`~courtside_data.http_service.HTTPService`.
+  lazily-created process-wide :class:`~courtside_data.http.HTTPService`.
   The first module-level call creates it under a ``threading.Lock``;
   every subsequent call reuses the same session, response cache, and
   parser graph. Rate-limit pacing is enforced globally inside that service
@@ -27,7 +27,7 @@ from __future__ import annotations
 import threading
 from contextvars import ContextVar
 
-from courtside_data.http_service import HTTPService
+from courtside_data.http import HTTPService
 
 __all__ = [
     "_default_service",

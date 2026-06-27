@@ -16,7 +16,7 @@ from courtside_data.parsing import rows
 from courtside_data.parsing.generic import find_table
 
 if TYPE_CHECKING:
-    from courtside_data.parsing.custom._fetch import FetchFacade
+    from courtside_data.parsing.workflow_parsers._fetch import FetchFacade
 
 __all__ = ["playoff_bracket"]
 
@@ -37,6 +37,6 @@ def playoff_bracket(facade: FetchFacade, season_end_year: int) -> list[dict[str,
             parser_name="playoff_bracket",
             rows=parsed_rows,
             source_sections=["table#all_playoffs"],
-            custom_diagnostics={"series_count": len(parsed_rows)},
+            workflow_diagnostics={"series_count": len(parsed_rows)},
         )
     return parsed_rows

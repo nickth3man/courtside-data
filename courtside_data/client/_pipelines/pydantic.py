@@ -17,12 +17,11 @@ from typing import TYPE_CHECKING, Any, cast
 
 from pydantic import ValidationError
 
-from courtside_data.client._pipelines._drop_reasons import (
+from courtside_data.client._pipelines.drop_reasons import (
     DROP_REASON_SCHEMA_VALIDATION_ERROR,
     row_drop_reason,
     sentinel_row_diagnostics,
 )
-from courtside_data.data import OutputType
 from courtside_data.debug import DebugTrace
 from courtside_data.debug._pipeline_events import (
     record_rows_filtered,
@@ -31,22 +30,20 @@ from courtside_data.debug._pipeline_events import (
     record_validation_passed,
 )
 from courtside_data.debug.provenance import (
-    PROVENANCE_CUSTOM_PARSER_METADATA_UNAVAILABLE,
+    PROVENANCE_WORKFLOW_PARSER_METADATA_UNAVAILABLE,
     build_dropped_row_provenance_records,
     build_field_provenance_records,
     classify_validation_drop,
     emit_field_provenance,
     get_trace_context,
 )
+from courtside_data.domain import OutputType
 from courtside_data.errors import SchemaDriftError
 from courtside_data.http._constants import BASE_URL
 from courtside_data.schemas import ROW_ADAPTERS
 
 if TYPE_CHECKING:
     from pydantic_core import InitErrorDetails
-
-# Backward-compatible alias for tests and internal callers.
-_row_drop_reason = row_drop_reason
 
 
 def _row_as_mapping(row: Any) -> dict[str, Any]:
@@ -203,13 +200,13 @@ def validate_rows_pydantic(
             ) = _validate_row_model_rows_detailed(row_model, raw_rows)
         if trace is not None:
             context = get_trace_context(trace)
-            is_custom_endpoint = bool(getattr(endpoint, "custom", False))
-            if is_custom_endpoint:
+            is_workflow_endpoint = getattr(getattr(endpoint, "kind", None), "value", None) == "workflow"
+            if is_workflow_endpoint:
                 trace.record(
                     "provenance",
-                    "custom_endpoint_provenance",
+                    "workflow_endpoint_provenance",
                     source_cell_mapping_available=False,
-                    provenance_reason=PROVENANCE_CUSTOM_PARSER_METADATA_UNAVAILABLE,
+                    provenance_reason=PROVENANCE_WORKFLOW_PARSER_METADATA_UNAVAILABLE,
                 )
             field_records = build_field_provenance_records(
                 endpoint_name=endpoint_name,
@@ -219,7 +216,7 @@ def validate_rows_pydantic(
                 validated_rows=validated,
                 kept_row_indices=kept_indices,
                 context=context,
-                custom=is_custom_endpoint,
+                workflow=is_workflow_endpoint,
             )
             dropped_records = build_dropped_row_provenance_records(
                 endpoint_name=endpoint_name,
@@ -227,7 +224,7 @@ def validate_rows_pydantic(
                 raw_rows=raw_rows,
                 dropped=dropped_details,
                 context=context,
-                custom=is_custom_endpoint,
+                workflow=is_workflow_endpoint,
             )
             emit_field_provenance(trace, field_records=field_records, dropped_records=dropped_records)
             record_rows_filtered(trace, dropped_row_reason_counts=dropped_reasons)

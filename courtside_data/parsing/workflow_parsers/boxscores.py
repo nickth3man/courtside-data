@@ -25,20 +25,20 @@ from typing import TYPE_CHECKING, Any
 import httpx
 from parsel import Selector
 
-from courtside_data.data import TEAM_TO_TEAM_ABBREVIATION, Team
 from courtside_data.debug import current_debug_trace
 from courtside_data.debug._pipeline_events import emit_parser_diagnostics
+from courtside_data.domain import TEAM_TO_TEAM_ABBREVIATION, Team
 from courtside_data.errors import InvalidDate
 from courtside_data.parsing import cells, rows
-from courtside_data.parsing.custom._diagnostics import (
-    emit_custom_endpoint_diagnostics,
+from courtside_data.parsing.generic import find_table
+from courtside_data.parsing.workflow_parsers._diagnostics import (
+    emit_workflow_endpoint_diagnostics,
     merge_ignored_counts,
     merge_numeric_stats,
 )
-from courtside_data.parsing.generic import find_table
 
 if TYPE_CHECKING:
-    from courtside_data.parsing.custom._fetch import FetchFacade
+    from courtside_data.parsing.workflow_parsers._fetch import FetchFacade
 
 __all__ = [
     "play_by_play",
@@ -131,7 +131,7 @@ def player_box_scores(facade: FetchFacade, day: int, month: int, year: int) -> l
         parsed_rows, stats = rows.parse_player_box_scores_from_table_with_stats(table)
         if not parsed_rows:
             raise InvalidDate(day=day, month=month, year=year)
-        emit_custom_endpoint_diagnostics(
+        emit_workflow_endpoint_diagnostics(
             parser_name="player_box_scores",
             endpoint_name="player_box_scores",
             rows=parsed_rows,
@@ -149,7 +149,7 @@ def team_box_score(facade: FetchFacade, game_url_path: str) -> list[dict[str, An
     url = facade.url(game_url_path)
     selector = facade.get_selector(url=url)
     parsed_rows, stats = rows.parse_team_box_score_with_stats(selector)
-    emit_custom_endpoint_diagnostics(
+    emit_workflow_endpoint_diagnostics(
         parser_name="team_box_score",
         endpoint_name="team_box_score",
         rows=parsed_rows,
@@ -190,7 +190,7 @@ def team_box_scores(facade: FetchFacade, day: int, month: int, year: int) -> lis
         all_rows.extend(game_rows)
         _merge_team_box_score_stats(aggregate_stats, game_stats)
 
-    emit_custom_endpoint_diagnostics(
+    emit_workflow_endpoint_diagnostics(
         parser_name="team_box_scores",
         endpoint_name="team_box_scores",
         rows=all_rows,

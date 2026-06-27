@@ -18,6 +18,7 @@ from courtside_data.schemas._fields import (
     BRFloatOrNone,
     BRIntOrNone,
     BRPercentage,
+    BRSalary,
     PositionsField,
     SecondsPlayedOrNone,
     StrOrNone,
@@ -99,7 +100,7 @@ class PlayerAllStarRow(BRRow):
     positions: PositionsField = Field(default_factory=list, validation_alias="pos")
     games_played: BRIntOrNone = Field(default=None, validation_alias="g")
     games_started: BRIntOrNone = Field(default=None, validation_alias="gs")
-    minutes_played: SecondsPlayedOrNone = Field(default=None, validation_alias="mp")
+    seconds_played: SecondsPlayedOrNone = Field(default=None, validation_alias="mp")
     made_field_goals: BRIntOrNone = Field(default=None, validation_alias="fg")
     attempted_field_goals: BRIntOrNone = Field(default=None, validation_alias="fga")
     field_goal_percentage: BRPercentage = Field(default=None, validation_alias="fg_pct")
@@ -272,7 +273,7 @@ class PlayerSalariesRow(BRRow):
     season: str = Field(validation_alias="season")
     team_name: StrOrNone = Field(default=None, validation_alias="team_name")
     lg_id: StrOrNone = Field(default=None, validation_alias="lg_id")
-    salary: StrOrNone = Field(default=None, validation_alias="salary")
+    salary: BRSalary = Field(default=None, validation_alias="salary")
 
 
 register("player_salaries", PlayerSalariesRow)

@@ -15,10 +15,8 @@ across focused private modules:
   :func:`apply_rate_limiting` primitive.
 * :mod:`._service` — the slim :class:`HTTPService` class.
 
-:mod:`courtside_data.http_service` is a thin re-export module that
-preserves the older ``courtside_data.http_service`` import path
-(``from courtside_data.http_service import HTTPService``) for existing
-callers.
+:mod:`courtside_data.http` is the public HTTP surface
+(``from courtside_data.http import HTTPService``).
 """
 
 from __future__ import annotations

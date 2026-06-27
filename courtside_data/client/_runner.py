@@ -7,7 +7,7 @@ HTTP-status-to-domain-error mapping — lives in the
 definitions; each body is a thin call into :func:`_run_endpoint`.
 
 :func:`_run_endpoint` resolves an
-:class:`~courtside_data.http_service.HTTPService` through
+:class:`~courtside_data.http.HTTPService` through
 :func:`courtside_data.client._runtime._locator._resolve_service`: a
 ``CourtsideClient`` method call binds its own service for the duration of
 the call (via :data:`_service_override`, re-exported below), and
@@ -20,7 +20,7 @@ The plumbing steps are split across :mod:`courtside_data.client._runtime`:
 - :mod:`~courtside_data.client._runtime._locator` — service singleton
   + per-call override
 - :mod:`~courtside_data.client._runtime._coerce` — typed-param
-  coercion for custom endpoints
+  coercion for workflow endpoints
 - :mod:`~courtside_data.client._runtime._output` — output
   formatting and debug-envelope wrapping
 - :mod:`~courtside_data.client._runtime._flush` — best-effort,
@@ -38,12 +38,12 @@ from courtside_data.client._runtime._coerce import _coerce_params
 from courtside_data.client._runtime._execute import _execute
 from courtside_data.client._runtime._flush import _flush_trace
 from courtside_data.client._runtime._locator import _resolve_service, _service_override
-from courtside_data.data import OutputType, OutputWriteOption
 from courtside_data.debug import DebugTrace, debug_trace_context
 from courtside_data.debug.config import debug_config_from_env
+from courtside_data.domain import OutputType, OutputWriteOption
 from courtside_data.endpoints import ENDPOINTS, EndpointKind
 from courtside_data.parsing.generic import GenericEndpointHandler
-from courtside_data.parsing.workflows import execute_workflow, is_native_workflow_endpoint
+from courtside_data.parsing.workflows import execute_workflow
 
 # Re-exported for ``CourtsideClient`` (``courtside_data.client.courtside_client``
 # uses ``_runner._service_override.set(self._service)`` as its injection seam
@@ -74,7 +74,7 @@ def _run_endpoint(
     # endpoints so the probe path and the typed-client path dispatch the
     # same way. Generic-table endpoints are unaffected; ``str``/``int``
     # URL params are idempotent. Dispatch is driven by ``endpoint.kind``
-    # (EndpointKind.WORKFLOW vs GENERIC_TABLE), not a legacy boolean flag.
+    # (EndpointKind.WORKFLOW vs GENERIC_TABLE).
     is_workflow = endpoint.kind is EndpointKind.WORKFLOW
     coerced_params = _coerce_params(name, params) if is_workflow else params
     trace = DebugTrace(endpoint=name, params=coerced_params, config=debug_config_from_env()) if debug else None
@@ -85,7 +85,6 @@ def _run_endpoint(
             endpoint=name,
             params=coerced_params,
             endpoint_kind=endpoint.kind.value,
-            custom=endpoint.custom,
             path_template=endpoint.path,
             table_id=endpoint.table_id,
             commented_table_id=endpoint.commented_table_id,
@@ -98,12 +97,6 @@ def _run_endpoint(
         if is_workflow:
             if trace is not None:
                 trace.record("endpoint", "workflow_service_dispatch", method=name)
-                trace.record(
-                    "endpoint",
-                    "custom_service_dispatch",
-                    method=name,
-                    compatibility=not is_native_workflow_endpoint(name),
-                )
             return execute_workflow(service, name, endpoint, coerced_params)
         if trace is not None:
             trace.record("endpoint", "generic_service_dispatch", method="fetch_table")

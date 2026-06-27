@@ -230,7 +230,7 @@ TEAM_CONTRACTS_COLUMN_NAMES = [
 
 TEAM_LINEUPS_COLUMN_NAMES = [
     "lineup",
-    "mp",
+    "seconds_played",
     "diff_pts",
     "diff_fg",
     "diff_fga",

@@ -1,4 +1,4 @@
-"""Unit tests for the pure-function retry helpers in :mod:`courtside_data.http_service`.
+"""Unit tests for the pure-function retry helpers in :mod:`courtside_data.http`.
 
 These tests cover two private functions:
 
@@ -8,8 +8,8 @@ These tests cover two private functions:
   session is considered "jailed" and the caller should bail out.
 
 They are pure-function tests, so they need no HTTPService, no transport, and
-no manifest. Shared autouse fixtures (stamina testing mode and ClassVar
-reset) live in :mod:`tests.conftest`.
+no manifest. Shared autouse fixtures (stamina testing mode and rate-limit
+state reset) live in :mod:`tests.conftest`.
 """
 
 from __future__ import annotations
@@ -18,12 +18,8 @@ from datetime import UTC, datetime, timedelta
 
 import httpx
 import pytest
-from courtside_data.http_service import (
-    _JAIL_THRESHOLD_SECONDS,
-    _MAX_RETRY_AFTER_WAIT,
-    _parse_retry_after,
-    _should_retry,
-)
+from courtside_data.http._constants import _JAIL_THRESHOLD_SECONDS, _MAX_RETRY_AFTER_WAIT
+from courtside_data.http._retry import _parse_retry_after, _should_retry
 
 # ─── Helpers ─────────────────────────────────────────────────────────────────
 

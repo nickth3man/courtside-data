@@ -19,7 +19,7 @@ from courtside_data.endpoints import EndpointKind, EndpointSpec
 from courtside_data.parsing.tables import GenericTable, extract_commented_table, parse_transaction_list
 
 if TYPE_CHECKING:
-    from courtside_data.http_service import HTTPService
+    from courtside_data.http import HTTPService
 
 
 def xpath_literal(value: str) -> str:

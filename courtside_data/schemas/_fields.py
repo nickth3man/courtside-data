@@ -2,9 +2,8 @@
 
 Every ``Annotated[..., BeforeValidator(fn)]`` alias you see in row models
 originates here. The actual validation functions live in
-:mod:`courtside_data.schemas._validators` and are re-exported from this
-module for backward compatibility. All names that were importable from
-``_fields`` remain importable here.
+:mod:`courtside_data.schemas._validators` and are imported here to build
+field aliases.
 """
 
 from __future__ import annotations
@@ -15,7 +14,7 @@ from typing import Annotated
 
 from pydantic import BeforeValidator
 
-from courtside_data.data import (
+from courtside_data.domain import (
     Conference,
     Division,
     League,
@@ -37,7 +36,7 @@ from courtside_data.schemas._validators import (
     _br_salary,
     _conference_field,
     _division_field,
-    _is_empty,  # noqa: F401  # re-exported for backward compat
+    _is_empty,  # noqa: F401
     _league_field,
     _location_field,
     _outcome_field,

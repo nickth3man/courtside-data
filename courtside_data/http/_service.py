@@ -8,26 +8,7 @@ circuit-breaker ("jail") state live in
 :mod:`courtside_data.http._constants`.
 
 The :class:`HTTPService` symbol is re-exported from the
-:mod:`courtside_data.http` package and from the re-export module
-:mod:`courtside_data.http_service` so existing imports keep working.
-
-Backwards-compatibility class attribute surface
------------------------------------------------
-
-The process-wide pacing state lives as module-level singletons in
-:mod:`courtside_data.http._rate_limit` (so one budget is shared per
-process). Tests reset it via direct assignment on :class:`HTTPService`::
-
-    HTTPService._last_request_time = float("-inf")
-    HTTPService._jailed_until = 0.0
-    HTTPService._jail_state_loaded = False
-
-The :class:`_ClassStateMeta` metaclass re-routes the four names —
-``_last_request_time``, ``_jailed_until``, ``_jail_state_loaded``, and
-``_rate_limit_lock`` — through to the module-level singleton so the test
-surface and any external code that pokes at those names keep working
-unchanged. The forwarder list is meant to be removed in a future major
-release once :mod:`courtside_data.http` is the sole public surface.
+:mod:`courtside_data.http` package.
 """
 
 from __future__ import annotations
@@ -69,24 +50,24 @@ def _build_client(
     headers: dict[str, str] | None,
     impersonate: str | None,
 ) -> httpx.Client:
-    """Late-bound reference to :func:`build_client` via the re-export module.
+    """Late-bound reference to :func:`build_client` via the public package.
 
     The :mod:`tests.conftest` session fixture patches
-    :data:`courtside_data.http_service.build_client` to force
+    :data:`courtside_data.http.build_client` to force
     ``impersonate=None`` so the offline suite doesn't drag in
-    ``httpx-curl-cffi``. Resolving through :mod:`courtside_data.http_service`
-    — rather than importing :mod:`courtside_data.http._transport` directly
+    ``httpx-curl-cffi``. Resolving through the package rather than
+    importing :mod:`courtside_data.http._transport` directly
     here — means the patch flows through to the :class:`HTTPService`
     constructor.
 
     The import is delayed until the first :class:`HTTPService` is
-    constructed, which is after both :mod:`courtside_data.http_service`
+    constructed, which is after both :mod:`courtside_data.http`
     and :mod:`courtside_data.http._transport` are fully loaded, so the
     late import cannot create a cycle.
     """
-    from courtside_data import http_service as _shim
+    from courtside_data import http as http_module
 
-    return _shim.build_client(
+    return http_module.build_client(
         cache=cache,
         timeout=timeout,
         headers=headers,
@@ -94,60 +75,10 @@ def _build_client(
     )
 
 
-class _ClassStateMeta(type):
-    """Metaclass that forwards class-level attribute access to a module singleton.
-
-    The forwarder list is fixed per subclass (set via the ``_FORWARDED``
-    class attribute) so the metaclass itself stays small and trivial.
-    A read or write to one of the listed names on the class is
-    re-routed to the same-named module attribute on
-    :mod:`courtside_data.http._rate_limit`.
-
-    Only class-level access is intercepted: ``HTTPService._foo`` is
-    forwarded, ``instance._foo`` is not (matches the previous
-    ``ClassVar`` semantics, where the test fixture wrote
-    ``HTTPService._foo = ...`` and read it back the same way).
-    """
-
-    _FORWARDED: ClassVar[tuple[str, ...]] = ()
-
-    def __getattr__(cls, name: str) -> Any:
-        if name in cls._FORWARDED:
-            from courtside_data.http import _rate_limit as _rl
-
-            return getattr(_rl, name)
-        raise AttributeError(f"{cls.__name__!r} has no attribute {name!r}")
-
-    def __setattr__(cls, name: str, value: Any) -> None:
-        if name in cls._FORWARDED:
-            from courtside_data.http import _rate_limit as _rl
-
-            setattr(_rl, name, value)
-        else:
-            super().__setattr__(name, value)
-
-
-class HTTPService(metaclass=_ClassStateMeta):
+class HTTPService:
     """Rate-limited HTTP client with selector caching for Basketball Reference."""
 
     BASE_URL: ClassVar[str] = BASE_URL
-    # Class-level forwarder list — see :class:`_ClassStateMeta`. Reads
-    # and writes to these names on the class go through to
-    # :mod:`courtside_data.http._rate_limit` so test resets
-    # (``HTTPService._last_request_time = float('-inf')``) keep working
-    # without code changes.
-    _FORWARDED: ClassVar[tuple[str, ...]] = (
-        "_last_request_time",
-        "_jailed_until",
-        "_jail_state_loaded",
-        "_rate_limit_lock",
-    )
-    # Bare ClassVar annotations (no value) so ty sees the expected types
-    # while the metaclass still intercepts reads/writes at runtime (bare
-    # annotations do not create __dict__ entries).
-    _last_request_time: ClassVar[float]
-    _jailed_until: ClassVar[float]
-    _jail_state_loaded: ClassVar[bool]
 
     def __init__(
         self,
@@ -180,7 +111,7 @@ class HTTPService(metaclass=_ClassStateMeta):
             self._session = session
         else:
             # Late-bound build_client so the conftest patch on
-            # http_service.build_client flows through.
+            # courtside_data.http.build_client flows through.
             self._session = _build_client(
                 cache=cache,
                 timeout=self._timeout,

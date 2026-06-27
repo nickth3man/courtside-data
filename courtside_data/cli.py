@@ -24,7 +24,7 @@ import json
 import sys
 
 from courtside_data import client
-from courtside_data.data import OutputType, OutputWriteOption, Team
+from courtside_data.domain import OutputType, OutputWriteOption, Team
 from courtside_data.endpoints import ENDPOINTS
 
 _INT_PARAMS = {"season_end_year", "day", "month", "year"}

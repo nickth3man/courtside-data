@@ -87,7 +87,7 @@ TEAM_ENDPOINTS = {
         ),
     ),
     # Scrapes the same #team_and_opponent table as team_and_opponent; kept as a
-    # separate endpoint for backwards compatibility with its own column set.
+    # separate endpoint with its own column set.
     "team_opponent_stats": _team(
         "/teams/{team_abbreviation}/{season_end_year}.html",
         commented_table_id="team_and_opponent",

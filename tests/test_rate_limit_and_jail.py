@@ -13,7 +13,7 @@ Coverage:
    ``random_func``).
 2. **No-sleep path** — a request fired well after the previous one must
    not sleep.
-3. **Jail circuit breaker** — when ``HTTPService._jailed_until`` is set
+3. **Jail circuit breaker** — when ``_rate_limit._jailed_until`` is set
    in the future, every request fails fast with ``RateLimitJailed`` and
    does NOT sleep.
 4. **429 → jail activation via ``_get``** — a real 429 response with
@@ -35,12 +35,9 @@ import os
 
 import httpx
 import pytest
+from courtside_data import config
 from courtside_data.errors import RateLimitJailed
-from courtside_data.http_service import (
-    HTTPService,
-    _jail_state_path,
-    _persist_jail,
-)
+from courtside_data.http import HTTPService, _rate_limit
 
 # ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -115,13 +112,13 @@ def test_pacing_sleeps_to_fill_interval():
     service = _build_service(clock, sleep)
 
     # Simulate "a request was just made" by recording the current time.
-    HTTPService._last_request_time = clock()
+    _rate_limit._last_request_time = clock()
     clock.t = 1.0
     service._apply_rate_limiting()
 
     assert sleep.calls == [pytest.approx(5.0, abs=0.01)]
     # After the call, the module-level state is updated to the projected/pacing-complete time.
-    assert HTTPService._last_request_time == pytest.approx(6.0)
+    assert _rate_limit._last_request_time == pytest.approx(6.0)
 
 
 def test_pacing_does_not_sleep_when_interval_is_zero():
@@ -141,12 +138,12 @@ def test_pacing_does_not_sleep_when_interval_is_zero():
         rate_limit_jitter=1.0,
     )
 
-    HTTPService._last_request_time = clock()
+    _rate_limit._last_request_time = clock()
     clock.t = 0.1
     service._apply_rate_limiting()
 
     assert sleep.calls == []
-    assert HTTPService._last_request_time == pytest.approx(0.1)
+    assert _rate_limit._last_request_time == pytest.approx(0.1)
 
 
 def test_no_sleep_when_interval_already_satisfied():
@@ -159,12 +156,12 @@ def test_no_sleep_when_interval_already_satisfied():
     service = _build_service(clock, sleep)
 
     # Set last-request to long ago so the interval is comfortably satisfied.
-    HTTPService._last_request_time = 0.0
+    _rate_limit._last_request_time = 0.0
     clock.t = 100.0
     service._apply_rate_limiting()
 
     assert sleep.calls == []
-    assert HTTPService._last_request_time == pytest.approx(100.0)
+    assert _rate_limit._last_request_time == pytest.approx(100.0)
 
 
 def test_jail_circuit_breaker_raises_and_skips_sleep():
@@ -178,7 +175,7 @@ def test_jail_circuit_breaker_raises_and_skips_sleep():
     sleep = _SleepRecorder()
     service = _build_service(clock, sleep)
 
-    HTTPService._jailed_until = clock() + 100.0
+    _rate_limit._jailed_until = clock() + 100.0
 
     with pytest.raises(RateLimitJailed) as exc_info:
         service._apply_rate_limiting()
@@ -193,8 +190,7 @@ def test_429_with_large_retry_after_activates_jail():
     The retry predicate (``_should_retry``) returns False for this case, so
     stamina does not retry; the exception propagates into ``_get``'s
     ``except httpx.HTTPStatusError`` block, which detects the jail threshold
-    breach and raises ``RateLimitJailed`` from a custom
-    ``self.__class__._jailed_until = self._time() + parsed`` assignment.
+    breach and raises ``RateLimitJailed``.
     """
     clock = _FakeClock()
     sleep = _SleepRecorder()
@@ -217,8 +213,8 @@ def test_429_with_large_retry_after_activates_jail():
 
     assert exc_info.value.retry_after == pytest.approx(600.0)
     # _jailed_until was set to the current monotonic time + the parsed Retry-After.
-    assert HTTPService._jailed_until == pytest.approx(clock() + 600.0)
-    assert HTTPService._jailed_until > clock()
+    assert _rate_limit._jailed_until == pytest.approx(clock() + 600.0)
+    assert _rate_limit._jailed_until > clock()
     # _persist_jail was a no-op (env var disabled by conftest), so no file was
     # touched; stamina consumed exactly one attempt (predicate returns False).
     assert session.call_count == 1
@@ -255,24 +251,24 @@ def test_429_below_threshold_does_not_activate_jail():
 
     assert exc_info.value.response.status_code == 429
     # Jail state was NOT set; the circuit breaker should not fire.
-    assert HTTPService._jailed_until == 0.0
+    assert _rate_limit._jailed_until == 0.0
 
 
 def test_jail_persistence_disabled_when_env_var_empty():
     """With ``BASKETBALL_REF_JAIL_STATE_PATH=""`` (set by tests/conftest.py),
-    ``_jail_state_path`` returns ``None`` and ``_persist_jail`` is a no-op.
+    ``config.jail_state_path`` returns ``None`` and ``_persist_jail`` is a no-op.
 
     This is the hermetic-test guarantee: jail state never escapes the
     process during a test run, and no temp dir is created.
     """
     # Sanity check: the env var really is empty in this test context.
     assert os.environ.get("BASKETBALL_REF_JAIL_STATE_PATH") == ""
-    assert _jail_state_path() is None
+    assert config.jail_state_path() is None
 
     # _persist_jail must accept any value without raising or writing a file.
-    _persist_jail(12345.0)
-    _persist_jail(0.0)
-    _persist_jail(1_000_000.0)
+    _rate_limit._persist_jail(12345.0)
+    _rate_limit._persist_jail(0.0)
+    _rate_limit._persist_jail(1_000_000.0)
 
 
 def test_recovery_after_jail_window():
@@ -280,7 +276,7 @@ def test_recovery_after_jail_window():
     ``_apply_rate_limiting()`` call must NOT raise.
 
     The jail window is purely time-based on the injected monotonic clock;
-    the only state that matters is ``HTTPService._jailed_until``. This test
+    the only state that matters is ``_rate_limit._jailed_until``. This test
     proves the recovery path is wired correctly.
     """
     clock = _FakeClock()
@@ -288,7 +284,7 @@ def test_recovery_after_jail_window():
     service = _build_service(clock, sleep)
 
     # Set the jail window to 100s in the future.
-    HTTPService._jailed_until = clock() + 100.0
+    _rate_limit._jailed_until = clock() + 100.0
 
     # Confirm the jail is in effect.
     with pytest.raises(RateLimitJailed):
@@ -301,7 +297,7 @@ def test_recovery_after_jail_window():
     service._apply_rate_limiting()
     # time_since_last was huge (clock - (-inf) = +inf) so no sleep happens.
     assert sleep.calls == []
-    assert HTTPService._last_request_time == pytest.approx(200.0)
+    assert _rate_limit._last_request_time == pytest.approx(200.0)
 
 
 def test_recovery_respects_pacing_after_window_expires():
@@ -316,8 +312,8 @@ def test_recovery_respects_pacing_after_window_expires():
 
     # Pretend a request happened at t=0, then we got jailed until t=50.
     clock.t = 0.0
-    HTTPService._last_request_time = clock()
-    HTTPService._jailed_until = 50.0
+    _rate_limit._last_request_time = clock()
+    _rate_limit._jailed_until = 50.0
 
     # Advance past the jail; the last-request time is still at 0.
     clock.t = 60.0
@@ -325,4 +321,4 @@ def test_recovery_respects_pacing_after_window_expires():
 
     # 60 - 0 = 60s elapsed, > 6s interval → no sleep.
     assert sleep.calls == []
-    assert HTTPService._last_request_time == pytest.approx(60.0)
+    assert _rate_limit._last_request_time == pytest.approx(60.0)

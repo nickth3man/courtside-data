@@ -5,7 +5,7 @@ from typing import Any
 import orjson
 from pydantic import BaseModel
 
-from courtside_data.data import OutputType, OutputWriteOption
+from courtside_data.domain import OutputType, OutputWriteOption
 
 DEFAULT_JSON_SORT_KEYS = True
 DEFAULT_JSON_INDENT = 4

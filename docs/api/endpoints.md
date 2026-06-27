@@ -8,15 +8,11 @@ generated CLI subcommand tree. Each entry in
 capturing the URL template, the table locator strategy, the CSV column
 contract, the Pydantic row model (if any), the optional column
 projection, and the HTTP-status to domain-error mapping.
-`TableEndpoint` is retained as a backwards-compatible alias for
-`EndpointSpec`; both names are importable from
-`courtside_data.endpoints`.
 
 The same registry feeds `GenericEndpointHandler.fetch_table` for
 generic-table endpoints (`EndpointKind.GENERIC_TABLE`) and
 `execute_workflow` for workflow endpoints (`EndpointKind.WORKFLOW`).
-Dispatch is driven by `endpoint.kind`; the legacy `custom` flag is a
-read-only compatibility property derived from it (`True` ⇔ `WORKFLOW`).
+Dispatch is driven by `endpoint.kind`.
 
 ## Status code constants
 
@@ -63,20 +59,6 @@ into a domain-specific exception.
         - max_year
         - value_column
         - error_mappings
-
-## `TableEndpoint` alias
-
-`TableEndpoint` is a deprecated backwards-compatible alias for
-[`EndpointSpec`][courtside_data.endpoints.EndpointSpec]. Both names are
-importable from `courtside_data.endpoints`. New code should use
-`EndpointSpec`; `TableEndpoint` is preserved so existing imports
-continue to work.
-
-::: courtside_data.endpoints.TableEndpoint
-    options:
-      show_root_heading: true
-      show_root_full_path: false
-      members: false
 
 ## Internal spec builders
 

@@ -8,7 +8,7 @@ from typing import Any
 import httpx
 
 from courtside_data.client import _runner
-from courtside_data.http_service import HTTPService
+from courtside_data.http import HTTPService
 
 
 class CourtsideClient:
@@ -24,7 +24,7 @@ class CourtsideClient:
     can control caching, headers, TLS impersonation, and timeouts.
 
     An optional ``service`` keyword lets callers inject a pre-built
-    :class:`~courtside_data.http_service.HTTPService` (e.g. one wired to a
+    :class:`~courtside_data.http.HTTPService` (e.g. one wired to a
     fake transport for testing); when provided, the ``cache``, ``headers``,
     ``impersonate``, and ``timeout`` kwargs are ignored because they only
     apply to a service the client constructs itself.

@@ -6,14 +6,17 @@ files are written for review and the test skips.
 
 from __future__ import annotations
 
+import csv
 import filecmp
 import json
 from dataclasses import dataclass
 from pathlib import Path
 
 import pytest
-from courtside_data.data import TEAM_ABBREVIATIONS_TO_TEAM, OutputType, OutputWriteOption
+from courtside_data.domain import TEAM_ABBREVIATIONS_TO_TEAM, OutputType, OutputWriteOption
+from courtside_data.endpoints import ENDPOINTS
 from courtside_data.errors import InvalidTeam
+from courtside_data.output.columns import boxscores as boxscore_columns
 from courtside_data.output.fields import format_value
 from courtside_data.output.service import OutputService
 from courtside_data.output.writers import (
@@ -24,6 +27,8 @@ from courtside_data.output.writers import (
     OutputOptions,
     _serialize_row_models,
 )
+from courtside_data.schemas import boxscores
+from pydantic import BaseModel
 
 from tests.fixture_manifest import ALL_CASES, ERROR_CASES, MULTI_REQUEST_CASES, Case
 
@@ -45,6 +50,82 @@ WRITER_CASES: tuple[WriterCase, ...] = (
 )
 
 _CASE_BY_ID: dict[str, Case] = {case.id: case for case in ALL_CASES}
+
+_BOX_SCORE_CSV_CONTRACT_CASES = (
+    ("box_score_player_basic", "box_score_player_basic-201701010ATL", boxscores.BoxScorePlayerBasicRow),
+    ("box_score_game_info", "box_score_game_info-201701010ATL", boxscores.BoxScoreGameInfoRow),
+    (
+        "box_score_team_four_factors",
+        "box_score_team_four_factors-201701010ATL",
+        boxscores.BoxScoreTeamFourFactorsRow,
+    ),
+    ("player_box_scores", "player_box_scores-1-1-2018", boxscores.PlayerBoxScoreRow),
+    ("team_box_scores", "team_box_scores-1-1-2001", boxscores.TeamBoxScoreRow),
+    (
+        "regular_season_player_box_scores",
+        "regular_season_player_box_scores-false-westbru01-2020",
+        boxscores.RegularSeasonPlayerBoxScoreRow,
+    ),
+    (
+        "playoff_player_box_scores",
+        "playoff_player_box_scores-false-westbru01-2020",
+        boxscores.PlayoffPlayerBoxScoreRow,
+    ),
+)
+
+_BOX_SCORE_SCHEMA_COLUMN_CONTRACTS = (
+    ("BOX_SCORE_STAT_COLUMN_NAMES", boxscore_columns.BOX_SCORE_STAT_COLUMN_NAMES, boxscores.PlayerBoxScoreRow, "slug"),
+    ("BOX_SCORE_COLUMN_NAMES", boxscore_columns.BOX_SCORE_COLUMN_NAMES, boxscores.PlayerBoxScoreRow, None),
+    (
+        "PLAYER_SEASON_BOX_SCORE_COLUMN_NAMES-regular",
+        boxscore_columns.PLAYER_SEASON_BOX_SCORE_COLUMN_NAMES,
+        boxscores.RegularSeasonPlayerBoxScoreRow,
+        None,
+    ),
+    (
+        "PLAYER_SEASON_BOX_SCORE_COLUMN_NAMES-playoff",
+        boxscore_columns.PLAYER_SEASON_BOX_SCORE_COLUMN_NAMES,
+        boxscores.PlayoffPlayerBoxScoreRow,
+        None,
+    ),
+    ("TEAM_BOX_SCORES_COLUMN_NAMES", boxscore_columns.TEAM_BOX_SCORES_COLUMN_NAMES, boxscores.TeamBoxScoreRow, None),
+    (
+        "BOX_SCORE_PLAYER_ADVANCED_COLUMN_NAMES",
+        boxscore_columns.BOX_SCORE_PLAYER_ADVANCED_COLUMN_NAMES,
+        boxscores.BoxScorePlayerAdvancedRow,
+        None,
+    ),
+    (
+        "BOX_SCORE_TEAM_FOUR_FACTORS_COLUMN_NAMES",
+        boxscore_columns.BOX_SCORE_TEAM_FOUR_FACTORS_COLUMN_NAMES,
+        boxscores.BoxScoreTeamFourFactorsRow,
+        None,
+    ),
+    (
+        "BOX_SCORE_LINE_SCORE_COLUMN_NAMES",
+        boxscore_columns.BOX_SCORE_LINE_SCORE_COLUMN_NAMES,
+        boxscores.BoxScoreLineScoreRow,
+        None,
+    ),
+    (
+        "BOX_SCORE_PLAYER_QUARTER_SPLITS_COLUMN_NAMES",
+        boxscore_columns.BOX_SCORE_PLAYER_QUARTER_SPLITS_COLUMN_NAMES,
+        boxscores.BoxScorePlayerQuarterSplitRow,
+        None,
+    ),
+    (
+        "BOX_SCORE_GAME_INFO_COLUMN_NAMES",
+        boxscore_columns.BOX_SCORE_GAME_INFO_COLUMN_NAMES,
+        boxscores.BoxScoreGameInfoRow,
+        None,
+    ),
+    (
+        "BOX_SCORE_PLAYER_BASIC_COLUMN_NAMES",
+        boxscore_columns.BOX_SCORE_PLAYER_BASIC_COLUMN_NAMES,
+        boxscores.BoxScorePlayerBasicRow,
+        None,
+    ),
+)
 
 
 def _resolved_params(case: Case) -> dict:
@@ -84,6 +165,73 @@ def test_writer_output_matches_golden(writer_case: WriterCase, make_offline_clie
 def test_writer_case_ids_exist_in_manifest() -> None:
     missing = [wc.case_id for wc in WRITER_CASES if wc.case_id not in _CASE_BY_ID]
     assert not missing, f"Writer golden case ids missing from manifest: {missing}"
+
+
+@pytest.mark.parametrize(
+    ("contract_name", "column_names", "row_model", "before"),
+    _BOX_SCORE_SCHEMA_COLUMN_CONTRACTS,
+    ids=[contract_name for contract_name, _, _, _ in _BOX_SCORE_SCHEMA_COLUMN_CONTRACTS],
+)
+def test_box_score_column_contracts_are_schema_derived(
+    contract_name: str,
+    column_names: list[str],
+    row_model: type[BaseModel],
+    before: str | None,
+) -> None:
+    expected_fields = list(row_model.model_fields)
+    if before is not None:
+        expected_fields = expected_fields[: expected_fields.index(before)]
+
+    assert column_names == expected_fields, contract_name
+
+
+@pytest.mark.parametrize(
+    ("endpoint_name", "case_id", "row_model"),
+    _BOX_SCORE_CSV_CONTRACT_CASES,
+    ids=[endpoint_name for endpoint_name, _, _ in _BOX_SCORE_CSV_CONTRACT_CASES],
+)
+def test_box_score_endpoint_csv_columns_match_row_model(
+    endpoint_name: str,
+    case_id: str,
+    row_model: type[BaseModel],
+) -> None:
+    endpoint = ENDPOINTS[endpoint_name]
+
+    assert case_id in _CASE_BY_ID
+    assert list(endpoint.csv_columns or ()) == list(row_model.model_fields)
+
+
+@pytest.mark.parametrize(
+    ("endpoint_name", "case_id", "row_model"),
+    _BOX_SCORE_CSV_CONTRACT_CASES,
+    ids=[endpoint_name for endpoint_name, _, _ in _BOX_SCORE_CSV_CONTRACT_CASES],
+)
+def test_box_score_csv_output_fields_match_row_model(
+    endpoint_name: str,
+    case_id: str,
+    row_model: type[BaseModel],
+    make_offline_client,
+    tmp_path: Path,
+) -> None:
+    case = _CASE_BY_ID[case_id]
+    output_path = tmp_path / f"{endpoint_name}.csv"
+    client = make_offline_client(case)
+
+    getattr(client, endpoint_name)(
+        **case.params,
+        output_type=OutputType.CSV,
+        output_file_path=str(output_path),
+        output_write_option=OutputWriteOption.WRITE,
+    )
+
+    with output_path.open(newline="", encoding="utf8") as csv_file:
+        reader = csv.DictReader(csv_file)
+        rows = list(reader)
+
+    expected_fields = list(row_model.model_fields)
+    assert reader.fieldnames == expected_fields
+    assert rows
+    assert all(list(row) == expected_fields for row in rows)
 
 
 def test_multi_request_cases_non_empty() -> None:

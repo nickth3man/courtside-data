@@ -10,20 +10,19 @@ from typing import TYPE_CHECKING, Any
 import httpx
 from parsel import Selector
 
-from courtside_data.data import TEAM_TO_TEAM_ABBREVIATION
 from courtside_data.debug import current_debug_trace
 from courtside_data.debug._pipeline_events import emit_parser_diagnostics
+from courtside_data.domain import TEAM_TO_TEAM_ABBREVIATION
 from courtside_data.errors import InvalidPlayerAndSeason
 from courtside_data.parsing import cells, rows
-from courtside_data.parsing.custom import dispatch_custom_endpoint
-from courtside_data.parsing.custom._common import _schedule_rows_with_stats
-from courtside_data.parsing.custom._diagnostics import emit_custom_endpoint_diagnostics
-from courtside_data.parsing.custom.boxscores import _merge_team_box_score_stats
-from courtside_data.parsing.custom.schedule import _merge_schedule_stats, _record_schedule_diagnostics
-from courtside_data.parsing.custom.search import _merge_search_stats
-from courtside_data.parsing.custom.standings import _record_standings_diagnostics
 from courtside_data.parsing.generic import find_table
 from courtside_data.parsing.tables import GenericTable
+from courtside_data.parsing.workflow_parsers._common import _schedule_rows_with_stats
+from courtside_data.parsing.workflow_parsers._diagnostics import emit_workflow_endpoint_diagnostics
+from courtside_data.parsing.workflow_parsers.boxscores import _merge_team_box_score_stats
+from courtside_data.parsing.workflow_parsers.schedule import _merge_schedule_stats, _record_schedule_diagnostics
+from courtside_data.parsing.workflow_parsers.search import _merge_search_stats
+from courtside_data.parsing.workflow_parsers.standings import _record_standings_diagnostics
 from courtside_data.parsing.workflows._parser_registry import PARSER_REGISTRY
 from courtside_data.schemas._fields import _team_field
 
@@ -33,25 +32,6 @@ if TYPE_CHECKING:
     ErrorFactory = Callable[[WorkflowExecutionContext], Exception]
     ParserWithStats = Callable[[Selector], tuple[list[dict[str, Any]], dict[str, Any]]]
     StatsMerger = Callable[[dict[str, Any], dict[str, Any]], None]
-
-
-@dataclass(frozen=True, slots=True)
-class CallCustomHandlerStep:
-    """Compatibility step that delegates to the legacy bespoke dispatcher."""
-
-    def execute(self, context: WorkflowExecutionContext) -> Any:
-        """Call ``dispatch_custom_endpoint`` and store the result in scratch."""
-        result = dispatch_custom_endpoint(
-            context.fetch._http,
-            context.endpoint_name,
-            **dict(context.params),
-        )
-        result_key = context.endpoint.workflow.result if context.endpoint.workflow is not None else "rows"
-        context.scratch[result_key] = result
-        return result
-
-
-LegacyCustomHandlerStep = CallCustomHandlerStep
 
 
 SCHEDULE_MONTH_LINK_SELECTOR = 'div#content div.filter div:not([class*="current"]) a'
@@ -213,7 +193,7 @@ class EmitPlayerGameLogDiagnosticsStep:
             "season_count": 1,
             "selected_table_id": self.table_id,
         }
-        emit_custom_endpoint_diagnostics(
+        emit_workflow_endpoint_diagnostics(
             parser_name=self.parser_name,
             endpoint_name=context.endpoint_name,
             rows=parsed_rows,
@@ -234,7 +214,7 @@ class EmitPlayerTotalsDiagnosticsStep:
 
     def execute(self, context: WorkflowExecutionContext) -> list[dict[str, Any]]:
         parsed_rows = context.scratch["rows"]
-        emit_custom_endpoint_diagnostics(
+        emit_workflow_endpoint_diagnostics(
             parser_name=self.parser_name,
             endpoint_name=context.endpoint_name,
             rows=parsed_rows,
@@ -260,7 +240,7 @@ class EmitAwardVotingDiagnosticsStep:
                 parser_name="season_awards_voting",
                 rows=parsed_rows,
                 source_sections=[f"table#{table_id}"],
-                custom_diagnostics={"award_table_id": table_id},
+                workflow_diagnostics={"award_table_id": table_id},
             )
         return parsed_rows
 
@@ -278,7 +258,7 @@ class EmitPlayoffBracketDiagnosticsStep:
                 parser_name="playoff_bracket",
                 rows=parsed_rows,
                 source_sections=["table#all_playoffs"],
-                custom_diagnostics={"series_count": len(parsed_rows)},
+                workflow_diagnostics={"series_count": len(parsed_rows)},
             )
         return parsed_rows
 
@@ -299,7 +279,7 @@ class EmitFrivOutcomesDiagnosticsStep:
                 parser_name="friv_playoff_outcomes",
                 rows=parsed_rows,
                 source_sections=[f"table#{table_id}"],
-                custom_diagnostics={"table_id": table_id},
+                workflow_diagnostics={"table_id": table_id},
             )
         return parsed_rows
 
@@ -520,7 +500,7 @@ class EmitTeamBoxScoresDiagnosticsStep:
 
     def execute(self, context: WorkflowExecutionContext) -> list[dict[str, Any]]:
         parsed_rows = context.scratch["rows"]
-        emit_custom_endpoint_diagnostics(
+        emit_workflow_endpoint_diagnostics(
             parser_name="team_box_scores",
             endpoint_name="team_box_scores",
             rows=parsed_rows,
@@ -565,18 +545,67 @@ class ParsePlayerBoxScoresStep:
 
 
 @dataclass(frozen=True, slots=True)
+class ParseBoxScorePlayerBasicStep:
+    """Parse per-player basic rows from a single game box-score page."""
+
+    def execute(self, context: WorkflowExecutionContext) -> None:
+        parsed_rows, stats = rows.parse_box_score_player_basic_with_stats(context.scratch["box_score_page"])
+        context.scratch["rows"] = parsed_rows
+        context.scratch["parser_stats"] = stats
+
+
+@dataclass(frozen=True, slots=True)
+class ParseBoxScoreGameInfoStep:
+    """Parse game-level metadata from a single box-score page."""
+
+    def execute(self, context: WorkflowExecutionContext) -> None:
+        parsed_rows, stats = rows.parse_box_score_game_info_with_stats(context.scratch["box_score_page"])
+        context.scratch["rows"] = parsed_rows
+        context.scratch["parser_stats"] = stats
+
+
+@dataclass(frozen=True, slots=True)
+class ParseBoxScoreTeamFourFactorsStep:
+    """Parse per-team Four Factors rows from a single game box-score page."""
+
+    def execute(self, context: WorkflowExecutionContext) -> None:
+        parsed_rows, stats = rows.parse_box_score_team_four_factors_with_stats(context.scratch["box_score_page"])
+        context.scratch["rows"] = parsed_rows
+        context.scratch["parser_stats"] = stats
+
+
+@dataclass(frozen=True, slots=True)
 class EmitPlayerBoxScoresDiagnosticsStep:
     """Emit parser diagnostics for the daily-leaders table."""
 
     def execute(self, context: WorkflowExecutionContext) -> list[dict[str, Any]]:
         parsed_rows = context.scratch["rows"]
-        emit_custom_endpoint_diagnostics(
+        emit_workflow_endpoint_diagnostics(
             parser_name="player_box_scores",
             endpoint_name="player_box_scores",
             rows=parsed_rows,
             source_sections=["table#stats"],
             stats=context.scratch["parser_stats"],
             selected_table_id="stats",
+        )
+        return parsed_rows
+
+
+@dataclass(frozen=True, slots=True)
+class EmitBoxScoreDiagnosticsStep:
+    """Emit diagnostics for single-game box-score page readers."""
+
+    parser_name: str
+    source_sections: tuple[str, ...]
+
+    def execute(self, context: WorkflowExecutionContext) -> list[dict[str, Any]]:
+        parsed_rows = context.scratch["rows"]
+        emit_workflow_endpoint_diagnostics(
+            parser_name=self.parser_name,
+            endpoint_name=context.endpoint_name,
+            rows=parsed_rows,
+            source_sections=self.source_sections,
+            stats=context.scratch["parser_stats"],
         )
         return parsed_rows
 
@@ -777,7 +806,7 @@ class EmitStandingsByDateDiagnosticsStep:
                 rows=standings_rows,
                 source_sections=stats["source_sections"],
                 ignored_row_reason_counts=dict(stats["ignored_row_reason_counts"]),
-                custom_diagnostics={
+                workflow_diagnostics={
                     "conference_count": len(stats["conference_names"]),
                     "team_count": len(standings_rows),
                     "standings_section_count": len(stats["source_sections"]),
@@ -899,7 +928,7 @@ class EmitSearchDiagnosticsStep:
                 source_sections=context.scratch["search_source_sections"],
                 ignored_event_count=sum(ignored.values()) if ignored else None,
                 ignored_event_reason_counts=dict(ignored) if ignored else None,
-                custom_diagnostics={
+                workflow_diagnostics={
                     "query": aggregate_stats["query"],
                     "result_count": len(player_results),
                     "candidate_count": aggregate_stats.get("candidate_count"),

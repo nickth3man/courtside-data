@@ -16,53 +16,25 @@ from courtside_data.debug.probe.models import SampleParamsInfo
 from courtside_data.endpoints import ENDPOINTS, EndpointSpec
 
 
-def _endpoint_group_map() -> dict[str, str]:
-    # ``endpoint_group`` is a deprecated alias of ``endpoint_domain``
-    # (``metadata.domain.value``). It is retained only because the probe CSV
-    # and report consumers still read it; new code should use
-    # ``endpoint_domain`` / :func:`_endpoint_domain` instead.
-    return {
-        endpoint_name: endpoint.metadata.domain.value
-        for endpoint_name, endpoint in ENDPOINTS.items()
-        if endpoint.metadata is not None
-    }
-
-
-_ENDPOINT_GROUPS = _endpoint_group_map()
-
-
 def _endpoint_domain(endpoint: EndpointSpec | None) -> str | None:
-    """Canonical endpoint-domain field (preferred over ``endpoint_group``)."""
+    """Return the endpoint domain field."""
     if endpoint is None or endpoint.metadata is None:
         return None
     return endpoint.metadata.domain.value
 
 
 def _endpoint_kind(endpoint: EndpointSpec | None) -> str | None:
-    """Canonical endpoint-kind field (``generic_table`` / ``workflow``)."""
+    """Return the endpoint kind field (``generic_table`` / ``workflow``)."""
     if endpoint is None or endpoint.metadata is None:
         return None
     return endpoint.metadata.kind.value
-
-
-def _legacy_endpoint_kind(endpoint: EndpointSpec | None) -> str | None:
-    """Return the old implementation label kept for CSV/report compatibility.
-
-    Reads the deprecated :attr:`~courtside_data.endpoints.EndpointSpec.custom`
-    compatibility property (``"custom"`` for workflow endpoints, ``"generic"``
-    otherwise). Prefer :func:`_endpoint_kind` (``generic_table`` / ``workflow``)
-    in new code; this remains so historical probe CSVs keep their column.
-    """
-    if endpoint is None:
-        return None
-    return "custom" if endpoint.custom else "generic"
 
 
 def _sample_params_per_endpoint() -> dict[str, SampleParamsInfo]:
     """Build sample params for the live probe.
 
     Base set comes from the first sorted case in ``tests.fixture_manifest.ALL_CASES``
-    (for backward compatibility and to cover every registered endpoint).
+    to cover every registered endpoint.
 
     Live-audit overrides (recent dense seasons) are applied on top for
     selected endpoints so that probe reports reflect modern tables instead

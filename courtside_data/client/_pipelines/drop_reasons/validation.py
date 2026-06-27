@@ -7,7 +7,7 @@ from typing import Any
 
 from courtside_data.client._pipelines.drop_reasons.constants import (
     _AGGREGATE_TEAM_ABBREVIATIONS,
-    _DATE_FIELD_NAMES,  # noqa: F401  (re-exported for backward compat)
+    _DATE_FIELD_NAMES,  # noqa: F401
     _INVALID_VALUE_ERROR_TYPES,
     _PLAYER_FIELD_NAMES,
     _TEAM_FIELD_NAMES,
@@ -19,7 +19,7 @@ from courtside_data.client._pipelines.drop_reasons.constants import (
     DROP_REASON_MISSING_REQUIRED_FIELD,
     DROP_REASON_SCHEMA_VALIDATION_ERROR,
 )
-from courtside_data.data import TEAM_NAME_TO_TEAM
+from courtside_data.domain import TEAM_NAME_TO_TEAM
 
 
 def _error_field_names(errors: Sequence[Mapping[str, Any]]) -> set[str]:

@@ -4,9 +4,9 @@ Box-score tables use ``data-stat="mp"`` to carry an "MM:SS" playing-time
 string.  :class:`SecondsPlayed` ports that into a total-seconds ``int`` so
 consumers can compare or aggregate without re-parsing the original string.
 
-The custom fetchers own the orchestration that injects the
-player ``slug`` (extracted from the ``data-append-csv`` cell attribute,
-not a ``data-stat``) for the per-day leaders endpoint.
+Workflow parser steps inject the player ``slug`` (extracted from the
+``data-append-csv`` cell attribute, not a ``data-stat``) for the per-day
+leaders endpoint.
 """
 
 from __future__ import annotations
@@ -108,7 +108,7 @@ class PlayerBoxScoreRow(BRRow, _BoxScoreCountingStats, _BoxScorePctStats):
     """Row from a daily-leaders page.
 
     Includes the player ``slug`` (from the cell's ``data-append-csv``
-    attribute, injected by the custom fetcher) and a full name, plus
+    attribute, injected by the workflow parser) and a full name, plus
     team/location/opponent/outcome context and the basic box-score stat
     block. ``plus_minus`` is the per-game plus/minus — distinct from the
     "raw score margin" that appears on the schedule.
@@ -133,7 +133,7 @@ class _PlayerSeasonBoxScoreRow(BRRow, _BoxScoreCountingStats, _BoxScorePctStats)
     """Shared base for the per-game regular-season and playoff game logs.
 
     ``active`` is derived upstream from the ``is_starter`` cell's ``colspan``
-    attribute; the custom fetcher injects a boolean and this model treats
+    attribute; the workflow parser injects a boolean and this model treats
     it as the source of truth. ``date_game`` is the historical BR
     ``data-stat``; some fixtures expose it as ``date``.
     """
@@ -169,8 +169,9 @@ register("playoff_player_box_scores", PlayoffPlayerBoxScoreRow)
 
 
 class TeamBoxScoreRow(BRRow, _BoxScoreTeamCountingStats, _BoxScorePctStats):
-    """Row from a daily team box-score listing (assembled by the custom
-    fetcher from individual game footer rows).
+    """Row from a daily team box-score listing.
+
+    A workflow parser assembles these rows from individual game footer rows.
 
     The team-level ``mp`` cell holds a bare integer (the total team
     minutes summed across players), exposed as :attr:`minutes_played` to
@@ -185,3 +186,165 @@ class TeamBoxScoreRow(BRRow, _BoxScoreTeamCountingStats, _BoxScorePctStats):
 
 
 register("team_box_scores", TeamBoxScoreRow)
+
+
+# ── Per-game box-score readers (SCAFFOLD — PDCA Cycle 1) ─────────────────
+#
+# Data models for the tables/sections present on a per-game Basketball
+# Reference box-score page (``/boxscores/YYYYMMDD0XXX.html``) that the
+# existing ``player_box_scores`` (daily leaders) and ``team_box_scores``
+# (team totals) endpoints do NOT capture:
+#
+#   • per-player Advanced stats     → ``box-<ABBR>-game-advanced`` tbody
+#   • per-team Four Factors         → four-factors table
+#   • per-team Line Score           → ``line_score`` table (quarter scoring)
+#   • per-player per-quarter splits → ``box-<ABBR>-game-basic`` (Q1/Q2/H1/Q3/Q4/H2)
+#   • game-level metadata           → promoted as ``box_score_game_info``
+#   • per-player basic + status     → promoted as ``box_score_player_basic``
+#
+# SCAFFOLD STATE — mostly forward-declared data models:
+# The classes below are passed to ``register()`` only as their endpoint/parser
+# slices land. Two CI canaries enforce that schemas and endpoints move
+# together as complete, fixture-backed units:
+#   1. ``test_row_adapters_registry_populated`` pins the current count;
+#   2. ``test_manifest_meets_coverage_target`` requires ≥95% of registered
+#      endpoints to have offline fixtures (which need the parser).
+# So each reader is promoted as one atomic unit in PDCA Cycle 2+: ``register()``
+# + an ``EndpointSpec`` in ``WORKFLOW_ENDPOINTS`` + a ``WorkflowSpec`` +
+# executor binding + parser + offline fixture, bumping the registry count and
+# coverage together.
+#
+# The ``validation_alias`` values below are the standard Basketball Reference
+# ``data-stat`` keys and are provisional until each reader's Cycle 2 parser
+# verifies them against live HTML. The matching CSV column contracts live in
+# ``courtside_data/output/columns/boxscores.py`` (also forward-declared).
+
+
+class _BoxScoreAdvancedStats:
+    """Advanced rate/rating columns from a per-game ``-game-advanced`` table.
+
+    Every ``data-stat`` is provisional (TODO Cycle 2: verify against live HTML).
+    """
+
+    true_shooting_percentage: BRFloatOrNone = Field(default=None, validation_alias="ts_pct")
+    effective_field_goal_percentage: BRPercentage = Field(default=None, validation_alias="efg_pct")
+    three_point_attempt_rate: BRFloatOrNone = Field(default=None, validation_alias="fg3a_per_fga_pct")
+    free_throw_rate: BRFloatOrNone = Field(default=None, validation_alias="fta_per_fga_pct")
+    offensive_rebound_percentage: BRFloatOrNone = Field(default=None, validation_alias="orb_pct")
+    defensive_rebound_percentage: BRFloatOrNone = Field(default=None, validation_alias="drb_pct")
+    total_rebound_percentage: BRFloatOrNone = Field(default=None, validation_alias="trb_pct")
+    assist_percentage: BRFloatOrNone = Field(default=None, validation_alias="ast_pct")
+    steal_percentage: BRFloatOrNone = Field(default=None, validation_alias="stl_pct")
+    block_percentage: BRFloatOrNone = Field(default=None, validation_alias="blk_pct")
+    turnover_percentage: BRFloatOrNone = Field(default=None, validation_alias="tov_pct")
+    usage_percentage: BRFloatOrNone = Field(default=None, validation_alias="usg_pct")
+    offensive_rating: BRFloatOrNone = Field(default=None, validation_alias="off_rtg")
+    defensive_rating: BRFloatOrNone = Field(default=None, validation_alias="def_rtg")
+    box_plus_minus: BRFloatOrNone = Field(default=None, validation_alias="bpm")
+
+
+class BoxScorePlayerAdvancedRow(BRRow, _BoxScoreAdvancedStats):
+    """Per-player advanced stat line from one game's ``-game-advanced`` table.
+
+    SCAFFOLD: identity (``slug``/``name``/``team``) is injected by the Cycle 2
+    parser from row metadata (``data-append-csv`` + the ``box-<ABBR>`` table id).
+    """
+
+    slug: StrOrNone = Field(default=None, validation_alias="slug")
+    name: StrOrNone = Field(default=None, validation_alias="player")
+    team: TeamField = Field(validation_alias=AliasChoices("team_name_abbr", "team_id"))
+    opponent: TeamField = Field(validation_alias=AliasChoices("opp_name_abbr", "opp_id"))
+    seconds_played: SecondsPlayedOrNone = Field(default=None, validation_alias="mp")
+    plus_minus: BRIntOrNone = Field(default=None, validation_alias="plus_minus")
+
+
+class BoxScoreTeamFourFactorsRow(BRRow):
+    """One row per team from the per-game Four Factors table.
+
+    Columns: Pace, eFG%, TOV%, ORB%, FT/FGA, ORtg.
+    """
+
+    team: TeamNameField = Field(validation_alias=AliasChoices("team_name_abbr", "team_id"))
+    pace: BRFloatOrNone = Field(default=None, validation_alias="pace")
+    effective_field_goal_percentage: BRPercentage = Field(default=None, validation_alias="efg_pct")
+    turnover_percentage: BRFloatOrNone = Field(default=None, validation_alias="tov_pct")
+    offensive_rebound_percentage: BRFloatOrNone = Field(default=None, validation_alias="orb_pct")
+    free_throw_attempt_rate: BRFloatOrNone = Field(default=None, validation_alias="ft_rate")
+    offensive_rating: BRFloatOrNone = Field(default=None, validation_alias="off_rtg")
+
+
+register("box_score_team_four_factors", BoxScoreTeamFourFactorsRow)
+
+
+class BoxScoreLineScoreRow(BRRow):
+    """One row per team from the per-game Line Score table. SCAFFOLD.
+
+    Quarter-by-quarter scoring (Q1-Q4 + final total). Overtime periods are
+    variable on Basketball Reference and are TODO for Cycle 2.
+    """
+
+    team: TeamNameField = Field(validation_alias=AliasChoices("team_name_abbr", "team_id"))
+    first_quarter_points: BRIntOrNone = Field(default=None, validation_alias="1")
+    second_quarter_points: BRIntOrNone = Field(default=None, validation_alias="2")
+    third_quarter_points: BRIntOrNone = Field(default=None, validation_alias="3")
+    fourth_quarter_points: BRIntOrNone = Field(default=None, validation_alias="4")
+    total_points: BRIntOrNone = Field(default=None, validation_alias="T")
+
+
+class BoxScorePlayerQuarterSplitRow(BRRow, _BoxScoreCountingStats, _BoxScorePctStats):
+    """Per-player basic stat line scoped to one quarter/half period. SCAFFOLD.
+
+    The ``period`` call param (``q1``/``q2``/``h1``/``q3``/``q4``/``h2``)
+    selects which per-quarter ``box-<ABBR>-game-basic`` variant the Cycle 2
+    parser targets on the per-game page.
+    """
+
+    slug: StrOrNone = Field(default=None, validation_alias="slug")
+    name: StrOrNone = Field(default=None, validation_alias="player")
+    team: TeamField = Field(validation_alias=AliasChoices("team_name_abbr", "team_id"))
+    opponent: TeamField = Field(validation_alias=AliasChoices("opp_name_abbr", "opp_id"))
+
+
+class BoxScoreGameInfoRow(BRRow):
+    """Game-level metadata row.
+
+    Assembled from scorebox and prose footer sections (officials /
+    attendance / arena / inactive lists) rather than one ``<table>``.
+    """
+
+    game_date: BRDate = Field(validation_alias="game_date")
+    home_team: TeamField = Field(validation_alias="home_team")
+    away_team: TeamField = Field(validation_alias="away_team")
+    home_team_score: BRIntOrNone = Field(default=None, validation_alias="home_team_score")
+    away_team_score: BRIntOrNone = Field(default=None, validation_alias="away_team_score")
+    arena: StrOrNone = Field(default=None, validation_alias="arena")
+    attendance: BRIntOrNone = Field(default=None, validation_alias="attendance")
+    duration: StrOrNone = Field(default=None, validation_alias="duration")
+    tip_off: StrOrNone = Field(default=None, validation_alias="tip_off")
+    officials: list[str] = Field(default_factory=list, validation_alias="officials")
+    inactive_home: list[str] = Field(default_factory=list, validation_alias="inactive_home")
+    inactive_away: list[str] = Field(default_factory=list, validation_alias="inactive_away")
+
+
+register("box_score_game_info", BoxScoreGameInfoRow)
+
+
+class BoxScorePlayerBasicRow(BRRow, _BoxScoreCountingStats, _BoxScorePctStats):
+    """Per-player basic line sourced from the per-game ``-game-basic`` table.
+
+    Carries starter/reserve status and the Did-Not-Play / Did-Not-Dress
+    distinction that the daily-leaders ``player_box_scores`` endpoint omits.
+    """
+
+    slug: StrOrNone = Field(default=None, validation_alias="slug")
+    name: StrOrNone = Field(default=None, validation_alias="player")
+    team: TeamField = Field(validation_alias=AliasChoices("team_name_abbr", "team_id"))
+    opponent: TeamField = Field(validation_alias=AliasChoices("opp_name_abbr", "opp_id"))
+    location: LocationField = Field(validation_alias="game_location")
+    outcome: OutcomeField = Field(validation_alias="game_result")
+    is_starter: bool = Field(default=False, validation_alias="is_starter")
+    status: StrOrNone = Field(default=None, validation_alias="status")
+    plus_minus: BRIntOrNone = Field(default=None, validation_alias="plus_minus")
+
+
+register("box_score_player_basic", BoxScorePlayerBasicRow)
