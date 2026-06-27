@@ -59,7 +59,9 @@ class SpansMixin:
             if self._span_stack and self._span_stack[-1] == span_id:  # ty: ignore
                 self._span_stack.pop()  # ty: ignore
 
-    # Profiling (pyinstrument)  # noqa: ERA001
+    # ------------------------------------------------------------------
+    # Profiling
+    # ------------------------------------------------------------------
 
     @contextmanager
     def profile(self, name: str = "profile", **attributes: Any):

@@ -45,11 +45,6 @@ def evaluate_data_quality(
     ignored = dict(ignored_row_reason_counts or {})
     parser_ignored = dict(parser_ignored_row_reason_counts or {})
 
-    # Parser-level ignored rows are expected and do not count as unexpected loss.
-    for reason, _count in parser_ignored.items():
-        if reason in EXPECTED_DROP_REASONS or reason.startswith("missing_"):
-            continue
-
     drop_summary = summarize_drop_counts(dropped_reasons)
     expected = drop_summary["expected_drop_count"] + sum(
         count for reason, count in ignored.items() if reason in EXPECTED_DROP_REASONS or reason.startswith("missing_")

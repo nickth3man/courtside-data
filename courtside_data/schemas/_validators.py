@@ -12,7 +12,7 @@ from __future__ import annotations
 
 import re
 from datetime import UTC, date, datetime
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 from zoneinfo import ZoneInfo
 
 from courtside_data.domain import (
@@ -399,5 +399,5 @@ def _br_decimal(value: object) -> Decimal:
         raise ValueError(f"Invalid decimal value: {value!r}")
     try:
         return Decimal(s)
-    except Exception as exc:
+    except (ValueError, InvalidOperation) as exc:
         raise ValueError(f"Invalid decimal value: {value!r}") from exc
