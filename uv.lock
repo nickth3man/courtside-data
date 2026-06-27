@@ -36,6 +36,15 @@ wheels = [
 ]
 
 [[package]]
+name = "apify-fingerprint-datapoints"
+version = "0.13.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/f9/f1/b74f95767581372ab849c8b13e384b62f60d034584892c60c4a3442d9312/apify_fingerprint_datapoints-0.13.0.tar.gz", hash = "sha256:263141c19e9bc90a821e6b4e2b845925f17e0b8fbd53a897fc71546bd50df7f1", size = 934827, upload-time = "2026-05-04T09:08:45.036Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/fc/58/8402442bf6af5a3a8068fe5431c42ea4f73c1eb18f621f9bf7c5de80caf5/apify_fingerprint_datapoints-0.13.0-py3-none-any.whl", hash = "sha256:0213d42297be19e8035202b41fb2e840a1e5d79874c99c882a5027a7d0b1a0eb", size = 761652, upload-time = "2026-05-04T09:08:43.347Z" },
+]
+
+[[package]]
 name = "babel"
 version = "2.18.0"
 source = { registry = "https://pypi.org/simple" }
@@ -70,6 +79,19 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/aa/c3/0cb80dfe0f3076e5da7e4c5ad8e57bac6ac357ff4a6406205501cade4965/bandit-1.9.4.tar.gz", hash = "sha256:b589e5de2afe70bd4d53fa0c1da6199f4085af666fde00e8a034f152a52cd628", size = 4242677, upload-time = "2026-02-25T06:44:15.503Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/05/a4/a26d5b25671d27e03afb5401a0be5899d94ff8fab6a698b1ac5be3ec29ef/bandit-1.9.4-py3-none-any.whl", hash = "sha256:f89ffa663767f5a0585ea075f01020207e966a9c0f2b9ef56a57c7963a3f6f8e", size = 134741, upload-time = "2026-02-25T06:44:13.694Z" },
+]
+
+[[package]]
+name = "browserforge"
+version = "1.2.4"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "apify-fingerprint-datapoints" },
+    { name = "click" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/78/6f/8975af88d203efd70cc69477ebac702babef38201d04621c9583f2508f25/browserforge-1.2.4.tar.gz", hash = "sha256:05686473793769856ebd3528c69071f5be0e511260993e8b2ba839863711a0c4", size = 36700, upload-time = "2026-02-03T02:52:09.721Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/dd/35/ce962f738ae28ffce6293e7607b129075633e6bb185a5ab87e49246eedc2/browserforge-1.2.4-py3-none-any.whl", hash = "sha256:fb1c14e62ac09de221dcfc73074200269f697596c642cb200ceaab1127a17542", size = 37890, upload-time = "2026-02-03T02:52:08.745Z" },
 ]
 
 [[package]]
@@ -355,9 +377,11 @@ name = "courtside-data"
 version = "5.0.0a1"
 source = { editable = "." }
 dependencies = [
+    { name = "browserforge" },
     { name = "cachetools" },
     { name = "curl-cffi" },
     { name = "dateparser" },
+    { name = "diskcache" },
     { name = "hishel" },
     { name = "httpx" },
     { name = "httpx-curl-cffi" },
@@ -384,6 +408,7 @@ dev = [
     { name = "diff-cover" },
     { name = "flynt" },
     { name = "griffe-pydantic" },
+    { name = "hypothesis" },
     { name = "libcst" },
     { name = "mkdocs" },
     { name = "mkdocs-material" },
@@ -399,6 +424,7 @@ dev = [
     { name = "pytest-xdist" },
     { name = "respx" },
     { name = "ruff" },
+    { name = "syrupy" },
     { name = "taskipy" },
     { name = "ty" },
     { name = "vulture" },
@@ -406,21 +432,23 @@ dev = [
 
 [package.metadata]
 requires-dist = [
+    { name = "browserforge", specifier = ">=0.4" },
     { name = "cachetools" },
     { name = "curl-cffi", specifier = ">=0.7.0" },
-    { name = "dateparser" },
+    { name = "dateparser", specifier = ">=1.4.1" },
+    { name = "diskcache", specifier = ">=5.6.1" },
     { name = "hishel", specifier = ">=1.1.0" },
     { name = "httpx", specifier = ">=0.28.0" },
     { name = "httpx-curl-cffi", specifier = ">=0.1.0" },
-    { name = "lxml", specifier = ">=5.1.0" },
+    { name = "lxml", specifier = ">=5.4.0" },
     { name = "orjson" },
-    { name = "pandas", specifier = ">=2.0" },
-    { name = "parsel", specifier = ">=1.8.0" },
+    { name = "pandas", specifier = ">=2.2" },
+    { name = "parsel", specifier = ">=1.11.0" },
     { name = "platformdirs" },
     { name = "pydantic", specifier = ">=2.13.4" },
     { name = "pydantic-core", specifier = ">=2.14.0" },
     { name = "rich", specifier = ">=13.0" },
-    { name = "selectolax", specifier = ">=0.3" },
+    { name = "selectolax", specifier = ">=0.4.10" },
     { name = "stamina", specifier = ">=26.1.0" },
     { name = "tzdata", marker = "sys_platform == 'win32'", specifier = ">=2024.1" },
 ]
@@ -435,6 +463,7 @@ dev = [
     { name = "diff-cover", specifier = ">=9.0" },
     { name = "flynt", specifier = ">=1.0.6" },
     { name = "griffe-pydantic" },
+    { name = "hypothesis", specifier = ">=6.100" },
     { name = "libcst", specifier = ">=1.0" },
     { name = "mkdocs", specifier = ">=1.5.3" },
     { name = "mkdocs-material", specifier = ">=9.0" },
@@ -450,6 +479,7 @@ dev = [
     { name = "pytest-xdist", specifier = ">=3.6.0" },
     { name = "respx", specifier = ">=0.22.0" },
     { name = "ruff", specifier = ">=0.11.0" },
+    { name = "syrupy", specifier = ">=4.0" },
     { name = "taskipy", specifier = ">=1.13" },
     { name = "ty", specifier = ">=0.0.1a14" },
     { name = "vulture", specifier = ">=2.16" },
@@ -645,6 +675,15 @@ wheels = [
 ]
 
 [[package]]
+name = "diskcache"
+version = "5.6.3"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/3f/21/1c1ffc1a039ddcc459db43cc108658f32c57d271d7289a2794e401d0fdb6/diskcache-5.6.3.tar.gz", hash = "sha256:2c3a3fa2743d8535d832ec61c2054a1641f41775aa7c556758a109941e33e4fc", size = 67916, upload-time = "2023-08-31T06:12:00.316Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/3f/27/4570e78fc0bf5ea0ca45eb1de3818a23787af9b390c0b0a0033a1b8236f9/diskcache-5.6.3-py3-none-any.whl", hash = "sha256:5e31b2d5fbad117cc363ebaf6b689474db18a1f6438bc82358b024abd4c2ca19", size = 45550, upload-time = "2023-08-31T06:11:58.822Z" },
+]
+
+[[package]]
 name = "execnet"
 version = "2.1.2"
 source = { registry = "https://pypi.org/simple" }
@@ -757,6 +796,18 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/64/1f/158975d2541effa30f0d7634542dce50e8280ab283e7efc8d221ebf8a949/httpx_curl_cffi-0.1.5.tar.gz", hash = "sha256:177ee9968e9da142407017816cc3fb08ab281b134f773a9359b6a4650a6c81f3", size = 7937, upload-time = "2025-12-02T08:59:13.656Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/6e/13/82039e3df58e0d52a6f82cc73d958400a2777d78c6cd6378c937a707afd0/httpx_curl_cffi-0.1.5-py3-none-any.whl", hash = "sha256:be414a97ac1f627693f4c8a8631f2852bb1c09456e61ff8ad996ad050a11fb53", size = 8933, upload-time = "2025-12-02T08:59:12.447Z" },
+]
+
+[[package]]
+name = "hypothesis"
+version = "6.155.7"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "sortedcontainers" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/f2/55/983b6bc1b6b343a5ff6020388f9d0680ab477be59a731517e6c4a0387100/hypothesis-6.155.7.tar.gz", hash = "sha256:d8d6091753d0669db3c90c5e5b346cb37c72f3dd9378c8413acb1fd5da63f7ea", size = 478291, upload-time = "2026-06-21T05:54:31.573Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/01/f8/c151e196d4f397ed9436a071e52666c70a2f021138dea828b0a461e245db/hypothesis-6.155.7-py3-none-any.whl", hash = "sha256:9f634bdb1f9e9b8ab6ba09431cf2deedb750c96978125a6fb3c5a0f6c6db4131", size = 544762, upload-time = "2026-06-21T05:54:29.506Z" },
 ]
 
 [[package]]
@@ -2037,6 +2088,15 @@ wheels = [
 ]
 
 [[package]]
+name = "sortedcontainers"
+version = "2.4.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/e8/c4/ba2f8066cceb6f23394729afe52f3bf7adec04bf9ed2c820b39e19299111/sortedcontainers-2.4.0.tar.gz", hash = "sha256:25caa5a06cc30b6b83d11423433f65d1f9d76c4c6a0c90e3379eaa43b9bfdb88", size = 30594, upload-time = "2021-05-16T22:03:42.897Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/32/46/9cb0e58b2deb7f82b84065f37f3bffeb12413f947f9388e4cac22c4621ce/sortedcontainers-2.4.0-py2.py3-none-any.whl", hash = "sha256:a163dcaede0f1c021485e957a39245190e74249897e2ae4b2aa38595db237ee0", size = 29575, upload-time = "2021-05-16T22:03:41.177Z" },
+]
+
+[[package]]
 name = "stamina"
 version = "26.1.0"
 source = { registry = "https://pypi.org/simple" }
@@ -2055,6 +2115,18 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/e9/88/35e4d27d9177d7df76d060e0a18f69c6c5794c96960c94042e20a12c8ba2/stevedore-5.8.0.tar.gz", hash = "sha256:b49867b32ca3016e94100e68dbf26e72aa7b8708d0a3f73c08aeb220370ac715", size = 514710, upload-time = "2026-05-18T09:15:27.731Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/f5/ac/19f9941c74add59d17694930ec8105d5eddeee4ce56dd8632b765ca16d6c/stevedore-5.8.0-py3-none-any.whl", hash = "sha256:88eede9e66ca80e34085b9174e2327da2c61ac91f24f70e41c3ad76e4bb4872b", size = 54553, upload-time = "2026-05-18T09:15:25.82Z" },
+]
+
+[[package]]
+name = "syrupy"
+version = "5.3.4"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "pytest" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/81/17/95753634cd02a892cbc74d8df9c15f5ad053885a913eb11aa6061f278344/syrupy-5.3.4.tar.gz", hash = "sha256:10f192655a2d42473ad5772653e64b281f6823fe5e30458d92f8ca8e882884c1", size = 87078, upload-time = "2026-06-26T10:55:42.522Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/00/7a/254f95860cebb6d51ddb3e815ee30085e8c8a3ba6df1f44ef4605b385621/syrupy-5.3.4-py3-none-any.whl", hash = "sha256:409348aa20afc4b7dab7c965331de0cd79ab46977877fb189014ce9294e947e5", size = 53103, upload-time = "2026-06-26T10:55:41.007Z" },
 ]
 
 [[package]]

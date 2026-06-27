@@ -15,14 +15,12 @@ from typing import TYPE_CHECKING, Any
 from courtside_data._frozen import frozen_slot
 from courtside_data.debug import current_debug_trace
 from courtside_data.debug._pipeline_events import emit_parser_diagnostics
+from courtside_data.parsing.workflow_parsers._common import (
+    _record_schedule_diagnostics,
+    _record_standings_diagnostics,
+)
 from courtside_data.parsing.workflow_parsers._diagnostics import (
     emit_workflow_endpoint_diagnostics,
-)
-from courtside_data.parsing.workflow_parsers.schedule import (
-    _record_schedule_diagnostics,
-)
-from courtside_data.parsing.workflow_parsers.standings import (
-    _record_standings_diagnostics,
 )
 
 if TYPE_CHECKING:

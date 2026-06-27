@@ -11,9 +11,11 @@ from parsel import Selector
 from courtside_data._frozen import frozen_slot
 from courtside_data.domain import TEAM_TO_TEAM_ABBREVIATION
 from courtside_data.parsing import cells, rows
-from courtside_data.parsing.workflow_parsers.boxscores import _merge_team_box_score_stats
-from courtside_data.parsing.workflow_parsers.schedule import _merge_schedule_stats
-from courtside_data.parsing.workflow_parsers.search import _merge_search_stats
+from courtside_data.parsing.workflow_parsers._common import (
+    _merge_schedule_stats,
+    _merge_search_stats,
+    _merge_team_box_score_stats,
+)
 from courtside_data.parsing.workflows._steps._common import _invalid_date_from_context
 from courtside_data.schemas._fields import _team_field
 

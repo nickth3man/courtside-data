@@ -14,12 +14,15 @@ Keeping them in a single module avoids circular imports between
 
 from __future__ import annotations
 
+from collections import Counter
 from typing import Any, Protocol
 
 from parsel import Selector
 
 from courtside_data._frozen import frozen_slot
 from courtside_data.client._pipelines.drop_reasons import row_drop_reason
+from courtside_data.debug import current_debug_trace
+from courtside_data.debug._pipeline_events import emit_parser_diagnostics
 from courtside_data.parsing import cells, rows
 from courtside_data.parsing.generic import find_table
 from courtside_data.parsing.workflow_parsers._diagnostics import (
@@ -29,6 +32,8 @@ from courtside_data.parsing.workflow_parsers._diagnostics import (
     IGNORE_MISSING_NAME_OR_TEAM,
     IGNORE_MISSING_TABLE,
     increment_ignored,
+    merge_ignored_counts,
+    merge_numeric_stats,
 )
 
 
@@ -61,10 +66,15 @@ __all__ = [
     "ExtractResult",
     "StatsExtractor",
     "_generic_table_rows",
+    "_merge_schedule_stats",
+    "_merge_search_stats",
+    "_merge_team_box_score_stats",
     "_player_season_box_score_rows",
     "_player_season_box_score_rows_with_stats",
     "_player_totals_rows",
     "_player_totals_rows_with_stats",
+    "_record_schedule_diagnostics",
+    "_record_standings_diagnostics",
     "_schedule_rows",
     "_schedule_rows_with_stats",
 ]
@@ -276,3 +286,129 @@ def _schedule_rows(selector: Selector) -> list[dict[str, Any]]:
     either are all-star / exhibition / data-spacer rows).
     """
     return _schedule_rows_with_stats(selector).rows
+
+
+# --- Relocated merger / diagnostics helpers (kept alive by the workflow step engine) ---
+# These five helpers used to live in per-endpoint modules under
+# ``workflow_parsers/`` (``boxscores``, ``schedule``, ``search``, ``standings``).
+# The declarative step engine in ``courtside_data/parsing/workflows/_steps/`` is
+# the only remaining caller, so they were hoisted here to keep the per-endpoint
+# modules deletable.
+
+_TEAM_BOX_SCORE_AGGREGATE_KEYS = (
+    "game_count",
+    "team_count",
+    "stat_table_count",
+    "basic_table_count",
+    "advanced_table_count",
+    "empty_table_count",
+)
+
+
+def _merge_team_box_score_stats(aggregate: dict[str, Any], page_stats: dict[str, Any]) -> None:
+    merge_numeric_stats(aggregate, page_stats, keys=_TEAM_BOX_SCORE_AGGREGATE_KEYS)
+    ignored = aggregate.setdefault("ignored_row_reason_counts", Counter())
+    merge_ignored_counts(ignored, page_stats.get("ignored_row_reason_counts") or {})
+
+
+def _merge_schedule_stats(aggregate: dict[str, Any], page_stats: dict[str, Any]) -> None:
+    aggregate["game_count"] = aggregate.get("game_count", 0) + page_stats.get("game_count", 0)
+    aggregate["postponed_game_count"] = aggregate.get("postponed_game_count", 0) + page_stats.get(
+        "postponed_game_count", 0
+    )
+    aggregate["box_score_link_count"] = aggregate.get("box_score_link_count", 0) + page_stats.get(
+        "box_score_link_count", 0
+    )
+    aggregate["missing_box_score_link_count"] = aggregate.get("missing_box_score_link_count", 0) + page_stats.get(
+        "missing_box_score_link_count", 0
+    )
+    aggregate["candidate_row_count"] = aggregate.get("candidate_row_count", 0) + page_stats.get(
+        "candidate_row_count", 0
+    )
+    ignored = aggregate.setdefault("ignored_row_reason_counts", Counter())
+    for reason, count in (page_stats.get("ignored_row_reason_counts") or {}).items():
+        ignored[reason] += count
+
+
+def _merge_search_stats(aggregate: dict[str, Any], page_stats: dict[str, Any]) -> None:
+    aggregate["candidate_count"] = aggregate.get("candidate_count", 0) + page_stats.get("candidate_count", 0)
+    aggregate["matched_result_count"] = aggregate.get("matched_result_count", 0) + page_stats.get(
+        "matched_result_count", 0
+    )
+    ignored = aggregate.setdefault("ignored_result_reason_counts", Counter())
+    for reason, count in (page_stats.get("ignored_result_reason_counts") or {}).items():
+        ignored[reason] += count
+
+
+def _record_schedule_diagnostics(
+    *,
+    parser_name: str,
+    parsed_rows: list[dict[str, Any]],
+    stats: dict[str, Any],
+    month_page_count: int,
+) -> None:
+    trace = current_debug_trace()
+    if trace is None:
+        return
+    ignored = stats.get("ignored_row_reason_counts") or {}
+    emit_parser_diagnostics(
+        trace,
+        parser_name=parser_name,
+        rows=parsed_rows,
+        source_sections=["table#schedule"],
+        ignored_event_count=sum(ignored.values()) if isinstance(ignored, dict) else None,
+        ignored_event_reason_counts=ignored if isinstance(ignored, dict) else None,
+        ignored_row_reason_counts=ignored if isinstance(ignored, dict) else None,
+        workflow_diagnostics={
+            "game_count": stats.get("game_count"),
+            "postponed_game_count": stats.get("postponed_game_count"),
+            "box_score_link_count": stats.get("box_score_link_count"),
+            "missing_box_score_link_count": stats.get("missing_box_score_link_count"),
+            "month_page_count": month_page_count,
+            "candidate_row_count": stats.get("candidate_row_count"),
+            "ignored_row_reason_counts": dict(ignored) if isinstance(ignored, dict) else {},
+        },
+    )
+    trace.artifact(
+        "schedule_diagnostics",
+        {
+            "ignored_row_reason_counts": dict(ignored) if isinstance(ignored, dict) else {},
+            "game_count": stats.get("game_count"),
+            "postponed_game_count": stats.get("postponed_game_count"),
+            "missing_box_score_link_count": stats.get("missing_box_score_link_count"),
+            "candidate_row_count": stats.get("candidate_row_count"),
+            "month_page_count": month_page_count,
+        },
+    )
+
+
+def _record_standings_diagnostics(
+    *,
+    parser_name: str,
+    parsed_rows: list[dict[str, Any]],
+    source_sections: list[str],
+    stats: dict[str, Any],
+) -> None:
+    trace = current_debug_trace()
+    if trace is None:
+        return
+    ignored = stats.get("ignored_row_reason_counts") or {}
+    emit_parser_diagnostics(
+        trace,
+        parser_name=parser_name,
+        rows=parsed_rows,
+        source_sections=source_sections,
+        ignored_event_count=sum(ignored.values()) if isinstance(ignored, dict) else None,
+        ignored_event_reason_counts=ignored if isinstance(ignored, dict) else None,
+        ignored_row_reason_counts=ignored if isinstance(ignored, dict) else None,
+        workflow_diagnostics={
+            key: stats[key]
+            for key in (
+                "conference_count",
+                "division_count",
+                "team_count",
+                "standings_section_count",
+            )
+            if key in stats
+        },
+    )

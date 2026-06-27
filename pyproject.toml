@@ -23,18 +23,24 @@ dependencies = [
     "curl-cffi>=0.7.0",
     "hishel>=1.1.0",
     "stamina>=26.1.0",
-    "lxml>=5.1.0",
-    "parsel>=1.8.0",
+    # Tier 3 pin bumps (2026-06) — see docs/research/03-html-parsing.md
+    "lxml>=5.4.0",
+    "parsel>=1.11.0",
     "tzdata>=2024.1; sys_platform == 'win32'",
     "pydantic>=2.13.4",
     "pydantic-core>=2.14.0",
     "platformdirs",
     "cachetools",
     "orjson",
-    "selectolax>=0.3",
+    "selectolax>=0.4.10",
     "rich>=13.0",
-    "dateparser",
-    "pandas>=2.0",
+    "dateparser>=1.4.1",
+    # Tier 3 pin bump — Arrow-backed strings + PyArrow dtypes default
+    "pandas>=2.2",
+    # Tier 1 — on-disk persistent cache tier (complements in-memory cachetools)
+    "diskcache>=5.6.1",
+    # Tier 1 — header↔TLS fingerprint correlation (defense in depth vs anti-bot)
+    "browserforge>=0.4",
 ]
 
 [dependency-groups]
@@ -48,6 +54,10 @@ dev = [
     "pytest-cov>=6.0",
     "respx>=0.22.0",
     "deepdiff>=8.0",
+    # Tier 1 — property-based testing (additive to fixture-replay suite)
+    "hypothesis>=6.100",
+    # Tier 1 — snapshot testing for fixture-replay (alongside deepdiff)
+    "syrupy>=4.0",
     # coverage / diff
     "coverage>=7.0",
     "covdefaults>=2.3",

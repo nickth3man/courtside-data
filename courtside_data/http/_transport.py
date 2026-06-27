@@ -65,6 +65,66 @@ class _SafeCurlTransport(httpx.BaseTransport):
         self._impl.close()
 
 
+def _correlate_headers_with_impersonate(
+    impersonate: str | None,
+    user_overrides: dict[str, str] | None,
+) -> dict[str, str]:
+    """Build a correlated header set whose User-Agent matches the TLS fingerprint.
+
+    Defense in depth against anti-bot systems that flag UA↔TLS mismatches:
+    ``curl_cffi``'s ``impersonate="chrome131"`` sets a Chrome 131 JA3/JA4
+    fingerprint, but the project's static ``_DEFAULT_HEADERS`` (in
+    :mod:`courtside_data.http._constants`) carry a Chrome 124 User-Agent.
+    ``browserforge`` generates a statistically-correct header set whose
+    sec-ch-ua / UA values track the impersonate target.
+
+    Falls back to ``_DEFAULT_HEADERS`` when ``impersonate is None`` or
+    ``browserforge`` is not importable (e.g. during offline tests with the
+    dependency stripped).
+
+    Caller-supplied ``user_overrides`` always win, mirroring the prior
+    ``{**_DEFAULT_HEADERS, **(headers or {})}`` merge semantics.
+
+    References
+    ----------
+    * browserforge: https://github.com/daijro/browserforge
+    * curl_cffi impersonate: https://github.com/lexiforest/curl_cffi
+    """
+    base = dict(_DEFAULT_HEADERS)
+    if impersonate is None:
+        return {**base, **(user_overrides or {})}
+
+    try:
+        from browserforge.headers import HeaderGenerator
+    except ImportError:
+        return {**base, **(user_overrides or {})}
+
+    # Map curl_cffi impersonate strings ("chrome131", "chrome124", "safari17_0",
+    # "firefox133", …) onto browserforge's coarser browser spec.
+    if impersonate.startswith("chrome"):
+        browser_spec = ("chrome",)
+    elif impersonate.startswith("firefox"):
+        browser_spec = ("firefox",)
+    elif impersonate.startswith(("safari", "edge", "opera")):
+        browser_spec = ("safari",) if impersonate.startswith("safari") else ("chrome",)
+    else:
+        browser_spec = ("chrome",)
+
+    generator = HeaderGenerator(
+        browser=browser_spec,
+        os=("windows",),
+        device=("desktop",),
+        locale=("en-US", "en"),
+        http_version=2,
+    )
+    generated = generator.generate()
+    # browserforge returns a case-insensitive Headers mapping; coerce to plain
+    # ``dict[str, str]`` and drop any multi-value entries the httpx headers
+    # API cannot represent as a flat dict.
+    correlated: dict[str, str] = {str(k): str(v) for k, v in generated.items() if isinstance(v, str)}
+    return {**base, **correlated, **(user_overrides or {})}
+
+
 def build_client(
     cache: bool = False,
     timeout: httpx.Timeout = _DEFAULT_TIMEOUT,
@@ -83,12 +143,17 @@ def build_client(
     forward from ``"chrome124"`` (early 2024) to keep the JA3/JA4
     fingerprint aligned with a current stable Chrome release. Set
     ``impersonate=None`` to use standard httpx TLS instead.
-    """
-    merged = {**_DEFAULT_HEADERS, **(headers or {})}
-    transport: httpx.BaseTransport = httpx.HTTPTransport()
 
+    When impersonation is active, ``browserforge`` is used to generate a
+    correlated header set (UA + sec-ch-ua-* + Accept-*) matching the
+    impersonate target — defeats anti-bot systems that flag UA↔TLS
+    mismatches. Caller-supplied ``headers`` still take precedence.
+    """
     if impersonate is None:
         impersonate = config.impersonate()
+    merged = _correlate_headers_with_impersonate(impersonate, headers)
+    transport: httpx.BaseTransport = httpx.HTTPTransport()
+
     if impersonate is not None:
         transport = _SafeCurlTransport(impersonate=impersonate)
 
