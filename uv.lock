@@ -363,6 +363,7 @@ dependencies = [
     { name = "httpx-curl-cffi" },
     { name = "lxml" },
     { name = "orjson" },
+    { name = "pandas" },
     { name = "parsel" },
     { name = "platformdirs" },
     { name = "pydantic" },
@@ -371,11 +372,6 @@ dependencies = [
     { name = "selectolax" },
     { name = "stamina" },
     { name = "tzdata", marker = "sys_platform == 'win32'" },
-]
-
-[package.optional-dependencies]
-pandas = [
-    { name = "pandas" },
 ]
 
 [package.dev-dependencies]
@@ -392,7 +388,6 @@ dev = [
     { name = "mkdocs" },
     { name = "mkdocs-material" },
     { name = "mkdocstrings", extra = ["python"] },
-    { name = "pandas" },
     { name = "pyinstrument" },
     { name = "pymdown-extensions" },
     { name = "pytest" },
@@ -419,7 +414,7 @@ requires-dist = [
     { name = "httpx-curl-cffi", specifier = ">=0.1.0" },
     { name = "lxml", specifier = ">=5.1.0" },
     { name = "orjson" },
-    { name = "pandas", marker = "extra == 'pandas'", specifier = ">=2.0" },
+    { name = "pandas", specifier = ">=2.0" },
     { name = "parsel", specifier = ">=1.8.0" },
     { name = "platformdirs" },
     { name = "pydantic", specifier = ">=2.13.4" },
@@ -429,7 +424,6 @@ requires-dist = [
     { name = "stamina", specifier = ">=26.1.0" },
     { name = "tzdata", marker = "sys_platform == 'win32'", specifier = ">=2024.1" },
 ]
-provides-extras = ["pandas"]
 
 [package.metadata.requires-dev]
 dev = [
@@ -445,7 +439,6 @@ dev = [
     { name = "mkdocs", specifier = ">=1.5.3" },
     { name = "mkdocs-material", specifier = ">=9.0" },
     { name = "mkdocstrings", extras = ["python"] },
-    { name = "pandas", specifier = ">=2.0" },
     { name = "pyinstrument" },
     { name = "pymdown-extensions", specifier = ">=10.0" },
     { name = "pytest", specifier = ">=8.0" },

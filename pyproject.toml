@@ -34,17 +34,11 @@ dependencies = [
     "selectolax>=0.3",
     "rich>=13.0",
     "dateparser",
-]
-
-[project.optional-dependencies]
-pandas = [
     "pandas>=2.0",
 ]
 
 [dependency-groups]
 dev = [
-    # runtime extras mirrored for tests
-    "pandas>=2.0",
     # test framework
     "pytest>=8.0",
     "pytest-socket>=0.7.0",

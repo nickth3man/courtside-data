@@ -14,7 +14,7 @@ When stdout is a TTY, the ``list`` subcommand renders a :mod:`rich.table.Table`
 and ``--debug`` envelopes render with :class:`rich.json.JSON` for nicer human
 readability. Piped / non-TTY output stays plain so scripts, ``--output-file``
 paths, and existing test fixtures are unaffected. ``rich`` is imported lazily
-inside the rendering helpers — the package still imports if it is missing.
+inside the rendering helpers so non-TTY command output keeps minimal imports.
 """
 
 from __future__ import annotations
@@ -29,15 +29,6 @@ from courtside_data.endpoints import ENDPOINTS
 
 _INT_PARAMS = {"season_end_year", "day", "month", "year"}
 _FLAG_PARAMS = {"include_inactive_games", "include_combined_values"}
-
-
-def _is_rich_available() -> bool:
-    """Probe for ``rich`` at call time so the package still imports if it's missing."""
-    try:
-        import rich  # noqa: F401
-    except ImportError:
-        return False
-    return True
 
 
 def _print_endpoint_list_rich() -> None:
@@ -124,7 +115,7 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     is_tty = sys.stdout.isatty()
-    use_rich = is_tty and _is_rich_available()
+    use_rich = is_tty
 
     if args.endpoint == "list":
         if use_rich:

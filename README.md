@@ -8,9 +8,6 @@ The public API is intentionally typed-only. Raw Basketball-Reference pages in `r
 
 ```bash
 pip install courtside-data
-
-# with pandas DataFrame support
-pip install "courtside-data[pandas]"
 ```
 
 ## Quick Start
@@ -36,7 +33,7 @@ client.league_per_game_stats(
     output_file_path="stats.csv",
 )
 
-# Or get a pandas DataFrame (requires the pandas extra)
+# Or get a pandas DataFrame
 frame = client.league_per_game_stats(season_end_year=2024, output_type=OutputType.DATAFRAME)
 ```
 

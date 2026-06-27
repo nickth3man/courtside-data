@@ -3,6 +3,7 @@ import re
 from typing import Any
 
 import orjson
+import pandas
 from pydantic import BaseModel
 
 from courtside_data.domain import OutputType, OutputWriteOption
@@ -240,7 +241,6 @@ class CSVWriter(Writer):
 class DataFrameWriter(Writer):
     """Materializes rows as a pandas DataFrame.
 
-    Requires the ``pandas`` extra (``pip install "courtside-data[pandas]"``).
     Values keep the Python types produced by coercion — no string formatting
     is applied.
     """
@@ -249,13 +249,6 @@ class DataFrameWriter(Writer):
         super().__init__(value_formatter=None)
 
     def write(self, data, options):
-        try:
-            import pandas
-        except ImportError as error:
-            raise ImportError(
-                "DataFrame output requires pandas. Install it with: pip install 'courtside-data[pandas]'"
-            ) from error
-
         if options.file_options is not None and options.file_options.should_write_to_file:
             raise ValueError(
                 "output_file_path is not supported with OutputType.DATAFRAME; "

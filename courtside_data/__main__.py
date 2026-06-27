@@ -8,11 +8,7 @@ from courtside_data.cli import main
 
 if __name__ == "__main__":
     if sys.stdout.isatty():
-        try:
-            from rich.traceback import install as _install_rich_traceback
+        from rich.traceback import install as _install_rich_traceback
 
-            _install_rich_traceback(show_locals=False)
-        except ImportError:
-            # rich is optional; fall back to the default traceback.
-            pass
+        _install_rich_traceback(show_locals=False)
     raise SystemExit(main())
