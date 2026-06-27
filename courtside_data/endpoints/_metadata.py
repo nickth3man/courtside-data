@@ -76,6 +76,9 @@ class EndpointScope(StrEnum):
     DATE_TEAM = "date_team"
     """Date x team combination."""
 
+    GAME = "game"
+    """Single game id (``YYYYMMDD0XXX``)."""
+
     SEARCH = "search"
     """Free-text search query."""
 

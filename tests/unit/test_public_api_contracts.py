@@ -305,6 +305,8 @@ def test_parsing_rows_functions_importable():
     — both are stable public surfaces of the parsing package.
     """
     from courtside_data.parsing.rows import (
+        parse_box_score_game_info,
+        parse_box_score_player_basic,
         parse_friv_playoff_outcomes_row,
         parse_play_by_play_rows,
         parse_player_box_scores_from_table,
@@ -317,6 +319,8 @@ def test_parsing_rows_functions_importable():
 
     for fn in (
         parse_standings,
+        parse_box_score_game_info,
+        parse_box_score_player_basic,
         parse_play_by_play_rows,
         parse_team_box_score,
         parse_player_box_scores_from_table,
@@ -387,8 +391,8 @@ def test_row_adapters_registry_populated():
     assert len(ROW_ADAPTERS) >= 50, f"Expected >=50 registered models, got {len(ROW_ADAPTERS)}"
     # All register() calls happen at import time — every domain module must
     # have contributed its models. The count must remain stable.
-    assert len(ROW_ADAPTERS) == 55, (
-        f"ROW_ADAPTERS count changed from 55 to {len(ROW_ADAPTERS)} — a model was accidentally dropped or added"
+    assert len(ROW_ADAPTERS) == 57, (
+        f"ROW_ADAPTERS count changed from 57 to {len(ROW_ADAPTERS)} — a model was accidentally dropped or added"
     )
 
 

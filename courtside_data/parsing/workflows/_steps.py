@@ -545,6 +545,26 @@ class ParsePlayerBoxScoresStep:
 
 
 @dataclass(frozen=True, slots=True)
+class ParseBoxScorePlayerBasicStep:
+    """Parse per-player basic rows from a single game box-score page."""
+
+    def execute(self, context: WorkflowExecutionContext) -> None:
+        parsed_rows, stats = rows.parse_box_score_player_basic_with_stats(context.scratch["box_score_page"])
+        context.scratch["rows"] = parsed_rows
+        context.scratch["parser_stats"] = stats
+
+
+@dataclass(frozen=True, slots=True)
+class ParseBoxScoreGameInfoStep:
+    """Parse game-level metadata from a single box-score page."""
+
+    def execute(self, context: WorkflowExecutionContext) -> None:
+        parsed_rows, stats = rows.parse_box_score_game_info_with_stats(context.scratch["box_score_page"])
+        context.scratch["rows"] = parsed_rows
+        context.scratch["parser_stats"] = stats
+
+
+@dataclass(frozen=True, slots=True)
 class EmitPlayerBoxScoresDiagnosticsStep:
     """Emit parser diagnostics for the daily-leaders table."""
 
@@ -557,6 +577,25 @@ class EmitPlayerBoxScoresDiagnosticsStep:
             source_sections=["table#stats"],
             stats=context.scratch["parser_stats"],
             selected_table_id="stats",
+        )
+        return parsed_rows
+
+
+@dataclass(frozen=True, slots=True)
+class EmitBoxScoreDiagnosticsStep:
+    """Emit diagnostics for single-game box-score page readers."""
+
+    parser_name: str
+    source_sections: tuple[str, ...]
+
+    def execute(self, context: WorkflowExecutionContext) -> list[dict[str, Any]]:
+        parsed_rows = context.scratch["rows"]
+        emit_workflow_endpoint_diagnostics(
+            parser_name=self.parser_name,
+            endpoint_name=context.endpoint_name,
+            rows=parsed_rows,
+            source_sections=self.source_sections,
+            stats=context.scratch["parser_stats"],
         )
         return parsed_rows
 

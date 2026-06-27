@@ -16,6 +16,7 @@ import pytest
 from courtside_data.domain import TEAM_ABBREVIATIONS_TO_TEAM, OutputType, OutputWriteOption
 from courtside_data.endpoints import ENDPOINTS
 from courtside_data.errors import InvalidTeam
+from courtside_data.output.columns import boxscores as boxscore_columns
 from courtside_data.output.fields import format_value
 from courtside_data.output.service import OutputService
 from courtside_data.output.writers import (
@@ -51,6 +52,8 @@ WRITER_CASES: tuple[WriterCase, ...] = (
 _CASE_BY_ID: dict[str, Case] = {case.id: case for case in ALL_CASES}
 
 _BOX_SCORE_CSV_CONTRACT_CASES = (
+    ("box_score_player_basic", "box_score_player_basic-201701010ATL", boxscores.BoxScorePlayerBasicRow),
+    ("box_score_game_info", "box_score_game_info-201701010ATL", boxscores.BoxScoreGameInfoRow),
     ("player_box_scores", "player_box_scores-1-1-2018", boxscores.PlayerBoxScoreRow),
     ("team_box_scores", "team_box_scores-1-1-2001", boxscores.TeamBoxScoreRow),
     (
@@ -62,6 +65,60 @@ _BOX_SCORE_CSV_CONTRACT_CASES = (
         "playoff_player_box_scores",
         "playoff_player_box_scores-false-westbru01-2020",
         boxscores.PlayoffPlayerBoxScoreRow,
+    ),
+)
+
+_BOX_SCORE_SCHEMA_COLUMN_CONTRACTS = (
+    ("BOX_SCORE_STAT_COLUMN_NAMES", boxscore_columns.BOX_SCORE_STAT_COLUMN_NAMES, boxscores.PlayerBoxScoreRow, "slug"),
+    ("BOX_SCORE_COLUMN_NAMES", boxscore_columns.BOX_SCORE_COLUMN_NAMES, boxscores.PlayerBoxScoreRow, None),
+    (
+        "PLAYER_SEASON_BOX_SCORE_COLUMN_NAMES-regular",
+        boxscore_columns.PLAYER_SEASON_BOX_SCORE_COLUMN_NAMES,
+        boxscores.RegularSeasonPlayerBoxScoreRow,
+        None,
+    ),
+    (
+        "PLAYER_SEASON_BOX_SCORE_COLUMN_NAMES-playoff",
+        boxscore_columns.PLAYER_SEASON_BOX_SCORE_COLUMN_NAMES,
+        boxscores.PlayoffPlayerBoxScoreRow,
+        None,
+    ),
+    ("TEAM_BOX_SCORES_COLUMN_NAMES", boxscore_columns.TEAM_BOX_SCORES_COLUMN_NAMES, boxscores.TeamBoxScoreRow, None),
+    (
+        "BOX_SCORE_PLAYER_ADVANCED_COLUMN_NAMES",
+        boxscore_columns.BOX_SCORE_PLAYER_ADVANCED_COLUMN_NAMES,
+        boxscores.BoxScorePlayerAdvancedRow,
+        None,
+    ),
+    (
+        "BOX_SCORE_TEAM_FOUR_FACTORS_COLUMN_NAMES",
+        boxscore_columns.BOX_SCORE_TEAM_FOUR_FACTORS_COLUMN_NAMES,
+        boxscores.BoxScoreTeamFourFactorsRow,
+        None,
+    ),
+    (
+        "BOX_SCORE_LINE_SCORE_COLUMN_NAMES",
+        boxscore_columns.BOX_SCORE_LINE_SCORE_COLUMN_NAMES,
+        boxscores.BoxScoreLineScoreRow,
+        None,
+    ),
+    (
+        "BOX_SCORE_PLAYER_QUARTER_SPLITS_COLUMN_NAMES",
+        boxscore_columns.BOX_SCORE_PLAYER_QUARTER_SPLITS_COLUMN_NAMES,
+        boxscores.BoxScorePlayerQuarterSplitRow,
+        None,
+    ),
+    (
+        "BOX_SCORE_GAME_INFO_COLUMN_NAMES",
+        boxscore_columns.BOX_SCORE_GAME_INFO_COLUMN_NAMES,
+        boxscores.BoxScoreGameInfoRow,
+        None,
+    ),
+    (
+        "BOX_SCORE_PLAYER_BASIC_COLUMN_NAMES",
+        boxscore_columns.BOX_SCORE_PLAYER_BASIC_COLUMN_NAMES,
+        boxscores.BoxScorePlayerBasicRow,
+        None,
     ),
 )
 
@@ -103,6 +160,24 @@ def test_writer_output_matches_golden(writer_case: WriterCase, make_offline_clie
 def test_writer_case_ids_exist_in_manifest() -> None:
     missing = [wc.case_id for wc in WRITER_CASES if wc.case_id not in _CASE_BY_ID]
     assert not missing, f"Writer golden case ids missing from manifest: {missing}"
+
+
+@pytest.mark.parametrize(
+    ("contract_name", "column_names", "row_model", "before"),
+    _BOX_SCORE_SCHEMA_COLUMN_CONTRACTS,
+    ids=[contract_name for contract_name, _, _, _ in _BOX_SCORE_SCHEMA_COLUMN_CONTRACTS],
+)
+def test_box_score_column_contracts_are_schema_derived(
+    contract_name: str,
+    column_names: list[str],
+    row_model: type[BaseModel],
+    before: str | None,
+) -> None:
+    expected_fields = list(row_model.model_fields)
+    if before is not None:
+        expected_fields = expected_fields[: expected_fields.index(before)]
+
+    assert column_names == expected_fields, contract_name
 
 
 @pytest.mark.parametrize(

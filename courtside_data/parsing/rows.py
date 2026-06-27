@@ -1,6 +1,10 @@
 """Domain-specific row parsers (re-export facade)."""
 
 from courtside_data.parsing._rows_boxscores import (
+    parse_box_score_game_info,
+    parse_box_score_game_info_with_stats,
+    parse_box_score_player_basic,
+    parse_box_score_player_basic_with_stats,
     parse_player_box_scores_from_table,
     parse_player_box_scores_from_table_with_stats,
     parse_team_box_score,
@@ -25,6 +29,10 @@ from courtside_data.parsing._rows_search import (
 from courtside_data.parsing._rows_standings import parse_standings, parse_standings_with_stats
 
 __all__ = [
+    "parse_box_score_game_info",
+    "parse_box_score_game_info_with_stats",
+    "parse_box_score_player_basic",
+    "parse_box_score_player_basic_with_stats",
     "parse_friv_playoff_outcomes_row",
     "parse_play_by_play_rows",
     "parse_play_by_play_rows_with_stats",

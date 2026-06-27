@@ -13,6 +13,7 @@ from courtside_data.parsing.workflows._steps import (
     BranchSearchResultsStep,
     BuildSearchResultStep,
     EmitAwardVotingDiagnosticsStep,
+    EmitBoxScoreDiagnosticsStep,
     EmitFrivOutcomesDiagnosticsStep,
     EmitPlayByPlayDiagnosticsStep,
     EmitPlayerBoxScoresDiagnosticsStep,
@@ -38,6 +39,8 @@ from courtside_data.parsing.workflows._steps import (
     MergeTeamBoxScoreStatsStep,
     NormalizeAwardIdStep,
     PaginateSearchResultsStep,
+    ParseBoxScoreGameInfoStep,
+    ParseBoxScorePlayerBasicStep,
     ParseEachTeamBoxScoreStep,
     ParseInlineScheduleMonthStep,
     ParseOptionalTableRowsStep,
@@ -100,6 +103,28 @@ def _binding_registry(bindings: tuple[WorkflowExecutionBinding, ...]) -> Mapping
 
 
 _WORKFLOW_EXECUTION_BINDINGS: tuple[WorkflowExecutionBinding, ...] = (
+    _binding(
+        "box_score_player_basic",
+        {
+            "fetch_box_score": FetchEndpointPathStep(output_var="box_score_page"),
+            "parse_player_basic": ParseBoxScorePlayerBasicStep(),
+            "emit_diagnostics": EmitBoxScoreDiagnosticsStep(
+                parser_name="box_score_player_basic",
+                source_sections=('table.stats_table[id$="-game-basic"]', "div.scorebox"),
+            ),
+        },
+    ),
+    _binding(
+        "box_score_game_info",
+        {
+            "fetch_box_score": FetchEndpointPathStep(output_var="box_score_page"),
+            "parse_game_info": ParseBoxScoreGameInfoStep(),
+            "emit_diagnostics": EmitBoxScoreDiagnosticsStep(
+                parser_name="box_score_game_info",
+                source_sections=("div.scorebox", "div.scorebox_meta", "#content > div"),
+            ),
+        },
+    ),
     _binding(
         "team_box_scores",
         {

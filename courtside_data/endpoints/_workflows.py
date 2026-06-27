@@ -17,6 +17,8 @@ from courtside_data.endpoints._workflow import WorkflowSpec, WorkflowStep, Workf
 from courtside_data.errors import InvalidDate, InvalidPlayerAndSeason, InvalidSearch
 from courtside_data.output.columns import (
     BOX_SCORE_COLUMN_NAMES,
+    BOX_SCORE_GAME_INFO_COLUMN_NAMES,
+    BOX_SCORE_PLAYER_BASIC_COLUMN_NAMES,
     PLAY_BY_PLAY_COLUMN_NAMES,
     PLAYER_ADVANCED_SEASON_TOTALS_COLUMN_NAMES,
     PLAYER_SEASON_BOX_SCORE_COLUMN_NAMES,
@@ -105,6 +107,56 @@ _TEAM_BOX_SCORES_WORKFLOW = WorkflowSpec(
             id="emit_diagnostics",
             kind=WorkflowStepKind.DIAGNOSTICS,
             description="Record aggregate parser diagnostics for the daily fanout.",
+            inputs=("rows", "parser_stats"),
+        ),
+    ),
+)
+
+_BOX_SCORE_PLAYER_BASIC_WORKFLOW = WorkflowSpec(
+    steps=(
+        WorkflowStep(
+            id="fetch_box_score",
+            kind=WorkflowStepKind.FETCH,
+            description="Fetch the per-game Basketball Reference box-score page.",
+            inputs=("game_id",),
+            outputs=("box_score_page",),
+        ),
+        WorkflowStep(
+            id="parse_player_basic",
+            kind=WorkflowStepKind.PARSE,
+            description="Parse both teams' game-basic player rows and inject game context.",
+            inputs=("box_score_page",),
+            outputs=("rows", "parser_stats"),
+        ),
+        WorkflowStep(
+            id="emit_diagnostics",
+            kind=WorkflowStepKind.DIAGNOSTICS,
+            description="Record parser diagnostics for per-game player basic rows.",
+            inputs=("rows", "parser_stats"),
+        ),
+    ),
+)
+
+_BOX_SCORE_GAME_INFO_WORKFLOW = WorkflowSpec(
+    steps=(
+        WorkflowStep(
+            id="fetch_box_score",
+            kind=WorkflowStepKind.FETCH,
+            description="Fetch the per-game Basketball Reference box-score page.",
+            inputs=("game_id",),
+            outputs=("box_score_page",),
+        ),
+        WorkflowStep(
+            id="parse_game_info",
+            kind=WorkflowStepKind.PARSE,
+            description="Parse scorebox metadata, officials, attendance, and inactive lists.",
+            inputs=("box_score_page",),
+            outputs=("rows", "parser_stats"),
+        ),
+        WorkflowStep(
+            id="emit_diagnostics",
+            kind=WorkflowStepKind.DIAGNOSTICS,
+            description="Record parser diagnostics for per-game metadata.",
             inputs=("rows", "parser_stats"),
         ),
     ),
@@ -382,6 +434,40 @@ _SEARCH_WORKFLOW = WorkflowSpec(
 )
 
 WORKFLOW_ENDPOINTS = {
+    "box_score_player_basic": _endpoint(
+        "/boxscores/{game_id}.html",
+        params=("game_id",),
+        error=None,
+        error_params=(),
+        row_model=boxscores.BoxScorePlayerBasicRow,
+        csv_columns=BOX_SCORE_PLAYER_BASIC_COLUMN_NAMES,
+        metadata=EndpointMetadata(
+            domain=EndpointDomain.GAMES,
+            kind=EndpointKind.WORKFLOW,
+            scope=EndpointScope.GAME,
+            request_shape=RequestShape.SINGLE_REQUEST,
+            parser_shape=ParserShape.TABLE,
+            features=frozenset({EndpointFeature.DERIVED_FIELDS, EndpointFeature.WORKFLOW_DIAGNOSTICS}),
+        ),
+        workflow=_BOX_SCORE_PLAYER_BASIC_WORKFLOW,
+    ),
+    "box_score_game_info": _endpoint(
+        "/boxscores/{game_id}.html",
+        params=("game_id",),
+        error=None,
+        error_params=(),
+        row_model=boxscores.BoxScoreGameInfoRow,
+        csv_columns=BOX_SCORE_GAME_INFO_COLUMN_NAMES,
+        metadata=EndpointMetadata(
+            domain=EndpointDomain.GAMES,
+            kind=EndpointKind.WORKFLOW,
+            scope=EndpointScope.GAME,
+            request_shape=RequestShape.SINGLE_REQUEST,
+            parser_shape=ParserShape.PAGE_BLOCKS,
+            features=frozenset({EndpointFeature.DERIVED_FIELDS, EndpointFeature.WORKFLOW_DIAGNOSTICS}),
+        ),
+        workflow=_BOX_SCORE_GAME_INFO_WORKFLOW,
+    ),
     "player_box_scores": _endpoint(
         "/friv/dailyleaders.cgi?month={month}&day={day}&year={year}",
         params=("day", "month", "year"),

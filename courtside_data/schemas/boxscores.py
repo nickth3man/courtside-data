@@ -199,14 +199,14 @@ register("team_box_scores", TeamBoxScoreRow)
 #   • per-team Four Factors         → four-factors table
 #   • per-team Line Score           → ``line_score`` table (quarter scoring)
 #   • per-player per-quarter splits → ``box-<ABBR>-game-basic`` (Q1/Q2/H1/Q3/Q4/H2)
-#   • game-level metadata           → officials / attendance / arena / inactive (prose)
-#   • per-player basic + status     → ``box-<ABBR>-game-basic`` tbody (starter/DNP)
+#   • game-level metadata           → promoted as ``box_score_game_info``
+#   • per-player basic + status     → promoted as ``box_score_player_basic``
 #
-# SCAFFOLD STATE — forward-declared data models only:
-# These classes are intentionally NOT passed to ``register()`` yet. Two CI
-# canaries enforce that schemas and endpoints land together as complete,
-# fixture-backed units:
-#   1. ``test_row_adapters_registry_populated`` pins ``len(ROW_ADAPTERS) == 55``;
+# SCAFFOLD STATE — mostly forward-declared data models:
+# The classes below are passed to ``register()`` only as their endpoint/parser
+# slices land. Two CI canaries enforce that schemas and endpoints move
+# together as complete, fixture-backed units:
+#   1. ``test_row_adapters_registry_populated`` pins the current count;
 #   2. ``test_manifest_meets_coverage_target`` requires ≥95% of registered
 #      endpoints to have offline fixtures (which need the parser).
 # So each reader is promoted as one atomic unit in PDCA Cycle 2+: ``register()``
@@ -303,10 +303,10 @@ class BoxScorePlayerQuarterSplitRow(BRRow, _BoxScoreCountingStats, _BoxScorePctS
 
 
 class BoxScoreGameInfoRow(BRRow):
-    """Game-level metadata row. SCAFFOLD.
+    """Game-level metadata row.
 
-    Assembled from prose footers (officials / attendance / arena / inactive
-    lists) rather than a ``<table>``; the Cycle 2 parser injects these keys.
+    Assembled from scorebox and prose footer sections (officials /
+    attendance / arena / inactive lists) rather than one ``<table>``.
     """
 
     game_date: BRDate = Field(validation_alias="game_date")
@@ -323,12 +323,14 @@ class BoxScoreGameInfoRow(BRRow):
     inactive_away: list[str] = Field(default_factory=list, validation_alias="inactive_away")
 
 
+register("box_score_game_info", BoxScoreGameInfoRow)
+
+
 class BoxScorePlayerBasicRow(BRRow, _BoxScoreCountingStats, _BoxScorePctStats):
     """Per-player basic line sourced from the per-game ``-game-basic`` table.
 
     Carries starter/reserve status and the Did-Not-Play / Did-Not-Dress
     distinction that the daily-leaders ``player_box_scores`` endpoint omits.
-    SCAFFOLD.
     """
 
     slug: StrOrNone = Field(default=None, validation_alias="slug")
@@ -340,3 +342,6 @@ class BoxScorePlayerBasicRow(BRRow, _BoxScoreCountingStats, _BoxScorePctStats):
     is_starter: bool = Field(default=False, validation_alias="is_starter")
     status: StrOrNone = Field(default=None, validation_alias="status")
     plus_minus: BRIntOrNone = Field(default=None, validation_alias="plus_minus")
+
+
+register("box_score_player_basic", BoxScorePlayerBasicRow)
