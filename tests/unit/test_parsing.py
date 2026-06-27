@@ -99,11 +99,11 @@ def test_standings_team_value() -> None:
 STANDINGS_1974_FIXTURE = Path(__file__).resolve().parents[2] / "raw" / "standings" / "1974.html"
 
 
-@pytest.mark.skipif(not STANDINGS_1974_FIXTURE.exists(), reason="1974 standings fixture missing")
 def test_standings_1974_validates_all_teams() -> None:
     from courtside_data.client._pipelines.pydantic import _validate_row_model_rows
     from courtside_data.schemas.standings import StandingsRow
 
+    assert STANDINGS_1974_FIXTURE.exists(), f"missing fixture: {STANDINGS_1974_FIXTURE}"
     html = STANDINGS_1974_FIXTURE.read_text(encoding="utf-8")
     selector = Selector(text=html)
     parsed_rows, _stats = rows.parse_standings_with_stats(selector)

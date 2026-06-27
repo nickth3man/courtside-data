@@ -343,8 +343,8 @@ def test_probe_params_json_rejects_non_object() -> None:
     assert probe_main(["-e", "rookie_stats", "--params-json", "[]"]) == 2
 
 
-@pytest.mark.skipif(not ROOKIE_STATS_1980_FIXTURE.exists(), reason="1980 rookie_stats fixture missing")
 def test_rookie_stats_1980_selected_source_table_has_no_team_column() -> None:
+    assert ROOKIE_STATS_1980_FIXTURE.exists(), f"missing fixture: {ROOKIE_STATS_1980_FIXTURE}"
     html = ROOKIE_STATS_1980_FIXTURE.read_text(encoding="utf-8")
     table_id = ENDPOINTS["rookie_stats"].table_id
     assert table_id is not None
@@ -393,12 +393,12 @@ def test_rookie_stats_1980_selected_source_table_has_no_team_column() -> None:
     assert {record["provenance_reason"] for record in team_records} == {PROVENANCE_SOURCE_COLUMN_ABSENT}
 
 
-@pytest.mark.skipif(not DRAFT_PICKS_1965_FIXTURE.exists(), reason="1965 draft_picks fixture missing")
 def test_draft_picks_1965_historical_team_abbreviations_validate() -> None:
     """BAL (1963-73 Baltimore Bullets) and CIN (Cincinnati Royals) are real
     historical drafting teams that were previously dropped as
     ``invalid_team_value``. They must now validate against the team lookup so
     no source row is lost to an unknown team abbreviation."""
+    assert DRAFT_PICKS_1965_FIXTURE.exists(), f"missing fixture: {DRAFT_PICKS_1965_FIXTURE}"
     html = DRAFT_PICKS_1965_FIXTURE.read_text(encoding="utf-8")
     table_id = ENDPOINTS["draft_picks"].table_id
     assert table_id is not None
@@ -426,12 +426,12 @@ def test_draft_picks_1965_historical_team_abbreviations_validate() -> None:
     assert Team.CINCINNATI_ROYALS in validated_teams
 
 
-@pytest.mark.skipif(not DRAFT_PICKS_1965_FIXTURE.exists(), reason="1965 draft_picks fixture missing")
 def test_draft_picks_1965_invalid_team_provenance_captures_source_team_values() -> None:
     """The provenance machinery must still capture raw source team cells when a
     genuinely invalid team abbreviation appears. BAL/CIN now validate, so this
     is exercised with a synthetic unknown abbreviation spliced into the 1965
     rows (the real 1965 fixture no longer produces team drops)."""
+    assert DRAFT_PICKS_1965_FIXTURE.exists(), f"missing fixture: {DRAFT_PICKS_1965_FIXTURE}"
     html = DRAFT_PICKS_1965_FIXTURE.read_text(encoding="utf-8")
     table_id = ENDPOINTS["draft_picks"].table_id
     assert table_id is not None

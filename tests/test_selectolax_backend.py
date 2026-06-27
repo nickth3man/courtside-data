@@ -127,8 +127,7 @@ def test_generic_table_with_all_toggles_matches_selectolax() -> None:
         ),
     ]
     for path, table_id, opts in fixtures:
-        if not path.is_file():
-            pytest.skip(f"missing fixture: {path}")
+        assert path.is_file(), f"missing fixture: {path}"
         html = path.read_text(encoding="utf-8", errors="replace")
         sel = Selector(text=html)
         table = sel.css(f"table#{table_id}")[0]
@@ -178,8 +177,7 @@ def test_extract_commented_table_agreement_on_inline_html() -> None:
 )
 def test_parse_transaction_list_agreement(label: str, path: Path) -> None:
     """Both backends produce identical rows for the transaction list pages."""
-    if not path.is_file():
-        pytest.skip(f"missing fixture: {path}")
+    assert path.is_file(), f"missing fixture: {path}"
     html = path.read_text(encoding="utf-8", errors="replace")
     sel = Selector(text=html)
 
@@ -216,8 +214,7 @@ def test_env_var_routes_generic_table_to_selectolax() -> None:
     from courtside_data.parsing._selectolax_backend import _SelectolaxGenericTableRow
 
     path = RAW_ROOT / "team_roster" / "BOS_2024.html"
-    if not path.is_file():
-        pytest.skip(f"missing fixture: {path}")
+    assert path.is_file(), f"missing fixture: {path}"
     html = path.read_text(encoding="utf-8", errors="replace")
     sel = Selector(text=html)
     table = sel.css("table#roster")[0]
@@ -243,8 +240,7 @@ def test_env_var_explicit_selectolax_routes_generic_table_to_selectolax(
     from courtside_data.parsing._selectolax_backend import _SelectolaxGenericTableRow
 
     path = RAW_ROOT / "team_roster" / "BOS_2024.html"
-    if not path.is_file():
-        pytest.skip(f"missing fixture: {path}")
+    assert path.is_file(), f"missing fixture: {path}"
     html = path.read_text(encoding="utf-8", errors="replace")
     sel = Selector(text=html)
     table = sel.css("table#roster")[0]
@@ -265,8 +261,7 @@ def test_env_var_parsel_backend_routes_generic_table_to_parsel(
     assert get_parse_backend() == "parsel"
 
     path = RAW_ROOT / "team_roster" / "BOS_2024.html"
-    if not path.is_file():
-        pytest.skip(f"missing fixture: {path}")
+    assert path.is_file(), f"missing fixture: {path}"
     html = path.read_text(encoding="utf-8", errors="replace")
     sel = Selector(text=html)
     table = sel.css("table#roster")[0]

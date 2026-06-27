@@ -231,12 +231,11 @@ def test_general_brint_still_rejects_non_integer() -> None:
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skipif(not CAREER_LEADERS_FIXTURE.exists(), reason="career_leaders fixture missing")
 def test_career_leaders_fixture_retains_all_rows(make_offline_client) -> None:
     """Audited case: 250 source rows, previously 8 dropped on blank rank."""
+    assert CAREER_LEADERS_FIXTURE.exists(), f"missing fixture: {CAREER_LEADERS_FIXTURE}"
     case = case_for("career_leaders")
-    if case is None:
-        pytest.skip("no career_leaders manifest case")
+    assert case is not None, "missing career_leaders manifest case"
     client = make_offline_client(case)
     result = client.career_leaders()
     assert len(result) == 250
@@ -245,12 +244,11 @@ def test_career_leaders_fixture_retains_all_rows(make_offline_client) -> None:
     assert any(row.rank is None for row in result)
 
 
-@pytest.mark.skipif(not SEASON_AWARDS_VOTING_FIXTURE.exists(), reason="season_awards_voting fixture missing")
 def test_season_awards_voting_fixture_retains_tied_mvp_ranks(make_offline_client) -> None:
     """Audited case: 12 MVP source rows, previously 5 dropped on 7T/10T ranks."""
+    assert SEASON_AWARDS_VOTING_FIXTURE.exists(), f"missing fixture: {SEASON_AWARDS_VOTING_FIXTURE}"
     case = case_for("season_awards_voting", season_end_year=2025, award="mvp")
-    if case is None:
-        pytest.skip("no season_awards_voting mvp-2025 manifest case")
+    assert case is not None, "missing season_awards_voting mvp-2025 manifest case"
     client = make_offline_client(case)
     result = client.season_awards_voting(season_end_year=2025, award="mvp")
     assert len(result) == 12
@@ -261,9 +259,9 @@ def test_season_awards_voting_fixture_retains_tied_mvp_ranks(make_offline_client
     assert all(isinstance(row.rank, int) for row in result)
 
 
-@pytest.mark.skipif(not SEASON_AWARDS_VOTING_FIXTURE.exists(), reason="season_awards_voting fixture missing")
 def test_season_awards_voting_fixture_no_invalid_value_drops() -> None:
     """Direct parse path for the MVP table: zero ``invalid_value`` rank drops."""
+    assert SEASON_AWARDS_VOTING_FIXTURE.exists(), f"missing fixture: {SEASON_AWARDS_VOTING_FIXTURE}"
     html = SEASON_AWARDS_VOTING_FIXTURE.read_text(encoding="utf-8")
     table = find_table(Selector(text=html), "mvp")
     assert table is not None, "MVP table missing from awards_2025 fixture"
@@ -277,9 +275,9 @@ def test_season_awards_voting_fixture_no_invalid_value_drops() -> None:
     assert len(validated) == len(parser_rows)
 
 
-@pytest.mark.skipif(not SEASON_AWARDS_VOTING_FIXTURE.exists(), reason="season_awards_voting fixture missing")
 def test_season_awards_voting_fixture_has_tied_ranks() -> None:
     """The MVP fixture really does carry tied ranks (7T/10T) that are now retained."""
+    assert SEASON_AWARDS_VOTING_FIXTURE.exists(), f"missing fixture: {SEASON_AWARDS_VOTING_FIXTURE}"
     html = SEASON_AWARDS_VOTING_FIXTURE.read_text(encoding="utf-8")
     table = find_table(Selector(text=html), "mvp")
     assert table is not None

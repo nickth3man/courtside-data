@@ -3,7 +3,6 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-import pytest
 from courtside_data.client._pipelines.drop_reasons import (
     DROP_REASON_INVALID_PLAYER_VALUE,
     DROP_REASON_INVALID_VALUE,
@@ -167,8 +166,8 @@ def test_validate_row_model_rows_records_filter_reasons_on_trace() -> None:
     assert row_counts["dropped_row_count"] == 1
 
 
-@pytest.mark.skipif(not PBP_FIXTURE.exists(), reason="play_by_play fixture missing")
 def test_play_by_play_parser_emits_workflow_diagnostics() -> None:
+    assert PBP_FIXTURE.exists(), f"missing fixture: {PBP_FIXTURE}"
     html = PBP_FIXTURE.read_text(encoding="utf-8")
     selector = Selector(text=html)
     parsed_rows, stats = parse_play_by_play_rows_with_stats(selector, "SAS", "ATL")
@@ -199,8 +198,8 @@ def test_play_by_play_parser_emits_workflow_diagnostics() -> None:
     assert json.loads(json.dumps(summary["ignored_event_reason_counts_json"]))
 
 
-@pytest.mark.skipif(not STANDINGS_FIXTURE.exists(), reason="standings fixture missing")
 def test_standings_parser_emits_workflow_diagnostics() -> None:
+    assert STANDINGS_FIXTURE.exists(), f"missing fixture: {STANDINGS_FIXTURE}"
     html = STANDINGS_FIXTURE.read_text(encoding="utf-8")
     selector = Selector(text=html)
     parsed_rows, stats = parse_standings_with_stats(selector)
@@ -233,8 +232,8 @@ def test_standings_parser_emits_workflow_diagnostics() -> None:
     assert summary["workflow_diagnostics_json"]["conference_count"] >= 1
 
 
-@pytest.mark.skipif(not SEARCH_FIXTURE.exists(), reason="search fixture missing")
 def test_search_parser_emits_workflow_diagnostics() -> None:
+    assert SEARCH_FIXTURE.exists(), f"missing fixture: {SEARCH_FIXTURE}"
     html = SEARCH_FIXTURE.read_text(encoding="utf-8")
     selector = Selector(text=html)
     parsed_rows, stats = parse_search_rows_with_stats(selector)
@@ -262,8 +261,8 @@ def test_search_parser_emits_workflow_diagnostics() -> None:
     assert summary["workflow_diagnostics_json"]["candidate_count"] == stats["candidate_count"]
 
 
-@pytest.mark.skipif(not SCHEDULE_FIXTURE.exists(), reason="season_schedule fixture missing")
 def test_schedule_parser_emits_workflow_diagnostics() -> None:
+    assert SCHEDULE_FIXTURE.exists(), f"missing fixture: {SCHEDULE_FIXTURE}"
     html = SCHEDULE_FIXTURE.read_text(encoding="utf-8")
     selector = Selector(text=html)
     parsed_rows, stats = _schedule_rows_with_stats(selector)
@@ -369,10 +368,10 @@ PLAYOFF_BOX_FIXTURE = PROJECT_ROOT / "raw" / "playoff_player_box_scores" / "west
 ADVANCED_TOTALS_FIXTURE = PROJECT_ROOT / "raw" / "players_advanced_season_totals" / "1985.html"
 
 
-@pytest.mark.skipif(not PLAYER_BOX_SCORES_FIXTURE.exists(), reason="player_box_scores fixture missing")
 def test_player_box_scores_with_stats_matches_direct_parser_output() -> None:
     from courtside_data.parsing.generic import find_table
 
+    assert PLAYER_BOX_SCORES_FIXTURE.exists(), f"missing fixture: {PLAYER_BOX_SCORES_FIXTURE}"
     html = PLAYER_BOX_SCORES_FIXTURE.read_text(encoding="utf-8")
     selector = Selector(text=html)
     table = find_table(selector, "stats")
@@ -386,8 +385,8 @@ def test_player_box_scores_with_stats_matches_direct_parser_output() -> None:
     assert stats["selected_table_id"] == "stats"
 
 
-@pytest.mark.skipif(not TEAM_BOX_SCORE_FIXTURE.exists(), reason="team_box_score fixture missing")
 def test_team_box_score_parser_emits_workflow_diagnostics() -> None:
+    assert TEAM_BOX_SCORE_FIXTURE.exists(), f"missing fixture: {TEAM_BOX_SCORE_FIXTURE}"
     html = TEAM_BOX_SCORE_FIXTURE.read_text(encoding="utf-8")
     selector = Selector(text=html)
     parsed_rows, stats = rows.parse_team_box_score_with_stats(selector)
@@ -437,10 +436,10 @@ def test_team_box_scores_debug_diagnostics_include_aggregate_fields(make_offline
     assert parser_events
 
 
-@pytest.mark.skipif(not PLAYERS_SEASON_TOTALS_FIXTURE.exists(), reason="players_season_totals fixture missing")
 def test_players_season_totals_with_stats_matches_direct_parser_output() -> None:
     from courtside_data.parsing.workflow_parsers._common import _player_totals_rows, _player_totals_rows_with_stats
 
+    assert PLAYERS_SEASON_TOTALS_FIXTURE.exists(), f"missing fixture: {PLAYERS_SEASON_TOTALS_FIXTURE}"
     html = PLAYERS_SEASON_TOTALS_FIXTURE.read_text(encoding="utf-8")
     selector = Selector(text=html)
     direct_rows = _player_totals_rows(selector, "totals_stats", include_combined=False)
@@ -452,7 +451,6 @@ def test_players_season_totals_with_stats_matches_direct_parser_output() -> None
     assert stats["season_count"] == 1
 
 
-@pytest.mark.skipif(not REGULAR_SEASON_BOX_FIXTURE.exists(), reason="regular season box score fixture missing")
 def test_regular_season_player_box_scores_emits_workflow_diagnostics() -> None:
     from courtside_data.parsing.generic import find_table
     from courtside_data.parsing.workflow_parsers._common import (
@@ -461,6 +459,7 @@ def test_regular_season_player_box_scores_emits_workflow_diagnostics() -> None:
     )
     from courtside_data.parsing.workflow_parsers._diagnostics import IGNORE_INACTIVE_GAME, IGNORE_MISSING_DATE
 
+    assert REGULAR_SEASON_BOX_FIXTURE.exists(), f"missing fixture: {REGULAR_SEASON_BOX_FIXTURE}"
     html = REGULAR_SEASON_BOX_FIXTURE.read_text(encoding="utf-8")
     selector = Selector(text=html)
     table = find_table(selector, "player_game_log_reg")
@@ -495,7 +494,6 @@ def test_regular_season_player_box_scores_emits_workflow_diagnostics() -> None:
     assert summary["workflow_diagnostics_json"]["game_count"] == len(parsed_rows)
 
 
-@pytest.mark.skipif(not PLAYOFF_BOX_FIXTURE.exists(), reason="playoff box score fixture missing")
 def test_playoff_player_box_scores_with_stats_matches_direct_parser_output() -> None:
     from courtside_data.parsing.generic import find_table
     from courtside_data.parsing.workflow_parsers._common import (
@@ -503,6 +501,7 @@ def test_playoff_player_box_scores_with_stats_matches_direct_parser_output() -> 
         _player_season_box_score_rows_with_stats,
     )
 
+    assert PLAYOFF_BOX_FIXTURE.exists(), f"missing fixture: {PLAYOFF_BOX_FIXTURE}"
     html = PLAYOFF_BOX_FIXTURE.read_text(encoding="utf-8")
     selector = Selector(text=html)
     table = find_table(selector, "player_game_log_post")
@@ -515,11 +514,11 @@ def test_playoff_player_box_scores_with_stats_matches_direct_parser_output() -> 
     assert stats["game_count"] == len(parsed_rows)
 
 
-@pytest.mark.skipif(not ADVANCED_TOTALS_FIXTURE.exists(), reason="advanced season totals fixture missing")
 def test_players_advanced_season_totals_emits_workflow_diagnostics() -> None:
     from courtside_data.parsing.workflow_parsers._common import _player_totals_rows_with_stats
     from courtside_data.parsing.workflow_parsers._diagnostics import emit_workflow_endpoint_diagnostics
 
+    assert ADVANCED_TOTALS_FIXTURE.exists(), f"missing fixture: {ADVANCED_TOTALS_FIXTURE}"
     html = ADVANCED_TOTALS_FIXTURE.read_text(encoding="utf-8")
     selector = Selector(text=html)
     parsed_rows, stats = _player_totals_rows_with_stats(selector, "advanced", include_combined=False)
