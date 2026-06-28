@@ -1,9 +1,19 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Any
 
 import pytest
+from courtside_data.errors import (
+    InvalidPlayer,
+    InvalidPlayerAndSeason,
+    InvalidSearch,
+    InvalidSeason,
+    RateLimitJailed,
+    SchemaDriftError,
+)
 from courtside_data.server.app import create_app
+from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 pytestmark = pytest.mark.enable_socket
@@ -11,6 +21,31 @@ pytestmark = pytest.mark.enable_socket
 
 def _client() -> TestClient:
     return TestClient(create_app(transport="fixture"))
+
+
+class _RaisingService:
+    """Stand-in service that raises a fixed exception from every method."""
+
+    def __init__(self, exc: Exception) -> None:
+        self._exc = exc
+
+    def search_players(self, term: str) -> list[dict[str, Any]]:
+        raise self._exc
+
+    def summary(self, player_identifier: str) -> dict[str, Any]:
+        raise self._exc
+
+    def rows_for_dataset(self, dataset_id: str, params: dict[str, Any]) -> dict[str, Any]:
+        raise self._exc
+
+    def csv_for_dataset(self, dataset_id: str, params: dict[str, Any]) -> str:
+        raise self._exc
+
+
+def _client_raising(exc: Exception) -> TestClient:
+    app: FastAPI = create_app(transport="fixture")
+    app.state.player_hub_service = _RaisingService(exc)
+    return TestClient(app)
 
 
 def test_status_reports_fixture_mode() -> None:
@@ -27,6 +62,11 @@ def test_status_reports_fixture_mode() -> None:
 def test_player_search_returns_json_objects_and_no_results_state() -> None:
     client = _client()
 
+    # AC-002: a term shorter than two characters is rejected as invalid_search (400).
+    too_short = client.get("/api/players/search", params={"term": "a"})
+    assert too_short.status_code == 400
+    assert too_short.json()["detail"]["code"] == "invalid_search"
+
     response = client.get("/api/players/search", params={"term": "kobe"})
     assert response.status_code == 200
     payload = response.json()
@@ -34,6 +74,7 @@ def test_player_search_returns_json_objects_and_no_results_state() -> None:
     assert payload
     assert any(result["identifier"] == "bryanko01" for result in payload)
 
+    # AC-003: a term that matches nobody is a valid empty-list response, not an error.
     no_results = client.get("/api/players/search", params={"term": "no_results"})
     assert no_results.status_code == 200
     assert no_results.json() == []
@@ -107,6 +148,35 @@ def test_season_dataset_rejects_player_scoped_dataset() -> None:
 
     assert response.status_code == 400
     assert response.json()["detail"]["code"] == "bad_request"
+
+
+@pytest.mark.parametrize(
+    ("exc", "expected_status", "expected_code"),
+    [
+        # §4.3 exception -> HTTP mapping table.
+        (InvalidSearch("ab"), 400, "invalid_search"),
+        (InvalidPlayer("x"), 404, "invalid_player"),
+        (InvalidPlayerAndSeason("x", 2020), 404, "invalid_player"),
+        (InvalidSeason(2020), 404, "invalid_season"),
+        (
+            SchemaDriftError(
+                "player_career_stats",
+                "https://www.basketball-reference.com/players/j/jamesle01.html",
+                [{"type": "missing", "loc": ("season",), "msg": "Field required"}],
+            ),
+            500,
+            "schema_drift",
+        ),
+        (RateLimitJailed(600.0), 429, "rate_limit_jailed"),
+        (RuntimeError("boom"), 500, "internal_error"),
+    ],
+)
+def test_exception_to_http_mapping(exc: Exception, expected_status: int, expected_code: str) -> None:
+    # AC-010 / AC-011 plus the status-code contract for every domain exception in §4.3.
+    response = _client_raising(exc).get("/api/players/x/summary")
+
+    assert response.status_code == expected_status
+    assert response.json()["detail"]["code"] == expected_code
 
 
 def test_server_runtime_code_does_not_import_tests_package() -> None:

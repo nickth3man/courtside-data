@@ -1,20 +1,20 @@
 ---
 sessionID: ses_0f4a0d8a6ffeV9oKd3fBsd75GR
 baseMessageCount: 0
-updatedAt: 2026-06-27T23:24:24.221Z
+updatedAt: 2026-06-27T23:25:37.534Z
 version: 1.0
 date_created: 2026-06-27
 owner: agent
 tags: [spec, diagnostic]
 ---
 
-# C:\Users\nicolas\Documents\GitHub\courtside-data\courtside_data\server
+# Courtside Data — Player Hub Server Specification
 
-## Current spec
+> **Subject:** `courtside_data/server` — the optional FastAPI "Player Hub" API server bundled with `courtside-data` (installed via the `[server]` extra).
 
 # Introduction
 
-This specification documents `courtside_data/server` — the optional FastAPI "Player Hub" API server bundled with `courtside-data` (installed via the `[server]` extra). It serves a player-centric browsing surface that aggregates multiple basketball-reference datasets behind a small REST API consumed by the Courtside Data UI.
+This specification documents `courtside_data/server` — the optional FastAPI "Player Hub" API server bundled with `courtside-data`. It serves a player-centric browsing surface that aggregates multiple basketball-reference datasets behind a small REST API consumed by the Courtside Data UI.
 
 The spec is **hybrid**: it captures the server's current state faithfully and explicitly flags known limitations as planned gaps. It is written primarily for **AI agents that will extend the server** — adding endpoints, datasets, or transport modes — so it is precise about contracts, conventions, and the wiring steps required to register a new dataset.
 
@@ -25,11 +25,13 @@ The spec is **hybrid**: it captures the server's current state faithfully and ex
 **Purpose.** Provide a stable, machine-readable reference for the Player Hub server: its HTTP contract, its two transport modes (fixture replay vs. live scraping), its dataset/tab catalog, and the conventions an agent must follow to extend it without breaking existing routes or tests.
 
 **Intended audience.**
-- Primary: AI coding agents and contributors adding datasets, endpoints, or transport behavior.
-- Secondary: maintainers reasoning about the server's architecture.
-- Tertiary: frontend/UI developers consuming the REST API (covered via the Data Contracts section).
+
+- **Primary:** AI coding agents and contributors adding datasets, endpoints, or transport behavior.
+- **Secondary:** maintainers reasoning about the server's architecture.
+- **Tertiary:** frontend/UI developers consuming the REST API (covered via the Data Contracts section).
 
 **In scope.**
+
 - All seven modules under `courtside_data/server/` (`__init__`, `app`, `catalog`, `cli`, `fixtures`, `models`, `service`).
 - The seven HTTP routes and their request/response contracts.
 - The fixture-replay transport and the live transport.
@@ -38,6 +40,7 @@ The spec is **hybrid**: it captures the server's current state faithfully and ex
 - The single test module `tests/server/test_player_hub_api.py`.
 
 **Out of scope.**
+
 - The scraping/parsing core (`courtside_data/http`, `courtside_data/parsing`, `courtside_data/schemas`) — referenced only as dependencies.
 - The endpoint CLI subcommands other than `serve`.
 - The mkdocs site and `docs/` content (the server is currently undocumented there).
@@ -67,7 +70,8 @@ The spec is **hybrid**: it captures the server's current state faithfully and ex
 
 ## 3. Requirements, Constraints & Guidelines
 
-### Functional requirements
+### 3.1 Functional requirements
+
 - **REQ-001**: The server MUST expose seven GET routes (listed in §4) and return JSON conforming to the Pydantic models in `models.py`.
 - **REQ-002**: The server MUST support two transport modes — `fixture` (default) and `live` — selected at app construction time via `create_app(transport=...)` or the `COURTSIDE_SERVER_TRANSPORT` env var.
 - **REQ-003**: Catalog endpoints MUST be derivable from the `courtside_data.endpoints.ENDPOINTS` registry; no dataset may reference an endpoint not present in that registry.
@@ -76,13 +80,15 @@ The spec is **hybrid**: it captures the server's current state faithfully and ex
 - **REQ-006**: CSV export MUST stream a `text/csv` response with `Content-Disposition: attachment` and MUST NOT write any file to disk.
 - **REQ-007**: The `/api/status` route MUST report the active transport, endpoint count, fixture root path, and whether that root exists.
 
-### Security constraints
+### 3.2 Security constraints
+
 - **SEC-001**: The server binds to `127.0.0.1` by default and is intended for single-user local use. There is no authentication or authorization layer.
 - **SEC-002**: CORS is restricted to GET methods and four hard-coded localhost origins (`localhost:3000`, `127.0.0.1:3000`, `localhost:3001`, `127.0.0.1:3001`). `allow_credentials` is `False`.
 - **SEC-003**: The server MUST NOT execute filesystem writes in response to any route (CSV export is streamed, not persisted).
 - **SEC-004**: In live mode, the server MUST honor the upstream 429 rate-limit jail state (`RateLimitJailed`) and surface it as HTTP 429 rather than retrying indefinitely.
 
-### System constraints / technologies
+### 3.3 System constraints / technologies
+
 - **CON-001**: Python 3.12+ (matches the repo floor).
 - **CON-002**: `fastapi>=0.115.0` and `uvicorn[standard]>=0.30.0` are required, declared under `[project.optional-dependencies].server` and re-declared in the PEP 735 `dev` group.
 - **CON-003**: HTTP layer uses `httpx` for the fixture transport (`httpx.BaseTransport`) and the project's `HTTPService`/`CourtsideClient` for live requests.
@@ -91,7 +97,8 @@ The spec is **hybrid**: it captures the server's current state faithfully and ex
 - **CON-006**: The server imports only from `courtside_data.client`, `courtside_data.endpoints`, and `courtside_data.errors` — never from `schemas` or `parsing` directly.
 - **CON-007**: Module-level `app = app_from_env()` exists so `uvicorn courtside_data.server.app:app` works without a factory.
 
-### Guidelines
+### 3.4 Guidelines
+
 - **GUD-001**: When adding a dataset, wire it in exactly the places enumerated in §7 (catalog `DATASETS`, a tab in `TABS`, fixture mapping in `fixtures.py`, scope-appropriate route handling). Missing any step is the most common extension bug.
 - **GUD-002**: New response models MUST live in `models.py` and reuse `ColumnMeta` / `EndpointRowsResponse` shapes where possible; do not duplicate row-serialization logic.
 - **GUD-003**: Runtime server code (`courtside_data/server/*.py`) MUST NOT import the `tests` package — enforced by a static guard test.
@@ -160,7 +167,7 @@ class PlayerHubService:
     def csv_for_dataset(self, dataset_id: str, params: dict[str, object]) -> str
 ```
 
-`PlayerHubService` is injected into routes via `ServiceDep = Annotated[PlayerHubService, Depends(_service_from_app)]`. The dependency reads the service off the `request.app.state`, which `create_app()` populates.
+`PlayerHubService` is injected into routes via `ServiceDep = Annotated[PlayerHubService, Depends(_service_from_app)]`. The dependency reads the service off `request.app.state`, which `create_app()` populates.
 
 ### 4.5 Dataset catalog (`catalog.DATASETS`)
 
@@ -220,6 +227,7 @@ class PlayerHubService:
 **Parallelism.** Server tests participate in `pytest -n auto` like the rest of the suite.
 
 **Existing coverage (8 test functions).**
+
 1. `test_status_reports_fixture_mode` — AC-001.
 2. `test_player_search_returns_json_objects_and_no_results_state` — AC-002, AC-003.
 3. `test_player_summary_derives_season_and_embeds_career_rows` — AC-004.
@@ -237,7 +245,7 @@ class PlayerHubService:
 
 ## 7. Rationale & Context
 
-### Architectural decisions
+### 7.1 Architectural decisions
 
 **Why an *optional* extra.** The server depends on `fastapi` + `uvicorn`, which are heavier than the scraping core. Keeping them in `[project.optional-dependencies].server` lets the library stay lean for users who only want the CLI/SDK. The CLI imports `courtside_data.server.cli` lazily inside the `serve` branch so a missing extra never breaks other subcommands.
 
@@ -247,9 +255,10 @@ class PlayerHubService:
 
 **Why columns are derived from the registry.** `catalog.columns_for_dataset` reads `endpoint.row_model.model_fields` from the `EndpointSpec`, so adding fields to a `BRRow` subclass automatically flows into catalog metadata. `NUMERIC_HINTS` heuristically flags numeric columns for UI alignment.
 
-### How to add a dataset (extension contract)
+### 7.2 How to add a dataset (extension contract)
 
 An agent adding dataset `X` backed by endpoint `player_X` must touch, in order:
+
 1. **`catalog.py`** — add a `PlayerHubDataset(id="X", endpoint_name="player_X", scope=...)` entry to `DATASETS`.
 2. **`catalog.py`** — attach the dataset id to the appropriate `PlayerHubTab` in `TABS` (or add a tab).
 3. **`fixtures.py`** — register the endpoint in `PLAYER_ONLY_ENDPOINTS` or `PLAYER_SEASON_ENDPOINTS`, and ensure `_player_only_map` / `_player_season_map` can resolve the fixture path under `raw/`.
@@ -278,20 +287,23 @@ Missing step 3 is the most common failure (the route 404s in fixture mode becaus
 
 ## 9. Examples & Edge Cases
 
-### Starting the server (fixture mode, default)
+### 9.1 Starting the server (fixture mode, default)
+
 ```bash
 uv sync --group dev                 # installs fastapi + uvicorn via the dev group
-uv run courtside-data serve        # 127.0.0.1:8765, transport=fixture, raw=<repo>/raw
+uv run courtside-data serve         # 127.0.0.1:8765, transport=fixture, raw=<repo>/raw
 ```
 
-### Live mode with a custom fixture root
+### 9.2 Live mode with a custom fixture root
+
 ```bash
 COURTSIDE_SERVER_TRANSPORT=live \
 COURTSIDE_DATA_FIXTURE_ROOT=/tmp/raw \
 uv run courtside-data serve --host 127.0.0.1 --port 9000 --reload
 ```
 
-### Example `/api/status` response (fixture mode)
+### 9.3 Example `/api/status` response (fixture mode)
+
 ```json
 {
   "ok": true,
@@ -302,7 +314,8 @@ uv run courtside-data serve --host 127.0.0.1 --port 9000 --reload
 }
 ```
 
-### Example `ApiError` (scope mismatch)
+### 9.4 Example `ApiError` (scope mismatch)
+
 ```json
 {
   "code": "invalid_search",
@@ -311,7 +324,8 @@ uv run courtside-data serve --host 127.0.0.1 --port 9000 --reload
 }
 ```
 
-### Edge cases an agent must handle
+### 9.5 Edge cases an agent must handle
+
 - **Search term shorter than 2 chars** → 400 `invalid_search` (FastAPI `min_length=2`).
 - **Search term matching nobody** → 200 `[]`, not an error.
 - **Player-scoped dataset requested on the season route (or vice versa)** → 400.
@@ -346,21 +360,18 @@ Beyond the acceptance tests in §5, the following checks gate correctness:
 - **`AGENTS.md`** (repo root) — tooling, env vars (`BASKETBALL_REF_JAIL_STATE_PATH`, `BASKETBALL_REF_IMPERSONATE`), and the `uv run task audit` gate.
 - **`docs/architecture/endpoints.md`** — endpoint architecture (does not yet cover the Player Hub server; a doc page is a candidate future-work item).
 
-### Planned gaps (future work, out of current scope)
+### 11.1 Planned gaps (future work, out of current scope)
 
 These limitations are documented for completeness; none is a current requirement under the local-dev/single-user deployment model.
 
-1. **Hardcoded player display names.** `service.PLAYER_DISPLAY_NAMES` is a 17-entry dict. Players outside it may render with a slug as `display_name`. Future: derive display names from search/roster data.
-2. **Hardcoded CORS origins.** Only the four localhost origins are allowed; no env-driven configuration. Future: drive `allow_origins` from an env var before any non-local deployment.
-3. **Fixture-only test coverage.** No test exercises `transport="live"`; the 429-jail path, retry classification, and real scraping are untested. Future: add a live-mode smoke test gated behind an opt-in marker.
-4. **Static dataset catalog.** The 13 datasets and 8 tabs are hard-coded in `catalog.py`; adding one requires the multi-step wiring in §7. Future: consider data-driven catalog registration to reduce the touch points.
+1. **Hardcoded player display names.** `service.PLAYER_DISPLAY_NAMES` is a 17-entry dict. Players outside it may render with a slug as `display_name`. *Future:* derive display names from search/roster data.
+2. **Hardcoded CORS origins.** Only the four localhost origins are allowed; no env-driven configuration. *Future:* drive `allow_origins` from an env var before any non-local deployment.
+3. **Fixture-only test coverage.** No test exercises `transport="live"`; the 429-jail path, retry classification, and real scraping are untested. *Future:* add a live-mode smoke test gated behind an opt-in marker.
+4. **Static dataset catalog.** The 13 datasets and 8 tabs are hard-coded in `catalog.py`; adding one requires the multi-step wiring in §7. *Future:* consider data-driven catalog registration to reduce the touch points.
 
-### Candidate future enhancements (not committed)
+### 11.2 Candidate future enhancements (not committed)
+
 - Health/readiness route distinct from `/api/status`.
 - Pagination on dataset rows.
 - A `docs/` page and mkdocstrings rendering for the server package.
 - Auth, TLS, and observability if deployment scope ever expands beyond localhost.
-
-## Q&A history
-
-No answers yet.

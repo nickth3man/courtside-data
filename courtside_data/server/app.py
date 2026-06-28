@@ -47,16 +47,16 @@ def _map_exception(error: Exception) -> HTTPException:
     if isinstance(error, MissingFixtureError):
         return _api_error(404, "missing_fixture", str(error))
     if isinstance(error, InvalidSearch):
-        return _api_error(404, "invalid_search", str(error))
+        return _api_error(400, "invalid_search", str(error))
     if isinstance(error, (InvalidPlayer, InvalidPlayerAndSeason)):
         return _api_error(404, "invalid_player", str(error))
     if isinstance(error, InvalidSeason):
-        return _api_error(400, "invalid_season", str(error))
+        return _api_error(404, "invalid_season", str(error))
     if isinstance(error, RateLimitJailed):
         return _api_error(429, "rate_limit_jailed", str(error), retry_after=error.retry_after)
     if isinstance(error, SchemaDriftError):
         return _api_error(
-            502,
+            500,
             "schema_drift",
             str(error),
             endpoint_name=error.endpoint_name,
@@ -115,7 +115,7 @@ def create_app(*, transport: TransportMode = "fixture", raw_root: Path | None = 
 
     @app.get("/api/players/search", response_model=list[PlayerSearchResult])
     def player_search(
-        term: Annotated[str, Query(min_length=2)],
+        term: Annotated[str, Query()],
         service: ServiceDep,
     ) -> list[PlayerSearchResult]:
         try:

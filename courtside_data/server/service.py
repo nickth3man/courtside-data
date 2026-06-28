@@ -10,6 +10,7 @@ from typing import Any
 
 from courtside_data.client import CourtsideClient
 from courtside_data.endpoints import ENDPOINTS
+from courtside_data.errors import InvalidSearch
 from courtside_data.server.catalog import columns_for_dataset, dataset_by_id
 from courtside_data.server.fixtures import build_fixture_service, fixture_seasons_for_player
 from courtside_data.server.models import EndpointRowsResponse, PlayerHubSummary, PlayerSearchResult, TransportMode
@@ -81,15 +82,11 @@ class PlayerHubService:
     def search_players(self, term: str) -> list[PlayerSearchResult]:
         term = term.strip()
         if len(term) < 2:
-            return []
+            raise InvalidSearch(term)
         try:
             rows = self._serialize_rows(self._run("search", {"term": term}))
-        except Exception as exc:
-            from courtside_data.errors import InvalidSearch
-
-            if isinstance(exc, InvalidSearch):
-                return []
-            raise
+        except InvalidSearch:
+            return []
         results: list[PlayerSearchResult] = []
         for row in rows:
             leagues = row.get("leagues", [])
