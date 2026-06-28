@@ -81,10 +81,17 @@ A `CourtsideClient` owns its own session; the module-level functions continue to
 
 ### Output types
 
-Pass [`OutputType`](courtside_data/domain/enums.py) to return rows in the shape you need. The default is `OutputType.JSON` (in-memory, JSON-serializable rows).
+By default, the Python API returns the validated Pydantic row models directly (no serialization). Pass [`OutputType`](courtside_data/domain/enums.py) to change the shape:
+
+- `OutputType.JSON` — serialize rows to a JSON string
+- `OutputType.CSV` (with `output_file_path`) — write a CSV file
+- `OutputType.DATAFRAME` — return a pandas `DataFrame`
 
 ```python
 from courtside_data.domain import OutputType
+
+# Default: validated Pydantic model instances
+rows = client.league_per_game_stats(season_end_year=2024)
 
 # Write directly to CSV
 client.league_per_game_stats(
