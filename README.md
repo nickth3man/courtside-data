@@ -1,13 +1,28 @@
 # Courtside Data
 
-A typed Python client for [Basketball Reference](https://www.basketball-reference.com). Courtside Data exposes an explicit, schema-backed API for NBA stats, with process-wide rate limiting, offline HTML fixtures, and JSON / CSV / DataFrame output.
+![Python version](https://img.shields.io/badge/python-3.12%2B-blue)
+![License: MIT](https://img.shields.io/badge/license-MIT-green)
+![Code style: Ruff](https://img.shields.io/badge/code%20style-ruff-261230)
+[![Docs](https://img.shields.io/badge/docs-mkdocs%20material-blue)](https://nickth3man.github.io/courtside-data)
 
-The public API is intentionally typed-only. Raw Basketball-Reference pages in `raw/` are development fixtures, not public endpoints.
+A typed Python client for [Basketball Reference](https://www.basketball-reference.com). Courtside Data exposes an explicit, schema-backed API for NBA stats — 50+ endpoints, Pydantic v2 row models, process-wide rate limiting, TLS impersonation, an offline HTML fixture corpus, and JSON / CSV / DataFrame output.
+
+The public API is intentionally typed-only. Raw Basketball-Reference pages in [`raw/`](raw/) are development fixtures, not public endpoints.
+
+**Highlights**
+
+- **Typed end to end** — every endpoint validates raw HTML rows through a Pydantic `BRRow` model; schema drift raises a clear error instead of silently bad data.
+- **One declarative registry** — `ENDPOINTS` drives the Python client, the generated CLI, and the rendered API docs from a single source of truth.
+- **Safe by default** — a process-wide pacer and circuit breaker keep you under Basketball Reference's ban threshold (not configurable).
+- **Flexible output** — return validated Pydantic models, or serialize to JSON, CSV, or a pandas `DataFrame` per call.
+- **CLI mirrors the API** — every endpoint is a subcommand, so scripts and notebooks use the same names and parameters.
 
 ## Installation
 
 ```bash
 pip install courtside-data
+# or, with uv
+uv add courtside-data
 ```
 
 Requires Python 3.12 or newer.
@@ -17,18 +32,61 @@ Requires Python 3.12 or newer.
 ```python
 from courtside_data import client
 
-# Get league-wide per-game stats for the 2024 season
+# League-wide per-game stats for the 2024 season
 stats = client.league_per_game_stats(season_end_year=2024)
 
-# Get a team roster
+# A team roster
 roster = client.team_roster(season_end_year=2024, team_abbreviation="BOS")
 
-# Get player career stats
+# A player's career stats
 career = client.player_career_stats(player_identifier="jamesle01")
+```
 
-# Save to CSV
+Every endpoint is also a CLI subcommand:
+
+```bash
+courtside-data list
+courtside-data league_per_game_stats --season-end-year 2024
+courtside-data team_roster --team-abbreviation BOS --season-end-year 2024
+```
+
+## Usage
+
+### Module-level functions vs. `CourtsideClient`
+
+The module-level functions in `courtside_data.client` share **one HTTP session per process** (connection reuse, one response cache). This is the simplest way to call the library:
+
+```python
+from courtside_data import client
+
+roster = client.team_roster(team_abbreviation="BOS", season_end_year=2024)
+```
+
+When you need control over the session — caching, headers, TLS impersonation, or timeouts — instantiate [`CourtsideClient`](courtside_data/client/courtside_client.py):
+
+```python
+from courtside_data import CourtsideClient
+
+client = CourtsideClient(
+    cache=False,            # disable the hishel HTTP response cache
+    impersonate="chrome131",  # curl-cffi TLS-impersonation target
+    # headers=...,
+    # timeout=...,
+)
+
+roster = client.team_roster(team_abbreviation="BOS", season_end_year=2024)
+```
+
+A `CourtsideClient` owns its own session; the module-level functions continue to share theirs. Rate limiting is **not** configurable on either surface — it is enforced globally across all sessions in the process (see [Rate Limiting](#rate-limiting)).
+
+### Output types
+
+Pass [`OutputType`](courtside_data/domain/enums.py) to return rows in the shape you need. The default is `OutputType.JSON` (in-memory, JSON-serializable rows).
+
+```python
 from courtside_data.domain import OutputType
 
+# Write directly to CSV
 client.league_per_game_stats(
     season_end_year=2024,
     output_type=OutputType.CSV,
@@ -39,65 +97,49 @@ client.league_per_game_stats(
 frame = client.league_per_game_stats(season_end_year=2024, output_type=OutputType.DATAFRAME)
 ```
 
-The module-level functions share one HTTP session per process (connection
-reuse, one response cache). To control session behavior, use
-`CourtsideClient`:
-
-```python
-from courtside_data import CourtsideClient
-
-client = CourtsideClient(cache=False)  # also: headers=..., impersonate=..., timeout=...
-roster = client.team_roster(team_abbreviation="BOS", season_end_year=2024)
-```
-
-## Command line
-
-Every endpoint is also a CLI subcommand:
+The CLI mirrors the JSON / CSV options with `--output-type {json,csv}` and `--output-file` (DataFrame output is Python-only):
 
 ```bash
-courtside-data list
-courtside-data league_per_game_stats --season-end-year 2024
 courtside-data team_roster --team-abbreviation BOS --season-end-year 2024 \
     --output-type csv --output-file roster.csv
 ```
 
+For one-off debugging, add `--debug` to emit a JSON envelope (`{"data": ..., "debug": ...}`) for a single call.
+
 ## Endpoints
 
-The authoritative list of served endpoints is the `ENDPOINTS` registry in the [`courtside_data/endpoints/`](courtside_data/endpoints/) package (assembled in `_registry.py`), or at runtime:
+The authoritative list of served endpoints is the `ENDPOINTS` registry in the [`courtside_data/endpoints/`](courtside_data/endpoints/) package (assembled in [`_registry.py`](courtside_data/endpoints/_registry.py)). List them at runtime:
 
 ```bash
 courtside-data list
 ```
 
-No static list is maintained here — the code is the source of truth. An endpoint name appearing anywhere in this repo outside of that registry does not mean it is fully implemented and tested. For the rendered field tables and per-endpoint metadata, see the [API reference](docs/api/endpoints.md).
+No static list is maintained here — the code is the source of truth. An endpoint name appearing anywhere in this repo outside of that registry does not mean it is fully implemented and tested. For the rendered field tables, `EndpointSpec` reference, and per-endpoint metadata, see the [Endpoints API reference](docs/api/endpoints.md).
 
 ## Documentation
 
-Rendered docs are published at <https://nickth3man.github.io/courtside-data>. Source lives under [`docs/`](docs/):
+Rendered docs are published at **<https://nickth3man.github.io/courtside-data>**. Source lives under [`docs/`](docs/) — link, don't duplicate:
 
 - [Endpoint Runtime](docs/architecture/endpoints.md) — how `EndpointSpec`, `EndpointMetadata`, `WorkflowSpec`, and the generic-table path drive every call.
-- [Schemas](docs/api/schemas.md) — the typed `BRRow` Pydantic models returned by each endpoint (auto-generated from source).
+- [Schemas](docs/api/schemas.md) — the typed `BRRow` Pydantic models returned by each endpoint (auto-generated from source via mkdocstrings).
 - [Endpoints](docs/api/endpoints.md) — the `ENDPOINTS` registry and `EndpointSpec` reference (auto-generated from source).
 
-Schema and endpoint field tables in those pages are generated from source via mkdocstrings — do not hand-edit them; update the docstrings and rebuild.
+Schema and endpoint field tables on those pages are generated from source — do not hand-edit them; update the docstrings and rebuild with `mkdocs build`.
 
-## Raw Fixture Corpus
+### HTML fixture corpus
 
-The `raw/` directory stores downloaded Basketball-Reference HTML pages. These fixtures are used to regression-test typed endpoints without live network calls and to preserve edge cases across old seasons, renamed teams, playoff tables, and unusual page layouts.
+The [`raw/`](raw/) directory stores downloaded Basketball-Reference HTML pages. These fixtures regression-test typed endpoints without live network calls and preserve edge cases across old seasons, renamed teams, playoff tables, and unusual page layouts. They are **development fixtures**, not part of the public API.
 
 ## Rate Limiting
 
-Basketball Reference bans clients that exceed ~20 requests per minute, so
-rate limiting is built in and **not configurable**:
+Basketball Reference bans clients that exceed ~20 requests per minute, so rate limiting is built in and **not configurable**:
 
-- Requests are paced at a 6-second minimum interval (plus jitter, ~9 req/min),
-  enforced process-wide across all sessions and threads.
+- Requests are paced at a 6-second minimum interval (plus jitter, ~9 req/min), enforced process-wide across all sessions and threads.
 - `Retry-After` headers are honored on retries.
-- If Basketball Reference jails the session (a `Retry-After` longer than
-  5 minutes), a circuit breaker makes further calls fail fast with
-  `RateLimitJailed` instead of burning requests against the ban. The jail
-  state is persisted to `.cache/courtside/jail.json` so restarted processes
-  honor it too.
+- If Basketball Reference jails the session (a `Retry-After` longer than 5 minutes), a circuit breaker makes further calls fail fast with `RateLimitJailed`   instead of burning requests against the ban. The jail state is persisted to
+  the platform-specific cache dir (e.g. `~/.cache/courtside-data/jail.json` on
+  Linux, `~/Library/Caches/courtside-data/jail.json` on macOS) so restarted
+  processes honor it too.
 
 ## Development
 
@@ -114,6 +156,14 @@ uv run pytest tests -n auto
 
 # Full pre-commit gate: lint + format check + type + tests
 uv run task audit
+```
+
+## Contributing
+
+Contributions are welcome. The tooling, task runner, and quality gates are documented in [`AGENTS.md`](AGENTS.md) — start there. Before opening a pull request, run the full gate locally:
+
+```bash
+uv run task audit   # ruff check + ruff format --check + ty check + pytest tests -n auto
 ```
 
 ## Lineage and Attribution
