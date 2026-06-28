@@ -1,5 +1,14 @@
+/**
+ * Thin compatibility shim for `@/features/player-hub/api/client`.
+ *
+ * The HTTP plumbing lives in `@/lib/api-client` (a hardened, retry-aware
+ * `apiFetch` plus the typed `TypedApiError` surface). This module preserves
+ * the original 8 named exports so existing imports in
+ * `features/player-hub/api/queries.ts` and
+ * `features/player-hub/components/dataset-panel.tsx` keep working.
+ */
+import { apiFetch, API_BASE_URL, csvExportUrl } from "@/lib/api-client";
 import type {
-  ApiErrorEnvelope,
   EndpointRowsResponse,
   PlayerHubCatalog,
   PlayerHubSummary,
@@ -7,80 +16,34 @@ import type {
   StatusResponse,
 } from "@/features/player-hub/types";
 
-export const API_BASE_URL = process.env.NEXT_PUBLIC_COURTSIDE_API_URL ?? "http://127.0.0.1:8765";
+export { API_BASE_URL, csvExportUrl };
 
-async function apiFetch<T>(path: string): Promise<T> {
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    headers: { Accept: "application/json" },
-  });
-  if (!response.ok) {
-    let message = `${response.status} ${response.statusText}`;
-    try {
-      const payload = (await response.json()) as ApiErrorEnvelope;
-      message = payload.detail?.message ?? message;
-    } catch {
-      // Keep the HTTP status message when the body is not JSON.
-    }
-    throw new Error(message);
-  }
-  return (await response.json()) as T;
-}
+export const getStatus = (): Promise<StatusResponse> => apiFetch<StatusResponse>("/api/status");
 
-function buildDatasetParams(opts: {
-  seasonEndYear?: number;
-  includeInactiveGames?: boolean;
-}): URLSearchParams {
-  const params = new URLSearchParams();
-  if (opts.seasonEndYear !== undefined) {
-    params.set("season_end_year", String(opts.seasonEndYear));
-  }
-  if (opts.includeInactiveGames) {
-    params.set("include_inactive_games", "true");
-  }
-  return params;
-}
+export const getCatalog = (): Promise<PlayerHubCatalog> =>
+  apiFetch<PlayerHubCatalog>("/api/endpoints/player-hub");
 
-export function csvExportUrl(
-  identifier: string,
-  dataset: string,
-  seasonEndYear?: number,
-  includeInactiveGames = false,
-): string {
-  const params = new URLSearchParams({ dataset });
-  const overlay = buildDatasetParams({ seasonEndYear, includeInactiveGames });
-  for (const [key, value] of overlay) {
-    params.set(key, value);
-  }
-  return `${API_BASE_URL}/api/players/${identifier}/export?${params.toString()}`;
-}
+export const searchPlayers = (term: string): Promise<PlayerSearchResult[]> =>
+  apiFetch<PlayerSearchResult[]>(`/api/players/search?term=${encodeURIComponent(term)}`);
 
-export function getStatus(): Promise<StatusResponse> {
-  return apiFetch<StatusResponse>("/api/status");
-}
+export const getSummary = (identifier: string): Promise<PlayerHubSummary> =>
+  apiFetch<PlayerHubSummary>(`/api/players/${identifier}/summary`);
 
-export function getCatalog(): Promise<PlayerHubCatalog> {
-  return apiFetch<PlayerHubCatalog>("/api/endpoints/player-hub");
-}
+export const getPlayerDataset = (identifier: string, dataset: string): Promise<EndpointRowsResponse> =>
+  apiFetch<EndpointRowsResponse>(`/api/players/${identifier}/${dataset}`);
 
-export function searchPlayers(term: string): Promise<PlayerSearchResult[]> {
-  return apiFetch<PlayerSearchResult[]>(`/api/players/search?term=${encodeURIComponent(term)}`);
-}
-
-export function getSummary(identifier: string): Promise<PlayerHubSummary> {
-  return apiFetch<PlayerHubSummary>(`/api/players/${identifier}/summary`);
-}
-
-export function getPlayerDataset(identifier: string, dataset: string): Promise<EndpointRowsResponse> {
-  return apiFetch<EndpointRowsResponse>(`/api/players/${identifier}/${dataset}`);
-}
-
-export function getSeasonDataset(
+export const getSeasonDataset = (
   identifier: string,
   seasonEndYear: number,
   dataset: string,
   includeInactiveGames = false,
-): Promise<EndpointRowsResponse> {
-  const params = buildDatasetParams({ includeInactiveGames });
+): Promise<EndpointRowsResponse> => {
+  const params = new URLSearchParams();
+  if (includeInactiveGames) {
+    params.set("include_inactive_games", "true");
+  }
   const suffix = params.size > 0 ? `?${params.toString()}` : "";
-  return apiFetch<EndpointRowsResponse>(`/api/players/${identifier}/seasons/${seasonEndYear}/${dataset}${suffix}`);
-}
+  return apiFetch<EndpointRowsResponse>(
+    `/api/players/${identifier}/seasons/${seasonEndYear}/${dataset}${suffix}`,
+  );
+};
