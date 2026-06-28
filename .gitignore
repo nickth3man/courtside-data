@@ -71,7 +71,11 @@ pyvenv.cfg
 .ignore
 
 # Local UI ideation / scratch diagrams (not product code)
-ideas/
+# Whitelist the librarian's BR-search-index research file (delivered 2026-06-28);
+# it is the source of truth for the search parser's `type` discriminator
+# mapping and is committed alongside the team-search changes.
+ideas/*
+!ideas/br-search-idx-research-2026-06-28.md
 
 # Generated codemaps
 codemap.md

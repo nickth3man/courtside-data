@@ -97,6 +97,14 @@ class Team(Enum):
     # DEFUNCT BAA/NBA FRANCHISES
     ANDERSON_PACKERS = "ANDERSON PACKERS"
     BALTIMORE_BULLETS = "BALTIMORE BULLETS"
+    # 1963-73 Baltimore Bullets (the precursor to the Washington Bullets /
+    # Washington Wizards lineage, abbreviated ``BAL`` by Basketball Reference).
+    # Distinct from the BAA-era ``BALTIMORE_BULLETS`` above (abbreviated
+    # ``BLB``) so the two franchises are not conflated in downstream output.
+    # Mirrors the Kansas City / Kansas City-Omaha Kings split (where the
+    # two eras carry different ``.value`` strings so Python's ``Enum``
+    # treats them as distinct members, not aliases).
+    BALTIMORE_BULLETS_WIZ = "BALTIMORE BULLETS (1963-1973)"
     CHICAGO_STAGS = "CHICAGO STAGS"
     CLEVELAND_REBELS = "CLEVELAND REBELS"
     DETROIT_FALCONS = "DETROIT FALCONS"

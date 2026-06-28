@@ -16,8 +16,9 @@ from pathlib import Path
 from typing import Any
 
 from courtside_data.client import CourtsideClient
+from courtside_data.domain.seasons import current_nba_season_end_year, season_end_year
 from courtside_data.endpoints import ENDPOINTS
-from courtside_data.server.catalog import columns_for_dataset
+from courtside_data.errors import InvalidSearch
 from courtside_data.server.fixtures import MissingFixtureError, build_fixture_service
 from courtside_data.server.models import EndpointRowsResponse, TransportMode
 from courtside_data.server.team_catalog import (
@@ -25,7 +26,12 @@ from courtside_data.server.team_catalog import (
     team_columns_for_dataset,
     team_dataset_by_id,
 )
-from courtside_data.server.team_models import TeamHubSummary, TeamSearchResult
+from courtside_data.server.team_models import (
+    FranchiseArcPoint,
+    TeamHeroStats,
+    TeamHubSummary,
+    TeamSearchResult,
+)
 
 # Team endpoints are parametrised by ``team_abbreviation`` (and, for most,
 # ``season_end_year``) per ``courtside_data.endpoints._table._team``. The
@@ -36,50 +42,29 @@ _TEAM_ABBREVIATION_PARAM = "team_abbreviation"
 _TEAM_SEASON_PARAM = "season_end_year"
 _TEAM_INCLUDE_INACTIVE_PARAM = "include_inactive_games"
 
-# Default season used by the summary endpoint when no explicit season is
-# provided by the caller. Mirrors the hard-coded ``_default_season`` policy
-# in :mod:`courtside_data.server.service` (which also pins 2024 as the
-# "default unless the data tells us otherwise"). ``_default_season`` there
-# operates on a list of discovered seasons; for teams we don't yet have a
-# season-discovery path (see TODO on :meth:`TeamHubService.summary`) so
-# we ship a single hard-coded anchor for now.
-#
-# TODO(team-hub): replace the hard-coded ``_TEAM_DEFAULT_SEASON`` with a
-# data-driven resolver.
-#
-# What: pick the "current NBA season" (an integer ``season_end_year``)
-# from the current calendar date so the summary lands on the most
-# recently completed season instead of a stale 2024.
-# Where:
-#   - courtside_data/server/service.py:157  (_default_season — the player
-#     hub's existing resolver; it takes a list of available seasons and
-#     returns the max, so it is NOT a drop-in replacement — it still
-#     needs an upstream season-discovery step to populate that list).
-#   - courtside_data/server/team_service.py:323  (where this constant
-#     is consumed by :meth:`TeamHubService.summary`).
-# How:
-#   1. Define a ``_current_nba_season(today: date) -> int`` helper: the
-#      NBA regular season that starts in fall of year ``Y-1`` ends in
-#      spring of year ``Y`` (``season_end_year == Y``). The cutoff is
-#      October 1 of ``Y-1`` (training-camp start): for a ``today`` on
-#      or after that date, return ``today.year + 1``; otherwise return
-#      ``today.year``. Example: 2026-06-27 -> 2026 (the 2025-26 season
-#      ended in spring 2026); 2026-09-15 -> 2027 (the 2026-27 season
-#      has just started training camp).
-#   2. Optionally union it with the per-dataset seasons returned by
-#      ``fixture_seasons_for_team`` (see the TODO on
-#      :meth:`TeamHubService.summary`'s ``available_seasons`` block) and
-#      fall back to the constant if the walker returns no data.
-# Decision needed: whether to use the calendar helper in ``live``
-# transport and the fixture walker in ``fixture`` transport, or always
-# prefer the more-specific source. The existing player hub uses
-# "fixtures-or-data" union; mirroring that is the lowest-risk path.
-# Verify: ``uv run python -c "from datetime import date; from
-#   courtside_data.server.team_service import _current_nba_season; print(
-#   _current_nba_season(date(2026, 6, 27)), _current_nba_season(date(
-#   2026, 9, 15)), _current_nba_season(date(2026, 1, 5)))"`` -> 2026
-#   2027 2026.
-_TEAM_DEFAULT_SEASON = 2024
+
+def _row_get(row: object, key: str) -> object:
+    """Read ``key`` from a row that may be a Pydantic model or a dict.
+
+    Pydantic-BRRow exposes attribute access; the search service's
+    fake rows and any future dict-shaped row both expose ``[]`` /
+    ``get``. This helper unifies both shapes so the row-projection
+    helpers (``_team_hero_stats``, ``_franchise_arc``) can accept
+    either.
+    """
+    if isinstance(row, dict):
+        return row.get(key)
+    getter = getattr(row, key, None)
+    if getter is not None:
+        return getter
+    getitem = getattr(row, "__getitem__", None)
+    if getitem is None:
+        return None
+    try:
+        return getitem(key)
+    except (KeyError, TypeError, IndexError):
+        return None
+
 
 # Human-readable team display names. The list is intentionally small —
 # it covers the canonical abbreviations the UI has branded in
@@ -203,106 +188,42 @@ class TeamHubService:
                 params[name] = team_identifier
             elif name == _TEAM_SEASON_PARAM:
                 if season_end_year is None:
-                    # TODO(team-hub): this branch is reachable only from
-                    # callers that omitted a season for a
-                    # ``team_season``-scope endpoint. After the scope
-                    # reclassification in :mod:`courtside_data.server.
-                    # team_catalog`, the only team-scope (no-season)
-                    # datasets are ``contracts`` and ``franchise_history``;
-                    # the season_dataset route and the CSV export route
-                    # both pass ``season_end_year`` explicitly, so this
-                    # raise is the safety net for direct service calls
-                    # that bypass the route layer.
-                    #
-                    # What: wire a single shared default-season resolver
-                    # so the summary() embedded roster call (and any
-                    # other direct caller) can fall back to
-                    # :data:`_TEAM_DEFAULT_SEASON` (or its data-driven
-                    # replacement) without each call site re-deriving
-                    # it.
-                    # Where:
-                    #   - courtside_data/server/team_service.py:323
-                    #     (the :meth:`TeamHubService.summary` default
-                    #     season — already passes the constant).
-                    #   - courtside_data/server/team_service.py:470
-                    #     (the :meth:`TeamHubService.csv` call site
-                    #     that currently raises when season is None).
-                    # How:
-                    #   1. Change this branch to assign
-                    #     ``params[name] = _resolve_default_season()``
-                    #     instead of raising.
-                    #   2. Make :meth:`TeamHubService.csv` pass
-                    #     ``season_end_year=`` directly (or
-                    #     ``_resolve_default_season()``) instead of
-                    #     relying on this raise to flag a bad request.
-                    # Decision needed: the team CSV export route
-                    # (``/api/teams/{id}/export?dataset=roster`` without
-                    # a ``season_end_year``) currently maps this
-                    # ``ValueError`` to ``400 bad_request``; if the
-                    # default-season resolver silently fills in a
-                    # season, the export will succeed for any dataset,
-                    # which may surprise users. Keep the raise for the
-                    # route layer; resolve only inside the service when
-                    # the caller is summary().
-                    # Verify: ``TestClient(create_app(transport=
-                    #   'fixture')).get('/api/teams/BOS/summary').
-                    #   status_code == 200`` and the same call's
-                    #   ``.json()['default_season']`` matches the
-                    #   resolver's output.
+                    # Safety net for direct service callers that bypass the
+                    # route layer: :meth:`TeamHubService.summary` always
+                    # passes an explicit season (resolved via
+                    # :func:`courtside_data.domain.seasons.current_nba_season_end_year`)
+                    # and the season_dataset / CSV export routes both pass
+                    # ``season_end_year`` from the URL or query string.
+                    # This raise is therefore only reached by a direct
+                    # ``svc._build_params(...)`` call without a season, and
+                    # is intentionally preserved so the CSV export route
+                    # can still surface ``400 bad_request`` for a missing
+                    # ``season_end_year`` query parameter (see
+                    # :func:`courtside_data.server.app.team_export`).
                     raise ValueError(
                         f"Endpoint {endpoint_name!r} requires season_end_year; "
-                        "team_service._build_params has no default-season resolver yet"
+                        "pass season_end_year explicitly or use summary() which "
+                        "falls back to current_nba_season_end_year()"
                     )
                 params[name] = season_end_year
             elif name == _TEAM_INCLUDE_INACTIVE_PARAM:
                 params[name] = bool(include_inactive_games) if include_inactive_games is not None else False
             else:
-                # TODO(team-hub): extend the param-name mapping when
-                # wiring a team endpoint that declares a custom param
-                # not covered by ``_TEAM_ABBREVIATION_PARAM`` /
-                # ``_TEAM_SEASON_PARAM`` / ``_TEAM_INCLUDE_INACTIVE_PARAM``.
-                #
-                # What: teach :meth:`TeamHubService._build_params` about
-                # the new param. Today every team endpoint in
-                # ``courtside_data.endpoints._teams`` uses the default
-                # ``_team(...)`` param tuple
-                # ``("team_abbreviation", "season_end_year")`` except
-                # ``team_contracts`` and ``franchise_history`` which
-                # override to ``("team_abbreviation",)``. No current
-                # team endpoint declares ``include_inactive_games`` in
-                # its spec — that branch exists for forward-compat with
-                # future team-box-score endpoints.
-                # Where:
-                #   - courtside_data/endpoints/_teams.py  (the 13
-                #     ``TEAM_ENDPOINTS`` specs; check ``spec.params``
-                #     before adding a new branch here).
-                #   - courtside_data/endpoints/_table.py:170
-                #     (the ``_team`` helper that defines the default
-                #     param tuple).
-                # How:
-                #   1. Inspect ``ENDPOINTS[endpoint_name].params`` and
-                #     add a new ``elif name == "<param>":`` branch
-                #     that pulls the value from a new public kwarg on
-                #     :meth:`TeamHubService._build_params`.
-                #   2. If the param is read-only or transport-side
-                #     (e.g. a per-call ``include_inactive_games``-style
-                #     flag), wire it through the ``_fetch`` /
-                #     ``_run`` private helpers and the public
-                #     ``dataset`` / ``season_dataset`` / ``csv``
-                #     methods that already accept such flags.
-                # Decision needed: should the service auto-derive
-                # unknown params from a fixed set of public kwargs, or
-                # should :meth:`_build_params` take a ``**extra_params``
-                # bag that gets forwarded verbatim? The former keeps
-                # the public surface narrow; the latter is faster to
-                # extend.
-                # Verify: add a new team endpoint with a custom param
-                #   to ``_teams.py``, register a fixture, and confirm
-                #   ``TeamHubService(...).dataset(team_id,
-                #   new_dataset_id)`` returns the expected rows.
+                # The mapping only knows the three params above. Every
+                # team endpoint in :mod:`courtside_data.endpoints._teams`
+                # today uses one of those three (``team_contracts`` and
+                # ``franchise_history`` override to a single-param
+                # ``("team_abbreviation",)`` spec; the rest take the
+                # default ``("team_abbreviation", "season_end_year")``
+                # pair). ``include_inactive_games`` is forward-compat for
+                # future team-box-score endpoints. If a new team endpoint
+                # declares a different param, add an ``elif name == "..."``
+                # branch here that pulls the value from a public kwarg
+                # on :meth:`TeamHubService._build_params`.
                 raise NotImplementedError(
-                    f"team_service._build_params: endpoint {endpoint_name!r} has unhandled param {name!r}; "
-                    f"see courtside_data.endpoints.ENDPOINTS[{endpoint_name!r}].params"
+                    f"_build_params: endpoint {endpoint_name!r} declares unhandled param {name!r}. "
+                    f"Add an elif branch mapping it to a public kwarg. "
+                    f"Declared params: {ENDPOINTS[endpoint_name].params}"
                 )
         return params
 
@@ -383,67 +304,74 @@ class TeamHubService:
             transport=self.transport,
         )
 
-    def _team_hero_stats(self, team_identifier: str, season_end_year: int) -> dict[str, Any]:
+    def _franchise_arc(self, team_identifier: str) -> list[FranchiseArcPoint]:
+        """Project the ``franchise_history`` table to a sorted win-loss arc.
+
+        Calls the ``franchise_history`` endpoint once per team and
+        reduces each :class:`~courtside_data.schemas.teams.FranchiseHistoryRow`
+        to a :class:`FranchiseArcPoint`. Rows with an unparseable
+        ``season`` field are skipped (defensive — the source schema
+        allows ``StrOrNone``). The returned list is sorted by
+        ``season_end_year`` ascending so the consumer can plot it
+        left-to-right.
+
+        On :class:`MissingFixtureError` the helper returns ``[]`` (no
+        raise) so the summary still renders.
+        """
+        try:
+            rows = self._run(
+                "franchise_history",
+                {_TEAM_ABBREVIATION_PARAM: team_identifier},
+            )
+        except MissingFixtureError:
+            return []
+        arc: list[FranchiseArcPoint] = []
+        for row in rows:
+            # The BR rows have a dict-like ``__getitem__`` plus
+            # Pydantic attribute access. Try the attribute first
+            # (Pydantic path), then fall back to ``[]`` (dict path)
+            # so service-level tests can inject plain dicts.
+            season_str = _row_get(row, "season")
+            end_year = season_end_year(season_str)
+            if end_year is None:
+                continue
+            wins_raw = _row_get(row, "wins")
+            losses_raw = _row_get(row, "losses")
+            wins = int(wins_raw) if isinstance(wins_raw, (int, float)) else None
+            losses = int(losses_raw) if isinstance(losses_raw, (int, float)) else None
+            win_pct: float | None = None
+            if wins is not None and losses is not None:
+                total = wins + losses
+                if total > 0:
+                    win_pct = wins / total
+            team_name_raw = _row_get(row, "team_name")
+            team_name = str(team_name_raw) if team_name_raw is not None else None
+            arc.append(
+                FranchiseArcPoint(
+                    season_end_year=end_year,
+                    team_name=team_name,
+                    wins=wins,
+                    losses=losses,
+                    win_pct=win_pct,
+                )
+            )
+        arc.sort(key=lambda p: p.season_end_year)
+        return arc
+
+    def _team_hero_stats(self, team_identifier: str, season_end_year: int) -> TeamHeroStats:
         """Extract team hero stats from the ``team_misc_four_factors`` row.
 
         Mirrors :func:`_hero_stats` in
         :mod:`courtside_data.server.service` but pulls from the
         ``TeamMiscFourFactorsRow`` schema (wins / losses / MOV / SRS /
-        ratings / pace) instead of the player career row. Returns ``{}``
-        on any failure (including :class:`MissingFixtureError`) so the
-        summary can still render.
+        ratings / pace) instead of the player career row. On any
+        failure (including :class:`MissingFixtureError`) returns a
+        :class:`TeamHeroStats` instance with ``team`` populated to the
+        requested identifier and every other field ``None`` (the
+        graceful-empty contract). The closed-type return shape means
+        the summary's ``hero_stats`` field never has to be a ``dict``,
+        so the UI doesn't have to guard on field presence.
         """
-        # TODO(team-hub): confirm and stabilise the hero-stats source
-        # and the contract with the team-hub UI.
-        #
-        # What: the team-hub UI ``overview`` component consumes
-        # ``wins``, ``losses``, and ``win_pct`` from ``hero_stats``
-        # (the three keys the player-hub UI surfaces in its
-        # overview). The current implementation already emits those
-        # three, plus a basket of secondary keys (``wins_pyth``,
-        # ``losses_pyth``, ``mov``, ``srs``, ``off_rtg``, ``def_rtg``,
-        # ``pace``, ``season``, ``team``) that the player hub's hero
-        # strip doesn't carry. This implementation may be over-emitting;
-        # the field set needs product sign-off.
-        # Where:
-        #   - courtside_data/schemas/teams.py:62
-        #     (``TeamMiscFourFactorsRow``; the source row model that
-        #     supplies ``wins`` / ``losses`` / ``srs`` / ``mov`` /
-        #     ``off_rtg`` / ``def_rtg`` / ``pace``).
-        #   - courtside_data/endpoints/_teams.py:75 (the
-        #     ``team_misc_four_factors`` EndpointSpec — the ``path``
-        #     is the same ``/teams/{abbr}/{season}.html`` page the
-        #     ``and-opponent`` and ``opponent-stats`` endpoints hit,
-        #     only the parsed table differs).
-        #   - ui/src/features/team-hub/components/overview.tsx (the UI
-        #     consumer; cannot be read from this lane but is the source
-        #     of truth for which keys are required).
-        # How:
-        #   1. Read the team-hub overview component and reconcile its
-        #     ``heroStats`` / ``hero_stats`` access pattern with the
-        #     keys emitted here. Trim the secondary keys if the UI
-        #     doesn't render them.
-        #   2. If the UI needs a "franchise totals" or "playoff
-        #     record" key, source it from ``franchise_history``
-        #     (``FranchiseHistoryRow`` at
-        #     ``courtside_data/schemas/teams.py:286``) or
-        #     ``team_schedule`` (which exposes ``wins`` / ``losses``
-        #     in ``courtside_data/schemas/schedule.py:44-45``) and
-        #     merge the keys into the dict returned here.
-        # Decision needed: (a) keep the graceful-empty ``{}`` fallback
-        # (current behaviour) so a missing fixture is a no-op for the
-        # UI, or (b) raise so the UI surfaces a clear "data
-        # unavailable" state. (a) is the current behaviour and
-        # matches the player hub's empty-row fallback in
-        # :func:`courtside_data.server.service._hero_stats`; (b) is
-        # more honest but breaks the summary in fixture mode.
-        # Verify: with a captured
-        # ``raw/team_misc_four_factors/BOS_2024.html`` fixture,
-        # ``TeamHubService(transport='fixture').summary('BOS')[
-        # 'hero_stats']`` should contain ``wins``, ``losses``,
-        # ``win_pct``, plus the secondary keys documented above; the
-        # values should match what the raw HTML's ``#team_misc``
-        # table renders (sanity-check against the page in a browser).
         try:
             rows = self._run(
                 "team_misc_four_factors",
@@ -453,33 +381,33 @@ class TeamHubService:
                 },
             )
         except MissingFixtureError:
-            return {}
+            return TeamHeroStats(team=team_identifier)
         for row in reversed(rows):
             payload = row.model_dump(mode="json") if hasattr(row, "model_dump") else dict(row)
             wins_raw = payload.get("wins")
             losses_raw = payload.get("losses")
-            wins = int(wins_raw) if isinstance(wins_raw, (int, float)) and wins_raw is not None else None
-            losses = int(losses_raw) if isinstance(losses_raw, (int, float)) and losses_raw is not None else None
+            wins = int(wins_raw) if isinstance(wins_raw, (int, float)) else None
+            losses = int(losses_raw) if isinstance(losses_raw, (int, float)) else None
             win_pct: float | None = None
             if wins is not None and losses is not None:
                 total = wins + losses
                 if total > 0:
                     win_pct = wins / total
-            return {
-                "season": payload.get("season"),
-                "team": team_identifier,
-                "wins": wins,
-                "losses": losses,
-                "win_pct": win_pct,
-                "wins_pyth": payload.get("wins_pyth"),
-                "losses_pyth": payload.get("losses_pyth"),
-                "mov": payload.get("mov"),
-                "srs": payload.get("srs"),
-                "off_rtg": payload.get("off_rtg"),
-                "def_rtg": payload.get("def_rtg"),
-                "pace": payload.get("pace"),
-            }
-        return {}
+            return TeamHeroStats(
+                season=payload.get("season"),
+                team=team_identifier,
+                wins=wins,
+                losses=losses,
+                win_pct=win_pct,
+                wins_pyth=payload.get("wins_pyth"),
+                losses_pyth=payload.get("losses_pyth"),
+                mov=payload.get("mov"),
+                srs=payload.get("srs"),
+                off_rtg=payload.get("off_rtg"),
+                def_rtg=payload.get("def_rtg"),
+                pace=payload.get("pace"),
+            )
+        return TeamHeroStats(team=team_identifier)
 
     @staticmethod
     def _serialize_rows(rows: list[Any]) -> list[dict[str, Any]]:
@@ -487,107 +415,60 @@ class TeamHubService:
 
     # ------------------------------------------------------------ public API
     def search(self, term: str) -> list[TeamSearchResult]:
-        # TODO(team-hub): wire team search end-to-end.
-        #
-        # What: implement :meth:`TeamHubService.search` so that
-        # ``GET /api/teams/search?term=…`` returns a list of
-        # :class:`TeamSearchResult` (``name`` / ``identifier`` /
-        # ``leagues``) for matching team abbreviations. The current
-        # search :class:`EndpointSpec` in
-        # ``courtside_data/endpoints/_workflows.py:794`` is the
-        # Basketball-Reference ``/search/search.fcgi?search=…`` endpoint
-        # but its ``row_model`` is :class:`SearchResultRow` at
-        # ``courtside_data/schemas/search.py:50`` whose fields are
-        # ``name`` (``str``), ``identifier`` (``str``), ``leagues``
-        # (``LeaguesField``) — there is **no** ``type`` or ``kind``
-        # discriminator, so we cannot filter to team rows from the
-        # existing data alone.
-        # Where:
-        #   - courtside_data/endpoints/_workflows.py:794  (the
-        #     ``search`` EndpointSpec; ``path=``/search/search.fcgi
-        #     ?search={term}``, ``params=("term",)``,
-        #     ``row_model=SearchResultRow``,
-        #     ``metadata.scope=EndpointScope.SEARCH``,
-        #     ``metadata.kind=EndpointKind.WORKFLOW``,
-        #     ``workflow=_SEARCH_WORKFLOW``).
-        #   - courtside_data/schemas/search.py:50  (``SearchResultRow``
-        #     fields ``name`` / ``identifier`` / ``leagues``).
-        #   - courtside_data/endpoints/_workflows.py:_SEARCH_WORKFLOW
-        #     (the workflow executor that normalises the
-        #     div-based search listing into ``SearchResultRow``; this
-        #     is what strips the team results today).
-        #   - courtside_data/server/team_service.py:287  (this method).
-        # How (two viable options — see Decision needed):
-        #
-        #   Option A — discriminator on SearchResultRow (cheapest):
-        #     1. Add ``type: Literal["player", "team", "coach", ...]``
-        #        to :class:`SearchResultRow` in
-        #        ``courtside_data/schemas/search.py`` (default
-        #        ``"player"`` for back-compat).
-        #     2. Populate ``type`` in the workflow's
-        #        ``_SEARCH_WORKFLOW`` result-mapping step (look at the
-        #        result container's CSS class — basketball-reference
-        #        wraps each result card in a div with a
-        #        ``"search-item"`` + ``"search-item-N"`` block whose
-        #        first anchor's ``/teams/`` vs ``/players/`` prefix
-        #        disambiguates).
-        #     3. Implement this method by calling ``self._run(
-        #        "search", {"term": term})`` and filtering the rows
-        #        to only those with ``r.get("type") == "team"``,
-        #        mapping each remaining row to a
-        #        :class:`TeamSearchResult` (name / identifier /
-        #        leagues).
-        #     4. If the workflow doesn't yet emit ``type``, the filter
-        #        returns ``[]`` and the route degrades to "no results"
-        #        (not an error), which is the safe default.
-        #
-        #   Option B — dedicated team_search EndpointSpec (purest):
-        #     1. Add a new entry to ``TEAM_ENDPOINTS`` in
-        #        ``courtside_data/endpoints/_teams.py`` with a
-        #        team-only path. Basketball-Reference's team search
-        #        lives at the same ``/search/search.fcgi?search=…``
-        #        URL but the workflow currently only paginates
-        #        ``players`` / ``wnba_players`` / ``intl_players`` /
-        #        ``nbdl_players`` / ``sup_players`` (see the
-        #        ``_search_map`` helper in
-        #        ``courtside_data/server/fixtures.py:168``). The team
-        #        search would need either a new workflow step that
-        #        paginates a ``teams`` index, or a separate request
-        #        URL like ``/search/search.fcgi?search=…&idx=teams``
-        #        (verify the actual parameter against a live capture;
-        #        basketball-reference has shipped several search-index
-        #        names over the years).
-        #     2. Add a corresponding ``TeamSearchResultRow` schema in
-        #        a new ``courtside_data/schemas/teams.py` block and
-        #        ``register("team_search", …)``.
-        #     3. Implement this method as
-        #        ``rows = self._run("team_search", {"term": term});
-        #        return [TeamSearchResult(...) for row in rows]``.
-        #     4. Add a ``_search_team_map`` helper to
-        #        ``courtside_data/server/fixtures.py` mirroring
-        #        ``_search_map`` but pointing at
-        #        ``raw/team_search/{term}.html``.
-        # Decision needed: Option A is one-line schema change + one
-        # workflow tweak; Option B is a new spec end-to-end. The
-        # player hub will also benefit from Option A (the
-        # coach/manager search results are silently dropped today),
-        # so Option A is the recommended path unless a separate
-        # team-search URL is a product requirement.
-        # Verify (Option A): capture a ``raw/search/celtics.html``
-        # fixture containing the team results, then
-        # ``TestClient(create_app(transport='fixture')).get(
-        # '/api/teams/search', params={'term': 'celtics'}).json()``
-        # returns ``[{"name": "Boston Celtics", "identifier": "BOS",
-        # "leagues": ["NBA"]}, ...]``.
-        # Verify (Option B): same as Option A but assert
-        # ``/api/teams/search`` hits the new spec and not the player
-        # ``search`` spec (check the trace envelope's
-        # ``endpoint_name`` is ``"team_search"``).
-        raise NotImplementedError(
-            "TODO(team-hub): team search is not wired — `search` EndpointSpec "
-            "is player-only (see courtside_data/schemas/search.py:50). Need "
-            "a team_search spec or a `type` discriminator on SearchResultRow."
-        )
+        """Search the Basketball-Reference search index and return team rows.
+
+        Reuses the player-hub's ``search`` ``EndpointSpec`` (the no-``idx``
+        ``/search/search.fcgi?search={term}`` page) and filters the
+        resulting :class:`SearchResultRow` stream to entries with the
+        ``type == "team"`` discriminator that
+        :func:`courtside_data.parsing._rows_search.parse_search_rows_with_stats`
+        now stamps on each card. ``teams`` and ``team_seasons`` both
+        collapse to ``type="team"`` (the enum doesn't distinguish the
+        franchise-level card from the per-season card); the
+        dedupe-by-identifier pass below keeps the franchise card and
+        discards the per-season cards, because the franchise card
+        appears first in source.
+
+        A term shorter than two characters raises
+        :class:`courtside_data.errors.InvalidSearch` (mirrors the
+        player-hub's :meth:`PlayerHubService.search_players`
+        behaviour). A search with no team rows returns ``[]`` (not an
+        error) so the UI can render the empty state.
+        """
+        term = term.strip()
+        if len(term) < 2:
+            raise InvalidSearch(term)
+        rows = self._run("search", {"term": term})
+        seen: set[str] = set()
+        results: list[TeamSearchResult] = []
+        for r in rows:
+            type_value = getattr(r, "type", None)
+            if type_value is None and isinstance(r, dict):
+                type_value = r.get("type")
+            if type_value != "team":
+                continue
+            # Pydantic-BRRow exposes ``__getitem__``; dict rows expose
+            # ``[]``; support both so service-level tests can inject
+            # plain dicts.
+            identifier = str(r["identifier"])
+            if identifier in seen:
+                continue
+            seen.add(identifier)
+            leagues_raw = r.get("leagues") if hasattr(r, "get") else r["leagues"]
+            if leagues_raw is None:
+                leagues: list[str] = []
+            elif isinstance(leagues_raw, str):
+                leagues = [leagues_raw]
+            else:
+                leagues = sorted(str(league) for league in leagues_raw)
+            results.append(
+                TeamSearchResult(
+                    name=str(r["name"]),
+                    identifier=identifier,
+                    leagues=leagues,
+                )
+            )
+        return results
 
     def summary(self, team_identifier: str) -> TeamHubSummary:
         """Build the Team Hub overview payload.
@@ -601,8 +482,11 @@ class TeamHubService:
         # endpoint so we MUST pick a season here. The player hub's
         # ``_default_season`` is data-driven (driven by ``career`` rows);
         # the team hub has no equivalent season-discovery path yet
-        # (TODO below), so we fall back to a single hard-coded anchor.
-        default_season = _TEAM_DEFAULT_SEASON
+        # (TODO below), so we fall back to the calendar-driven helper
+        # in :mod:`courtside_data.domain.seasons`. It anchors the
+        # summary on the most-recently-completed or currently-running
+        # NBA season (e.g. 2026-06-27 -> 2026; 2026-10-15 -> 2027).
+        default_season = current_nba_season_end_year()
 
         # Roster (embedded) — best-effort. In fixture mode the team
         # fixture transport is intentionally not wired (see
@@ -797,11 +681,13 @@ class TeamHubService:
         return TeamHubSummary(
             identifier=team_identifier,
             display_name=TEAM_DISPLAY_NAMES.get(team_identifier, team_identifier),
+            leagues=["NBA"],
             default_season=default_season,
             available_seasons=available_seasons,
             hero_stats=hero_stats,
             roster=roster,
             season_dataset_availability=season_dataset_availability,
+            franchise_arc=self._franchise_arc(team_identifier),
             transport=self.transport,
         )
 
@@ -888,7 +774,16 @@ class TeamHubService:
         ``EndpointSpec`` in :mod:`courtside_data.endpoints._teams`),
         which gives a stable export order across hubs.
         """
-        # TODO(team-hub): stabilise the CSV column-ordering contract.
+        # The CSV column-ordering contract is enforced by
+        # ``tests/server/test_team_hub_csv.py::test_csv_header_matches_endpoint_spec_csv_columns``
+        # (parametrized over :data:`TEAM_DATASETS`). For every team
+        # endpoint with a non-empty ``csv_columns`` sequence, the
+        # header row of this method's output MUST equal
+        # ``list(spec.csv_columns)``. The test deliberately feeds a
+        # row with keys in reversed order to catch any silent
+        # fallback to ``rows[0].keys()`` (the unstable path that
+        # mirrors the player hub's ``search`` spec comment in
+        # :mod:`courtside_data.endpoints._workflows`).
         #
         # What: today the fieldname list is taken from
         # ``EndpointSpec.csv_columns`` when it is set (all 13 team
@@ -939,13 +834,6 @@ class TeamHubService:
         # ``csv_columns``; the only risk is for the no-data + no
         # spec fallback, which currently produces a header-less
         # empty file.
-        # Verify: snapshot the current CSV output of
-        #   ``TestClient(create_app(transport='fixture')).get(
-        #   '/api/teams/BOS/seasons/2024/roster.csv')`` (after
-        #   capturing ``raw/team_roster/BOS_2024.html``) and
-        #   confirm the header row matches
-        #   ``TEAM_ROSTER_COLUMN_NAMES`` byte-for-byte; the row
-        #   order should also match.
         dataset = team_dataset_by_id(dataset_id)
         endpoint = ENDPOINTS[dataset.endpoint_name]
         params = self._build_params(
@@ -961,13 +849,6 @@ class TeamHubService:
         writer.writeheader()
         writer.writerows(rows)
         return output.getvalue()
-
-
-# Re-export ``columns_for_dataset`` under a team-friendly name so callers
-# who only depend on ``team_service`` can reach the player-hub column helper
-# for shared column shapes (currently unused, but kept for symmetry with
-# future cross-hub column work).
-team_columns = columns_for_dataset
 
 
 __all__ = [

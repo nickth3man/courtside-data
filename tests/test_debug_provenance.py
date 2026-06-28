@@ -419,10 +419,13 @@ def test_draft_picks_1965_historical_team_abbreviations_validate() -> None:
     # Every source row is retained (no team-driven loss).
     assert len(validated) == len(parser_rows)
     # BAL/CIN rows resolve to the expected historical Team enum values.
+    # BAL is the 1963-73 Baltimore Bullets (Wizards lineage); see
+    # ``Team.BALTIMORE_BULLETS_WIZ`` and the
+    # ``TEAM_ABBREVIATIONS_TO_TEAM`` ``"BAL"`` entry.
     from courtside_data.domain import Team
 
     validated_teams = {row.team for row in validated if row.team is not None}
-    assert Team.BALTIMORE_BULLETS in validated_teams
+    assert Team.BALTIMORE_BULLETS_WIZ in validated_teams
     assert Team.CINCINNATI_ROYALS in validated_teams
 
 

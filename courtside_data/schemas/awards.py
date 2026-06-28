@@ -119,17 +119,23 @@ class CareerLeadersRow(BRRow):
     those rows are real records that must be retained (a blank rank becomes
     ``None`` rather than dropping the row).
 
-    .. todo:: Derive explicit tie information for career leaders. Unlike award
-       tables, BR does *not* suffix tied ranks with ``T`` — the tie is
-       implicit in the cell being blank while the preceding row carries a
-       numbered rank. A future enhancement could surface this via a companion
-       field (e.g. ``rank_tied``) derived from row ordering rather than the
-       source cell, making the tie explicit without changing the source contract.
+    The companion ``rank_tied`` flag is derived from row ordering by the
+    parser pipeline (see
+    :func:`courtside_data.client._pipelines.pydantic._validate_row_model_rows_detailed`):
+
+    - ``True`` when this row's ``rank`` is ``None`` (blank) and the preceding
+      row had a numeric rank (the tied entry).
+    - ``False`` when this row has a numeric rank.
+    - ``None`` when this row's rank is blank and no preceding ranked row
+      exists (e.g. a tie at the very top of the table, before the first
+      numbered row). The default is also ``None`` for callers that
+      :meth:`model_validate` the row directly outside the parser pipeline.
     """
 
     rank: BRIntOrNone = Field(default=None, validation_alias="rank")
     player: str = Field(validation_alias="player")
     value: str = Field(validation_alias="value")
+    rank_tied: bool | None = Field(default=None)
 
 
 register("career_leaders", CareerLeadersRow)

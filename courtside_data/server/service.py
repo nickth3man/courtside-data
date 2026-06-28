@@ -4,11 +4,11 @@ from __future__ import annotations
 
 import csv
 import io
-import re
 from pathlib import Path
 from typing import Any
 
 from courtside_data.client import CourtsideClient
+from courtside_data.domain.seasons import season_end_year
 from courtside_data.endpoints import ENDPOINTS
 from courtside_data.errors import InvalidSearch
 from courtside_data.server.catalog import columns_for_dataset, dataset_by_id
@@ -34,8 +34,6 @@ PLAYER_DISPLAY_NAMES = {
     "russebi01": "Bill Russell",
     "westbru01": "Russell Westbrook",
 }
-
-SEASON_RE = re.compile(r"^(?P<start>\d{4})-(?P<end>\d{2})$")
 
 
 class PlayerHubService:
@@ -135,18 +133,12 @@ class PlayerHubService:
 
 
 def _season_end_year(season: object) -> int | None:
-    if not isinstance(season, str):
-        return None
-    match = SEASON_RE.match(season)
-    if match is None:
-        return None
-    start_year = int(match.group("start"))
-    end_suffix = int(match.group("end"))
-    century = start_year // 100 * 100
-    candidate = century + end_suffix
-    if candidate <= start_year:
-        candidate += 100
-    return candidate
+    # Thin shim over :func:`courtside_data.domain.seasons.season_end_year`
+    # so any internal callers in the player hub keep working without an
+    # import-path change. The hoisted helper also accepts the
+    # four-digit end-year spelling (``"1999-2000"``), which the local
+    # copy did not — that gain is intentional.
+    return season_end_year(season)
 
 
 def _season_end_years(rows: list[dict[str, Any]]) -> list[int]:

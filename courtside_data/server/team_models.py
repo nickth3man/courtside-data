@@ -56,7 +56,7 @@ class TeamHubCatalog(BaseModel):
     """
 
     tabs: list[TeamHubTab]
-    datasets: dict[str, TeamDatasetCatalogEntry]
+    datasets: list[TeamDatasetCatalogEntry]
 
 
 class TeamHubSummary(BaseModel):
@@ -73,7 +73,58 @@ class TeamHubSummary(BaseModel):
     leagues: list[str] = Field(default_factory=list)
     default_season: int | None = None
     available_seasons: list[int] = Field(default_factory=list)
-    hero_stats: dict[str, Any] = Field(default_factory=dict)
+    hero_stats: TeamHeroStats = Field(default_factory=lambda: TeamHeroStats(team=""))
     roster: EndpointRowsResponse
     season_dataset_availability: dict[str, list[int]] = Field(default_factory=dict)
+    franchise_arc: list[FranchiseArcPoint] = Field(default_factory=list)
     transport: TransportMode
+
+
+class TeamHeroStats(BaseModel):
+    """Closed-type hero-stats payload for the Team Hub landing state.
+
+    Mirrors the player-hub's :class:`PlayerHubSummary` ``hero_stats``
+    payload but typed: ``team`` is the only required field (always
+    populated with the requested team identifier so a missing-fixture
+    path still tells the UI which team the empty stats are for); every
+    other field is ``Optional`` and defaults to ``None``. This is the
+    graceful-empty contract — the UI can render "no data" without
+    guarding on shape.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    team: str
+    season: int | str | None = None
+    wins: int | None = None
+    losses: int | None = None
+    win_pct: float | None = None
+    wins_pyth: int | None = None
+    losses_pyth: int | None = None
+    mov: float | None = None
+    srs: float | None = None
+    off_rtg: float | None = None
+    def_rtg: float | None = None
+    pace: float | None = None
+
+
+class FranchiseArcPoint(BaseModel):
+    """A single point on the franchise-level season arc.
+
+    Sourced from the ``franchise_history`` endpoint's
+    :class:`~courtside_data.schemas.teams.FranchiseHistoryRow`. The
+    point carries the season-end-year, the team name (which can
+    differ across the arc for relocated / renamed franchises, e.g.
+    the Seattle SuperSonics -> OKC Thunder), and the win-loss
+    summary. ``win_pct`` is computed by the service
+    (``wins / (wins + losses)`` when both are positive; ``None``
+    otherwise).
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    season_end_year: int
+    team_name: str | None = None
+    wins: int | None = None
+    losses: int | None = None
+    win_pct: float | None = None

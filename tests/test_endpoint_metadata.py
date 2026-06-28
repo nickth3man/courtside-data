@@ -20,6 +20,7 @@ from courtside_data.endpoints._teams import TEAM_ENDPOINTS
 from courtside_data.endpoints._workflows import WORKFLOW_ENDPOINTS
 from courtside_data.parsing.workflows import NATIVE_WORKFLOW_ENDPOINTS
 from courtside_data.parsing.workflows._executor import workflow_execution_bindings
+from courtside_data.server.team_catalog import TEAM_DATASETS
 
 _FIELD_FEATURES = {
     "commented_table_id": EndpointFeature.COMMENTED_TABLE,
@@ -177,3 +178,41 @@ def test_workflow_feature_flags_are_backed_by_workflow_steps(name: str) -> None:
         assert WorkflowStepKind.BRANCH in workflow_kinds
     if EndpointFeature.ENUM_PARAM_COERCION in features:
         assert "home_team" in endpoint.params
+
+
+@pytest.mark.parametrize("dataset", TEAM_DATASETS, ids=lambda dataset: dataset.id)
+def test_team_hub_scope_matches_endpoint_season_param(dataset) -> None:
+    """Every :class:`TeamDataset` whose ``endpoint_name`` resolves to an
+    :class:`EndpointSpec` whose ``params`` includes ``"season_end_year"``
+    MUST be classified ``scope="team_season"``; every entry whose
+    ``EndpointSpec.params`` does NOT include ``"season_end_year"`` MUST be
+    classified ``scope="team"``. See
+    :mod:`courtside_data.server.team_catalog` for the source-of-truth
+    invariant.
+    """
+    spec = ENDPOINTS[dataset.endpoint_name]
+    has_season_param = "season_end_year" in spec.params
+    if has_season_param:
+        assert dataset.scope == "team_season", (
+            f"{dataset.id!r}: endpoint {dataset.endpoint_name!r} accepts season_end_year but scope is {dataset.scope!r}"
+        )
+    else:
+        assert dataset.scope == "team", (
+            f"{dataset.id!r}: endpoint {dataset.endpoint_name!r} does not "
+            f"accept season_end_year but scope is {dataset.scope!r}"
+        )
+
+
+def test_team_hub_catalog_covers_every_team_endpoint() -> None:
+    """No orphan team endpoint specs and no orphan catalog entries.
+
+    Iterates every entry in :data:`TEAM_ENDPOINTS` and asserts the catalog
+    has a matching :class:`TeamDataset` whose ``endpoint_name`` is in the
+    set, and vice versa.
+    """
+    catalog_endpoint_names = {dataset.endpoint_name for dataset in TEAM_DATASETS}
+    registry_endpoint_names = set(TEAM_ENDPOINTS)
+    assert catalog_endpoint_names == registry_endpoint_names, (
+        f"catalog/registry drift: catalog_only={catalog_endpoint_names - registry_endpoint_names}, "
+        f"registry_only={registry_endpoint_names - catalog_endpoint_names}"
+    )

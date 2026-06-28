@@ -115,53 +115,26 @@ class TeamDataset:
 #   ``season_end_year``. Reachable only from
 #   ``/api/teams/{team_identifier}/seasons/{season_end_year}/{dataset}``.
 # This must stay in sync with the EndpointSpec declarations in
-# ``courtside_data.endpoints._teams``; see ``tests/test_endpoint_metadata.py``
-# for the cross-validation test.
+# ``courtside_data.endpoints._teams``; the invariant is enforced by
+# ``tests/test_endpoint_metadata.py::test_team_hub_scope_matches_endpoint_season_param``
+# (parametrized over :data:`TEAM_DATASETS`) and the catalog/registry
+# parity check ``tests/test_endpoint_metadata.py::test_team_hub_catalog_covers_every_team_endpoint``.
 #
-# TODO(team-hub): add a regression test that asserts the
-# scope/EndpointSpec params invariant below.
-#
-# What: every :class:`TeamDataset` whose ``endpoint_name`` resolves
-# to an :class:`EndpointSpec` whose ``params`` includes
-# ``"season_end_year"`` MUST be classified ``scope="team_season"``,
-# and every :class:`TeamDataset` whose ``EndpointSpec.params`` does
-# NOT include ``"season_end_year"`` MUST be classified
-# ``scope="team"``. This invariant is hand-enforced today; a
-# regression test in ``tests/test_endpoint_metadata.py`` would
-# catch drift if a new team endpoint is added to
-# :mod:`courtside_data.endpoints._teams` without updating this
-# catalog.
-# Where:
-#   - courtside_data/endpoints/_table.py:170  (the ``_team``
-#     helper whose default ``params=("team_abbreviation",
-#     "season_end_year")`` is the source of the invariant).
-#   - courtside_data/endpoints/_table.py:51  (the
-#     ``EndpointSpec.params`` tuple declaration).
-#   - tests/test_endpoint_metadata.py  (the cross-validation
-#     test module that already loads ``TEAM_ENDPOINTS`` at line
-#     19 — extend the existing test to also load
-#     :data:`TEAM_DATASETS` and assert the invariant).
-# How:
-#   1. In ``tests/test_endpoint_metadata.py`` add a parametrized
-#     test that, for every entry in :data:`TEAM_DATASETS`, looks
-#     up ``ENDPOINTS[dataset.endpoint_name].params`` and asserts
-#     ``("season_end_year" in spec.params) == (dataset.scope ==
-#     "team_season")``.
-#   2. Conversely, iterate every key in
-#     :data:`courtside_data.endpoints._teams.TEAM_ENDPOINTS` and
-#     assert the catalog has a matching entry whose
-#     ``endpoint_name`` matches (no orphan endpoints, no orphan
-#     catalog entries).
-# Decision needed: parametrize vs. fixture-snapshot. The
-# parametrized form (``@pytest.mark.parametrize`` over
-# ``TEAM_DATASETS``) is one line per dataset; the snapshot form
-# catches silent reclassifications but is harder to maintain
-# when the dataset set grows.
-# Verify: ``uv run pytest tests/test_endpoint_metadata.py -k
-#   team_hub_scope_invariant -v`` -> all 13 entries pass.
-#   Negative check: temporarily flip ``contracts`` to
-#   ``scope="team_season"`` and re-run; the new test should
-#   fail with a clear message.
+# Scope classification is derived from the endpoint's ``params`` tuple
+# (see ``courtside_data.endpoints._table._team``):
+# - ``"team"`` → the EndpointSpec accepts only ``team_abbreviation``
+#   (no season). Reachable from
+#   ``/api/teams/{team_identifier}/{dataset}``.
+# - ``"team_season"`` → the EndpointSpec accepts ``team_abbreviation`` and
+#   ``season_end_year``. Reachable only from
+#   ``/api/teams/{team_identifier}/seasons/{season_end_year}/{dataset}``.
+# Every :class:`TeamDataset` whose ``endpoint_name`` resolves to an
+# :class:`EndpointSpec` whose ``params`` includes ``"season_end_year"``
+# MUST be classified ``scope="team_season"``; every entry whose
+# ``EndpointSpec.params`` does NOT include ``"season_end_year"`` MUST
+# be classified ``scope="team"``. The regression tests catch drift if
+# a new team endpoint is added to :mod:`courtside_data.endpoints._teams`
+# without updating this catalog.
 TEAM_DATASETS: tuple[TeamDataset, ...] = (
     # ---- "team" scope: reachable from /api/teams/{team_identifier}/{dataset}
     # Only endpoints with no ``season_end_year`` param belong here.
@@ -272,11 +245,6 @@ TEAM_DATASETS: tuple[TeamDataset, ...] = (
         default_visible_columns=[],
     ),
 )
-
-
-# Re-export the module-level helper under the team_catalog namespace so the
-# service layer can call ``team_columns_for_dataset`` symmetrically.
-column_label = column_label
 
 
 _TEAM_NUMERIC_HINTS = (

@@ -56,15 +56,14 @@ TEAM_ABBREVIATIONS_TO_TEAM = {
     "WAS": Team.WASHINGTON_WIZARDS,
     # DEPRECATED TEAMS
     "BUF": Team.BUFFALO_BRAVES,
-    # TODO: the 1963-73 Baltimore Bullets (Wizards lineage, abbreviated ``BAL``
-    # by Basketball Reference) is a different franchise from the defunct BAA
-    # Baltimore Bullets (``BLB``). They currently share the same name-based
-    # enum ``Team.BALTIMORE_BULLETS``. A future franchise-era modelling pass
-    # (consistent with the Kansas City → Sacramento Kings split) should add a
-    # distinct enum for the Wizards-lineage Baltimore era so the two are not
-    # conflated. The reverse map already pins the canonical abbreviation to
-    # ``BLB`` to preserve existing serialisation behaviour.
-    "BAL": Team.BALTIMORE_BULLETS,
+    # 1963-73 Baltimore Bullets (Wizards lineage, abbreviated ``BAL`` by
+    # Basketball Reference) — distinct from the BAA-era Bullets (``BLB``);
+    # see :class:`courtside_data.domain.enums.Team.BALTIMORE_BULLETS_WIZ`.
+    # The reverse map is built from this forward map (``{v: k for k, v in
+    # ...}``), so ``Team.BALTIMORE_BULLETS_WIZ`` -> ``"BAL"`` is added
+    # automatically; the existing ``Team.BALTIMORE_BULLETS`` -> ``"BLB"``
+    # override below pins the BAA franchise's canonical abbreviation.
+    "BAL": Team.BALTIMORE_BULLETS_WIZ,
     "CIN": Team.CINCINNATI_ROYALS,
     "KCK": Team.KANSAS_CITY_KINGS,
     "KCO": Team.KANSAS_CITY_OMAHA_KINGS,
@@ -133,10 +132,11 @@ TEAM_TO_TEAM_ABBREVIATION[Team.CAPITAL_BULLETS] = "CAP"
 TEAM_TO_TEAM_ABBREVIATION[Team.DETROIT_FALCONS] = "DTF"
 TEAM_TO_TEAM_ABBREVIATION[Team.INDIANAPOLIS_JETS] = "INJ"
 TEAM_TO_TEAM_ABBREVIATION[Team.PROVIDENCE_STEAMROLLERS] = "PRO"
-# ``Team.BALTIMORE_BULLETS`` is the target of two BR abbreviations: ``BAL``
-# (1963-1973 Wizards-lineage franchise) and ``BLB`` (defunct BAA franchise).
-# Pin the canonical reverse abbreviation to ``BLB`` to preserve the existing
-# (pre-``BAL``-mapping) serialisation behaviour.
+# ``Team.BALTIMORE_BULLETS`` is the BAA-era franchise; its only BR
+# abbreviation is ``BLB`` (the ``BAL`` abbreviation now resolves to
+# ``Team.BALTIMORE_BULLETS_WIZ`` — the 1963-73 Wizards-lineage Bullets).
+# Pin the canonical reverse abbreviation to ``BLB`` to preserve the
+# existing (pre-``BAL``-mapping) serialisation behaviour.
 TEAM_TO_TEAM_ABBREVIATION[Team.BALTIMORE_BULLETS] = "BLB"
 
 TEAM_NAME_TO_TEAM = {

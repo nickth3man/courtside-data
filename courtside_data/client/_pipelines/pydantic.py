@@ -129,7 +129,45 @@ def _validate_row_model_rows_detailed(
                     enriched = dict(error)
                     enriched["row_index"] = index
                     drift_errors.append(enriched)
+    _derive_row_ordering_fields(row_model, values)
     return values, dropped_reasons, kept_indices, dropped_details, drift_errors
+
+
+def _derive_row_ordering_fields(row_model: Any, validated_rows: list[Any]) -> None:
+    """Populate companion fields that depend on the previous row's value.
+
+    :class:`courtside_data.schemas.awards.CareerLeadersRow` exposes a
+    ``rank_tied`` flag that is implicit in row ordering: Basketball Reference
+    leaves tied entries' rank cell blank while the preceding row carries a
+    numbered rank. The :meth:`model_validate` path is per-row and cannot
+    observe the previous row, so this function walks ``validated_rows`` in
+    order and fills ``rank_tied`` after the fact:
+
+    - ``True`` when this row's ``rank`` is ``None`` and the previous row's
+      ``rank`` was an ``int`` (the tied entry).
+    - ``False`` when this row's ``rank`` is an ``int``.
+    - ``None`` when this row's ``rank`` is ``None`` and no previous row
+      carried a numeric rank (e.g. a tie at the very top of the table).
+    """
+    if not validated_rows:
+        return
+    if getattr(row_model, "__name__", "") != "CareerLeadersRow":
+        return
+    previous_had_numeric_rank = False
+    for row in validated_rows:
+        rank_value = getattr(row, "rank", None)
+        if rank_value is None:
+            new_value: bool | None = True if previous_had_numeric_rank else None
+        else:
+            new_value = False
+            previous_had_numeric_rank = True
+        # ``rank_tied`` is a declared field on CareerLeadersRow; the schema
+        # default is ``None`` (used by direct model_validate callers). Mutate
+        # in place to keep the validated-rows list stable for downstream
+        # consumers (avoid an O(n) ``model_copy`` per row). ``object.__setattr__``
+        # bypasses Pydantic's per-field assignment, so it works for both
+        # mutable and frozen models.
+        object.__setattr__(row, "rank_tied", new_value)
 
 
 def _endpoint_url_context(endpoint: Any, params: dict[str, Any] | None) -> str:

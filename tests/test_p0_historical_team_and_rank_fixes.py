@@ -44,8 +44,13 @@ SEASON_AWARDS_VOTING_FIXTURE = PROJECT_ROOT / "raw" / "season_awards_voting" / "
 class TestHistoricalTeamAbbreviations:
     """``BAL`` and ``CIN`` are real historical drafting teams and must resolve."""
 
-    def test_bal_maps_to_baltimore_bullets(self) -> None:
-        assert TEAM_ABBREVIATIONS_TO_TEAM["BAL"] is Team.BALTIMORE_BULLETS
+    def test_bal_maps_to_baltimore_bullets_wizards_lineage(self) -> None:
+        """``BAL`` is the 1963-73 Baltimore Bullets, the precursor to the
+        Washington Bullets/Wizards lineage. It must resolve to a distinct
+        :class:`Team` enum from the BAA-era ``BLB`` franchise so the two
+        are not conflated.
+        """
+        assert TEAM_ABBREVIATIONS_TO_TEAM["BAL"] is Team.BALTIMORE_BULLETS_WIZ
 
     def test_cin_maps_to_cincinnati_royals(self) -> None:
         assert TEAM_ABBREVIATIONS_TO_TEAM["CIN"] is Team.CINCINNATI_ROYALS
@@ -55,17 +60,38 @@ class TestHistoricalTeamAbbreviations:
         assert TEAM_NAME_TO_TEAM["CINCINNATI ROYALS"] is Team.CINCINNATI_ROYALS
 
     def test_blb_still_maps_to_defunct_baltimore_bullets(self) -> None:
-        """The original BAA Baltimore Bullets abbreviation is unaffected."""
+        """The original BAA Baltimore Bullets abbreviation is unaffected.
+
+        ``BLB`` continues to point at the defunct BAA franchise; ``BAL`` is
+        the distinct Wizards-lineage Bullets (see
+        :class:`Team.BALTIMORE_BULLETS_WIZ`).
+        """
         assert TEAM_ABBREVIATIONS_TO_TEAM["BLB"] is Team.BALTIMORE_BULLETS
 
     def test_reverse_canonical_for_baltimore_bullets_preserved_as_blb(self) -> None:
-        """Adding ``BAL`` must not change the existing reverse-lookup canonical."""
+        """Adding ``BAL`` must not change the existing reverse-lookup canonical
+        for the BAA-era Bullets. ``Team.BALTIMORE_BULLETS`` stays pinned to
+        ``"BLB"``; the new ``Team.BALTIMORE_BULLETS_WIZ`` carries ``"BAL"``.
+        """
         assert TEAM_TO_TEAM_ABBREVIATION[Team.BALTIMORE_BULLETS] == "BLB"
+        assert TEAM_TO_TEAM_ABBREVIATION[Team.BALTIMORE_BULLETS_WIZ] == "BAL"
 
     def test_team_field_validates_bal_and_cin(self) -> None:
         adapter = TypeAdapter(TeamField)
-        assert adapter.validate_python("BAL") is Team.BALTIMORE_BULLETS
+        assert adapter.validate_python("BAL") is Team.BALTIMORE_BULLETS_WIZ
+        assert adapter.validate_python("BLB") is Team.BALTIMORE_BULLETS
         assert adapter.validate_python("CIN") is Team.CINCINNATI_ROYALS
+
+    def test_baltimore_bullets_wiz_is_distinct_enum_member(self) -> None:
+        """``BALTIMORE_BULLETS`` and ``BALTIMORE_BULLETS_WIZ`` are separate
+        enum members, mirroring the Kansas City / Kansas City-Omaha Kings
+        split. The two values must not be the same enum instance, and the
+        ``.value`` strings must be distinct so Python's ``Enum`` does not
+        coalesce them as aliases.
+        """
+        assert Team.BALTIMORE_BULLETS is not Team.BALTIMORE_BULLETS_WIZ
+        assert Team.BALTIMORE_BULLETS.value == "BALTIMORE BULLETS"
+        assert Team.BALTIMORE_BULLETS_WIZ.value != Team.BALTIMORE_BULLETS.value
 
     @pytest.mark.parametrize(
         ("abbr", "team"),
@@ -242,6 +268,78 @@ def test_career_leaders_fixture_retains_all_rows(make_offline_client) -> None:
     assert all(isinstance(row, CareerLeadersRow) for row in result)
     # Some retained rows carry a None rank (the previously-dropped tied entries).
     assert any(row.rank is None for row in result)
+
+
+class TestCareerLeadersRankTied:
+    """``CareerLeadersRow.rank_tied`` is derived from row ordering, not the cell.
+
+    Unlike :class:`SeasonAwardsRow` (which carries a literal ``T`` suffix in the
+    source), career-leader tables leave tied rows with a blank rank cell; the
+    tie is implicit in the position immediately after a numbered row. The
+    parser pipeline fills ``rank_tied``:
+
+    - ``True`` when the current row's ``rank`` is ``None`` (blank) AND the
+      previous row had a numeric rank (the tied entry).
+    - ``False`` when the current row has a numeric rank.
+    - ``None`` when the rank cell is blank AND no preceding ranked row exists
+      (e.g., a tie at the very top of the table, before the first numbered row).
+    """
+
+    def test_numeric_rank_marks_rank_tied_false(self, make_offline_client) -> None:
+        """The first row of the fixture (rank=1, LeBron James) is not tied."""
+        case = case_for("career_leaders")
+        assert case is not None, "missing career_leaders manifest case"
+        client = make_offline_client(case)
+        rows = client.career_leaders()
+        first = rows[0]
+        assert first.rank == 1
+        assert first.rank_tied is False
+
+    def test_blank_rank_after_numbered_row_marks_rank_tied_true(self, make_offline_client) -> None:
+        """Reggie Miller (rank=None, row index 29) is tied with Rick Barry (rank=29)."""
+        case = case_for("career_leaders")
+        assert case is not None, "missing career_leaders manifest case"
+        client = make_offline_client(case)
+        rows = client.career_leaders()
+        miller = next(row for row in rows if row.player == "Reggie Miller")
+        assert miller.rank is None, "Reggie Miller's row is the tied entry (rank cell blank)"
+        assert miller.rank_tied is True, (
+            "Reggie Miller's row is tied with the preceding Rick Barry row; rank_tied should be True"
+        )
+
+    def test_every_tied_row_in_fixture_is_flagged(self, make_offline_client) -> None:
+        """Every blank-rank row in the fixture is preceded by a numbered row."""
+        case = case_for("career_leaders")
+        assert case is not None, "missing career_leaders manifest case"
+        client = make_offline_client(case)
+        rows = client.career_leaders()
+        # Tied entries: rank is None and rank_tied is True.
+        tied_rows = [row for row in rows if row.rank is None]
+        assert tied_rows, "fixture should contain at least one tied row"
+        for row in tied_rows:
+            assert row.rank_tied is True, f"{row.player!r} has blank rank but rank_tied={row.rank_tied!r}"
+
+    def test_every_numbered_row_marks_rank_tied_false(self, make_offline_client) -> None:
+        """Every numbered row (rank is an int) must have rank_tied=False."""
+        case = case_for("career_leaders")
+        assert case is not None, "missing career_leaders manifest case"
+        client = make_offline_client(case)
+        rows = client.career_leaders()
+        numbered_rows = [row for row in rows if isinstance(row.rank, int)]
+        assert numbered_rows, "fixture should contain at least one numbered row"
+        for row in numbered_rows:
+            assert row.rank_tied is False, f"{row.player!r} has rank={row.rank!r} but rank_tied={row.rank_tied!r}"
+
+    def test_rank_tied_field_default_is_none_for_direct_model_validate(self) -> None:
+        """Calling :meth:`CareerLeadersRow.model_validate` directly (no parser
+        pipeline) leaves ``rank_tied`` as its declared default of ``None``.
+        The derived semantics only fire when the row goes through the parser
+        pipeline that walks the row sequence.
+        """
+        row = CareerLeadersRow.model_validate({"rank": "1", "player": "LeBron James", "value": "43440"})
+        assert row.rank_tied is None
+        blank_row = CareerLeadersRow.model_validate({"rank": "\xa0", "player": "Tied Player", "value": "27000"})
+        assert blank_row.rank_tied is None
 
 
 def test_season_awards_voting_fixture_retains_tied_mvp_ranks(make_offline_client) -> None:

@@ -8,7 +8,7 @@ to :class:`SearchResultRow`.  No ``data-stat`` aliases are required.
 
 from __future__ import annotations
 
-from typing import Annotated
+from typing import Annotated, Literal
 
 from pydantic import BeforeValidator, TypeAdapter
 
@@ -47,16 +47,26 @@ def _parse_leagues(value: object) -> set[League]:
 LeaguesField = Annotated[set[League], BeforeValidator(_parse_leagues)]
 
 
-class SearchResultRow(BRRow):
-    """A single player search result.
+# Discriminator for the parent sub-`div` id of each search result card
+# (see ``ideas/br-search-idx-research-2026-06-28.md``). ``other`` is the
+# forward-compat default for any sub-`div` BR adds in the future.
+SearchResultType = Literal["player", "team", "coach", "executive", "referee", "other"]
 
-    ``identifier`` is the player slug extracted from the result URL (e.g.
-    ``bryanko01``).  ``leagues`` contains the league(s) the player appeared in.
+
+class SearchResultRow(BRRow):
+    """A single Basketball-Reference search result.
+
+    ``identifier`` is the player / coach / team / executive / referee
+    slug extracted from the result URL.  ``leagues`` contains the
+    league(s) the entity appeared in.  ``type`` discriminates the
+    parent sub-`div` id (``players``, ``coaches``, ``teams``, …) — the
+    default ``"player"`` preserves player-hub back-compat.
     """
 
     name: str
     identifier: str
     leagues: LeaguesField
+    type: SearchResultType = "player"
 
 
 register("search", SearchResultRow)
