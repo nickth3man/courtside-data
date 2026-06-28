@@ -6,6 +6,8 @@ dist/
 *egg-info/
 bin/
 lib/
+!ui/src/lib/
+!ui/src/lib/openapi-types.ts
 
 # Environment variables (non-sensitive defaults documented in .env.example)
 .env

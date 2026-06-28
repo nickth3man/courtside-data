@@ -10,8 +10,8 @@ architecture docs.
 
 > **Scope of this doc:** planning only. It complements the existing
 > per-domain architecture docs
-> ([Player Hub](docs/api/http.md), [Team Hub](docs/architecture/team-hub.md),
-> [Games/Browser](docs/architecture/games-browser-hub.md)) and the
+> ([Player Hub](../api/http.md), [Team Hub](team-hub.md),
+> [Games/Browser](games-browser-hub.md)) and the
 > planned-but-not-yet-written League Hub, Playoffs Hub, and
 > Draft/Awards/Leaders Hub docs. The recommended end state of
 > `endpoint-roadmap.md` is that §2 is **auto-generated** from the
@@ -28,7 +28,7 @@ architecture docs.
 | **LEAGUE** | 11 | 0/11 | 0 | — | — | partial (1974→2024) | **Planned** (see [§5](#5-links-to-domain-docs)) |
 | **PLAYOFFS** | 6 | 0/6 | 0 | — | — | partial (friv + 1 season) | **Planned** |
 | **DRAFT_AWARDS_LEADERS** | 5 | 0/5 | 0 | — | — | partial (1974→2024 + leaders) | **Planned** |
-| **GAMES** | 15 | 3/15 (player_box_scores, team_box_scores, search) | partial | partial | — | partial (2017-01-01) | **Partially scaffolded** (see [Games/Browser](docs/architecture/games-browser-hub.md)) |
+| **GAMES** | 15 | 3/15 (player_box_scores, team_box_scores, search) | partial | partial | — | partial (2017-01-01) | **Partially scaffolded** (see [Games/Browser](games-browser-hub.md)) |
 | **TOTAL** | **61** | **27/61** | **11 + 3 partial** | — | — | — | — |
 
 **Reading the matrix:**
@@ -147,7 +147,7 @@ Path template: `/players/{player_identifier[0]}/{player_identifier}.html`
 (/api/players/{id}/seasons/{year}/{dataset} and
 /api/players/search).** The remaining 12 are catalogued below; the
 game-identification scheme and per-game routing is in
-[Games/Browser Hub §3](docs/architecture/games-browser-hub.md#3-the-game-identification-problem-critical-section).
+[Games/Browser Hub §3](games-browser-hub.md#3-the-game-identification-problem-critical-section).
 
 | `endpoint_name` | `spec` file:line | scope | params | HTTP-reachable today? | `row_model` |
 |---|---|---|---|---|---|
@@ -202,12 +202,12 @@ The recommended order across all six domains:
    in place; `search()` is the only remaining
    `NotImplementedError` stub; fixture HTML for the per-team
    endpoints is the next blocker. See
-   [Team Hub §5](docs/architecture/team-hub.md#5-fixture-html-needed)
+   [Team Hub §5](team-hub.md#5-fixture-html-needed)
    for the per-endpoint capture list.
 3. **League Hub** ⏭️ **Next.** 11 endpoints
    (or 14 if the 3 GAMES season-scoped endpoints move here —
    recommended; see
-   [Games/Browser §9.2](docs/architecture/games-browser-hub.md#92-league-hub-boundary-recommend-move)).
+   [Games/Browser §9.2](games-browser-hub.md#92-league-hub-boundary-recommend-move)).
    Straightforward season-scoped pattern: 1 route per
    dataset under `/api/league/seasons/{year}/{dataset}`,
    plus 1 `standings_by_date` route that needs both `year` and
@@ -243,7 +243,7 @@ The recommended order across all six domains:
    play-by-play, league-season tables). The game-identifier
    scheme (`{YYYYMMDD}0{HOMETEAM_ABBR}`) is the load-bearing
    design decision. See
-   [Games/Browser Hub](docs/architecture/games-browser-hub.md)
+   [Games/Browser Hub](games-browser-hub.md)
    for the full design.
 
 **Total reachable endpoints after all 6 lanes land:** 61 / 61
@@ -305,23 +305,23 @@ benefit every lane. Listed in dependency order:
 
 ## 5. Links to domain docs
 
-- **Player Hub** — [docs/api/http.md](docs/api/http.md) (the
+- **Player Hub** — [docs/api/http.md](../api/http.md) (the
   canonical reference; the team-hub doc
-  ([docs/architecture/team-hub.md](docs/architecture/team-hub.md))
+  ([docs/architecture/team-hub.md](team-hub.md))
   is the more recent structural template).
 - **Team Hub** —
-  [docs/architecture/team-hub.md](docs/architecture/team-hub.md).
+  [docs/architecture/team-hub.md](team-hub.md).
   13 endpoints; 6 routes; scaffolding milestone.
 - **League Hub** — *planned* (the 11 LEAGUE-domain endpoints
   in §2.3 plus the 3 GAMES-domain season-scoped endpoints
   recommended for the move in
-  [Games/Browser §9.2](docs/architecture/games-browser-hub.md#92-league-hub-boundary-recommend-move)).
+  [Games/Browser §9.2](games-browser-hub.md#92-league-hub-boundary-recommend-move)).
 - **Playoffs Hub** — *planned* (the 6 PLAYOFFS-domain
   endpoints in §2.4).
 - **Draft/Awards/Leaders Hub** — *planned* (the 5
   DRAFT_AWARDS_LEADERS-domain endpoints in §2.5).
 - **Games/Browser** —
-  [docs/architecture/games-browser-hub.md](docs/architecture/games-browser-hub.md).
+  [docs/architecture/games-browser-hub.md](games-browser-hub.md).
   9 (or 12) endpoints; the hardest lane; different UX
   model.
 

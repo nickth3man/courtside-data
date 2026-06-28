@@ -216,3 +216,11 @@ def test_team_hub_catalog_covers_every_team_endpoint() -> None:
         f"catalog/registry drift: catalog_only={catalog_endpoint_names - registry_endpoint_names}, "
         f"registry_only={registry_endpoint_names - catalog_endpoint_names}"
     )
+
+
+@pytest.mark.parametrize("dataset", TEAM_DATASETS, ids=lambda dataset: dataset.id)
+def test_team_hub_default_visible_columns_are_model_fields(dataset) -> None:
+    fields = set(ENDPOINTS[dataset.endpoint_name].row_model.model_fields)
+
+    assert dataset.default_visible_columns
+    assert set(dataset.default_visible_columns) <= fields

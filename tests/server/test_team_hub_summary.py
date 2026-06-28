@@ -17,6 +17,7 @@ The team-hub landing state has two contracts pinned here:
 
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Any
 
 from courtside_data.server.team_service import TeamHubService
@@ -51,3 +52,25 @@ def test_summary_leagues_is_nba() -> None:
     summary = service.summary("BOS")
 
     assert summary.leagues == ["NBA"]
+
+
+def _write_fixture(raw_root: Path, endpoint_name: str, filename: str) -> None:
+    path = raw_root / endpoint_name / filename
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text("<html></html>", encoding="utf-8")
+
+
+def test_summary_uses_fixture_seasons_for_default_and_availability(tmp_path: Path) -> None:
+    _write_fixture(tmp_path, "team_roster", "BOS_2024.html")
+    _write_fixture(tmp_path, "team_roster", "BOS_1980.html")
+    _write_fixture(tmp_path, "team_splits", "BOS_2024.html")
+
+    service = _FakeTeamSummaryService()
+    service.raw_root = tmp_path
+
+    summary = service.summary("BOS")
+
+    assert summary.default_season == 2024
+    assert summary.available_seasons == [2024, 1980]
+    assert summary.season_dataset_availability["roster"] == [2024, 1980]
+    assert summary.season_dataset_availability["splits"] == [2024]

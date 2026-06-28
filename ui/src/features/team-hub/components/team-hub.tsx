@@ -6,14 +6,15 @@ import type { ReactNode } from "react";
 import { useMemo, useState } from "react";
 
 import { Button } from "@/components/button";
+import { EmptyState } from "@/components/empty-state";
+import { LoadingBlock } from "@/components/loading-block";
 import { QueryBoundary } from "@/components/query-boundary";
 import { StatusPill } from "@/components/status-pill";
 import { useCatalog, useTeamSummary } from "@/features/team-hub/api/queries";
 import { DatasetPanel } from "@/features/team-hub/components/dataset-panel";
 import { Overview } from "@/features/team-hub/components/overview";
 import { TeamSearch } from "@/features/team-hub/components/team-search";
-import type { TeamDatasetCatalogEntry, TeamHubTab } from "@/features/team-hub/types";
-import { fallbackTeamTabs, teamDatasetLabel, teamDatasetScope } from "@/features/team-hub/utils/catalog";
+import type { TeamHubTab } from "@/features/team-hub/types";
 import { seasonLabel } from "@/features/player-hub/utils/season";
 import { useUrlParam } from "@/lib/use-url-param";
 
@@ -27,7 +28,7 @@ export function TeamHub({ identifier }: TeamHubProps) {
   const { get: getParam, set: setParam } = useUrlParam();
   const [includeInactiveGames, setIncludeInactiveGames] = useState(false);
 
-  const tabs = catalogQuery.data?.tabs ?? fallbackTeamTabs;
+  const tabs = catalogQuery.data?.tabs ?? [];
   const datasetById = useMemo(() => {
     const entries = catalogQuery.data?.datasets ?? [];
     return new Map(entries.map((entry) => [entry.id, entry]));
@@ -36,23 +37,34 @@ export function TeamHub({ identifier }: TeamHubProps) {
   const activeTab = normalizeTab(getParam("tab"), tabs);
   const seasonFromUrl = Number(getParam("season"));
   const selectedSeason =
-    Number.isFinite(seasonFromUrl) && seasonFromUrl > 0 ? seasonFromUrl : summaryQuery.data?.default_season ?? null;
+    Number.isFinite(seasonFromUrl) && seasonFromUrl > 0
+      ? seasonFromUrl
+      : (summaryQuery.data?.default_season ?? null);
   const currentTab = tabs.find((tab) => tab.id === activeTab) ?? tabs[0];
 
   return (
     <Shell>
-      <QueryBoundary query={summaryQuery} loadingLabel="Loading team" errorTitle="Team unavailable">
+      <QueryBoundary
+        query={summaryQuery}
+        loadingLabel="Loading team"
+        errorTitle="Team unavailable"
+      >
         {(summary) => (
           <>
             <header className="space-y-4 border-b border-court-line bg-white px-4 py-4 sm:px-6 lg:px-8">
               <div className="mx-auto flex max-w-7xl flex-col gap-4">
                 <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                   <div className="min-w-0">
-                    <Link href="/teams" className="inline-flex items-center gap-2 text-sm text-court-muted hover:text-court-ink">
+                    <Link
+                      href="/teams"
+                      className="inline-flex items-center gap-2 text-sm text-court-muted hover:text-court-ink"
+                    >
                       <ArrowLeft className="size-4" aria-hidden="true" />
                       Teams
                     </Link>
-                    <h1 className="mt-2 truncate text-2xl font-semibold text-court-ink sm:text-3xl">{summary.display_name}</h1>
+                    <h1 className="mt-2 truncate text-2xl font-semibold text-court-ink sm:text-3xl">
+                      {summary.display_name}
+                    </h1>
                     <p className="text-sm text-court-muted">
                       {[summary.identifier, summary.leagues.join("/") || null]
                         .filter(Boolean)
@@ -66,7 +78,10 @@ export function TeamHub({ identifier }: TeamHubProps) {
                 </div>
 
                 <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-                  <nav className="flex gap-1 overflow-x-auto pb-1" aria-label="Team Hub tabs">
+                  <nav
+                    className="flex gap-1 overflow-x-auto pb-1"
+                    aria-label="Team Hub tabs"
+                  >
                     {tabs.map((tab) => (
                       <button
                         key={tab.id}
@@ -85,7 +100,9 @@ export function TeamHub({ identifier }: TeamHubProps) {
                       Season
                       <select
                         value={selectedSeason ?? ""}
-                        onChange={(event) => setParam("season", event.target.value)}
+                        onChange={(event) =>
+                          setParam("season", event.target.value)
+                        }
                         className="h-9 rounded-md border border-court-line bg-white px-2 text-sm text-court-ink outline-none focus:border-court-accent focus:ring-2 focus:ring-teal-100"
                       >
                         {summary.available_seasons.map((season) => (
@@ -99,11 +116,17 @@ export function TeamHub({ identifier }: TeamHubProps) {
                       <input
                         type="checkbox"
                         checked={includeInactiveGames}
-                        onChange={(event) => setIncludeInactiveGames(event.target.checked)}
+                        onChange={(event) =>
+                          setIncludeInactiveGames(event.target.checked)
+                        }
                       />
                       Inactive
                     </label>
-                    <Button size="icon" onClick={() => summaryQuery.refetch()} title="Refresh team">
+                    <Button
+                      size="icon"
+                      onClick={() => summaryQuery.refetch()}
+                      title="Refresh team"
+                    >
                       <RefreshCcw className="size-4" aria-hidden="true" />
                       <span className="sr-only">Refresh team</span>
                     </Button>
@@ -113,12 +136,27 @@ export function TeamHub({ identifier }: TeamHubProps) {
             </header>
 
             <main className="mx-auto max-w-7xl px-4 py-5 sm:px-6 lg:px-8">
-              {currentTab.id === "overview" ? (
+              {catalogQuery.isLoading ? (
+                <LoadingBlock label="Loading catalog" />
+              ) : catalogQuery.isError ? (
+                <EmptyState
+                  title="Team catalog unavailable"
+                  detail={catalogQuery.error.message}
+                />
+              ) : currentTab === undefined ? (
+                <EmptyState
+                  title="Team catalog unavailable"
+                  detail="No team hub tabs were returned by the API."
+                />
+              ) : currentTab.id === "overview" ? (
                 <Overview summary={summary} />
               ) : (
                 <div className="space-y-6">
                   {currentTab.datasets.map((datasetId) => {
-                    const dataset = datasetById.get(datasetId) ?? fallbackDataset(datasetId, currentTab);
+                    const dataset = datasetById.get(datasetId);
+                    if (dataset === undefined) {
+                      return null;
+                    }
                     return (
                       <DatasetPanel
                         key={datasetId}
@@ -149,17 +187,4 @@ function normalizeTab(value: string | null, tabs: TeamHubTab[]): string {
     return value;
   }
   return tabs[0]?.id ?? "overview";
-}
-
-function fallbackDataset(datasetId: string, tab: TeamHubTab): TeamDatasetCatalogEntry {
-  return {
-    id: datasetId,
-    label: teamDatasetLabel(datasetId),
-    endpoint_name: datasetId,
-    scope: teamDatasetScope(datasetId) ?? tab.scope,
-    description: tab.description,
-    columns: [],
-    default_visible_columns: [],
-    supports_export: true,
-  };
 }

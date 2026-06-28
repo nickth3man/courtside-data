@@ -34,6 +34,44 @@ jobs:
       - name: ty
         run: uv run ty check
 
+  api-codegen:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: ui/package-lock.json
+      - name: Install UI dependencies
+        working-directory: ui
+        run: npm ci
+      - name: Start API server
+        run: |
+          uv run courtside-data serve &
+          echo $! > server.pid
+      - name: Wait for OpenAPI schema
+        working-directory: ui
+        run: npx --yes wait-on http://127.0.0.1:8765/openapi.json --timeout 30000
+      - name: Generate API types
+        working-directory: ui
+        run: npm run gen:api
+      - name: Verify generated API types are committed
+        run: |
+          if ! git diff --exit-code ui/src/lib/openapi-types.ts; then
+            echo "::error::ui/src/lib/openapi-types.ts is out of date. Run 'npm run gen:api' from ui/ and commit it."
+            exit 1
+          fi
+      - name: Stop API server
+        if: always()
+        run: |
+          if [ -f server.pid ]; then
+            kill "$(cat server.pid)" || true
+          fi
+
   test:
     strategy:
       fail-fast: false

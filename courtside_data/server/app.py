@@ -33,7 +33,7 @@ from courtside_data.server.team_catalog import (
     team_dataset_by_id,
     team_hub_catalog,
 )
-from courtside_data.server.team_models import TeamHubSummary, TeamSearchResult
+from courtside_data.server.team_models import TeamHubCatalog, TeamHubSummary, TeamSearchResult
 from courtside_data.server.team_service import TeamHubService
 
 
@@ -215,10 +215,10 @@ def create_app(*, transport: TransportMode = "fixture", raw_root: Path | None = 
         500: {"model": ApiError},
     }
 
-    @app.get("/api/endpoints/team-hub", responses=_TEAM_ERROR_RESPONSES)
-    def team_catalog() -> dict[str, object]:
+    @app.get("/api/endpoints/team-hub", response_model=TeamHubCatalog, responses=_TEAM_ERROR_RESPONSES)
+    def team_catalog() -> TeamHubCatalog:
         """Static Team Hub catalog: tabs and dataset metadata."""
-        return team_hub_catalog()
+        return TeamHubCatalog.model_validate(team_hub_catalog())
 
     @app.get(
         "/api/teams/search",
@@ -231,9 +231,7 @@ def create_app(*, transport: TransportMode = "fixture", raw_root: Path | None = 
     ) -> list[TeamSearchResult]:
         """Search teams by name/abbreviation.
 
-        Mirrors ``/api/players/search`` but for the team hub. Currently a
-        NotImplementedError stub pending the team-search wiring decision
-        (see ``TeamHubService.search``).
+        Mirrors ``/api/players/search`` but filters to team results.
         """
         try:
             return service.search(term)
@@ -251,9 +249,7 @@ def create_app(*, transport: TransportMode = "fixture", raw_root: Path | None = 
     ) -> TeamHubSummary:
         """Aggregated Team Hub overview payload.
 
-        Mirrors ``/api/players/{player_identifier}/summary``. Currently a
-        NotImplementedError stub pending the team-summary wiring decision
-        (see ``TeamHubService.summary``).
+        Mirrors ``/api/players/{player_identifier}/summary`` for team data.
         """
         try:
             return service.summary(team_identifier)
@@ -270,9 +266,7 @@ def create_app(*, transport: TransportMode = "fixture", raw_root: Path | None = 
     ) -> Response:
         """Stream a Team Hub dataset as a CSV download.
 
-        Mirrors ``/api/players/{player_identifier}/export``. Currently a
-        NotImplementedError stub pending the team-CSV wiring decision
-        (see ``TeamHubService.csv``).
+        Mirrors ``/api/players/{player_identifier}/export`` for team datasets.
         """
         try:
             csv_text = service.csv(team_identifier, dataset, season_end_year, include_inactive_games)

@@ -19,7 +19,7 @@ from courtside_data.client import CourtsideClient
 from courtside_data.domain.seasons import current_nba_season_end_year, season_end_year
 from courtside_data.endpoints import ENDPOINTS
 from courtside_data.errors import InvalidSearch
-from courtside_data.server.fixtures import MissingFixtureError, build_fixture_service
+from courtside_data.server.fixtures import MissingFixtureError, build_fixture_service, fixture_seasons_for_team
 from courtside_data.server.models import EndpointRowsResponse, TransportMode
 from courtside_data.server.team_catalog import (
     TEAM_DATASETS,
@@ -505,15 +505,15 @@ class TeamHubService:
         the hero-stats source is :class:`team_misc_four_factors` (wins,
         losses, MOV, SRS, ratings) instead of the player career row.
         """
-        # Default season resolution. ``team_roster`` is a ``team_season``
-        # endpoint so we MUST pick a season here. The player hub's
-        # ``_default_season`` is data-driven (driven by ``career`` rows);
-        # the team hub has no equivalent season-discovery path yet
-        # (TODO below), so we fall back to the calendar-driven helper
-        # in :mod:`courtside_data.domain.seasons`. It anchors the
-        # summary on the most-recently-completed or currently-running
-        # NBA season (e.g. 2026-06-27 -> 2026; 2026-10-15 -> 2027).
-        default_season = current_nba_season_end_year()
+        fixture_availability = (
+            fixture_seasons_for_team(team_identifier, raw_root=self.raw_root) if self.transport == "fixture" else {}
+        )
+        available_from_fixtures = sorted(
+            {season for seasons in fixture_availability.values() for season in seasons},
+            reverse=True,
+        )
+        calendar_season = current_nba_season_end_year()
+        default_season = available_from_fixtures[0] if available_from_fixtures else calendar_season
 
         # Roster (embedded) — best-effort. In fixture mode the team
         # fixture transport is intentionally not wired (see
@@ -530,69 +530,6 @@ class TeamHubService:
                 },
             )
         except MissingFixtureError:
-            # TODO(team-hub): wire team fixture transport so the embedded
-            # roster call returns real rows in fixture mode.
-            #
-            # What: the team-hub fixture transport raises
-            # :class:`MissingFixtureError` for every team endpoint (see
-            # the guard at the bottom of
-            # :func:`courtside_data.server.fixtures.fixture_url_map`),
-            # so the embedded ``roster`` call in this method always
-            # falls through to :meth:`_empty_rows_response`. The
-            # ``raw/`` directory already contains captured HTML under
-            # ``raw/team_roster/`` (``BOS_2024.html``,
-            # ``BOS_1980.html``, etc.) — the fixtures exist on disk
-            # but the transport layer doesn't know how to map a
-            # ``team_roster`` request to them.
-            # Where:
-            #   - courtside_data/server/fixtures.py:189
-            #     (the :func:`fixture_url_map` guard that raises).
-            #   - courtside_data/server/fixtures.py:142
-            #     (the :func:`_player_only_map` pattern to mirror for
-            #     team-only endpoints; ``raw/<endpoint>/<id>.html``).
-            #   - courtside_data/server/fixtures.py:150
-            #     (the :func:`_player_season_map` pattern to mirror
-            #     for ``team_season`` endpoints;
-            #     ``raw/<endpoint>/<id>_<year>.html``).
-            #   - raw/team_roster/BOS_2024.html  (a captured fixture
-            #     already in the repo; the transport must look here
-            #     first).
-            # How:
-            #   1. Add :func:`_team_only_map` and
-            #     :func:`_team_season_map` helpers in
-            #     :mod:`courtside_data.server.fixtures` mirroring
-            #     ``_player_only_map`` / ``_player_season_map`` (use
-            #     ``_TEAM_ABBREVIATION_PARAM`` instead of
-            #     ``player_identifier``).
-            #   2. Insert two ``if endpoint_name in TEAM_ENDPOINTS``
-            #     and ``if endpoint_name in TEAM_SEASON_ENDPOINTS``
-            #     branches in :func:`fixture_url_map` BEFORE the
-            #     current guard, returning the new helpers' output.
-            #   3. For ``team_injury_report`` (league-wide page that
-            #     ignores team/season params), special-case the path
-            #     to a ``raw/team_injury_report/default.html``
-            #     short-circuit (the page ignores
-            #     ``team_abbreviation`` and ``season_end_year``).
-            #   4. Once the transport is wired, this ``except``
-            #     branch becomes a dead path for fixture mode and can
-            #     be removed in favour of letting
-            #     :class:`MissingFixtureError` propagate (or
-            #     narrowed to a single ``except
-            #     MissingFixtureError`` if a real fixture-capture
-            #     gap is the expected case).
-            # Decision needed: whether to keep the
-            # graceful-empty fallback once the transport is wired, or
-            # to let :class:`MissingFixtureError` bubble up so a
-            # missing fixture is loud (404) rather than silent (empty
-            # rows). The current behaviour matches the player hub's
-            # "best-effort" approach but the player hub actually has
-            # fixtures; the team hub currently does not.
-            # Verify: with ``raw/team_roster/BOS_2024.html`` already
-            #   present and the transport wired,
-            #   ``TestClient(create_app(transport='fixture')).get(
-            #   '/api/teams/BOS/summary').json()['roster'][
-            #   'row_count']`` is > 0 and ``rows[0]['player']`` is
-            #   a real Celtics player.
             roster = self._empty_rows_response("roster", default_season)
 
         # Hero stats — pull wins / losses / MOV / SRS / ratings from the
@@ -601,109 +538,14 @@ class TeamHubService:
         # return an empty dict and the UI will hide the hero strip.
         hero_stats = self._team_hero_stats(team_identifier, default_season)
 
-        # TODO(team-hub): there is no season-discovery mechanism for
-        # teams yet — replace ``[default_season]`` with the union of
-        # (a) ``fixture_seasons_for_team(team_identifier)`` and (b) any
-        # seasons derived from live-transport probes in
-        # :meth:`summary`.
-        #
-        # What: walk the ``raw/`` directory per (team, dataset,
-        # season) triple and surface every season the team has
-        # captured fixtures for, sorted newest-first.
-        # Where:
-        #   - courtside_data/server/fixtures.py:232  (the player-hub
-        #     reference implementation ``fixture_seasons_for_player``;
-        #     globs ``raw/<endpoint>/<player>_*.html`` and returns
-        #     ``{endpoint_name: [season, ...]}``).
-        #   - courtside_data/server/team_service.py:359  (this block,
-        #     currently hard-coded ``[default_season]``).
-        #   - raw/team_roster/BOS_2024.html  (and the other captured
-        #     ``BOS_<year>.html`` files — the walker must glob
-        #     ``raw/team_roster/BOS_*.html`` and parse the
-        #     ``<year>`` segment the same way the player walker does).
-        # How:
-        #   1. Add ``fixture_seasons_for_team(team_identifier,
-        #     raw_root=None) -> dict[str, list[int]]`` to
-        #     :mod:`courtside_data.server.fixtures`. Mirror
-        #     ``fixture_seasons_for_player`` line-for-line; the
-        #     only differences are: glob pattern is
-        #     ``raw/<endpoint>/<team>_*.html`` and the prefix-strip
-        #     uses the team identifier.
-        #   2. Call it in this method when
-        #     ``self.transport == "fixture"`` (the player hub
-        #     only uses it in fixture mode too) and union the
-        #     values with the live-probed seasons.
-        #   3. Set ``available_seasons = sorted(set(
-        #     seasons_from_fixtures) | set(seasons_from_live) | {
-        #     default_season }, reverse=True)``.
-        # Decision needed: live-mode discovery. The player hub
-        # doesn't probe live because every player endpoint either
-        # has data for every season (career) or is unreachable
-        # without a season (splits). The team-hub is similar
-        # (no team-hub endpoint is "all seasons for one team"
-        # except ``franchise_history``), so live-mode discovery
-        # can stay a no-op until a product need appears.
-        # Verify (fixture): capture ``raw/team_roster/BOS_2024.html``
-        #   and ``raw/team_roster/BOS_2023.html``, then
-        #   ``fixture_seasons_for_team("BOS")["team_roster"]`` ==
-        #   ``[2024, 2023]``, and
-        #   ``TeamHubService(transport='fixture').summary('BOS')[
-        #   'available_seasons']`` contains both.
-        available_seasons = [default_season]
-
-        # TODO(team-hub): populate ``season_dataset_availability``
-        # once ``fixture_seasons_for_team`` (see the TODO above) is
-        # wired.
-        #
-        # What: surface, for each ``team_season``-scope dataset, the
-        # list of seasons that have a captured fixture for this
-        # team. The shape is ``{dataset_id: [season, ...]}`` (the
-        # same shape :func:`courtside_data.server.service.
-        # _dataset_availability_by_dataset_id` returns — see
-        # ``courtside_data/server/service.py:182`` for the player-hub
-        # equivalent).
-        # Where:
-        #   - courtside_data/server/service.py:182
-        #     (the player-hub helper
-        #     ``_dataset_availability_by_dataset_id`` that maps
-        #     the per-endpoint season map to a per-dataset-id map).
-        #   - courtside_data/server/team_service.py:381  (this block,
-        #     currently hard-codes ``[default_season]`` for every
-        #     team-season dataset).
-        #   - courtside_data/server/team_models.py:78
-        #     (the :attr:`TeamHubSummary.season_dataset_availability`
-        #     field, ``dict[str, list[int]]``).
-        # How:
-        #   1. Call the new ``fixture_seasons_for_team`` helper to
-        #     get a ``{endpoint_name: [season, ...]}`` map.
-        #   2. Iterate ``TEAM_DATASETS`` (this module's
-        #     :data:`TEAM_DATASETS` tuple). For every
-        #     ``scope == "team_season"`` entry, look up
-        #     ``endpoint_name -> seasons`` and assign
-        #     ``season_dataset_availability[dataset.id] =
-        #     sorted(seasons, reverse=True)``.
-        #   3. For datasets with no captured fixtures, fall back to
-        #     ``[default_season]`` so the season selector still
-        #     renders (matches the current "render the empty
-        #     state" pattern).
-        # Decision needed: whether the ``default_season`` fallback
-        # should be omitted (leaving the list empty and forcing the
-        # UI to show "no seasons available") for parity with the
-        # "loud failure" preference in the search/hero-stats TODOs.
-        # The current behaviour is the "graceful empty state"
-        # choice.
-        # Verify (fixture): capture
-        #   ``raw/team_roster/BOS_2024.html``,
-        #   ``raw/team_roster/BOS_2023.html``,
-        #   ``raw/team_splits/BOS_2024.html``; assert
-        #   ``TeamHubService(transport='fixture').summary('BOS')[
-        #   'season_dataset_availability']`` is
-        #   ``{"roster": [2024, 2023], "splits": [2024],
-        #   "and-opponent": [2024], ...}``.
+        available_seasons = sorted(set(available_from_fixtures) | {default_season}, reverse=True)
         season_dataset_availability: dict[str, list[int]] = {}
         for dataset in TEAM_DATASETS:
             if dataset.scope == "team_season":
-                season_dataset_availability[dataset.id] = [default_season]
+                season_dataset_availability[dataset.id] = fixture_availability.get(
+                    dataset.endpoint_name,
+                    [default_season],
+                )
 
         return TeamHubSummary(
             identifier=team_identifier,
@@ -870,7 +712,8 @@ class TeamHubService:
             include_inactive_games=(include_inactive_games if dataset.scope == "team_season" else None),
         )
         rows = self._serialize_rows(self._run(dataset.endpoint_name, params))
-        fieldnames = list(endpoint.csv_columns) if endpoint.csv_columns else list(rows[0].keys()) if rows else []
+        columns = team_columns_for_dataset(dataset, rows[0] if rows else None)
+        fieldnames = list(endpoint.csv_columns) if endpoint.csv_columns else [column.key for column in columns]
         output = io.StringIO(newline="")
         writer = csv.DictWriter(output, fieldnames=fieldnames, extrasaction="ignore")
         writer.writeheader()
