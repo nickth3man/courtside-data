@@ -1,72 +1,81 @@
 "use client";
 
-import { Search } from "lucide-react";
+import { LoaderCircle, Search } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { type FormEvent, useState } from "react";
+import { type FormEvent, useEffect, useRef, useState } from "react";
 
 import { Button } from "@/components/button";
 import { useTeamSearch } from "@/features/team-hub/api/queries";
+import { useUrlParam } from "@/lib/use-url-param";
 
 interface TeamSearchProps {
   compact?: boolean;
 }
 
-// TODO(team-hub): bring team-search in line with player-search — add a
-// 250ms keystroke debounce and `?term=` URL persistence (both already
-// implemented in `ui/src/features/player-hub/components/player-search.tsx`).
-//
-// What: today this component renders results immediately on every
-//   keystroke (lines 17 + 35-39 below). The player-hub equivalent debounces
-//   the typed value by 250ms before it reaches `usePlayerSearch`, and
-//   mirrors the term to `?term=` in the URL on submit and back to the
-//   input on mount. Team-search is missing both behaviors — typing
-//   fires one request per keystroke, and the term is lost on a hard
-//   refresh.
-// Where:
-//   - this file, lines 16-17: the `useState` + `useTeamSearch(term)` call
-//     needs an intermediate `debouncedTerm` state and a `setTimeout` effect.
-//   - this file, lines 21-26: the `submit` handler should call
-//     `setParam("term", trimmedTerm)` before navigating, mirroring
-//     `player-search.tsx:72-80`.
-//   - mount: read `?term=` from the URL once via `useUrlParam().get("term")`
-//     and prefill `term` + `debouncedTerm` so a hard refresh on
-//     `/teams?term=LAL` opens with the LAL result pre-listed.
-//   - mirror: `ui/src/features/player-hub/components/player-search.tsx:15-63`
-//     (the JSDoc there documents the debounce + URL-persistence contract
-//     and the `getParamRef` pattern that captures the `useUrlParam` closure
-//     exactly once on mount).
-// How:
-//   1. Add a `useUrlParam` import from `@/lib/use-url-param` and a
-//      `useRef` + `useEffect` block to capture the latest `get` reference
-//      — verbatim from `player-search.tsx:39-48`.
-//   2. Introduce a `debouncedTerm` state + 250ms debounce effect
-//      (`player-search.tsx:51-54`) and feed `debouncedTerm` to
-//      `useTeamSearch(debouncedTerm)` instead of `term`.
-//   3. On mount, read `?term=` and prefill `term` + `debouncedTerm`
-//      (`player-search.tsx:57-63`).
-//   4. In `submit`, call `setParam("term", trimmedTerm)` *before* the
-//      `router.push` so a user who refreshes the search page after
-//      submitting lands back on the same term.
-//   5. While the debounce is pending (`term !== debouncedTerm`) or the
-//      query is in flight (`query.isFetching`), render a "Searching…"
-//      affordance with a `LoaderCircle` spinner — replace the current
-//      "Searching" static text on line 50.
-// Decision needed: should `useTeamSearch` itself debounce (e.g. accept a
-//   `debounceMs` option) or should the debounce stay in the component?
-//   Default: keep it in the component. The hook stays a thin wrapper
-//   over `apiFetch` and the debounce is a UI concern — matches player-hub.
-// Verify: from `ui/`, `npx vitest run src/features/team-hub` and the
-//   analogous player-hub test both pass. The new debounce behavior is
-//   covered by hand-testing the search box (type "LAL" — exactly one
-//   `/api/teams/search?term=LAL` request fires, not three).
+const DEBOUNCE_MS = 250;
+
+/**
+ * Team search input with debounced lookup, inline loading affordance,
+ * empty-results messaging, and `?term=` URL persistence.
+ *
+ * Debounce strategy: a 250ms `setTimeout` per keystroke commits the raw
+ * `term` to `debouncedTerm`, which is the value actually fed to the
+ * `useTeamSearch` query. While the debounce is pending (`term !==
+ * debouncedTerm`) or the query is in flight (`query.isFetching`), the
+ * results panel renders a "Searching…" affordance — so the user never
+ * sees stale or empty results from a previous term during the wait.
+ *
+ * URL persistence: on mount we read `?term=` from the URL via
+ * `useUrlParam().get` and prepopulate the input; on submit we write the
+ * trimmed term back to `?term=`. The mount-time read uses a ref to
+ * capture the initial `get` closure because `useUrlParam` returns
+ * freshly-bound `get`/`set` on every render — the URL is intentionally
+ * read once, not tracked as it changes.
+ *
+ * Mirrors `ui/src/features/player-hub/components/player-search.tsx:15-63`.
+ */
 export function TeamSearch({ compact = false }: TeamSearchProps) {
   const [term, setTerm] = useState("");
+  const [debouncedTerm, setDebouncedTerm] = useState("");
   const router = useRouter();
-  const query = useTeamSearch(term);
+  const { get: getParam, set: setParam } = useUrlParam();
+
+  // Capture the latest `get` reference so the mount-effect can read
+  // the URL exactly once without re-running on every render (the
+  // `useUrlParam` hook rebinds its closures on each call). The ref is
+  // refreshed in an effect to comply with the React refs rule.
+  const getParamRef = useRef(getParam);
+  useEffect(() => {
+    getParamRef.current = getParam;
+  });
+
+  // Debounce: commit `term` to `debouncedTerm` after a quiet period.
+  useEffect(() => {
+    const id = setTimeout(() => setDebouncedTerm(term), DEBOUNCE_MS);
+    return () => clearTimeout(id);
+  }, [term]);
+
+  // Initial read from `?term=`. Runs once on mount — see JSDoc above.
+  useEffect(() => {
+    const fromUrl = getParamRef.current("term");
+    if (fromUrl !== null && fromUrl.length > 0) {
+      setTerm(fromUrl);
+      setDebouncedTerm(fromUrl);
+    }
+  }, []);
+
+  const query = useTeamSearch(debouncedTerm);
   const results = query.data ?? [];
+  const trimmedTerm = term.trim();
+  const trimmedDebounced = debouncedTerm.trim();
+  // "Pending" covers both the debounce delay and an in-flight request.
+  const isPending = query.isFetching || trimmedTerm !== trimmedDebounced;
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (trimmedTerm.length > 0) {
+      setParam("term", trimmedTerm);
+    }
     const first = results[0];
     if (first) {
       router.push(`/teams/${first.identifier}`);
@@ -91,10 +100,13 @@ export function TeamSearch({ compact = false }: TeamSearchProps) {
         </Button>
       </form>
 
-      {term.trim().length >= 2 ? (
+      {trimmedTerm.length >= 2 ? (
         <div className="mt-2 max-h-80 overflow-auto rounded-md border border-court-line bg-white shadow-sm">
-          {query.isLoading ? (
-            <div className="px-3 py-3 text-sm text-court-muted">Searching</div>
+          {isPending ? (
+            <div className="flex items-center gap-2 px-3 py-3 text-sm text-court-muted">
+              <LoaderCircle className="size-3.5 animate-spin" aria-hidden="true" />
+              Searching
+            </div>
           ) : results.length > 0 ? (
             <div className="divide-y divide-zinc-100">
               {results.map((result) => (
@@ -114,9 +126,11 @@ export function TeamSearch({ compact = false }: TeamSearchProps) {
                 </button>
               ))}
             </div>
-          ) : (
-            <div className="px-3 py-3 text-sm text-court-muted">No results</div>
-          )}
+          ) : trimmedDebounced.length >= 2 ? (
+            <div className="px-3 py-3 text-sm text-court-muted">
+              No teams found for &quot;{trimmedDebounced}&quot;
+            </div>
+          ) : null}
         </div>
       ) : null}
     </div>

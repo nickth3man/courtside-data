@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 
 import { Button } from "@/components/button";
-import { EmptyState } from "@/features/player-hub/components/empty-state";
+import { EmptyState } from "@/components/empty-state";
 import { TypedApiError } from "@/lib/api-errors";
 
 interface PlayersErrorProps {

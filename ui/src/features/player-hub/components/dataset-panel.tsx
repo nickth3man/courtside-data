@@ -4,8 +4,8 @@ import { QueryBoundary } from "@/components/query-boundary";
 import { SectionHeading } from "@/components/section-heading";
 import { csvExportUrl } from "@/features/player-hub/api/client";
 import { usePlayerDataset, useSeasonDataset } from "@/features/player-hub/api/queries";
-import { DataTable } from "@/features/player-hub/components/data-table";
-import { EmptyState } from "@/features/player-hub/components/empty-state";
+import { DataTable } from "@/components/data-table";
+import { EmptyState } from "@/components/empty-state";
 import type { DatasetCatalogEntry, PlayerHubSummary } from "@/features/player-hub/types";
 
 interface DatasetPanelProps {

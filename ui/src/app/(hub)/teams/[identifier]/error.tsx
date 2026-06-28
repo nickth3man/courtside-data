@@ -4,28 +4,34 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 
 import { Button } from "@/components/button";
-import { EmptyState } from "@/features/player-hub/components/empty-state";
+import { EmptyState } from "@/components/empty-state";
 import { TypedApiError, isRateLimited } from "@/lib/api-errors";
 
-interface PlayerErrorProps {
+interface TeamErrorProps {
   error: Error & { digest?: string };
   reset: () => void;
 }
 
 /**
- * Route-level error boundary for `/players/[identifier]`.
+ * Route-level error boundary for `/teams/[identifier]`.
  *
- * Auto-wrapped by Next.js — invoked when an error escapes the player-hub
+ * Auto-wrapped by Next.js — invoked when an error escapes the team-hub
  * component tree. Must be a client component (Next.js requirement for
  * `error.tsx`).
  *
  * Branches on the `TypedApiError.code`:
  * - `rate_limit_jailed` → countdown + disabled retry button
- * - `invalid_player` / `missing_fixture` → tailored message + back link
+ * - `invalid_team` / `missing_fixture` → tailored message + back link
  * - other `TypedApiError` codes → server-supplied message + retry
  * - unknown errors → generic message (no raw-text leak)
+ *
+ * Mirror of `ui/src/app/players/[identifier]/error.tsx` adapted for the
+ * team-hub. The `invalid_team` branch is wired so the boundary is ready
+ * the moment the server starts emitting that code — today the team
+ * server surfaces `missing_fixture` and `internal_error`, which fall
+ * through to the bottom two branches.
  */
-export default function PlayerError({ error, reset }: PlayerErrorProps) {
+export default function TeamError({ error, reset }: TeamErrorProps) {
   useEffect(() => {
     console.error(error);
   }, [error]);
@@ -35,11 +41,11 @@ export default function PlayerError({ error, reset }: PlayerErrorProps) {
   }
 
   if (error instanceof TypedApiError) {
-    if (error.code === "invalid_player") {
+    if (error.code === "invalid_team") {
       return (
         <ErrorCard
-          title="Player not found"
-          detail="We couldn't find that player. It may have been removed or the identifier is wrong."
+          title="Team not found"
+          detail="We couldn't find that team. It may have been removed or the identifier is wrong."
           showBackLink
           onRetry={reset}
         />
@@ -49,7 +55,7 @@ export default function PlayerError({ error, reset }: PlayerErrorProps) {
       return (
         <ErrorCard
           title="Fixture data unavailable"
-          detail="No fixture data exists for this player yet."
+          detail="No fixture data exists for this team yet."
           showBackLink
           onRetry={reset}
         />
@@ -95,10 +101,10 @@ function ErrorCard({
           <div className="flex flex-wrap gap-2">
             {showBackLink ? (
               <Link
-                href="/players"
+                href="/teams"
                 className="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-court-line bg-white px-4 text-sm font-medium text-court-ink transition-colors hover:bg-zinc-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-court-accent"
               >
-                Back to players
+                Back to teams
               </Link>
             ) : null}
             <Button onClick={onRetry} variant="primary" disabled={retryDisabled}>

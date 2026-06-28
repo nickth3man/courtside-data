@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-import { EmptyState } from "@/features/player-hub/components/empty-state";
+import { EmptyState } from "@/components/empty-state";
 
 /**
  * Route-level not-found UI for `/players/[identifier]`.

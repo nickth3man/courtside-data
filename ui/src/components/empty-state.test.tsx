@@ -1,5 +1,5 @@
 /**
- * Component tests for `ui/src/features/player-hub/components/empty-state.tsx`.
+ * Component tests for `ui/src/components/empty-state.tsx`.
  *
  * The `EmptyState` component is a presentational dashed-border card
  * with a required `title` and optional `detail` line. These tests pin
@@ -9,7 +9,7 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
-import { EmptyState } from "@/features/player-hub/components/empty-state";
+import { EmptyState } from "@/components/empty-state";
 
 describe("EmptyState", () => {
   it("renders the title and supports an optional detail line", () => {

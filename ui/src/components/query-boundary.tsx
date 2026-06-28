@@ -3,7 +3,7 @@
 import type { ReactNode } from "react";
 import type { UseQueryResult } from "@tanstack/react-query";
 
-import { EmptyState } from "@/features/player-hub/components/empty-state";
+import { EmptyState } from "@/components/empty-state";
 import { LoadingBlock } from "@/components/loading-block";
 
 interface QueryBoundaryProps<T> {

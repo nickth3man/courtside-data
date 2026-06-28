@@ -8,9 +8,8 @@ import { expect, test } from "@playwright/test";
  * - `invalid_player` / `missing_fixture` → `notFound()` → `not-found.tsx`
  * - everything else (`rate_limit_jailed`, `schema_drift`, …) → `throw err` → `error.tsx`
  *
- * The "non-existent route segment" case still has no clean trigger
- * (there's no `app/not-found.tsx` and Next.js's own 404 doesn't match
- * the `players/[identifier]` segment), so it stays as `test.fixme`.
+ * The "non-existent route segment" case is covered by the global
+ * `app/not-found.tsx` (rendered by Next.js for any unmatched path).
  */
 
 const status = {
@@ -87,69 +86,15 @@ test("missing fixture shows tailored message", async ({ page }) => {
   await expect(page.getByRole("link", { name: "Back to players" })).toBeVisible();
 });
 
-test.fixme("non-existent route segment shows not-found", async () => {});
-// TODO(e2e): add a global `app/not-found.tsx` so the root-level 404 path
-//   is testable, then flip this `test.fixme` to a real `test(...)`.
-//
-// Why it's still `fixme`: there is no `ui/src/app/not-found.tsx` (the
-// global root-level 404). Next.js's built-in 404 page renders instead
-// of any custom UI, so there is no testable heading/CTA to assert on.
-// The segment-level `app/players/[identifier]/not-found.tsx` is now
-// reachable via `notFound()` (covered by the real tests above), but
-// that segment only fires for `notFound()` calls inside its subtree —
-// a truly unmatched path (e.g. `/nonexistent`, `/foo/bar`) bubbles up
-// to the root and is currently unhandled.
-//
-// What needs to be created: `ui/src/app/not-found.tsx` — a server
-// component that mirrors `ui/src/app/players/not-found.tsx` but lives
-// at the app root, so it catches every unmatched route. Shape:
-//   - "Page not found" heading (or similar).
-//   - One short sentence of supporting copy.
-//   - A `<Link href="/players">Back to players</Link>` CTA.
-//
-// Where:
-//   - create `ui/src/app/not-found.tsx` (new file, server component,
-//     no hooks, no client state — mirrors `app/players/not-found.tsx`).
-//   - cross-reference: `ui/src/app/players/not-found.tsx:1-31` is the
-//     per-segment pattern to clone; `ui/src/app/players/[identifier]/
-//     not-found.tsx:1-31` is the segment-under-`[identifier]` pattern.
-//   - cross-reference: `ui/src/app/players/[identifier]/page.tsx:1-16`
-//     shows how `notFound()` is triggered in the segment subtree (the
-//     root-level `not-found.tsx` is reached by route miss, not by
-//     `notFound()`).
-//
-// How:
-//   1. Create `ui/src/app/not-found.tsx` with a `<main>` + `<EmptyState>`
-//      + `<Link href="/players">` (copy the structure from
-//      `app/players/not-found.tsx`, swap the title to "Page not found").
-//   2. Flip the `test.fixme` below to `test(...)`:
-//        await page.goto("/nonexistent");
-//        await expect(page.getByText("Page not found")).toBeVisible();
-//        await expect(page.getByRole("link", { name: "Back to players" }))
-//          .toBeVisible();
-//   3. Decide whether to mock any backend routes — the root 404
-//      doesn't render `PlayerHub`, so no `/api/players/...` calls are
-//      made. The existing `beforeEach` mocks (status + catalog) are
-//      harmless to keep.
-//
-// Distinct from the per-segment `not-found.tsx`:
-//   - Global (`app/not-found.tsx`): catches every route that doesn't
-//     match any segment, app-wide. Renders for `/nonexistent`,
-//     `/foo/bar`, `/players/` (trailing slash, after Next.js
-//     normalisation).
-//   - Per-segment (`app/players/[identifier]/not-found.tsx`): catches
-//     `notFound()` calls within the `players/[identifier]` subtree.
-//     Renders for a 404 API response on `/players/doesnotexist01`.
-//   - The two never overlap — `notFound()` from a segment never
-//     reaches the global fallback; a route miss never reaches a
-//     segment fallback.
-//
-// Decision needed: should the global page share the `EmptyState`
-//   component (current proposal) or have its own bespoke layout? The
-//   minimal-delta option is to share `EmptyState`; the bespoke option
-//   adds a "report a broken link" affordance that doesn't exist today.
-//
-// Verify: after creating `app/not-found.tsx`, run `npm run dev` and
-//   navigate to http://127.0.0.1:3000/nonexistent — the custom 404
-//   should render. Then `npx playwright test tests/e2e/not-found.spec.ts`
-//   (with the flip applied) should pass.
+test("non-existent route segment shows not-found", async ({ page }) => {
+  // Visit a path that doesn't match any segment. The global
+  // `app/not-found.tsx` should render the "Page not found" empty state
+  // plus the "Back to players" CTA. The root 404 doesn't render
+  // `PlayerHub`, so no `/api/players/...` calls are made — the existing
+  // `beforeEach` mocks are harmless to keep.
+  await page.goto("/nonexistent");
+
+  await expect(page.getByText("Page not found")).toBeVisible({ timeout: 5_000 });
+  await expect(page.getByRole("link", { name: "Back to players" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Back to players" })).toHaveAttribute("href", "/players");
+});

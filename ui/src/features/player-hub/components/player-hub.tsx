@@ -8,11 +8,11 @@ import { useMemo, useState } from "react";
 
 import { Button } from "@/components/button";
 import { QueryBoundary } from "@/components/query-boundary";
+import { StatusPill } from "@/components/status-pill";
 import { useCatalog, usePlayerSummary } from "@/features/player-hub/api/queries";
 import { DatasetPanel } from "@/features/player-hub/components/dataset-panel";
 import { Overview } from "@/features/player-hub/components/overview";
 import { PlayerSearch } from "@/features/player-hub/components/player-search";
-import { StatusPill } from "@/features/player-hub/components/status-pill";
 import type { DatasetCatalogEntry, PlayerHubTab } from "@/features/player-hub/types";
 import { fallbackTabs } from "@/features/player-hub/utils/catalog";
 import { formatValue } from "@/features/player-hub/utils/format";

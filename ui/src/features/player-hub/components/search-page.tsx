@@ -1,7 +1,7 @@
 import { ArrowRight } from "lucide-react";
 import Link from "next/link";
 
-import { StatusPill } from "@/features/player-hub/components/status-pill";
+import { StatusPill } from "@/components/status-pill";
 import { PlayerSearch } from "@/features/player-hub/components/player-search";
 import { SAMPLE_ATHLETES } from "@/lib/sample-athletes";
 

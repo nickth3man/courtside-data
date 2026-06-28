@@ -2,9 +2,8 @@
 
 import { Database, LoaderCircle, TriangleAlert, WifiOff } from "lucide-react";
 
+import { useStatus } from "@/lib/use-status";
 import { isRateLimited } from "@/lib/api-errors";
-
-import { useStatus } from "@/features/player-hub/api/queries";
 
 /**
  * API status pill — surfaces the current transport mode plus the two
@@ -13,9 +12,9 @@ import { useStatus } from "@/features/player-hub/api/queries";
  * 1. **Rate-limit jail** — the `useStatus` query is in an error state
  *    with `code === "rate_limit_jailed"`. We read the error from the
  *    query result (not from a prop) so the pill can also surface the
- *    server-supplied `retryAfter` countdown. Using the internal hook
- *    here avoids changing the public prop signature and keeps the
- *    caller in `player-hub.tsx` untouched.
+ *    server-supplied `retryAfter` countdown. Using the shared hook
+ *    here keeps the pill a thin visual component and lets it be
+ *    rendered by any feature without per-feature plumbing.
  *
  * 2. **Missing fixture root** — the status payload is healthy but
  *    `transport === "fixture"` and `fixture_root_exists === false`,

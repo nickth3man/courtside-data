@@ -4,18 +4,19 @@ import {
   getCatalog,
   getPlayerDataset,
   getSeasonDataset,
-  getStatus,
   getSummary,
   searchPlayers,
 } from "@/features/player-hub/api/client";
 import { queryKeys } from "@/features/player-hub/api/query-keys";
 
-export function useStatus() {
-  return useQuery({
-    queryKey: queryKeys.status,
-    queryFn: getStatus,
-  });
-}
+/**
+ * Re-export of the shared `useStatus` hook. The canonical implementation
+ * lives in `@/lib/use-status` (a feature-agnostic module that drives the
+ * `<StatusPill />` in both player-hub and team-hub). Re-exported here so
+ * any caller that imports the hook from the historical player-hub path
+ * keeps working without churn.
+ */
+export { useStatus } from "@/lib/use-status";
 
 export function useCatalog() {
   return useQuery({

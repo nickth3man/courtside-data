@@ -125,13 +125,57 @@ export interface EndpointRowsResponse {
   transport: TransportMode;
 }
 
+/**
+ * Closed shape of the `hero_stats` dict emitted by
+ * `TeamHubService._team_hero_stats` in
+ * `courtside_data/server/team_service.py:386-431`. Every consumer in the
+ * UI reads from this interface; the server still ships the payload as a
+ * `dict[str, Any]` so the UI degrades gracefully (extra/missing keys
+ * surface as `undefined` / omitted values, not crashes).
+ *
+ * Forward-compatible design: the optional metrics (`wins_pyth`, `mov`,
+ * `srs`, `off_rtg`, `def_rtg`, `pace`) are typed as `number | null` so
+ * an older server that ships only the three base keys
+ * (`wins`/`losses`/`win_pct`) still type-checks.
+ */
+export interface TeamHeroStats {
+  season: number | string | null;
+  team: string;
+  wins: number | null;
+  losses: number | null;
+  win_pct: number | null;
+  wins_pyth?: number | null;
+  losses_pyth?: number | null;
+  mov?: number | null;
+  srs?: number | null;
+  off_rtg?: number | null;
+  def_rtg?: number | null;
+  pace?: number | null;
+}
+
+/**
+ * One row of the per-season "Franchise Arc" series. Forward-compatible:
+ * the server-side `franchise_arc` field is deferred to a separate Python
+ * track, so this interface is wired in advance and the UI falls back to
+ * the empty state until the server starts emitting it.
+ */
+export interface FranchiseArcPoint {
+  season_end_year: number;
+  team_name: string | null;
+  wins: number | null;
+  losses: number | null;
+  win_pct: number | null;
+}
+
 export interface TeamHubSummary {
   identifier: string;
   display_name: string;
   leagues: string[];
   default_season: number | null;
   available_seasons: number[];
-  hero_stats: Record<string, unknown>;
+  hero_stats: TeamHeroStats;
+  /** Optional — server hasn't shipped the franchise-arc series yet. */
+  franchise_arc?: FranchiseArcPoint[];
   roster: EndpointRowsResponse;
   season_dataset_availability: Record<string, number[]>;
   transport: TransportMode;

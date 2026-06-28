@@ -5,7 +5,7 @@ import type { ReactNode } from "react";
 import { CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 
 import { SectionHeading } from "@/components/section-heading";
-import { DataTable } from "@/features/player-hub/components/data-table";
+import { DataTable } from "@/components/data-table";
 import type { PlayerHubSummary } from "@/features/player-hub/types";
 import { asNumber, formatStat } from "@/features/player-hub/utils/format";
 import { seasonEndYearFromLabel } from "@/features/player-hub/utils/season";

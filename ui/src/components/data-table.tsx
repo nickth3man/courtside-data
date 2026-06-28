@@ -15,8 +15,8 @@ import { ChevronDown, ChevronLeft, ChevronRight, Download, SlidersHorizontal } f
 import { useMemo, useState } from "react";
 
 import { Button } from "@/components/button";
-import type { ColumnMeta } from "@/features/player-hub/types";
-import { formatValue } from "@/features/player-hub/utils/format";
+import type { ColumnMeta } from "@/lib/column-meta";
+import { formatValue } from "@/lib/format";
 
 interface DataTableProps {
   rows: Record<string, unknown>[];

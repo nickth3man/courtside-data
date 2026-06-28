@@ -7,13 +7,13 @@ import { useMemo, useState } from "react";
 
 import { Button } from "@/components/button";
 import { QueryBoundary } from "@/components/query-boundary";
+import { StatusPill } from "@/components/status-pill";
 import { useCatalog, useTeamSummary } from "@/features/team-hub/api/queries";
 import { DatasetPanel } from "@/features/team-hub/components/dataset-panel";
 import { Overview } from "@/features/team-hub/components/overview";
 import { TeamSearch } from "@/features/team-hub/components/team-search";
 import type { TeamDatasetCatalogEntry, TeamHubTab } from "@/features/team-hub/types";
 import { fallbackTeamTabs, teamDatasetLabel, teamDatasetScope } from "@/features/team-hub/utils/catalog";
-import { formatValue } from "@/features/player-hub/utils/format";
 import { seasonLabel } from "@/features/player-hub/utils/season";
 import { useUrlParam } from "@/lib/use-url-param";
 
@@ -54,29 +54,14 @@ export function TeamHub({ identifier }: TeamHubProps) {
                     </Link>
                     <h1 className="mt-2 truncate text-2xl font-semibold text-court-ink sm:text-3xl">{summary.display_name}</h1>
                     <p className="text-sm text-court-muted">
-                      {summary.identifier} · {summary.leagues.join("/")} · {formatValue(summary.hero_stats.conference)}
+                      {[summary.identifier, summary.leagues.join("/") || null]
+                        .filter(Boolean)
+                        .join(" · ")}
                     </p>
                   </div>
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-                    {/* TODO(team-hub): surface the API status pill in the team-hub
-                     * header (the slot is the right-hand side of the title row,
-                     * roughly line 62 in the current file).
-                     *
-                     * Cross-reference: the same TODO exists at
-                     *   `ui/src/features/team-hub/components/search-page.tsx`
-                     *   line ~26 (the team-hub search-page header). That comment
-                     *   has the full expansion — the "Decision needed" block
-                     *   there documents the shared `ui/src/components/status-pill.tsx`
-                     *   vs per-feature copy trade-off. This file's pill would
-                     *   sit to the right of `<TeamSearch compact />` so the
-                     *   transport mode is visible while a user browses tabs.
-                     *
-                     * Once the shared extraction lands (or the per-feature copy
-                     * is created), the JSX to drop in is:
-                     *     <StatusPill />
-                     * imported from `@/components/status-pill` (preferred) or
-                     * `@/features/team-hub/components/status-pill`. */}
                     <TeamSearch compact />
+                    <StatusPill />
                   </div>
                 </div>
 

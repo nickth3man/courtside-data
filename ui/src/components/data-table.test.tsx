@@ -1,7 +1,7 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
-import { DataTable } from "@/features/player-hub/components/data-table";
+import { DataTable } from "@/components/data-table";
 import type { ColumnMeta } from "@/features/player-hub/types";
 
 const columns: ColumnMeta[] = [

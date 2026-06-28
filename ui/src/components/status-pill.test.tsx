@@ -1,5 +1,5 @@
 /**
- * Component tests for `ui/src/features/player-hub/components/status-pill.tsx`.
+ * Component tests for `ui/src/components/status-pill.tsx`.
  *
  * The pill reads `useStatus()` directly and chooses one of four
  * presentations: rate-limit, loading, offline, fixture-root-missing, or
@@ -10,13 +10,13 @@ import { render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { TypedApiError } from "@/lib/api-errors";
-import { StatusPill } from "@/features/player-hub/components/status-pill";
+import { StatusPill } from "@/components/status-pill";
 import type { StatusResponse } from "@/features/player-hub/types";
 
 /** Hoisted shared mock — the factory below re-exports the same ref. */
 const { useStatus } = vi.hoisted(() => ({ useStatus: vi.fn() }));
 
-vi.mock("@/features/player-hub/api/queries", () => ({
+vi.mock("@/lib/use-status", () => ({
   useStatus,
 }));
 
