@@ -5,13 +5,23 @@
 backend, the Next.js UI, and the docs site, and consciously defer the
 ones that don't have a low-risk path to closure.
 
-**Outcome:** 24 markers resolved across 4 tracks; 23 markers
+**Outcome:** 25 markers resolved across 4 tracks; 22 markers
 consciously deferred. All changes verified by the local `task audit`
 gate (ruff check, ruff format, ty check, `pytest tests -n auto`) plus
 the UI equivalents (`npm run lint`, `npm run typecheck`,
 `npm run test`, `npm run build`, `npx playwright test`).
 Landed in commits [`b5c8f5d`](../..) (backend) and
-[`684d146`](../..) (frontend) on `origin/dev`.
+[`684d146`](../..) (frontend) on `origin/dev`, with the display-name
+follow-up landed in a subsequent commit on `origin/dev` (see
+[§1.1 — Follow-up](#11-follow-up--display-name-data-driven-lookup)).
+
+> **Follow-up commit:** A second commit closed the
+> `team_service.py:90` (display-name map) marker that the original
+> session honestly flagged as a miss. The follow-up lives on
+> `origin/dev` on top of the original backend commit; the
+> discrepancy table at [§4](#4-discrepancies) marks that marker
+> as RESOLVED and the counts above reflect the follow-up (25
+> resolved, 22 deferred). Details at [§1.1](#11-follow-up--display-name-data-driven-lookup).
 
 > **Reading this doc:** §1 lists the markers that were resolved
 > (grouped by track), §2 lists the markers that were consciously
@@ -23,7 +33,33 @@ Landed in commits [`b5c8f5d`](../..) (backend) and
 
 ---
 
-## 1. Resolved (24 markers)
+## 1. Resolved (25 markers)
+
+### 1.1 Follow-up — display-name data-driven lookup
+
+After the original session landed, a follow-up commit closed the
+`team_service.py:90` display-name map marker that the session's
+discrepancy table at [§4](#4-discrepancies) honestly flagged as a
+miss. The follow-up:
+
+- Added :meth:`TeamHubService._team_display_name` — a data-driven
+  helper that calls the ``franchise_history`` endpoint once per
+  ``team_identifier``, picks the ``team_name`` from the row with
+  the max ``season_end_year``, and memoizes the result per service
+  instance.
+- Mirrored the `_franchise_arc` graceful-empty pattern: on
+  :class:`MissingFixtureError` or empty result, falls back to the
+  static :data:`TEAM_DISPLAY_NAMES` dict, then to the raw
+  ``team_identifier`.
+- Replaced the single call site in :meth:`TeamHubService.summary`
+  (``display_name=TEAM_DISPLAY_NAMES.get(...)``) with
+  ``display_name=self._team_display_name(...)``.
+- Kept :data:`TEAM_DISPLAY_NAMES` as the graceful-degrade path
+  (do NOT delete — it's the offline / pre-fixture fallback).
+
+The follow-up's row appears under Track 2 below. The original
+session's honest miss is now marked RESOLVED in
+[§4](#4-discrepancies).
 
 ### Track 1 — Python mechanical
 
@@ -48,7 +84,7 @@ parameterised, then the stub was deleted in the same commit.
 | `courtside_data/server/team_service.py` | 396 | "Confirm and stabilise the hero-stats source" | Added `TeamHeroStats` Pydantic model (`extra="forbid"`, `team: str` required); narrowed `TeamHubSummary.hero_stats` from `dict[str, Any]` to the typed model; added `_team_hero_stats` projection over `team_misc_four_factors` | `tests/server/test_team_hub_hero_stats.py` (77 lines, covers the W/L/win% ratio-or-percent coercion) |
 | `courtside_data/server/team_service.py` | 490 | "Wire team search end-to-end" | `TeamHubService.search()` now filters `SearchResultRow` by `type == "team"`, dedupes by `identifier`, returns a `list[TeamSearchResult]` | `tests/server/test_team_hub_search.py` (183 lines, covers type filter, dedupe, ordering, 404 fall-through) |
 | `courtside_data/server/team_service.py` | 891 | "Stabilise the CSV column-ordering contract" | `_csv_columns` path now reads from `EndpointSpec.csv_columns` (all 13 team endpoints declare one); the `rows[0].keys()` unstable fallback is gated by an `EndpointSpec.csv_columns`-first check | `tests/server/test_team_hub_csv.py::test_csv_header_matches_endpoint_spec_csv_columns` (parametrized over all 13 team datasets) |
-| `courtside_data/server/team_service.py` | 90, 206, 260, 622, 693, 743, 781 (partial / related) | Display-name map, param-mapping branches, fixture transport, season discovery, `season_dataset_availability` | See [§2.2](#22-fixture-transport-wiring-4-markers--needs-live-network); these were reframed as new follow-up TODOs at the new line numbers, not deleted | (The new follow-up TODOs link to the same intent; the prior content is preserved in `git log b5c8f5d~1` and the file's pre-session diff.) |
+| `courtside_data/server/team_service.py` | 90, 206, 260, 622, 693, 743, 781 (partial / related) | Display-name map, param-mapping branches, fixture transport, season discovery, `season_dataset_availability` | Display-name map (originally line 90) resolved by the follow-up commit — see [§1.1](#11-follow-up--display-name-data-driven-lookup). The other items were reframed as new follow-up TODOs at the new line numbers, not deleted | `tests/server/test_team_hub_display_names.py` (10 cases: latest-row pick, missing-fixture fallback, empty-result fallback, raw-identifier fallback, relocated-franchise wins, cache hit, per-team keying, end-to-end `summary` use) |
 | `courtside_data/server/team_catalog.py` | 121 | Add a regression test that asserts the `scope` ↔ `EndpointSpec.params` invariant | Added `test_team_hub_scope_matches_endpoint_season_param` (parametrised over all 13 `TeamDataset` entries; asserts `scope == "team_season"` iff `"season_end_year" in EndpointSpec.params`) | `tests/test_endpoint_metadata.py:184` (`test_team_hub_scope_matches_endpoint_season_param`) |
 
 ### Track 3 — UI mechanical
@@ -89,11 +125,14 @@ The `npm run typecheck` and `npm run build` gates were the contract.
 > present in the file and is now listed in
 > [§2.8](#28-team-hub-column-set-curation-1-marker--needs-fixture-capture).
 > The discrepancies section ([§4](#4-discrepancies)) has the
-> full reconciliation.
+> full reconciliation. **Post-follow-up, the resolved count is
+> 25** (the display-name marker from the discrepancy table is
+> now RESOLVED) and the deferred count is 22; see
+> [§1.1](#11-follow-up--display-name-data-driven-lookup).
 
 ---
 
-## 2. Deferred (23 markers)
+## 2. Deferred (22 markers)
 
 ### 2.1 Hub catalog stubs (4 markers) — multi-week lanes
 
@@ -358,20 +397,27 @@ Markers the session task spec missed or mis-classified:
 |-----------|------|-------------------|
 | `courtside_data/server/team_catalog.py:35` | `TODO(team-hub): populate default_visible_columns per dataset` (still present, all 13 entries still `[]`) | The spec listed `team_catalog.py:35, 121` as resolved. Line 121 (add a regression test for the scope/EndpointSpec invariant) **was** resolved (`test_team_hub_scope_matches_endpoint_season_param` added at `tests/test_endpoint_metadata.py:184`). Line 35 was **NOT** resolved — the TODO and the empty `default_visible_columns=[]` are still in the file. Likely a copy-paste error in the spec; the field-population work requires fixture capture and was never done. |
 | `ui/src/lib/sample-teams.ts:9` | `TODO(lib): drive the sidebar from a backend endpoint` | Symmetric sibling of `sample-athletes.ts:9` (which was in the spec). The session resolved `search-page.tsx:6, 64` in code, but the underlying TODO at the top of the data file was not on the spec's list. Same deferral rationale. |
-| `courtside_data/server/team_service.py:90` | Display-name map (was at line 47, 90) | The session spec listed line 47 (the `_TEAM_DEFAULT_SEASON` TODO) and noted line 90 as `(partial)`. The display-name TODO at line 90 in the original file was preserved and renumbered to line 75 in the new file; it is functionally a NEW follow-up (it was never resolved), but the spec treated it as a partial resolution. |
+| `courtside_data/server/team_service.py:90` | Display-name map (was at line 47, 90) — **RESOLVED in follow-up commit** | The session spec listed line 47 (the `_TEAM_DEFAULT_SEASON` TODO) and noted line 90 as `(partial)`. The display-name TODO at line 90 in the original file was preserved and renumbered to line 75 in the new file; it is functionally a NEW follow-up (it was never resolved), but the spec treated it as a partial resolution. **Status:** RESOLVED by a follow-up commit (see [§1.1](#11-follow-up--display-name-data-driven-lookup)). The new helper `_team_display_name` calls `franchise_history` and falls back to the static dict on `MissingFixtureError`; covered by 10 new tests in `tests/server/test_team_hub_display_names.py`. |
 | `courtside_data/server/games_catalog.py:3, 24` | Two TODOs in the same file (one is a comment cross-reference) | The spec mentioned `courtside_data/server/{league,playoffs,draft_awards,games}_catalog.py` as a single grouped line. `games_catalog.py` has two TODOs (a top-of-file block and an inline reference) versus one in each of the other three. |
 
 The session also did NOT mark `courtside_data/server/team_service.py:90`
 as resolved — only `team_service.py:47` (which was the
 `_TEAM_DEFAULT_SEASON` TODO that was deleted). The display-name
 TODO is now at `team_service.py:75` in the new file and is a
-follow-up, not a residual of the original.
+follow-up, not a residual of the original. **The follow-up commit
+has since closed this gap** (see [§1.1](#11-follow-up--display-name-data-driven-lookup));
+the remaining "biggest discrepancy" line below refers to the
+*current* state of the table above, where this row is now marked
+RESOLVED.
 
-The biggest discrepancy is `team_catalog.py:35`: the spec
+The biggest remaining discrepancy is `team_catalog.py:35`: the spec
 claimed it was resolved, but the TODO and the empty
 `default_visible_columns=[]` for all 13 datasets are still in
 the file. This is a real resolution gap (not just a line-number
-shift), and it's the reason the resolved count is 24 (not 25).
+shift), and it's the reason the original resolved count was 24
+instead of the 25 the spec implied (with the follow-up now
+closing the display-name gap, the current count is 25 resolved,
+22 deferred).
 
 ---
 
@@ -382,7 +428,7 @@ shift), and it's the reason the resolved count is 24 (not 25).
 | Python lint | `uv run ruff check .` | clean |
 | Python format | `uv run ruff format --check .` | clean |
 | Python type | `uv run ty check` | clean |
-| Python tests | `uv run pytest tests -n auto` | 1822 passed |
+| Python tests | `uv run pytest tests -n auto` | 1832 passed (10 added by the display-name follow-up) |
 | UI lint | `npm run lint` | clean |
 | UI type | `npm run typecheck` | clean |
 | UI tests | `npm run test` | 93 passed (vitest) |
@@ -390,8 +436,10 @@ shift), and it's the reason the resolved count is 24 (not 25).
 | UI e2e | `npx playwright test` | 1 previously-fixme test now passes (`not-found.spec.ts:91`); 2 still `test.fixme` (deferred, see [§2.5](#25-test-only-2-markers--ux-decisions-pending)) |
 | Full gate | `uv run task audit` | clean |
 
-The `1822` Python test count and `93` UI test count are the
-post-session totals. The session added ~60 new Python tests
-(search-type discriminator, hero-stats, franchise-arc, search,
-summary, build-params, csv, season calendar helper) and ~12 new
-UI tests (overview, team-hub, team-search, hub-nav).
+The `1832` Python test count and `93` UI test count are the
+post-session + follow-up totals. The original session added ~60
+new Python tests (search-type discriminator, hero-stats,
+franchise-arc, search, summary, build-params, csv, season
+calendar helper) and ~12 new UI tests (overview, team-hub,
+team-search, hub-nav); the follow-up added 10 more Python tests
+(display-name helper + cache + end-to-end summary wiring).

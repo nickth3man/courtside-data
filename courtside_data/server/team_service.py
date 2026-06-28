@@ -66,45 +66,12 @@ def _row_get(row: object, key: str) -> object:
         return None
 
 
-# Human-readable team display names. The list is intentionally small —
-# it covers the canonical abbreviations the UI has branded in
-# ``docs/architecture/team-hub.md``. Unknown abbreviations fall back to
-# the raw ``team_identifier`` (mirroring the player hub's
-# ``PLAYER_DISPLAY_NAMES`` fallback).
-#
-# TODO(team-hub): source the display-name map from data instead of a
-# hand-curated static dict.
-#
-# What: replace the static :data:`TEAM_DISPLAY_NAMES` with a lookup
-# driven by the ``franchise_history`` endpoint (the
-# ``FranchiseHistoryRow`` schema at
-# ``courtside_data/schemas/teams.py:286`` exposes ``team_name`` and
-# ``season`` columns) so renames and relocations (e.g. the
-# Seattle SuperSonics -> OKC Thunder) propagate automatically.
-# Where:
-#   - courtside_data/server/team_service.py:372  (the
-#     ``display_name=TEAM_DISPLAY_NAMES.get(...)`` line in
-#     :meth:`TeamHubService.summary`).
-#   - courtside_data/schemas/teams.py:286  (``FranchiseHistoryRow``).
-#   - courtside_data/server/fixtures.py:49  (``franchise_history`` is
-#     already whitelisted in ``TEAM_ENDPOINTS``).
-# How:
-#   1. Memoize a ``_team_display_name(team_identifier) -> str`` helper
-#     that calls the ``franchise_history`` endpoint once per
-#     abbreviation, picks the most-recent ``team_name`` from the
-#     returned rows, and caches it for the process lifetime.
-#   2. Keep :data:`TEAM_DISPLAY_NAMES` as the offline / pre-fixture
-#     fallback so the summary still renders in fixture mode before
-#     ``franchise_history`` fixtures are captured.
-# Decision needed: cache invalidation policy when a team's nickname
-# changes mid-process (e.g. live transport is in use for hours);
-# player hub has no analog and re-fetches on every summary call, which
-# is acceptable here too.
-# Verify: ``uv run python -c "from
-#   courtside_data.server.team_service import TEAM_DISPLAY_NAMES;
-#   assert TEAM_DISPLAY_NAMES['BOS'] == 'Boston Celtics';"`` and
-#   ``TestClient(create_app(transport='live')).get(
-#   '/api/teams/BOS/summary')['display_name']`` -> ``"Boston Celtics"``.
+# Human-readable team display names. This dict is the offline /
+# pre-fixture fallback for :meth:`TeamHubService._team_display_name`:
+# when the data-driven lookup (``franchise_history``) raises
+# :class:`MissingFixtureError` or returns an empty row set, the
+# helper falls back to this map, then to the raw ``team_identifier``
+# (mirroring the player hub's ``PLAYER_DISPLAY_NAMES`` fallback).
 TEAM_DISPLAY_NAMES: dict[str, str] = {
     "ATL": "Atlanta Hawks",
     "BOS": "Boston Celtics",
@@ -156,6 +123,11 @@ class TeamHubService:
         self.transport = transport
         self.raw_root = raw_root
         self._live_client = CourtsideClient(cache=True) if transport == "live" else None
+        # Per-instance memoization for :meth:`_team_display_name`. Lives
+        # on the service (not the class) so each request scope gets a
+        # fresh dict and tests can inspect the cache state without
+        # leaking across instances.
+        self._display_name_cache: dict[str, str] = {}
 
     # ------------------------------------------------------------------ infra
     def _client_for(self, endpoint_name: str, params: dict[str, object]) -> CourtsideClient:
@@ -357,6 +329,61 @@ class TeamHubService:
             )
         arc.sort(key=lambda p: p.season_end_year)
         return arc
+
+    def _team_display_name(self, team_identifier: str) -> str:
+        """Resolve the human-readable team name for ``team_identifier``.
+
+        Data-driven: calls the ``franchise_history`` endpoint once per
+        ``team_identifier`` and returns the ``team_name`` of the row
+        with the latest ``season_end_year``. Caches the result on the
+        service instance so repeated summary calls (e.g. the UI's
+        tab-switch handler) don't re-hit the endpoint.
+
+        Graceful-fallback chain, mirroring the
+        :meth:`_franchise_arc` graceful-empty pattern:
+
+        1. **Cache hit** — return the memoized string.
+        2. **Data-driven lookup** — call
+           ``franchise_history({team_abbreviation: identifier})``
+           and pick the row with the max ``season_end_year``. If the
+           call raises :class:`MissingFixtureError` or returns no
+           rows, fall through to the static dict.
+        3. **Static dict** — :data:`TEAM_DISPLAY_NAMES`. Used as the
+           offline / pre-fixture fallback so the summary still
+           renders in fixture mode before ``franchise_history``
+           fixtures are captured.
+        4. **Raw identifier** — the last-resort fallback so an
+           unknown team identifier doesn't crash the summary.
+        """
+        if team_identifier in self._display_name_cache:
+            return self._display_name_cache[team_identifier]
+        name: str | None = None
+        try:
+            rows = self._run(
+                "franchise_history",
+                {_TEAM_ABBREVIATION_PARAM: team_identifier},
+            )
+        except MissingFixtureError:
+            rows = []
+        if rows:
+            # Pick the row with the max ``season_end_year`` so future
+            # BR reorderings and relocated-franchise name changes
+            # (e.g. Seattle SuperSonics -> OKC Thunder) pick the
+            # current name rather than blindly taking ``rows[0]``.
+            best_year: int | None = None
+            for row in rows:
+                end_year = season_end_year(_row_get(row, "season"))
+                if end_year is None:
+                    continue
+                if best_year is None or end_year > best_year:
+                    best_year = end_year
+                    team_name_raw = _row_get(row, "team_name")
+                    if team_name_raw is not None:
+                        name = str(team_name_raw)
+        if name is None:
+            name = TEAM_DISPLAY_NAMES.get(team_identifier, team_identifier)
+        self._display_name_cache[team_identifier] = name
+        return name
 
     def _team_hero_stats(self, team_identifier: str, season_end_year: int) -> TeamHeroStats:
         """Extract team hero stats from the ``team_misc_four_factors`` row.
@@ -680,7 +707,7 @@ class TeamHubService:
 
         return TeamHubSummary(
             identifier=team_identifier,
-            display_name=TEAM_DISPLAY_NAMES.get(team_identifier, team_identifier),
+            display_name=self._team_display_name(team_identifier),
             leagues=["NBA"],
             default_season=default_season,
             available_seasons=available_seasons,
