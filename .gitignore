@@ -93,3 +93,4 @@ ui/node_modules/
 ui/.next/
 ui/test-results/
 ui/playwright-report/
+ui/tsconfig.tsbuildinfo
