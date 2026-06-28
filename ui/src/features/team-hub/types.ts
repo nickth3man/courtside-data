@@ -1,3 +1,68 @@
+// TODO(team-hub): replace these hand-written type mirrors with the
+// `openapi-typescript`-generated `components["schemas"][…]` types once
+// `npm run gen:api` is run against a live server (see
+// `ui/src/lib/openapi-types.ts` for the full migration workflow).
+//
+// What: every interface and type in this file is a hand-written mirror
+//   of a Pydantic model in `courtside_data/server/team_models.py`:
+//     - `TransportMode`        ← `courtside_data/server/models.py` (alias for `team_models.py:8`)
+//     - `TeamDatasetScope`     ← `team_models.py:11`  (Literal["team", "team_season"])
+//     - `ApiError` / `ApiErrorEnvelope` ← kept here for the local `apiFetch` shim; will move to
+//                                          `ui/src/lib/api-errors.ts` once the team client migrates
+//                                          to `@/lib/api-client` (see the TODO in
+//                                          `ui/src/features/team-hub/api/client.ts:1`).
+//     - `ColumnMeta`           ← `courtside_data/server/models.py:ColumnMeta` (shared with player-hub)
+//     - `TeamSearchResult`     ← `team_models.py:14`
+//     - `TeamHubTab`           ← `team_models.py:22`
+//     - `TeamDatasetCatalogEntry` ← `team_models.py:33`
+//     - `TeamHubCatalog`       ← `team_models.py:50`
+//     - `EndpointRowsResponse` ← `courtside_data/server/models.py` (shared with player-hub)
+//     - `TeamHubSummary`       ← `team_models.py:62`
+//     - `StatusResponse`       ← `courtside_data/server/models.py` (shared with player-hub)
+//
+//   A key rename on the Pydantic side is silent at compile time today
+//   because both sides are untyped dicts at the leaf (`dict[str, Any]`
+//   on the server, `Record<string, unknown>` on the client). The codegen
+//   path produces a strict structural type per model name and breaks the
+//   build on drift.
+// Where:
+//   - this file: the 12 exported types below — replaced wholesale by
+//     `import type { components } from "@/lib/openapi-types";` plus
+//     `type TeamHubSummary = components["schemas"]["TeamHubSummary"];`
+//     style aliases (see the workflow doc at
+//     `ui/src/lib/openapi-types.ts:25-45` for the three-phase migration).
+//   - sibling: `ui/src/features/player-hub/types.ts` is the player-hub
+//     mirror (also 81 lines) and gets the same treatment.
+// How (mirroring the JSDoc in `ui/src/lib/openapi-types.ts:8-46`):
+//   1. Run codegen: terminal A `uv run courtside-data serve`, terminal B
+//      `npm run gen:api` from `ui/`. This produces a real
+//      `components["schemas"]` block keyed by Pydantic model name.
+//   2. Phase 1 (additive): leave this file in place, add
+//      `// @ts-expect-error codegen mismatch` markers only if `tsc`
+//      flags divergences.
+//   3. Phase 2 (consumer migration): rewrite one consumer at a time
+//      (`api/client.ts`, then `api/queries.ts`, then the components) to
+//      read from `components["schemas"][…]`. The team-hub re-export
+//      shim (post-migration) should look like:
+//        export type {
+//          components as TeamSchemas,
+//        } from "@/lib/openapi-types";
+//      plus `export type TeamHubSummary = TeamSchemas["TeamHubSummary"];`
+//      aliases for any consumer that still imports from this file.
+//   4. Phase 3: delete the hand-written interfaces and the file
+//      becomes a pure re-export shim.
+// Decision needed: keep `ApiError` and `ApiErrorEnvelope` here or move
+//   to `@/lib/api-errors.ts`? The local `apiFetch` in
+//   `ui/src/features/team-hub/api/client.ts:13-28` is the only consumer
+//   of these types — once that `apiFetch` is deleted (per the migration
+//   TODO in `client.ts:1`) the types are dead. Move them at the same
+//   time as the `apiFetch` removal, or leave them as no-op exports for
+//   one release.
+// Verify: from `ui/`, `npx tsc --noEmit` immediately after codegen
+//   (should be clean because no consumer references the generated
+//   types yet). After each phase-2 consumer migration, re-run
+//   `npx tsc --noEmit && npx eslint . && npx vitest run` — no test
+//   should regress.
 export type TransportMode = "fixture" | "live";
 export type TeamDatasetScope = "team" | "team_season";
 

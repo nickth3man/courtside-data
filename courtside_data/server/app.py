@@ -29,13 +29,24 @@ from courtside_data.server.models import (
     TransportMode,
 )
 from courtside_data.server.service import PlayerHubService, endpoint_count
+from courtside_data.server.team_catalog import (
+    team_dataset_by_id,
+    team_hub_catalog,
+)
+from courtside_data.server.team_models import TeamHubSummary, TeamSearchResult
+from courtside_data.server.team_service import TeamHubService
 
 
 def _service_from_app(request: Request) -> PlayerHubService:
     return request.app.state.player_hub_service
 
 
+def _team_service_from_app(request: Request) -> TeamHubService:
+    return request.app.state.team_hub_service
+
+
 ServiceDep = Annotated[PlayerHubService, Depends(_service_from_app)]
+TeamServiceDep = Annotated[TeamHubService, Depends(_team_service_from_app)]
 
 
 def _api_error(status_code: int, code: str, message: str, **detail: Any) -> HTTPException:
@@ -82,6 +93,7 @@ def create_app(*, transport: TransportMode = "fixture", raw_root: Path | None = 
         },
     )
     app.state.player_hub_service = PlayerHubService(transport=transport, raw_root=raw_root)
+    app.state.team_hub_service = TeamHubService(transport=transport, raw_root=raw_root)
     app.state.transport = transport
     app.state.raw_root = raw_root or default_raw_root()
 
@@ -189,6 +201,136 @@ def create_app(*, transport: TransportMode = "fixture", raw_root: Path | None = 
         except Exception as error:
             raise _map_exception(error) from error
 
+    # --------------------------------------------------------------- Team Hub
+
+    # Shared error-response map for the Team Hub routes. Mirrors the
+    # FastAPI app-level ``responses={400, 404, 429, 500: ApiError}`` block
+    # declared on the app instance, but exposed per-route so the OpenAPI
+    # spec for each team endpoint advertises the same error contract as
+    # the player hub.
+    _TEAM_ERROR_RESPONSES: dict[int | str, dict[str, type[ApiError]]] = {
+        400: {"model": ApiError},
+        404: {"model": ApiError},
+        429: {"model": ApiError},
+        500: {"model": ApiError},
+    }
+
+    @app.get("/api/endpoints/team-hub", responses=_TEAM_ERROR_RESPONSES)
+    def team_catalog() -> dict[str, object]:
+        """Static Team Hub catalog: tabs and dataset metadata."""
+        return team_hub_catalog()
+
+    @app.get(
+        "/api/teams/search",
+        response_model=list[TeamSearchResult],
+        responses=_TEAM_ERROR_RESPONSES,
+    )
+    def team_search(
+        term: Annotated[str, Query()],
+        service: TeamServiceDep,
+    ) -> list[TeamSearchResult]:
+        """Search teams by name/abbreviation.
+
+        Mirrors ``/api/players/search`` but for the team hub. Currently a
+        NotImplementedError stub pending the team-search wiring decision
+        (see ``TeamHubService.search``).
+        """
+        try:
+            return service.search(term)
+        except Exception as error:
+            raise _map_exception(error) from error
+
+    @app.get(
+        "/api/teams/{team_identifier}/summary",
+        response_model=TeamHubSummary,
+        responses=_TEAM_ERROR_RESPONSES,
+    )
+    def team_summary(
+        team_identifier: str,
+        service: TeamServiceDep,
+    ) -> TeamHubSummary:
+        """Aggregated Team Hub overview payload.
+
+        Mirrors ``/api/players/{player_identifier}/summary``. Currently a
+        NotImplementedError stub pending the team-summary wiring decision
+        (see ``TeamHubService.summary``).
+        """
+        try:
+            return service.summary(team_identifier)
+        except Exception as error:
+            raise _map_exception(error) from error
+
+    @app.get("/api/teams/{team_identifier}/export", responses=_TEAM_ERROR_RESPONSES)
+    def team_export(
+        team_identifier: str,
+        dataset: str,
+        service: TeamServiceDep,
+        season_end_year: int | None = None,
+        include_inactive_games: bool = False,
+    ) -> Response:
+        """Stream a Team Hub dataset as a CSV download.
+
+        Mirrors ``/api/players/{player_identifier}/export``. Currently a
+        NotImplementedError stub pending the team-CSV wiring decision
+        (see ``TeamHubService.csv``).
+        """
+        try:
+            csv_text = service.csv(team_identifier, dataset, season_end_year, include_inactive_games)
+        except Exception as error:
+            raise _map_exception(error) from error
+        season_suffix = f"-{season_end_year}" if season_end_year is not None else ""
+        filename = f"{team_identifier}{season_suffix}-{dataset}.csv"
+        return Response(
+            csv_text,
+            media_type="text/csv; charset=utf-8",
+            headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+        )
+
+    @app.get(
+        "/api/teams/{team_identifier}/seasons/{season_end_year}/{dataset}",
+        response_model=EndpointRowsResponse,
+        responses=_TEAM_ERROR_RESPONSES,
+    )
+    def team_season_dataset(
+        team_identifier: str,
+        season_end_year: int,
+        dataset: str,
+        service: TeamServiceDep,
+        include_inactive_games: bool = False,
+    ) -> EndpointRowsResponse:
+        """Team-season-scoped dataset (requires ``season_end_year`` in the URL)."""
+        try:
+            dataset_meta = team_dataset_by_id(dataset)
+            if dataset_meta.scope != "team_season":
+                raise ValueError(f"Dataset {dataset!r} does not require a season")
+            return service.season_dataset(
+                team_identifier,
+                season_end_year,
+                dataset,
+                include_inactive_games,
+            )
+        except Exception as error:
+            raise _map_exception(error) from error
+
+    @app.get(
+        "/api/teams/{team_identifier}/{dataset}",
+        response_model=EndpointRowsResponse,
+        responses=_TEAM_ERROR_RESPONSES,
+    )
+    def team_dataset(
+        team_identifier: str,
+        dataset: str,
+        service: TeamServiceDep,
+    ) -> EndpointRowsResponse:
+        """Team-scoped dataset (no season in the URL)."""
+        try:
+            dataset_meta = team_dataset_by_id(dataset)
+            if dataset_meta.scope != "team":
+                raise ValueError(f"Dataset {dataset!r} requires /seasons/{{season_end_year}}")
+            return service.dataset(team_identifier, dataset)
+        except Exception as error:
+            raise _map_exception(error) from error
+
     return app
 
 
@@ -221,3 +363,96 @@ def app_from_env() -> FastAPI:
 
 
 app = app_from_env()
+
+
+# TODO(endpoint-roadmap): Remaining HTTP routes for 34 unreachable endpoints.
+#
+# See docs/architecture/endpoint-roadmap.md for the master plan. This block
+# is documentation-only; it does NOT register any routes. The four
+# domain lanes below mirror the existing Team Hub pattern (catalog stub +
+# 1-2 services + 6 routes) except for Games/Browser which is a fundamentally
+# different UX model.
+#
+# Status by domain (per the master matrix in endpoint-roadmap.md §1):
+#   LEAGUE (11 endpoints): 0/11 reachable -> see docs/architecture/league-hub.md
+#     Routes needed: /api/endpoints/league-hub (static catalog),
+#       /api/league/seasons/{year}/{dataset} (11 routes mirroring the team
+#       season-dataset pattern; 1 of them is standings_by_date which adds a
+#       date path param, and 1 is attendance which is a projection).
+#     Catalog stub (future): courtside_data/server/league_catalog.py
+#     Service stub (future): courtside_data/server/league_service.py
+#   PLAYOFFS (6 endpoints): 0/6 reachable -> see docs/architecture/playoffs-hub.md
+#     Routes needed: /api/endpoints/playoffs-hub (static catalog),
+#       /api/playoffs/seasons/{year}/{dataset} (3 season-scoped routes for
+#       playoff_per_game, playoff_totals, playoff_bracket),
+#       /api/playoffs/static/{table} (3 STATIC routes for the friv
+#       team-is-down / team-is-tied / team-is-up endpoints, distinguished by
+#       the table_id path param).
+#     Catalog stub (future): courtside_data/server/playoffs_catalog.py
+#     Service stub (future): courtside_data/server/playoffs_service.py
+#   DRAFT_AWARDS_LEADERS (5 endpoints): 0/5 reachable
+#     -> see docs/architecture/draft-awards-hub.md
+#     Routes needed: /api/endpoints/draft-awards-hub (static catalog),
+#       /api/draft/seasons/{year}/{dataset} (2 season-scoped routes for
+#       draft_picks, season_awards, season_awards_voting),
+#       /api/awards/static/{dataset} (2 STATIC routes for season_leaders,
+#       career_leaders). season_awards_voting has a free-form `award` query
+#       param that maps to 10 fallback table ids.
+#     Catalog stub (future): courtside_data/server/draft_awards_catalog.py
+#     Service stub (future): courtside_data/server/draft_awards_service.py
+#   GAMES (12 endpoints, 0/12 reachable via a games-specific route;
+#     3 of the 15 GAMES-domain endpoints are already reachable via the
+#     Player Hub: regular_season_player_box_scores, playoff_player_box_scores,
+#     search).
+#     -> see docs/architecture/games-browser-hub.md
+#     Routes needed: /api/endpoints/games-hub (static catalog),
+#       /api/games/{game_id}/{dataset} (6 per-game box-score routes; the
+#       game_id format is {YYYYMMDD}0{HOMETEAM_ABBR} -- see
+#       games-browser-hub.md §3 for the load-bearing design decision),
+#       /api/games/box-scores?date=YYYY-MM-DD&dataset=player|team (2
+#       daily-leaders routes),
+#       /api/games/play-by-play?date=YYYY-MM-DD&home_team=BOS (1 PBP route).
+#     NOTE: Games/Browser is the HARDEST domain -- it does not fit the
+#     entity-Hub pattern and spans 4 different interaction models
+#     (per-game box scores, daily leaders, play-by-play, league-season
+#     tables). The 3 season-scoped endpoints (season_schedule,
+#     players_season_totals, players_advanced_season_totals) are
+#     RECOMMENDED TO MOVE to the League Hub; see games-browser-hub.md §9.2.
+#     Catalog stub: courtside_data/server/games_catalog.py (already
+#     created with a TODO; the GAMES domain's catalog does not follow the
+#     Team Hub shape).
+#     Service stub (future): courtside_data/server/games_service.py
+#
+# What (per lane): Add a {league,playoffs,draft_awards,games}_catalog.py
+#   module (1-2 services + 1 catalog function), then add a route group at
+#   the end of create_app() (before the `return app` line on app.py:334)
+#   mirroring the Team Hub routes at app.py:204-332. The Games Hub is the
+#   exception: it does NOT have an entity search / summary / export route
+#   triple; it has 6 per-game box-score routes + 2 daily-leaders routes +
+#   1 PBP route (see games-browser-hub.md §4).
+# Where:
+#   - Pattern to mirror: app.py:204-332 (Team Hub routes)
+#   - Service pattern: courtside_data/server/team_service.py (510+ lines)
+#   - Catalog pattern: courtside_data/server/team_catalog.py (315+ lines)
+#   - Fixtures whitelist: courtside_data/server/fixtures.py (the
+#     TEAM_ENDPOINTS / TEAM_SEASON_ENDPOINTS sets are the template; the
+#     four new lanes need LEAGUE_ENDPOINTS, PLAYOFFS_ENDPOINTS,
+#     DRAFT_ENDPOINTS, GAMES_ENDPOINTS -- see the expanded TODO at the
+#     bottom of fixtures.py).
+# Decision needed:
+#   - Should season_schedule + players_season_totals +
+#     players_advanced_season_totals move to League Hub? (recommended yes;
+#     see games-browser-hub.md §9.2)
+#   - Game-identifier scheme for box scores (resolved: single game_id path
+#     param matching BR format verbatim; see games-browser-hub.md §3.4)
+#   - Route naming convention: /api/{domain}/seasons/{year}/... vs
+#     /api/{domain}/... (Team Hub uses the seasons/ infix; LEAGUE/PLAYOFFS
+#     should follow the same convention for consistency).
+#   - Should daily-leaders use a `?dataset=...` discriminator or two
+#     separate routes? (recommended `?dataset=...`; see
+#     games-browser-hub.md §4.2)
+# Verify: each new route group should pass TestClient smoke tests (200 on
+#   catalog, 404 on missing-fixture datasets) mirroring the Team Hub test
+#   pattern in tests/server/test_player_hub_api.py. The full
+#   post-implementation check is `uv run task audit` (lint + format + type
+#   + test) per AGENTS.md.

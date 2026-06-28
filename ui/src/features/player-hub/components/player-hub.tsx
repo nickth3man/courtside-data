@@ -2,6 +2,7 @@
 
 import { ArrowLeft, RefreshCcw } from "lucide-react";
 import Link from "next/link";
+import { notFound } from "next/navigation";
 import type { ReactNode } from "react";
 import { useMemo, useState } from "react";
 
@@ -16,6 +17,7 @@ import type { DatasetCatalogEntry, PlayerHubTab } from "@/features/player-hub/ty
 import { fallbackTabs } from "@/features/player-hub/utils/catalog";
 import { formatValue } from "@/features/player-hub/utils/format";
 import { seasonLabel } from "@/features/player-hub/utils/season";
+import { TypedApiError } from "@/lib/api-errors";
 import { useUrlParam } from "@/lib/use-url-param";
 
 interface PlayerHubProps {
@@ -39,6 +41,24 @@ export function PlayerHub({ identifier }: PlayerHubProps) {
   const selectedSeason =
     Number.isFinite(seasonFromUrl) && seasonFromUrl > 0 ? seasonFromUrl : summaryQuery.data?.default_season ?? null;
   const currentTab = tabs.find((tab) => tab.id === activeTab) ?? tabs[0];
+
+  // Route-boundary integration: let `invalid_player` / `missing_fixture` trigger
+  // not-found.tsx, and let every other TypedApiError trigger error.tsx — instead
+  // of QueryBoundary collapsing them into an inline "Player unavailable" EmptyState.
+  //
+  // `notFound()` throws a special sentinel that Next.js catches and maps to the
+  // nearest `not-found.tsx`; `throw err` escapes this render and is caught by
+  // the nearest `error.tsx` (which in this route branches on `err.code`). This
+  // block runs after the query settles — while `summaryQuery` is loading, `error`
+  // is null, the block is a no-op, and `QueryBoundary` below still renders its
+  // loading block as before.
+  if (summaryQuery.error) {
+    const err = summaryQuery.error;
+    if (err instanceof TypedApiError && (err.code === "invalid_player" || err.code === "missing_fixture")) {
+      notFound();
+    }
+    throw err;
+  }
 
   return (
     <Shell>

@@ -132,3 +132,97 @@ FastAPI exposes the full schema at:
 The UI consumes the generated types from `ui/src/lib/openapi-types.ts`
 once the codegen has run; before that the file ships a placeholder
 export so imports compile.
+
+## Team Hub routes
+
+<!-- TODO(docs): populate the team-hub route table once the team service
+     methods are fully implemented.
+
+     What: 6 team-hub routes exist in `courtside_data/server/app.py`,
+       mirroring the player-hub surface (search, catalog, summary,
+       dataset, season-dataset, CSV export). This section should
+       document them in the same table format as the player routes
+       above once the underlying service methods stop returning
+       `NotImplementedError`.
+
+     Routes to document (path → response model):
+
+     | Method | Path | Params | Response model |
+     |--------|------|--------|----------------|
+     | GET | `/api/teams/search` | `term: str` (query) | `list[TeamSearchResult]` |
+     | GET | `/api/endpoints/team-hub` | — | `TeamHubCatalog` (untyped dict in source) |
+     | GET | `/api/teams/{team_identifier}/summary` | `team_identifier: str` (path) | `TeamHubSummary` |
+     | GET | `/api/teams/{team_identifier}/{dataset}` | `team_identifier`, `dataset` (path) | `EndpointRowsResponse` |
+     | GET | `/api/teams/{team_identifier}/seasons/{season_end_year}/{dataset}` | path params + `include_inactive_games: bool` | `EndpointRowsResponse` |
+     | GET | `/api/teams/{team_identifier}/export` | `team_identifier`, `dataset: str` (required), `season_end_year: int \| None`, `include_inactive_games: bool` | `text/csv` |
+
+     Status: as of this writing, `GET /api/teams/search` returns 500
+     `NotImplementedError` — the team service stubs are in place but
+     the search backend hasn't been implemented yet. The other 5
+     routes mirror their player counterparts and should be re-runnable
+     once the underlying service methods are filled in.
+
+     Where:
+       - `courtside_data/server/app.py` — route definitions.
+       - `courtside_data/server/team_models.py` — Pydantic response models.
+       - `docs/architecture/team-hub.md` — team-specific architecture
+         detail (cross-reference it for the team data flow, fixture
+         mode behaviour, and rate-limit policy).
+
+     How:
+       1. Wait for the team service `search` method to land (the other
+          5 routes are mechanical mirrors of the player routes).
+       2. Copy the player table format above; populate from the
+          FastAPI route decorators and Pydantic model definitions.
+       3. Note any per-route quirks (e.g. team-specific query params,
+          different error envelope shapes) inline under the table.
+
+     Verify: `curl http://127.0.0.1:8765/api/teams/search?term=lakers`
+       should return a JSON array (not 500) once the backend is wired.
+-->
+
+## Codegen integration
+
+<!-- TODO(docs): keep this section in sync with `ui/scripts/generate-api-types.ts`.
+
+     What: the `npm run gen:api` workflow produces
+     `ui/src/lib/openapi-types.ts` from this server's `/openapi.json`
+     endpoint. The Pydantic models in `courtside_data/server/models.py`
+     and `courtside_data/server/team_models.py` are the authoritative
+     contract — the generated TS types should match them 1:1, and the
+     hand-written mirror types in `ui/src/features/player-hub/types.ts`
+     and `ui/src/features/team-hub/types.ts` are the migration target.
+
+     Workflow:
+       1. Terminal A:  uv run courtside-data serve
+       2. Terminal B (from `ui/`):  npm run gen:api
+          which expands to:
+          `openapi-typescript http://127.0.0.1:8765/openapi.json -o src/lib/openapi-types.ts`
+
+     For CI drift detection, see the cross-referenced
+     `ui/scripts/generate-api-types.ts` header docstring — it has a
+     GitHub Actions sketch (`git diff --exit-code
+     src/lib/openapi-types.ts`) that fails the PR when committed types
+     are out of date.
+
+     Cross-reference:
+       - `ui/src/lib/openapi-types.ts` — the generated file (with
+         the migration TODO).
+       - `ui/scripts/generate-api-types.ts` — the CI-friendly wrapper
+         script and the drift-detection recipe.
+       - `ui/src/features/player-hub/types.ts` — hand-written player
+         mirror to be replaced.
+       - `ui/src/features/team-hub/types.ts` — hand-written team mirror
+         to be replaced.
+       - `ui/src/lib/api-errors.ts` — the hand-written error types
+         (the generated types should also cover `ApiErrorEnvelope`).
+
+     Verify:
+       - `npm run gen:api` produces a clean `src/lib/openapi-types.ts`
+         with no errors.
+       - `npm run typecheck` stays green (the placeholder export keeps
+         imports compiling until the hand-written types are migrated).
+       - After migration, `grep -r "from \"@/features/.*/types\"` should
+         only match the (about-to-be-deleted) hand-written files; new
+         consumers should import from `@/lib/openapi-types` instead.
+-->

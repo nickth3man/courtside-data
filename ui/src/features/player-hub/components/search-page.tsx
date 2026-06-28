@@ -3,13 +3,7 @@ import Link from "next/link";
 
 import { StatusPill } from "@/features/player-hub/components/status-pill";
 import { PlayerSearch } from "@/features/player-hub/components/player-search";
-
-const featuredPlayers = [
-  { name: "LeBron James", identifier: "jamesle01", season: 2024 },
-  { name: "Michael Jordan", identifier: "jordami01", season: 1997 },
-  { name: "Stephen Curry", identifier: "curryst01", season: 2024 },
-  { name: "Larry Bird", identifier: "birdla01", season: 1980 },
-];
+import { SAMPLE_ATHLETES } from "@/lib/sample-athletes";
 
 export function SearchPage() {
   return (
@@ -38,10 +32,10 @@ export function SearchPage() {
         <aside className="space-y-3">
           <h2 className="text-sm font-semibold uppercase tracking-wide text-court-muted">Fixture starters</h2>
           <div className="divide-y divide-zinc-100 rounded-md border border-court-line bg-white">
-            {featuredPlayers.map((player) => (
+            {SAMPLE_ATHLETES.map((player) => (
               <Link
                 key={player.identifier}
-                href={`/players/${player.identifier}?season=${player.season}`}
+                href={`/players/${player.identifier}`}
                 className="flex items-center justify-between gap-3 px-4 py-3 text-sm hover:bg-zinc-50"
               >
                 <span>

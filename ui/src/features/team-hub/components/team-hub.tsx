@@ -58,6 +58,24 @@ export function TeamHub({ identifier }: TeamHubProps) {
                     </p>
                   </div>
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                    {/* TODO(team-hub): surface the API status pill in the team-hub
+                     * header (the slot is the right-hand side of the title row,
+                     * roughly line 62 in the current file).
+                     *
+                     * Cross-reference: the same TODO exists at
+                     *   `ui/src/features/team-hub/components/search-page.tsx`
+                     *   line ~26 (the team-hub search-page header). That comment
+                     *   has the full expansion — the "Decision needed" block
+                     *   there documents the shared `ui/src/components/status-pill.tsx`
+                     *   vs per-feature copy trade-off. This file's pill would
+                     *   sit to the right of `<TeamSearch compact />` so the
+                     *   transport mode is visible while a user browses tabs.
+                     *
+                     * Once the shared extraction lands (or the per-feature copy
+                     * is created), the JSX to drop in is:
+                     *     <StatusPill />
+                     * imported from `@/components/status-pill` (preferred) or
+                     * `@/features/team-hub/components/status-pill`. */}
                     <TeamSearch compact />
                   </div>
                 </div>

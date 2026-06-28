@@ -1,24 +1,79 @@
 "use client";
 
-import { Search } from "lucide-react";
+import { LoaderCircle, Search } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { type FormEvent, useState } from "react";
+import { type FormEvent, useEffect, useRef, useState } from "react";
 
 import { Button } from "@/components/button";
 import { usePlayerSearch } from "@/features/player-hub/api/queries";
+import { useUrlParam } from "@/lib/use-url-param";
 
 interface PlayerSearchProps {
   compact?: boolean;
 }
 
+const DEBOUNCE_MS = 250;
+
+/**
+ * Player search input with debounced lookup, inline loading affordance,
+ * empty-results messaging, and `?term=` URL persistence.
+ *
+ * Debounce strategy: a 250ms `setTimeout` per keystroke commits the raw
+ * `term` to `debouncedTerm`, which is the value actually fed to the
+ * `usePlayerSearch` query. While the debounce is pending (`term !==
+ * debouncedTerm`) or the query is in flight (`query.isFetching`), the
+ * results panel renders a "Searching…" affordance — so the user never
+ * sees stale or empty results from a previous term during the wait.
+ *
+ * URL persistence: on mount we read `?term=` from the URL via
+ * `useUrlParam().get` and prepopulate the input; on submit we write the
+ * trimmed term back to `?term=`. The mount-time read uses a ref to
+ * capture the initial `get` closure because `useUrlParam` returns
+ * freshly-bound `get`/`set` on every render — the URL is intentionally
+ * read once, not tracked as it changes.
+ */
 export function PlayerSearch({ compact = false }: PlayerSearchProps) {
   const [term, setTerm] = useState("");
+  const [debouncedTerm, setDebouncedTerm] = useState("");
   const router = useRouter();
-  const query = usePlayerSearch(term);
+  const { get: getParam, set: setParam } = useUrlParam();
+
+  // Capture the latest `get` reference so the mount-effect can read
+  // the URL exactly once without re-running on every render (the
+  // `useUrlParam` hook rebinds its closures on each call). The ref is
+  // refreshed in an effect to comply with the React refs rule.
+  const getParamRef = useRef(getParam);
+  useEffect(() => {
+    getParamRef.current = getParam;
+  });
+
+  // Debounce: commit `term` to `debouncedTerm` after a quiet period.
+  useEffect(() => {
+    const id = setTimeout(() => setDebouncedTerm(term), DEBOUNCE_MS);
+    return () => clearTimeout(id);
+  }, [term]);
+
+  // Initial read from `?term=`. Runs once on mount — see JSDoc above.
+  useEffect(() => {
+    const fromUrl = getParamRef.current("term");
+    if (fromUrl !== null && fromUrl.length > 0) {
+      setTerm(fromUrl);
+      setDebouncedTerm(fromUrl);
+    }
+  }, []);
+
+  const query = usePlayerSearch(debouncedTerm);
   const results = query.data ?? [];
+  const trimmedTerm = term.trim();
+  const trimmedDebounced = debouncedTerm.trim();
+  // "Pending" covers both the debounce delay and an in-flight request.
+  const isPending = query.isFetching || trimmedTerm !== trimmedDebounced;
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (trimmedTerm.length > 0) {
+      setParam("term", trimmedTerm);
+    }
     const first = results[0];
     if (first) {
       router.push(`/players/${first.identifier}`);
@@ -43,10 +98,13 @@ export function PlayerSearch({ compact = false }: PlayerSearchProps) {
         </Button>
       </form>
 
-      {term.trim().length >= 2 ? (
+      {trimmedTerm.length >= 2 ? (
         <div className="mt-2 max-h-80 overflow-auto rounded-md border border-court-line bg-white shadow-sm">
-          {query.isLoading ? (
-            <div className="px-3 py-3 text-sm text-court-muted">Searching</div>
+          {isPending ? (
+            <div className="flex items-center gap-2 px-3 py-3 text-sm text-court-muted">
+              <LoaderCircle className="size-3.5 animate-spin" aria-hidden="true" />
+              Searching
+            </div>
           ) : results.length > 0 ? (
             <div className="divide-y divide-zinc-100">
               {results.map((result) => (
@@ -66,9 +124,11 @@ export function PlayerSearch({ compact = false }: PlayerSearchProps) {
                 </button>
               ))}
             </div>
-          ) : (
-            <div className="px-3 py-3 text-sm text-court-muted">No results</div>
-          )}
+          ) : trimmedDebounced.length >= 2 ? (
+            <div className="px-3 py-3 text-sm text-court-muted">
+              No players found for &quot;{trimmedDebounced}&quot;
+            </div>
+          ) : null}
         </div>
       ) : null}
     </div>

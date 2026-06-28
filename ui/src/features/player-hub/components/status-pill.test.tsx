@@ -1,0 +1,151 @@
+/**
+ * Component tests for `ui/src/features/player-hub/components/status-pill.tsx`.
+ *
+ * The pill reads `useStatus()` directly and chooses one of four
+ * presentations: rate-limit, loading, offline, fixture-root-missing, or
+ * transport. We mock the hook to feed it controlled `{data, error,
+ * isLoading}` shapes and assert the rendered DOM for each branch.
+ */
+import { render, screen } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+import { TypedApiError } from "@/lib/api-errors";
+import { StatusPill } from "@/features/player-hub/components/status-pill";
+import type { StatusResponse } from "@/features/player-hub/types";
+
+/** Hoisted shared mock — the factory below re-exports the same ref. */
+const { useStatus } = vi.hoisted(() => ({ useStatus: vi.fn() }));
+
+vi.mock("@/features/player-hub/api/queries", () => ({
+  useStatus,
+}));
+
+const healthyFixture: StatusResponse = {
+  ok: true,
+  transport: "fixture",
+  endpoint_count: 50,
+  fixture_root: "/data",
+  fixture_root_exists: true,
+};
+
+const fixtureRootMissing: StatusResponse = {
+  ok: true,
+  transport: "fixture",
+  endpoint_count: 50,
+  fixture_root: "/data",
+  fixture_root_exists: false,
+};
+
+describe("StatusPill", () => {
+  beforeEach(() => {
+    useStatus.mockReset();
+  });
+
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("renders the transport label in the default/online state", () => {
+    useStatus.mockReturnValue({
+      data: healthyFixture,
+      error: null,
+      isLoading: false,
+      isError: false,
+      isSuccess: true,
+    });
+
+    render(<StatusPill />);
+
+    expect(screen.getByText("fixture")).toBeInTheDocument();
+  });
+
+  it("renders the amber 'Fixture root missing' pill when fixture_root_exists is false", () => {
+    useStatus.mockReturnValue({
+      data: fixtureRootMissing,
+      error: null,
+      isLoading: false,
+      isError: false,
+      isSuccess: true,
+    });
+
+    const { container } = render(<StatusPill />);
+
+    expect(screen.getByText("Fixture root missing")).toBeInTheDocument();
+    // Sanity: the inline amber styling was applied (the parent <span>
+    // carries the amber-* utility classes).
+    const pill = container.querySelector(".bg-amber-50");
+    expect(pill).toBeTruthy();
+  });
+
+  it("renders the red 'Rate limited' pill when useStatus has a rate_limit_jailed error", () => {
+    const error = new TypedApiError({
+      code: "rate_limit_jailed",
+      status: 429,
+      detail: { retry_after: 5 },
+      message: "Jailed",
+      retryAfter: 5,
+    });
+    useStatus.mockReturnValue({
+      data: undefined,
+      error,
+      isLoading: false,
+      isError: true,
+      isSuccess: false,
+    });
+
+    render(<StatusPill />);
+
+    // The pill uses the count-down format `Rate limited (Xs)` when
+    // `retryAfter` is provided.
+    expect(screen.getByText("Rate limited (5s)")).toBeInTheDocument();
+  });
+
+  it("renders the red 'Rate limited' pill with no countdown when retryAfter is absent", () => {
+    const error = new TypedApiError({
+      code: "rate_limit_jailed",
+      status: 429,
+      detail: {},
+      message: "Jailed",
+    });
+    useStatus.mockReturnValue({
+      data: undefined,
+      error,
+      isLoading: false,
+      isError: true,
+      isSuccess: false,
+    });
+
+    render(<StatusPill />);
+
+    expect(screen.getByText("Rate limited")).toBeInTheDocument();
+  });
+
+  it("renders the loading pill while the query is loading", () => {
+    useStatus.mockReturnValue({
+      data: undefined,
+      error: null,
+      isLoading: true,
+      isError: false,
+      isSuccess: false,
+    });
+
+    render(<StatusPill />);
+
+    expect(screen.getByText("API")).toBeInTheDocument();
+  });
+
+  it("renders the offline pill when the query errored with a non-rate-limit error", () => {
+    const error = new Error("service down");
+    useStatus.mockReturnValue({
+      data: undefined,
+      error,
+      isLoading: false,
+      isError: true,
+      isSuccess: false,
+    });
+
+    render(<StatusPill />);
+
+    expect(screen.getByText("Offline")).toBeInTheDocument();
+  });
+});
