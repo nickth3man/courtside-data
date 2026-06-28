@@ -11,6 +11,11 @@
   --color-court-accent-soft: #ccfbf1;
   --color-court-gold: #b45309;
   --color-court-danger: #b91c1c;
+  --color-court-danger-soft: #fef2f2;   /* red-50  — offline pill bg */
+  --color-court-danger-line: #fecaca;   /* red-200 — offline pill border */
+  --color-court-accent-line: #99f6e4;   /* teal-200 — online pill border */
+  --color-court-accent-strong: #115e59; /* teal-900 — online pill text */
+  --color-court-grid: #e4e4e7;          /* recharts CartesianGrid stroke */
 }
 
 :root {

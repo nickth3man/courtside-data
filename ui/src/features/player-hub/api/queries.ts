@@ -8,24 +8,25 @@ import {
   getSummary,
   searchPlayers,
 } from "@/features/player-hub/api/client";
+import { queryKeys } from "@/features/player-hub/api/query-keys";
 
 export function useStatus() {
   return useQuery({
-    queryKey: ["status"],
+    queryKey: queryKeys.status,
     queryFn: getStatus,
   });
 }
 
 export function useCatalog() {
   return useQuery({
-    queryKey: ["player-hub-catalog"],
+    queryKey: queryKeys.catalog,
     queryFn: getCatalog,
   });
 }
 
 export function usePlayerSearch(term: string) {
   return useQuery({
-    queryKey: ["player-search", term],
+    queryKey: queryKeys.playerSearch(term),
     queryFn: () => searchPlayers(term),
     enabled: term.trim().length >= 2,
   });
@@ -33,14 +34,14 @@ export function usePlayerSearch(term: string) {
 
 export function usePlayerSummary(identifier: string) {
   return useQuery({
-    queryKey: ["player-summary", identifier],
+    queryKey: queryKeys.playerSummary(identifier),
     queryFn: () => getSummary(identifier),
   });
 }
 
 export function usePlayerDataset(identifier: string, dataset: string, enabled = true) {
   return useQuery({
-    queryKey: ["player-dataset", identifier, dataset],
+    queryKey: queryKeys.playerDataset(identifier, dataset),
     queryFn: () => getPlayerDataset(identifier, dataset),
     enabled,
   });
@@ -54,7 +55,7 @@ export function useSeasonDataset(
   includeInactiveGames = false,
 ) {
   return useQuery({
-    queryKey: ["season-dataset", identifier, seasonEndYear, dataset, includeInactiveGames],
+    queryKey: queryKeys.seasonDataset(identifier, seasonEndYear, dataset, includeInactiveGames),
     queryFn: () => getSeasonDataset(identifier, seasonEndYear ?? 0, dataset, includeInactiveGames),
     enabled: enabled && seasonEndYear !== null,
   });

@@ -18,7 +18,7 @@ export function StatusPill() {
 
   if (status.isError || !status.data?.ok) {
     return (
-      <span className="inline-flex h-8 items-center gap-2 rounded-md border border-red-200 bg-red-50 px-3 text-xs font-medium text-court-danger">
+      <span className="inline-flex h-8 items-center gap-2 rounded-md border border-court-danger-line bg-court-danger-soft px-3 text-xs font-medium text-court-danger">
         <WifiOff className="size-3.5" aria-hidden="true" />
         Offline
       </span>
@@ -26,7 +26,7 @@ export function StatusPill() {
   }
 
   return (
-    <span className="inline-flex h-8 items-center gap-2 rounded-md border border-teal-200 bg-court-accent-soft px-3 text-xs font-medium text-teal-900">
+      <span className="inline-flex h-8 items-center gap-2 rounded-md border border-court-accent-line bg-court-accent-soft px-3 text-xs font-medium text-court-accent-strong">
       <Database className="size-3.5" aria-hidden="true" />
       {status.data.transport}
     </span>

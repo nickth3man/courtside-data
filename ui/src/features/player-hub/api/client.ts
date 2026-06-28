@@ -26,6 +26,20 @@ async function apiFetch<T>(path: string): Promise<T> {
   return (await response.json()) as T;
 }
 
+function buildDatasetParams(opts: {
+  seasonEndYear?: number;
+  includeInactiveGames?: boolean;
+}): URLSearchParams {
+  const params = new URLSearchParams();
+  if (opts.seasonEndYear !== undefined) {
+    params.set("season_end_year", String(opts.seasonEndYear));
+  }
+  if (opts.includeInactiveGames) {
+    params.set("include_inactive_games", "true");
+  }
+  return params;
+}
+
 export function csvExportUrl(
   identifier: string,
   dataset: string,
@@ -33,11 +47,9 @@ export function csvExportUrl(
   includeInactiveGames = false,
 ): string {
   const params = new URLSearchParams({ dataset });
-  if (seasonEndYear !== undefined) {
-    params.set("season_end_year", String(seasonEndYear));
-  }
-  if (includeInactiveGames) {
-    params.set("include_inactive_games", "true");
+  const overlay = buildDatasetParams({ seasonEndYear, includeInactiveGames });
+  for (const [key, value] of overlay) {
+    params.set(key, value);
   }
   return `${API_BASE_URL}/api/players/${identifier}/export?${params.toString()}`;
 }
@@ -68,10 +80,7 @@ export function getSeasonDataset(
   dataset: string,
   includeInactiveGames = false,
 ): Promise<EndpointRowsResponse> {
-  const params = new URLSearchParams();
-  if (includeInactiveGames) {
-    params.set("include_inactive_games", "true");
-  }
+  const params = buildDatasetParams({ includeInactiveGames });
   const suffix = params.size > 0 ? `?${params.toString()}` : "";
   return apiFetch<EndpointRowsResponse>(`/api/players/${identifier}/seasons/${seasonEndYear}/${dataset}${suffix}`);
 }

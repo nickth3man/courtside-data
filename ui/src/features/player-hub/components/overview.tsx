@@ -4,9 +4,14 @@ import { Activity, Shield, Target } from "lucide-react";
 import type { ReactNode } from "react";
 import { CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 
+import { SectionHeading } from "@/components/section-heading";
 import { DataTable } from "@/features/player-hub/components/data-table";
 import type { PlayerHubSummary } from "@/features/player-hub/types";
-import { asNumber, formatStat, seasonEndYearFromLabel } from "@/features/player-hub/utils/format";
+import { asNumber, formatStat } from "@/features/player-hub/utils/format";
+import { seasonEndYearFromLabel } from "@/features/player-hub/utils/season";
+
+/** Chart gridline color — mirrors the `--color-court-grid` token (SVG stroke can't read CSS vars). */
+const GRID_STROKE = "#e4e4e7";
 
 interface OverviewProps {
   summary: PlayerHubSummary;
@@ -33,14 +38,11 @@ export function Overview({ summary }: OverviewProps) {
       </div>
 
       <section className="space-y-3">
-        <div>
-          <h2 className="text-base font-semibold text-court-ink">Career Arc</h2>
-          <p className="text-sm text-court-muted">Per-game points, rebounds, and assists by season.</p>
-        </div>
+        <SectionHeading title="Career Arc" description="Per-game points, rebounds, and assists by season." />
         <div className="h-80 rounded-md border border-court-line bg-white p-3">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={chartRows} margin={{ top: 8, right: 20, bottom: 8, left: 0 }}>
-              <CartesianGrid stroke="#e4e4e7" strokeDasharray="3 3" />
+              <CartesianGrid stroke={GRID_STROKE} strokeDasharray="3 3" />
               <XAxis dataKey="season" tick={{ fontSize: 12 }} minTickGap={24} />
               <YAxis tick={{ fontSize: 12 }} />
               <Tooltip />
@@ -54,10 +56,7 @@ export function Overview({ summary }: OverviewProps) {
       </section>
 
       <section className="space-y-3">
-        <div>
-          <h2 className="text-base font-semibold text-court-ink">Career Table</h2>
-          <p className="text-sm text-court-muted">{summary.career.row_count.toLocaleString()} rows from player career stats.</p>
-        </div>
+        <SectionHeading title="Career Table" description={`${summary.career.row_count.toLocaleString()} rows from player career stats.`} />
         <DataTable
           rows={summary.career.rows}
           columns={summary.career.columns}
